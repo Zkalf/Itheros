@@ -1,0 +1,8 @@
+{
+    "id":  "E15",
+    "title":  "Seeded bug: bank boost",
+    "prompt":  "Players report that the step bank never goes down while they fight, so their banked steps never run out. Fix it.",
+    "check":  "checks/E15.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E15.ps1"
+}

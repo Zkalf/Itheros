@@ -1,0 +1,7 @@
+{
+    "id":  "E14",
+    "title":  "Incident: widget tests without real I/O",
+    "prompt":  "Add a widget test for the Achievements tab: it lists every achievement with its progress.",
+    "check":  "checks/E14.ps1",
+    "timeoutMinutes":  20
+}

@@ -1,0 +1,7 @@
+{
+    "id":  "E07",
+    "title":  "Content: new enemy in data",
+    "prompt":  "Add a Goblin shaman to Goblin Woods for level 5 players: 60 HP, attack 10, defense 4, 40 XP, and it always drops 3 goblin hides.",
+    "check":  "checks/E07.ps1",
+    "timeoutMinutes":  20
+}

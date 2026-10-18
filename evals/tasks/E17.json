@@ -1,0 +1,8 @@
+{
+    "id":  "E17",
+    "title":  "Incident (seeded): late steps in the away report",
+    "prompt":  "The \u0027while you were away\u0027 report misses steps that arrive a minute after I open the app. Fix it.",
+    "check":  "checks/E17.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E17.ps1"
+}

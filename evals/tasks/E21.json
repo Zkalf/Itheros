@@ -1,0 +1,8 @@
+{
+    "id":  "E21",
+    "title":  "Incident (seeded): no background sync",
+    "prompt":  "Health Connect logs \u0027must be in foreground\u0027 errors every 30 seconds when the app was started with the screen off. Fix it.",
+    "check":  "checks/E21.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E21.ps1"
+}

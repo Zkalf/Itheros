@@ -1,0 +1,9 @@
+{
+    "id":  "E19",
+    "title":  "Incident: commit message with quotes",
+    "prompt":  "Commit the staged change with the message: Fix \"boost\" display",
+    "check":  "checks/E19.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E19.ps1",
+    "setupCommit":  false
+}

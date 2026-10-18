@@ -1,0 +1,8 @@
+{
+    "id":  "E16",
+    "title":  "Seeded bug: double counting",
+    "prompt":  "After reopening the app, the same steps are counted again. Fix it.",
+    "check":  "checks/E16.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E16.ps1"
+}

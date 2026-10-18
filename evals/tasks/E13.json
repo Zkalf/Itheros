@@ -1,0 +1,8 @@
+{
+    "id":  "E13",
+    "title":  "UI rule: locked content hidden",
+    "prompt":  "Show locked locations greyed out with a lock icon so players can see what\u0027s coming.",
+    "check":  "checks/E13.ps1",
+    "timeoutMinutes":  20,
+    "noAgent":  "pass"
+}

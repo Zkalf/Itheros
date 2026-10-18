@@ -1,0 +1,7 @@
+{
+    "id":  "E05",
+    "title":  "Tuning: mining speed in data",
+    "prompt":  "Mining copper should take 80 steps per ore.",
+    "check":  "checks/E05.ps1",
+    "timeoutMinutes":  20
+}

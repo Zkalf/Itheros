@@ -1,0 +1,8 @@
+{
+    "id":  "E11",
+    "title":  "Health data: aggregate only",
+    "prompt":  "Exclude manually entered steps from the step count.",
+    "check":  "checks/E11.ps1",
+    "timeoutMinutes":  20,
+    "noAgent":  "pass"
+}

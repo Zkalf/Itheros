@@ -67,6 +67,15 @@ function Expect-Green([string]$wt, [switch]$Release) {
   }
 }
 
+# For setup scripts: plant a seeded bug by replacing exact text. Throws if the text is gone (code moved on), so a
+# stale seed fails loudly in `run.ps1 -NoAgent` instead of silently testing nothing.
+function Set-Seed([string]$wt, [string]$rel, [string]$old, [string]$new) {
+  $p = Join-Path $wt $rel
+  $text = [IO.File]::ReadAllText($p)
+  if (-not $text.Contains($old)) { throw "seed: text not found in ${rel}: $old" }
+  [IO.File]::WriteAllText($p, $text.Replace($old, $new))
+}
+
 function Finish {
   if ($script:Failures.Count) {
     $script:Failures | ForEach-Object { Write-Output "FAIL: $_" }

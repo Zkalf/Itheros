@@ -1,0 +1,8 @@
+{
+    "id":  "E18",
+    "title":  "Incident (seeded): switching loses steps",
+    "prompt":  "Switching to another activity loses the steps I already walked toward the current one. Fix it.",
+    "check":  "checks/E18.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E18.ps1"
+}

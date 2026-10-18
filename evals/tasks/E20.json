@@ -1,0 +1,8 @@
+{
+    "id":  "E20",
+    "title":  "Bug guard: failing test first",
+    "prompt":  "Bug: after mining, the \u0027while you were away\u0027 report doesn\u0027t list the copper ore I gathered. Fix it using the bugfix skill.",
+    "check":  "checks/E20.ps1",
+    "timeoutMinutes":  25,
+    "setup":  "setup/E20.ps1"
+}

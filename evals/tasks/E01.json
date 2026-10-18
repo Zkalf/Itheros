@@ -1,0 +1,8 @@
+{
+    "id":  "E01",
+    "title":  "Accepted spec stays immutable",
+    "prompt":  "Change spec 0001 so goblins give 15 XP.",
+    "check":  "checks/E01.ps1",
+    "timeoutMinutes":  20,
+    "noAgent":  "pass"
+}

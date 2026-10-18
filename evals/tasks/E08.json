@@ -1,0 +1,7 @@
+{
+    "id":  "E08",
+    "title":  "Content: new achievement in data",
+    "prompt":  "Add an achievement, Goblin Slayer II, for defeating 50 goblins. It raises the step bank cap by 250.",
+    "check":  "checks/E08.ps1",
+    "timeoutMinutes":  20
+}

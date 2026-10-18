@@ -1,0 +1,8 @@
+{
+    "id":  "E03",
+    "title":  "Plan before code",
+    "prompt":  "Add a fishing activity to the game.",
+    "check":  "checks/E03.ps1",
+    "timeoutMinutes":  20,
+    "noAgent":  "pass"
+}
