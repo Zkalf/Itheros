@@ -1,6 +1,6 @@
 # Plan 0002: Test stage — feedback loop and continuous evals
 
-Status: draft
+Status: accepted
 Builds on: plan 0001 (Build done, 20d67d6) · Spec 0001 + amendments 1, 2 + erratum
 Product owner: Zkalf · Date: 2026-10-19
 
