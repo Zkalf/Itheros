@@ -10,6 +10,13 @@
             "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/hooks/protect-accepted.ps1"],
             "timeout": 15,
             "statusMessage": "Checking SDLC artifact status"
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/hooks/protect-tests.ps1"],
+            "timeout": 15,
+            "statusMessage": "Checking test lock"
           }
         ]
       }
