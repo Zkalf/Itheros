@@ -1,0 +1,16 @@
+{
+  "startLocation": "camp",
+  "locations": [
+    { "id": "camp", "name": "Camp", "unlockLevel": 1, "crafting": true, "enemies": [], "nodes": [] },
+    { "id": "goblin_woods", "name": "Goblin Woods", "unlockLevel": 1, "crafting": false, "enemies": ["goblin", "goblin_brute"], "nodes": [] },
+    { "id": "copper_hills", "name": "Copper Hills", "unlockLevel": 2, "crafting": false, "enemies": [], "nodes": ["copper_vein"] }
+  ],
+  "routes": [
+    { "from": "camp", "to": "goblin_woods", "steps": 200 },
+    { "from": "goblin_woods", "to": "copper_hills", "steps": 300 },
+    { "from": "camp", "to": "copper_hills", "steps": 400 }
+  ],
+  "nodes": [
+    { "id": "copper_vein", "name": "Copper vein", "unlockLevel": 2, "steps": 100, "item": "copper_ore", "xp": 20 }
+  ]
+}

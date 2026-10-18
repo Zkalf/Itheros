@@ -1,0 +1,13 @@
+{
+  "items": [
+    { "id": "goblin_hide", "name": "Goblin hide" },
+    { "id": "copper_ore", "name": "Copper ore" },
+    { "id": "rusty_dagger", "name": "Rusty dagger", "slot": "weapon", "attack": 1 },
+    { "id": "copper_sword", "name": "Copper sword", "slot": "weapon", "attack": 3 },
+    { "id": "hide_vest", "name": "Hide vest", "slot": "body", "defense": 2, "hp": 10 }
+  ],
+  "recipes": [
+    { "id": "copper_sword", "unlockLevel": 3, "steps": 150, "xp": 30, "inputs": { "copper_ore": 5 }, "output": "copper_sword" },
+    { "id": "hide_vest", "unlockLevel": 3, "steps": 150, "xp": 30, "inputs": { "goblin_hide": 4 }, "output": "hide_vest" }
+  ]
+}

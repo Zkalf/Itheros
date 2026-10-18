@@ -1,0 +1,11 @@
+name: game_core
+description: Pure-Dart game rules for the walking RPG (spec 0001). No Flutter dependency.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.0

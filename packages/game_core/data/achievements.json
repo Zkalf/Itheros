@@ -1,0 +1,10 @@
+{
+  "achievements": [
+    { "id": "first_steps", "name": "First Steps", "counter": "steps.walked", "atLeast": 100 },
+    { "id": "goblin_slayer_1", "name": "Goblin Slayer I", "counter": "kills.goblin", "atLeast": 10 },
+    { "id": "prospector", "name": "Prospector", "counter": "gathered.copper_ore", "atLeast": 10 },
+    { "id": "smith", "name": "Smith", "counter": "crafted.total", "atLeast": 1 },
+    { "id": "brute_force", "name": "Brute Force", "counter": "kills.goblin_brute", "atLeast": 1 },
+    { "id": "marathon", "name": "Marathon", "counter": "steps.walked", "atLeast": 42195, "reward": { "bankCap": 500 } }
+  ]
+}

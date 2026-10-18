@@ -1,0 +1,8 @@
+{
+  "bankCap": { "base": 1000, "perLevel": 500 },
+  "combatRoundSteps": 10,
+  "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
+  "statsPerLevel": { "hp": 5, "attack": 1, "defense": 1 },
+  "damageVariance": 0.2,
+  "xpToReachLevel": [0, 20, 100, 300, 700, 1400, 2400, 4000, 6000, 9000]
+}

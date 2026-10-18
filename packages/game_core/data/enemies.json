@@ -1,0 +1,19 @@
+{
+  "enemies": [
+    {
+      "id": "goblin", "name": "Goblin", "unlockLevel": 1,
+      "hp": 20, "attack": 4, "defense": 1, "xp": 10,
+      "drops": [
+        { "item": "goblin_hide", "chance": 0.5, "count": 1 },
+        { "item": "rusty_dagger", "chance": 0.05, "count": 1 }
+      ]
+    },
+    {
+      "id": "goblin_brute", "name": "Goblin brute", "unlockLevel": 4,
+      "hp": 45, "attack": 8, "defense": 3, "xp": 30,
+      "drops": [
+        { "item": "goblin_hide", "chance": 1.0, "count": 2 }
+      ]
+    }
+  ]
+}
