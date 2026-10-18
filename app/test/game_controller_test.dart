@@ -208,6 +208,49 @@ void main() {
     });
   });
 
+  group('the foreground sync timer (spec 0001 §2.1)', () {
+    // A short real interval keeps these tests fast.
+    GameController timed() => GameController(
+      game: game,
+      source: source,
+      permissions: source,
+      store: SaveStore(dir),
+      clock: () => now,
+      syncInterval: const Duration(milliseconds: 20),
+      newSeed: () => 1,
+    );
+
+    test('syncs while the app is in the foreground', () async {
+      final c = timed();
+      await c.start();
+      source.walk(DateTime(2026, 10, 18, 9, 30), 500);
+      now = DateTime(2026, 10, 18, 10);
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(c.state.bank, 500);
+      c.dispose();
+    });
+
+    test('does not sync when the app opened while in the background', () async {
+      // Started with the screen off: Android never reports "hidden", so the
+      // app is told it is in the background before the save opens.
+      final c = timed()..pause();
+      await c.start();
+      source.walk(DateTime(2026, 10, 18, 9, 30), 500);
+      now = DateTime(2026, 10, 18, 10);
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        c.state.bank,
+        0,
+        reason: 'Health Connect refuses background reads',
+      );
+      c.dispose();
+    });
+  });
+
   test('a step source failure is reported and applies nothing', () async {
     final c = controller();
     await c.start();
