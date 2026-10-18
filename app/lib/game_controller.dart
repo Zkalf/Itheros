@@ -63,6 +63,10 @@ class GameController extends ChangeNotifier {
   Timer? _timer;
   Future<void> _tail = Future.value();
 
+  /// Health Connect only answers apps in the foreground, so the sync timer
+  /// runs only while this is true (spec 0001 §2.1).
+  bool _foreground = true;
+
   GameState get state => _save!.game;
 
   Future<void> start() => _serial(() async {
@@ -84,14 +88,22 @@ class GameController extends ChangeNotifier {
   });
 
   /// App came to the foreground.
-  Future<void> resume() => _serial(() async {
-    if (status != ControllerStatus.ready) return;
-    await _syncNow(away: true);
-    _startTimer();
-  });
+  Future<void> resume() {
+    _foreground = true;
+    return _serial(() async {
+      if (status != ControllerStatus.ready) return;
+      await _syncNow(away: true);
+      _startTimer();
+    });
+  }
 
-  /// App went to the background.
-  void pause() => _stopTimer();
+  /// App went to the background. Can arrive before [start] finishes (an app
+  /// launched with the screen off), so opening the save must not restart the
+  /// timer afterwards.
+  void pause() {
+    _foreground = false;
+    _stopTimer();
+  }
 
   Future<void> syncNow() => _serial(() async {
     if (status == ControllerStatus.ready) await _syncNow(away: false);
@@ -184,7 +196,10 @@ class GameController extends ChangeNotifier {
   void _startTimer() {
     _stopTimer();
     final interval = syncInterval;
-    if (interval != null) _timer = Timer.periodic(interval, (_) => syncNow());
+    if (interval == null || !_foreground) return;
+    _timer = Timer.periodic(interval, (_) {
+      if (_foreground) syncNow();
+    });
   }
 
   void _stopTimer() {
