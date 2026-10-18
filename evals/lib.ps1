@@ -27,7 +27,8 @@ function Read-Text([string]$wt, [string]$rel) {
 
 # No changed path matches $pattern (a regex).
 function Expect-NoChange([string[]]$changed, [string]$pattern, [string]$why) {
-  $hits = @($changed | Where-Object { $_ -match $pattern })
+  # An empty list arrives as $null, and piping $null passes one $null item: skip it.
+  $hits = @($changed | Where-Object { $_ -and $_ -match $pattern })
   Expect (-not $hits.Count) "$why ($($hits -join ', '))"
 }
 

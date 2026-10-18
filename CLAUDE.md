@@ -16,6 +16,8 @@ auto-approved by permission rules (headless and eval runs deny it).
 - `.\scripts\device-smoke.ps1 [-Install]` — on the Fairphone (USB): app starts, reads steps, no crash; screenshot.
 - Bug fixes follow the `bugfix` skill (failing test committed first; `.\scripts\lock-tests.ps1` freezes `test/` files).
 - The `verifier` subagent checks a change against its spec's acceptance criteria before committing.
+- Evals (`evals/README.md`): after changing `CLAUDE.md` or `.claude/`, commit and run `.\evals\run.ps1`; every
+  incident from real use adds a regression eval.
 - `adb` is `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. Shells started before the tool installs need PATH
   refreshed from Machine + User env vars (the scripts do this).
 
