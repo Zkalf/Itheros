@@ -25,6 +25,9 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - Health data stays on the device: no INTERNET permission, no network code.
 - Read steps with Health Connect's **aggregate** (`getTotalStepsInInterval` with default args). Never pass
   `includeManualEntry: false`: the plugin then sums raw records without de-duplication (double-counts phone + watch).
+- Steps are credited per local day (spec 0001 amendment 1, `lib/sync/sync_service.dart`); never per time window.
+- `GameController` runs every change through one queue, and every player action syncs first, so steps
+  walked earlier aren't credited to the new activity.
 - `MainActivity` must stay a `FlutterFragmentActivity` (health plugin permission flow). `minSdk` is 26.
 
 ## Known mistakes

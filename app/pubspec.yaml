@@ -1,5 +1,5 @@
 name: walkingrpg
-description: "A new Flutter project."
+description: "Walking-powered combat RPG (Android first)."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -9,7 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  game_core:
+    path: ../packages/game_core
   health: ^13.3.2
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

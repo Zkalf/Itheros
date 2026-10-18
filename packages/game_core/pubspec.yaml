@@ -9,3 +9,9 @@ environment:
 dev_dependencies:
   lints: ^6.1.0
   test: ^1.31.0
+
+# Lets the Flutter app bundle the game data as
+# `packages/game_core/data/<name>.json`. Ignored by plain Dart tooling.
+flutter:
+  assets:
+    - data/
