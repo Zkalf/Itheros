@@ -140,10 +140,27 @@ void main() {
     expect(find.text('While you were away'), findsOneWidget);
     expect(find.text('You walked 300 steps.'), findsOneWidget);
     expect(find.text('Arrived at Goblin Woods.'), findsOneWidget);
-    expect(find.text('100 steps went to the bank.'), findsOneWidget);
+    expect(find.text('Saved 100 steps in your step bank.'), findsOneWidget);
 
     await t.tap(find.text('OK'));
     await t.pump();
     expect(find.text('While you were away'), findsNothing);
+
+    await t.tap(find.byIcon(Icons.history));
+    await t.pump();
+    expect(find.text('You walked 300 steps.'), findsOneWidget);
+  });
+
+  testWidgets('a single step reads as "1 step"', (t) async {
+    final (c, source) = await pumpGame(t);
+    await t.tap(option('travel', 'goblin_woods'));
+    await settle(t, c);
+
+    source.walk(DateTime(2026, 10, 18, 10), 1);
+    now = DateTime(2026, 10, 18, 11);
+    await c.resume();
+    await t.pump();
+
+    expect(find.text('You walked 1 step.'), findsOneWidget);
   });
 }

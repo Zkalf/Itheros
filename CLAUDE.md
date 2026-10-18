@@ -19,7 +19,8 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - `packages/game_core/` (from M2): pure Dart, no Flutter imports. All game rules. `applySteps(state, steps)` is
   deterministic; the seeded PRNG state lives in the save. Tunable numbers live in `data/*.json`, never in code.
 - `app/`: Flutter Android app. `lib/steps/` step sources, `lib/sync/` sync, `lib/persistence/` atomic JSON save,
-  `lib/ui/` screens. `lib/probe/` is the M1 step probe, removed in M5.
+  `lib/ui/` screens (`GameController` via `ControllerScope`). Widget tests use `MemorySaveStore`, never real
+  file I/O (it hangs in the fake-async test zone).
 
 ## Rules
 - Health data stays on the device: no INTERNET permission, no network code.

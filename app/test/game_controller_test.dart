@@ -118,6 +118,96 @@ void main() {
     expect(c.awaySummary, isNull);
   });
 
+  group('late steps after opening (Health Connect batches)', () {
+    Future<GameController> returned({required int stepsOnOpen}) async {
+      final c = controller();
+      await c.start();
+      await c.startActivity(const Activity.travel('goblin_woods'));
+      c.pause();
+      if (stepsOnOpen > 0) {
+        source.walk(DateTime(2026, 10, 18, 9, 30), stepsOnOpen);
+      }
+      now = DateTime(2026, 10, 18, 10);
+      await c.resume();
+      return c;
+    }
+
+    test('steps arriving just after opening join the report', () async {
+      // The 00:06 case on the Fairphone: 1 step on open, 261 thirty seconds later.
+      final c = await returned(stepsOnOpen: 1);
+      expect(c.awaySummary!.walked, 1);
+
+      source.walk(DateTime(2026, 10, 18, 9, 45), 261);
+      now = DateTime(2026, 10, 18, 10, 0, 30);
+      await c.syncNow();
+
+      expect(c.awaySummary!.walked, 262);
+    });
+
+    test('a return with no steps yet still collects late ones', () async {
+      final c = await returned(stepsOnOpen: 0);
+      expect(c.awaySummary, isNull);
+
+      source.walk(DateTime(2026, 10, 18, 9, 45), 300);
+      now = DateTime(2026, 10, 18, 10, 1);
+      await c.syncNow();
+
+      expect(c.awaySummary!.walked, 300);
+    });
+
+    test(
+      'a dismissed report comes back, complete, if late steps arrive',
+      () async {
+        final c = await returned(stepsOnOpen: 1);
+        c.dismissAwaySummary();
+
+        source.walk(DateTime(2026, 10, 18, 9, 45), 261);
+        now = DateTime(2026, 10, 18, 10, 0, 30);
+        await c.syncNow();
+
+        expect(c.awaySummary!.walked, 262);
+      },
+    );
+
+    test(
+      'after the grace period, steps are applied without a report',
+      () async {
+        final c = await returned(stepsOnOpen: 100);
+        c.dismissAwaySummary();
+
+        source.walk(DateTime(2026, 10, 18, 10, 2), 50);
+        now = DateTime(2026, 10, 18, 10, 3);
+        await c.syncNow();
+
+        expect(c.awaySummary, isNull);
+        expect(c.lastAwaySummary!.walked, 100);
+        expect(c.state.counters['steps.walked'], 150);
+      },
+    );
+
+    test('the last report can be shown again after dismissing it', () async {
+      final c = await returned(stepsOnOpen: 120);
+      c.dismissAwaySummary();
+      expect(c.awaySummary, isNull);
+
+      c.showLastAwaySummary();
+
+      expect(c.awaySummary!.walked, 120);
+    });
+
+    test('the next return starts a new report', () async {
+      final c = await returned(stepsOnOpen: 120);
+      c
+        ..dismissAwaySummary()
+        ..pause();
+      source.walk(DateTime(2026, 10, 18, 11), 40);
+      now = DateTime(2026, 10, 18, 12);
+      await c.resume();
+
+      expect(c.awaySummary!.walked, 40);
+    });
+  });
+
   test('a step source failure is reported and applies nothing', () async {
     final c = controller();
     await c.start();

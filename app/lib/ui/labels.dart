@@ -11,6 +11,9 @@ String fmt(int n) {
   return b.toString();
 }
 
+/// (1, 'step') -> "1 step"; (1200, 'step') -> "1,200 steps".
+String plural(int n, String noun) => '${fmt(n)} $noun${n == 1 ? '' : 's'}';
+
 /// Display names from the game data.
 class Labels {
   Labels(this.data);

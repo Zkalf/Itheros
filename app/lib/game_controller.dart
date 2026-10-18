@@ -24,8 +24,10 @@ class GameController extends ChangeNotifier {
     required this.store,
     DateTime Function()? clock,
     this.syncInterval = const Duration(seconds: 30),
+    this.awayGrace = const Duration(minutes: 2),
     int Function()? newSeed,
-  }) : _sync = SyncService(game: game, source: source, clock: clock),
+  }) : _clock = clock ?? DateTime.now,
+       _sync = SyncService(game: game, source: source, clock: clock),
        _newSeed = newSeed ?? (() => Random.secure().nextInt(1 << 32));
 
   final Game game;
@@ -35,12 +37,25 @@ class GameController extends ChangeNotifier {
   /// Foreground sync period; null disables the timer (tests).
   final Duration? syncInterval;
 
+  /// After the app opens, steps that arrive within this time still belong to
+  /// the "while you were away" report. Health Connect delivers steps in
+  /// batches about once a minute, so some arrive just after opening.
+  final Duration awayGrace;
+
+  final DateTime Function() _clock;
   final SyncService _sync;
   final int Function() _newSeed;
 
   ControllerStatus status = ControllerStatus.loading;
   SaveData? _save;
+
+  /// The report on screen, or null once dismissed.
   AwaySummary? awaySummary;
+
+  /// The most recent report, kept so it can be shown again after dismissal.
+  AwaySummary? lastAwaySummary;
+  DateTime? _awayUntil;
+  bool _freshReturn = false;
 
   /// Last step-sync failure, cleared by the next successful sync.
   Object? syncError;
@@ -87,6 +102,11 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void showLastAwaySummary() {
+    awaySummary = lastAwaySummary;
+    notifyListeners();
+  }
+
   /// Throws [ActivityError] if the rules don't allow [a].
   Future<void> startActivity(Activity a) =>
       _act((s) => game.startActivity(s, a));
@@ -128,14 +148,29 @@ class GameController extends ChangeNotifier {
     if (!result.summary.isEmpty) {
       _save = result.save;
       await store.save(_save!);
-      if (away) {
-        awaySummary = (awaySummary ?? const AwaySummary()) + result.summary;
-      }
     } else if (result.save.credited.length != _save!.credited.length) {
       _save = result.save; // pruned old days
       await store.save(_save!);
     }
+    _report(result.summary, away: away);
     notifyListeners();
+  }
+
+  /// Adds a sync's results to the away report. A return (open or resume)
+  /// starts a new report unless the previous one is still on screen; syncs
+  /// within [awayGrace] after it are added too, and re-show the report.
+  void _report(AwaySummary summary, {required bool away}) {
+    final now = _clock();
+    if (away) {
+      _awayUntil = now.add(awayGrace);
+      _freshReturn = awaySummary == null;
+    }
+    final inGrace = _awayUntil != null && now.isBefore(_awayUntil!);
+    if (summary.isEmpty || !(away || inGrace)) return;
+    final last = lastAwaySummary;
+    lastAwaySummary = _freshReturn || last == null ? summary : last + summary;
+    _freshReturn = false;
+    awaySummary = lastAwaySummary;
   }
 
   void _setStatus(ControllerStatus s) {
