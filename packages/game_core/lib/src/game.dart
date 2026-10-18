@@ -123,7 +123,23 @@ class Game {
           throw ActivityError('Not enough materials for ${a.target}');
         }
     }
-    return s.copy()..activity = RunningActivity(a);
+    return _refundProgress(s.copy())..activity = RunningActivity(a);
+  }
+
+  /// Ends the current activity; the character rests. Unspent progress goes
+  /// to the bank (spec 0001 amendment 2).
+  GameState stopActivity(GameState s) {
+    if (s.activity == null) throw ActivityError('Nothing to stop');
+    return _refundProgress(s.copy())..activity = null;
+  }
+
+  /// Moves the current activity's unspent progress into the bank, up to the
+  /// cap. Mutates and returns [s].
+  GameState _refundProgress(GameState s) {
+    final progress = s.activity?.progress ?? 0;
+    s.bank = math.min(bankCap(s), s.bank + progress);
+    s.activity?.progress = 0;
+    return s;
   }
 
   GameState equip(GameState s, String item) {
@@ -207,7 +223,7 @@ class _Run {
 
   /// Completes every unit the paid progress covers. A unit is never left
   /// half-paid: if the next one can't start, the activity ends and leftover
-  /// progress is discarded.
+  /// progress goes to the bank.
   void _advance(RunningActivity act) {
     while (identical(s.activity, act)) {
       final cost = game._costOf(s, act.activity);
@@ -306,7 +322,7 @@ class _Run {
   }
 
   void _end(RunningActivity act, EndReason reason) {
-    s.activity = null;
+    game._refundProgress(s).activity = null;
     events.add(ActivityEnded(act.activity, reason));
   }
 

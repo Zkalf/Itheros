@@ -111,6 +111,9 @@ class GameController extends ChangeNotifier {
   Future<void> startActivity(Activity a) =>
       _act((s) => game.startActivity(s, a));
 
+  /// Rests; unspent steps go to the bank (spec 0001 amendment 2).
+  Future<void> stopActivity() => _act(game.stopActivity);
+
   Future<void> equip(String item) => _act((s) => game.equip(s, item));
 
   Future<void> unequip(String slot) => _act((s) => game.unequip(s, slot));

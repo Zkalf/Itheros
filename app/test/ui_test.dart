@@ -114,6 +114,27 @@ void main() {
     expect(find.text('0 / 200 steps'), findsOneWidget);
   });
 
+  testWidgets('Stop is shown only while active, and banks unspent steps', (
+    t,
+  ) async {
+    final (c, source) = await pumpGame(t);
+    final stop = find.byKey(const ValueKey('stop-activity'));
+    expect(stop, findsNothing, reason: 'resting');
+
+    await t.tap(option('travel', 'goblin_woods'));
+    await settle(t, c);
+    expect(stop, findsOneWidget);
+
+    source.walk(DateTime(2026, 10, 18, 9, 30), 120);
+    now = DateTime(2026, 10, 18, 10);
+    await t.tap(stop);
+    await settle(t, c);
+
+    expect(stop, findsNothing);
+    expect(find.text('Resting'), findsOneWidget);
+    expect(c.state.bank, 120, reason: '120 travel steps refunded');
+  });
+
   testWidgets('without permission the permission screen is shown', (t) async {
     final (c, _) = await pumpGame(t, granted: false);
     expect(find.text('Allow step access'), findsOneWidget);

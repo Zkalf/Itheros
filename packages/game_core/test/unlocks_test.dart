@@ -80,7 +80,7 @@ void main() {
     });
   });
 
-  test('switching activity discards progress and keeps materials', () {
+  test('switching activity refunds progress and keeps materials', () {
     var s = stateAt(game, level: 3, inventory: {'copper_ore': 5});
     s = game.startActivity(s, const Activity.craft('copper_sword'));
     s = game.applySteps(s, 100).state;
@@ -88,6 +88,7 @@ void main() {
 
     s = game.startActivity(s, const Activity.travel('goblin_woods'));
     expect(s.activity!.progress, 0);
+    expect(s.bank, 100, reason: 'spec 0001 amendment 2');
     expect(s.inventory['copper_ore'], 5);
   });
 }

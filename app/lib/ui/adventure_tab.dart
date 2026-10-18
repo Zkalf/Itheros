@@ -235,7 +235,22 @@ class _ActivityCard extends StatelessWidget {
       final cost = game.unitCost(s)!;
       final fight = run.fight;
       body = [
-        Text(labels.activity(run.activity), style: text.titleMedium),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                labels.activity(run.activity),
+                style: text.titleMedium,
+              ),
+            ),
+            OutlinedButton.icon(
+              key: const ValueKey('stop-activity'),
+              onPressed: controller.stopActivity,
+              icon: const Icon(Icons.stop),
+              label: const Text('Stop'),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         _Bar(
           label: run.activity.kind == ActivityKind.fight
