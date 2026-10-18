@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
+import 'package:path_provider/path_provider.dart';
 
-import 'probe/step_probe_page.dart';
+import 'game_controller.dart';
+import 'game_data_loader.dart';
+import 'persistence/save_store.dart';
+import 'steps/health_connect_step_source.dart';
+import 'ui/app.dart';
 
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'walkingrpg',
-      theme: ThemeData(colorSchemeSeed: Colors.green),
-      home: const StepProbePage(),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final data = await loadBundledGameData();
+  final source = HealthConnectStepSource();
+  final controller = GameController(
+    game: Game(data),
+    source: source,
+    permissions: source,
+    store: SaveStore(await getApplicationSupportDirectory()),
+  );
+  runApp(WalkingRpgApp(controller: controller));
+  await controller.start();
 }

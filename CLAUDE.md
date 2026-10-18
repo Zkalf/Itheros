@@ -35,3 +35,4 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
   (it changes the session cwd); use `Push-Location`/`Pop-Location`.
 - `JAVA_HOME` ends with a backslash; `.TrimEnd('\')` before quoting it.
 - PowerShell pipes to `.bat` tools (sdkmanager) don't deliver stdin; use `cmd /c "tool < file"`.
+- PowerShell 5.1 mangles double quotes in native args: write commit messages to a file and use `git commit -F`.

@@ -30,7 +30,7 @@ class GameController extends ChangeNotifier {
 
   final Game game;
   final StepPermissions permissions;
-  final SaveStore store;
+  final SaveStorage store;
 
   /// Foreground sync period; null disables the timer (tests).
   final Duration? syncInterval;
@@ -153,6 +153,10 @@ class GameController extends ChangeNotifier {
     _timer?.cancel();
     _timer = null;
   }
+
+  /// Completes when every queued change has finished.
+  @visibleForTesting
+  Future<void> idle() => _tail;
 
   /// Runs [task] after every earlier task, even if one of them failed.
   Future<void> _serial(Future<void> Function() task) {

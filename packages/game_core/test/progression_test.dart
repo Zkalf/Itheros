@@ -18,6 +18,22 @@ void main() {
     expect(game.level(s), game.data.maxLevel);
   });
 
+  test('xpForNextLevel gives the next threshold, null at the cap', () {
+    expect(game.xpForNextLevel(stateAt(game)), 20);
+    expect(game.xpForNextLevel(stateAt(game, level: 3)), 300);
+    expect(game.xpForNextLevel(stateAt(game, level: game.data.maxLevel)), null);
+  });
+
+  test('unitCost is the next unit of the current activity, null when idle', () {
+    var s = stateAt(game);
+    expect(game.unitCost(s), isNull);
+    s = game.startActivity(s, const Activity.travel('goblin_woods'));
+    expect(game.unitCost(s), 200);
+    s = stateAt(game, location: 'goblin_woods');
+    s = game.startActivity(s, const Activity.fight('goblin'));
+    expect(game.unitCost(s), 10);
+  });
+
   test('stats grow per level', () {
     final l1 = game.stats(stateAt(game));
     final l3 = game.stats(stateAt(game, level: 3));

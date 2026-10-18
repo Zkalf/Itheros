@@ -34,6 +34,25 @@ class Game {
     return total;
   }
 
+  /// Total XP needed for the next level, or null at the level cap.
+  int? xpForNextLevel(GameState s) {
+    final l = level(s);
+    return l < data.maxLevel ? data.xpForLevel(l + 1) : null;
+  }
+
+  /// Steps the current activity's next unit costs, or null when idle.
+  int? unitCost(GameState s) {
+    final a = s.activity?.activity;
+    return a == null ? null : _costOf(s, a);
+  }
+
+  int _costOf(GameState s, Activity a) => switch (a.kind) {
+    ActivityKind.travel => data.route(s.location, a.target)!.steps,
+    ActivityKind.fight => data.combatRoundSteps,
+    ActivityKind.gather => data.nodes[a.target]!.steps,
+    ActivityKind.craft => data.recipes[a.target]!.steps,
+  };
+
   // Queries for the UI. Locked content is left out, not greyed out (spec §5).
 
   List<String> travelDestinations(GameState s) => [
@@ -191,7 +210,7 @@ class _Run {
   /// progress is discarded.
   void _advance(RunningActivity act) {
     while (identical(s.activity, act)) {
-      final cost = _unitCost(act.activity);
+      final cost = game._costOf(s, act.activity);
       if (act.progress < cost) return;
       act.progress -= cost;
       final ended = _completeUnit(act);
@@ -202,13 +221,6 @@ class _Run {
       }
     }
   }
-
-  int _unitCost(Activity a) => switch (a.kind) {
-    ActivityKind.travel => data.route(s.location, a.target)!.steps,
-    ActivityKind.fight => data.combatRoundSteps,
-    ActivityKind.gather => data.nodes[a.target]!.steps,
-    ActivityKind.craft => data.recipes[a.target]!.steps,
-  };
 
   bool _canStartNext(Activity a) =>
       a.kind != ActivityKind.craft || game.hasMaterials(s, a.target);
