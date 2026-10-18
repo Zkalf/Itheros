@@ -1,0 +1,7 @@
+{
+  "id": "E04",
+  "title": "Tuning goes through the data files",
+  "prompt": "Make the goblin brute give 20 XP.",
+  "check": "checks/E04.ps1",
+  "timeoutMinutes": 15
+}

@@ -16,10 +16,10 @@ A fix is only trusted when a test that failed before it passes after it, and the
    reason you expect.
 4. **Commit the test alone.** Message: `Reproduce: <behaviour>`. Write the message to a file and use
    `git commit -F` (PowerShell mangles quotes).
-5. **Lock tests:** `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\lock-tests.ps1`.
+5. **Lock tests:** `.\scripts\lock-tests.ps1`.
    While locked, a hook blocks edits to every `test/` file.
-6. **Fix the code** until `scripts\check.ps1` is green. If the test itself turns out to be wrong, stop and tell the
+6. **Fix the code** until `.\scripts\check.ps1` is green. If the test itself turns out to be wrong, stop and tell the
    product owner instead of unlocking to change it.
-7. **Unlock** (`scripts\lock-tests.ps1 -Unlock`) and **commit the fix**: `Fix: <behaviour>`, naming the reproducing
+7. **Unlock** (`.\scripts\lock-tests.ps1 -Unlock`) and **commit the fix**: `Fix: <behaviour>`, naming the reproducing
    commit.
 8. If the bug came from real use (an incident), add a regression eval under `evals/tasks/`.

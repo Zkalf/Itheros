@@ -6,11 +6,16 @@
   Default: format check, analyze and tests for every Dart/Flutter package.
   -Release: also builds the release APK and fails if it requests the INTERNET
   permission (spec 0001: health data stays on the device).
+  -Root: check another checkout (the eval grader checks throwaway worktrees with
+  this repo's copy of the script, so an agent can't weaken the check it is graded by).
+
+  In Claude Code run it directly (.\scripts\check.ps1): a nested
+  `powershell -File` can't be auto-approved by permission rules.
 #>
-param([switch]$Release)
+param([switch]$Release, [string]$Root)
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = if ($Root) { (Resolve-Path $Root).Path } else { Split-Path -Parent $PSScriptRoot }
 $failed = @()
 
 # Fresh shells may predate the tool installs; make sure they are on PATH.

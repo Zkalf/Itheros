@@ -9,11 +9,15 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - No code before an accepted plan. Each plan milestone ends with its proof, then a commit.
 
 ## Commands (Windows, PowerShell 5.1)
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check.ps1` — format, analyze, tests. The definition of green.
-- `... scripts\check.ps1 -Release` — also builds the release APK and fails if it requests INTERNET.
-- Device: Fairphone 5 over USB. `adb` is `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`.
-  Install: `adb install -r app\build\app\outputs\flutter-apk\app-release.apk`. Screenshot: `adb shell screencap -p /sdcard/x.png` + `adb pull`.
-- Shells started before the tool installs need PATH refreshed from Machine + User env vars (check.ps1 does this).
+Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -File …`: a nested interpreter can't be
+auto-approved by permission rules (headless and eval runs deny it).
+- `.\scripts\check.ps1` — format, analyze, tests. The definition of green.
+- `.\scripts\check.ps1 -Release` — also builds the release APK and fails if it requests INTERNET.
+- `.\scripts\device-smoke.ps1 [-Install]` — on the Fairphone (USB): app starts, reads steps, no crash; screenshot.
+- Bug fixes follow the `bugfix` skill (failing test committed first; `.\scripts\lock-tests.ps1` freezes `test/` files).
+- The `verifier` subagent checks a change against its spec's acceptance criteria before committing.
+- `adb` is `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. Shells started before the tool installs need PATH
+  refreshed from Machine + User env vars (the scripts do this).
 
 ## Architecture
 - `packages/game_core/` (from M2): pure Dart, no Flutter imports. All game rules. `applySteps(state, steps)` is
