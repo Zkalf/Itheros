@@ -29,10 +29,13 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [En
 
 # What a headless eval session may do without approval. Scripts run directly; a nested `powershell -File` is
 # never auto-approved (see CLAUDE.md).
+# Rules need either the exact command or "<prefix> *" (with the space); "<prefix>*" does not match.
 $allowedTools = @(
   'Read', 'Grep', 'Glob', 'Edit', 'Write', 'Skill', 'Agent',
   'PowerShell(git *)', 'PowerShell(dart *)', 'PowerShell(flutter *)',
-  'PowerShell(.\scripts\check.ps1*)', 'PowerShell(.\scripts\lock-tests.ps1*)'
+  'PowerShell(Push-Location *)', 'PowerShell(Pop-Location)',
+  'PowerShell(.\scripts\check.ps1)', 'PowerShell(.\scripts\check.ps1 *)',
+  'PowerShell(.\scripts\lock-tests.ps1)', 'PowerShell(.\scripts\lock-tests.ps1 *)'
 )
 
 $tasks = @(Get-ChildItem (Join-Path $PSScriptRoot 'tasks\*.json') | Sort-Object Name |
