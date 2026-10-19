@@ -429,5 +429,38 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('criterion 9: the report says which action started next', (
+      t,
+    ) async {
+      final (c, source) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      await c.addAction(
+        const Activity.fight('goblin'),
+        stop: StopCondition.untilHave('goblin_hide', 2),
+      );
+      await c.addAction(const Activity.gather('copper_vein'));
+      // Enough for the hides, not enough to reach Copper Hills and mine.
+      source.walk(DateTime(2026, 10, 18, 10), 400);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      if (c.levelCards.isNotEmpty) {
+        c.dismissLevelCards();
+        await t.pump();
+      }
+      expect(c.state.activity!.leg, 'copper_hills', reason: 'still walking');
+      expect(
+        find.textContaining('Stopped: goal reached. Next: Copper vein.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('from level 5 a craft can be queued before its materials', (
+      t,
+    ) async {
+      await pumpGame(t, level: 5);
+      final tile = t.widget<ListTile>(option('craft', 'copper_sword'));
+      expect(tile.enabled, isTrue);
+    });
   });
 }

@@ -10,6 +10,7 @@ class ActionLog {
     this.losses = const [],
     this.ended,
     this.skipped,
+    this.next,
   });
 
   final Activity activity;
@@ -24,7 +25,21 @@ class ActionLog {
   /// Set when it never started.
   final SkipReason? skipped;
 
+  /// The action that started after this one ended (skipped ones aside).
+  final Activity? next;
+
   bool get isOpen => ended == null && skipped == null;
+
+  ActionLog withNext(Activity a) => ActionLog(
+    activity,
+    wins: wins,
+    xp: xp,
+    items: items,
+    losses: losses,
+    ended: ended,
+    skipped: skipped,
+    next: a,
+  );
 
   ActionLog operator +(ActionLog o) => ActionLog(
     activity,
@@ -34,6 +49,7 @@ class ActionLog {
     losses: [...losses, ...o.losses],
     ended: o.ended,
     skipped: o.skipped,
+    next: o.next,
   );
 }
 
@@ -106,6 +122,11 @@ class AwaySummary {
           started = null;
         case ActionStarted(:final activity):
           started = activity;
+          // Tell the last action that ended what came after it.
+          final i = logs.lastIndexWhere((l) => l.ended != null);
+          if (i >= 0 && logs[i].next == null) {
+            logs[i] = logs[i].withNext(activity);
+          }
         case ActionSkipped(:final activity, :final reason):
           logs.add(ActionLog(activity, skipped: reason));
         case Arrived():

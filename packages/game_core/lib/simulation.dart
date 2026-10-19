@@ -168,8 +168,8 @@ class FightRecord {
   double get roundsPerFight => steps / fights / 10;
 }
 
-/// Fights [enemy] [fights] times from [player], starting over after each
-/// loss, and records the results.
+/// Fights [enemy] [fights] times from [player], starting again whenever the
+/// action gives up after losses, and records the results.
 FightRecord measureFights(
   Game game,
   GameState player,
@@ -200,6 +200,7 @@ FightRecord measureFights(
         gained += e.xp;
       } else if (e is FightLost) {
         losses++;
+        gained += e.xp; // losses pay a share of the XP (spec 0003 §5)
       }
     }
     s = r.state

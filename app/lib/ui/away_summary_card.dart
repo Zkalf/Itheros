@@ -22,11 +22,7 @@ class AwaySummaryCard extends StatelessWidget {
       'You walked ${plural(s.walked, 'step')}.',
       if (s.boostUsed > 0)
         'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
-      for (var i = 0; i < s.actions.length; i++)
-        ...labels.actionLines(
-          s.actions[i],
-          i + 1 < s.actions.length ? s.actions[i + 1] : null,
-        ),
+      for (final a in s.actions) ...labels.actionLines(a),
       for (final l in s.levelsReached) 'Reached level $l!',
       for (final a in s.achievements) 'Achievement: ${labels.achievement(a)}.',
       if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',

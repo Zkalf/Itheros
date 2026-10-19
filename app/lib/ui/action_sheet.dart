@@ -33,6 +33,13 @@ class _ActionSheetState extends State<ActionSheet> {
     final s = widget.controller.state;
     final a = widget.activity;
     _kind = StopCondition.defaultFor(a).kind;
+    // "Until grey" can't start on a monster that is already grey.
+    if (_kind == StopKind.untilGrey &&
+        _game.enemyBand(s, a.target).colour == LevelColour.grey) {
+      _kind = _game.stopKindsFor(s, a).contains(StopKind.untilHave)
+          ? StopKind.untilHave
+          : StopKind.never;
+    }
     final items = _game.countableItems(a);
     if (items.isNotEmpty) {
       _item = items.first;

@@ -85,9 +85,9 @@ class Labels {
     ActivityKind.craft => recipe(a.target),
   };
 
-  /// The report lines for one action (spec 0003 §7). [next] is the action
-  /// after it, if any.
-  List<String> actionLines(ActionLog log, ActionLog? next) {
+  /// The report lines for one action (spec 0003 §7), ending with the action
+  /// that started after it.
+  List<String> actionLines(ActionLog log) {
     final a = log.activity;
     if (log.skipped case final why?) {
       return ['Skipped the ${short(a)}: ${skipReason(a, why)}.'];
@@ -98,9 +98,7 @@ class Labels {
       if (log.items.isNotEmpty) counts(log.items, item),
     ];
     final ended = log.ended;
-    final then = ended != null && next != null && next.skipped == null
-        ? ' Next: ${short(next.activity)}.'
-        : '';
+    final then = log.next != null ? ' Next: ${short(log.next!)}.' : '';
     final lines = <String>[
       if (a.kind != ActivityKind.travel)
         '${switch (a.kind) {

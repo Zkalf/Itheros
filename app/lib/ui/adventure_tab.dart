@@ -124,7 +124,9 @@ class AdventureTab extends StatelessWidget {
               leading: const Icon(Icons.handyman),
               title: labels.recipe(id),
               subtitle: _recipeText(game.data.recipes[id]!, s, game, labels),
-              enabled: game.hasMaterials(s, id),
+              // From 2 slots a craft can be queued before its materials
+              // are gathered (spec 0003 §4).
+              enabled: game.hasMaterials(s, id) || game.queueSlots(s) > 1,
             ),
           if (destinations.isNotEmpty) const _Heading('Travel'),
           for (final id in destinations)

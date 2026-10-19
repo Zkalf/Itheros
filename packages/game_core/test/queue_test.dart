@@ -318,6 +318,24 @@ void main() {
       expect(r.state.activity, isNotNull, reason: 'one loss is not the end');
     });
 
+    test('criterion 6: the share fades by colour; nothing earned is lost', () {
+      // Level 5 (9 Attack) against a level 1 ogre: 4 below, green, 60%.
+      final start = stateAt(
+        g,
+        location: 'arena',
+        level: 5,
+        inventory: {'copper_ore': 3},
+      );
+      final xp0 = start.xp;
+      final s = g.addAction(start, const Activity.fight('ogre'));
+      final r = g.applySteps(s, 10);
+      final lost = all<FightLost>(r).single;
+      expect(lost.share, 0.09);
+      expect(lost.xp, 4); // 100 x 0.75 x 0.09 x 60% = 4.05
+      expect(r.state.xp, xp0 + 4);
+      expect(r.state.inventory, {'copper_ore': 3});
+    });
+
     test('criterion 7: the action gives up after 3 losses in a row', () {
       final r = g.applySteps(fightingOgre(), 100);
       expect(all<FightLost>(r), hasLength(3));

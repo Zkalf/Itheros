@@ -751,7 +751,8 @@ class _Run {
         ? 0
         : math.max(
             1,
-            (enemy.xp * data.lossXpShare * share * pct / 100).floor(),
+            // The epsilon keeps 26.9999... from rounding down to 26.
+            (enemy.xp * data.lossXpShare * share * pct / 100 + 1e-9).floor(),
           );
     events.add(FightLost(enemy.id, xp, share));
     _gainXp(xp);
