@@ -880,4 +880,46 @@ void main() {
       expect(find.byWidgetPredicate(coloured), findsWidgets);
     });
   });
+
+  group('banners for achievements and levels (spec 0004 amendment 3)', () {
+    testWidgets('on the screen and in the journal, not as plain lines', (
+      t,
+    ) async {
+      final (c, source) = await pumpGame(t, location: 'goblin_woods');
+      await c.startActivity(const Activity.fight('goblin'));
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 10), 300);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      if (c.levelCards.isNotEmpty) {
+        c.dismissLevelCards();
+        await t.pump();
+      }
+      expect(c.awaySummary!.achievements, contains('first_steps'));
+      expect(c.awaySummary!.levelsReached, contains(2));
+
+      final banners = find.byKey(const ValueKey('report-banner'));
+      Finder banner(String text) =>
+          find.descendant(of: banners, matching: find.text(text));
+      expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
+      expect(banner('Reached level 2!'), findsOneWidget);
+      expect(
+        find.descendant(of: banners, matching: find.byIcon(Icons.emoji_events)),
+        findsWidgets,
+      );
+      expect(find.textContaining('Achievement:'), findsNothing);
+
+      final first = t.getTopLeft(banner('Reached level 2!')).dy;
+      final line = t.getTopLeft(find.text('You walked 300 steps.')).dy;
+      expect(first, lessThan(line), reason: 'banners come first');
+
+      await t.tap(find.byKey(const ValueKey('away-continue')));
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
+      expect(banner('Reached level 2!'), findsOneWidget);
+    });
+  });
 }
