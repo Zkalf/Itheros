@@ -67,7 +67,13 @@ class CharacterTab extends StatelessWidget {
               final key? => _name(context, game.data, labels, key),
               null => const Text('Empty'),
             },
-            subtitle: Text(labels.slot(slot)),
+            subtitle: Text(
+              [
+                labels.slot(slot),
+                if (s.equipment[slot] case final key?)
+                  ..._bonusParts(game.data, key),
+              ].join(' · '),
+            ),
             trailing: s.equipment[slot] == null
                 ? null
                 : SizedBox(
@@ -146,14 +152,17 @@ class CharacterTab extends StatelessWidget {
 
   static Widget? _bonusText(GameData data, String key) {
     if (data.itemOf(key)?.slot == null) return null;
+    return Text(_bonusParts(data, key).join(' · '));
+  }
+
+  /// "+4 Defense", "+14 HP": a gear key's stats, quality included.
+  static List<String> _bonusParts(GameData data, String key) {
     final b = data.bonusOf(key);
-    return Text(
-      [
-        if (b.attack != 0) '+${b.attack} Attack',
-        if (b.defense != 0) '+${b.defense} Defense',
-        if (b.hp != 0) '+${b.hp} HP',
-      ].join(' · '),
-    );
+    return [
+      if (b.attack != 0) '+${b.attack} Attack',
+      if (b.defense != 0) '+${b.defense} Defense',
+      if (b.hp != 0) '+${b.hp} HP',
+    ];
   }
 
   static const _slotIcons = {
