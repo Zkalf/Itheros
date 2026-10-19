@@ -52,4 +52,15 @@ void main() {
     await store.save(saveWithBank(8));
     expect((await store.load())!.game.bank, 8);
   });
+
+  test('a version 2 save loads with an empty journal (spec 0004)', () {
+    final json = saveWithBank(5).toJson()
+      ..['version'] = 2
+      ..remove('journal')
+      ..remove('testWalk');
+    final loaded = SaveData.fromJson(json);
+    expect(loaded.journal, isEmpty);
+    expect(loaded.testWalk, isFalse);
+    expect(loaded.game.bank, 5);
+  });
 }

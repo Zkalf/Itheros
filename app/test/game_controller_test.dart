@@ -286,4 +286,128 @@ void main() {
     expect(c.syncError, isNull);
     expect(c.state.bank, 500);
   });
+
+  group('the journal (spec 0004 §2)', () {
+    test(
+      'criterion 1: a report is kept with its time, across restarts',
+      () async {
+        final c = controller();
+        await c.start();
+        c.pause();
+        source.walk(DateTime(2026, 10, 18, 11), 300);
+        now = DateTime(2026, 10, 18, 12);
+        await c.resume();
+        expect(c.journal.single.started, DateTime(2026, 10, 18, 12));
+        expect(c.journal.single.summary.walked, 300);
+        expect(c.journal.single.testWalk, isFalse);
+        c.dispose();
+
+        // Android closed the app: a fresh controller on the same save.
+        final again = controller();
+        await again.start();
+        expect(again.journal.single.summary.walked, 300);
+        expect(again.journal.single.started, DateTime(2026, 10, 18, 12));
+      },
+    );
+
+    test('dismissing the card keeps the entry', () async {
+      final c = controller();
+      await c.start();
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 11), 300);
+      now = DateTime(2026, 10, 18, 12);
+      await c.resume();
+      c.dismissAwaySummary();
+      expect(c.journal, hasLength(1));
+    });
+
+    test('criterion 2: late steps join the same entry', () async {
+      final c = controller();
+      await c.start();
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 9, 30), 1);
+      now = DateTime(2026, 10, 18, 10);
+      await c.resume();
+      source.walk(DateTime(2026, 10, 18, 9, 45), 261);
+      now = DateTime(2026, 10, 18, 10, 0, 30);
+      await c.syncNow();
+      expect(c.journal.single.summary.walked, 262);
+      expect(c.journal.single.started, DateTime(2026, 10, 18, 10));
+    });
+
+    test('a return with no steps makes no entry', () async {
+      final c = controller();
+      await c.start();
+      c.pause();
+      now = DateTime(2026, 10, 18, 12);
+      await c.resume();
+      expect(c.journal, isEmpty);
+    });
+
+    test('criterion 3: it keeps the newest 20, newest first', () async {
+      final c = controller();
+      await c.start();
+      for (var i = 1; i <= 22; i++) {
+        c
+          ..dismissAwaySummary()
+          ..pause();
+        source.walk(DateTime(2026, 10, 18, 9, i * 2), i);
+        now = DateTime(2026, 10, 18, 9, i * 2 + 1);
+        await c.resume();
+      }
+      expect(c.journal, hasLength(20));
+      expect(c.journal.first.summary.walked, 22);
+      expect(c.journal.last.summary.walked, 3);
+    });
+  });
+
+  group('test walk (spec 0004 §3)', () {
+    test('criterion 5: pretend steps play exactly like walked ones', () async {
+      final c = controller();
+      await c.start();
+      final before = c.state;
+      source.walk(DateTime(2026, 10, 18, 9, 30), 500);
+      now = DateTime(2026, 10, 18, 10);
+
+      await c.testWalk(1000);
+
+      final expected = game.applySteps(
+        game.applySteps(before, 500).state,
+        1000,
+      );
+      expect(c.state.toJson(), expected.state.toJson());
+      expect(c.state.counters['steps.walked'], 1500);
+      expect(c.journal.first.testWalk, isTrue);
+      expect(c.journal.first.summary.walked, 1000);
+      expect(c.awaySummary!.walked, 1000);
+    });
+
+    test('criterion 5: the next real sync credits only real steps', () async {
+      final c = controller();
+      await c.start();
+      await c.testWalk(1000);
+      source.walk(DateTime(2026, 10, 18, 9, 30), 200);
+      now = DateTime(2026, 10, 18, 10);
+      await c.syncNow();
+      await c.syncNow();
+      expect(c.state.counters['steps.walked'], 1200);
+      c.dispose();
+
+      final again = controller();
+      await again.start();
+      expect(again.state.counters['steps.walked'], 1200);
+    });
+
+    test('criterion 4: the switch is saved', () async {
+      final c = controller();
+      await c.start();
+      expect(c.testWalkOn, isFalse);
+      await c.setTestWalk(true);
+      c.dispose();
+
+      final again = controller();
+      await again.start();
+      expect(again.testWalkOn, isTrue);
+    });
+  });
 }
