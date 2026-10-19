@@ -15,6 +15,59 @@ GameData loadGameData({Map<String, Object> overrides = const {}}) {
   return GameData.fromJsonStrings(files);
 }
 
+/// One real data file, decoded, for tests that tweak a few values.
+Map<String, Object?> dataJson(String name) =>
+    jsonDecode(File('data/$name.json').readAsStringSync())
+        as Map<String, Object?>;
+
+/// A game with one location, `arena`, holding [enemies], and no damage
+/// variance, so fights are exact. [economy] values replace real ones.
+Game arenaGame(
+  List<Map<String, Object?>> enemies, {
+  Map<String, Object?> economy = const {},
+}) {
+  return newTestGame(
+    overrides: {
+      'economy': {...dataJson('economy'), 'damageVariance': 0, ...economy},
+      'enemies': {'enemies': enemies},
+      'world': {
+        'startLocation': 'arena',
+        'locations': [
+          {
+            'id': 'arena',
+            'name': 'Arena',
+            'unlockLevel': 1,
+            'enemies': [for (final e in enemies) e['id']],
+          },
+        ],
+        'routes': <Object>[],
+        'nodes': <Object>[],
+      },
+    },
+  );
+}
+
+/// An arena monster: level 1, no drops, unless [extra] says otherwise.
+Map<String, Object?> monster(
+  String id, {
+  int hp = 1,
+  int attack = 0,
+  int defense = 0,
+  int xp = 10,
+  Map<String, Object?> extra = const {},
+}) => {
+  'id': id,
+  'name': id,
+  'unlockLevel': 1,
+  'level': 1,
+  'hp': hp,
+  'attack': attack,
+  'defense': defense,
+  'xp': xp,
+  'drops': <Object>[],
+  ...extra,
+};
+
 Game newTestGame({Map<String, Object> overrides = const {}}) =>
     Game(loadGameData(overrides: overrides));
 

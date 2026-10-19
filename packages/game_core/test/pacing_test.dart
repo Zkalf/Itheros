@@ -21,9 +21,12 @@ void main() {
         expect(result.dayReached(5), 1);
       });
 
-      test('criterion 6: level 10 within days 7-11 at 5,000 steps/day', () {
-        expect(result.dayReached(10), inInclusiveRange(7, 11));
-      });
+      test(
+        'criterion 6: level 10 within days 7-11 at 5,000 steps/day',
+        () => expect(result.dayReached(10), inInclusiveRange(7, 11)),
+        skip: 'Superseded by spec 0002 (level 10 on day 12-16); '
+            'replaced in plan 0003 M3',
+      );
     });
   }
 }

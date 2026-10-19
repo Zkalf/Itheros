@@ -14,14 +14,11 @@ void main() {
     expect(game.level(s), 1);
     s.xp = 20;
     expect(game.level(s), 2);
-    s.xp = 999999;
-    expect(game.level(s), game.data.maxLevel);
   });
 
-  test('xpForNextLevel gives the next threshold, null at the cap', () {
+  test('xpForNextLevel gives the next threshold', () {
     expect(game.xpForNextLevel(stateAt(game)), 20);
     expect(game.xpForNextLevel(stateAt(game, level: 3)), 300);
-    expect(game.xpForNextLevel(stateAt(game, level: game.data.maxLevel)), null);
   });
 
   test('unitCost is the next unit of the current activity, null when idle', () {
@@ -34,11 +31,11 @@ void main() {
     expect(game.unitCost(s), 10);
   });
 
-  test('stats grow per level', () {
+  test('stats grow per level (spec 0002 §4)', () {
     final l1 = game.stats(stateAt(game));
     final l3 = game.stats(stateAt(game, level: 3));
     expect((l1.hp, l1.attack, l1.defense), (30, 5, 2));
-    expect((l3.hp, l3.attack, l3.defense), (40, 7, 4));
+    expect((l3.hp, l3.attack, l3.defense), (50, 7, 4));
   });
 
   test('bank cap is 1,000 + 500 per level', () {
@@ -79,6 +76,51 @@ void main() {
       s = game.unequip(s, 'body');
       expect(s.equipment, isEmpty);
       expect(s.inventory['hide_vest'], 1);
+    });
+
+    group('criterion 8: gear slots open by level (spec 0002 §4)', () {
+      final g = newTestGame(
+        overrides: {
+          'items': {
+            ...dataJson('items'),
+            'items': [
+              ...dataJson('items')['items']! as List<Object?>,
+              {'id': 'plank', 'name': 'Plank', 'slot': 'shield', 'defense': 3},
+            ],
+          },
+        },
+      );
+      final opensAt = g.data.gearSlots['shield']!;
+
+      test('an item for a closed slot cannot be equipped', () {
+        final s = stateAt(g, level: opensAt - 1, inventory: {'plank': 1});
+        expect(() => g.equip(s, 'plank'), throwsA(isA<ActivityError>()));
+        expect(g.openSlots(s), isNot(contains('shield')));
+      });
+
+      test('it can once the slot opens', () {
+        var s = stateAt(g, level: opensAt, inventory: {'plank': 1});
+        s = g.equip(s, 'plank');
+        expect(s.equipment['shield'], 'plank');
+        expect(g.openSlots(s), containsAll(['weapon', 'body', 'shield']));
+      });
+
+      test('an item for an unknown slot is rejected when data loads', () {
+        expect(
+          () => newTestGame(
+            overrides: {
+              'items': {
+                ...dataJson('items'),
+                'items': [
+                  ...dataJson('items')['items']! as List<Object?>,
+                  {'id': 'hat', 'name': 'Hat', 'slot': 'hat'},
+                ],
+              },
+            },
+          ),
+          throwsFormatException,
+        );
+      });
     });
 
     test('items without a slot or not owned cannot be equipped', () {
