@@ -460,13 +460,21 @@ void main() {
       () async {
         final c = controller();
         await c.start();
+        // First Steps (an achievement) out of the way first.
         c.pause();
+        source.walk(DateTime(2026, 10, 18, 9, 10), 150);
+        now = DateTime(2026, 10, 18, 9, 20);
+        await c.resume();
+        expect(c.awaySummary!.achievements, ['first_steps']);
+        c
+          ..dismissAwaySummary()
+          ..pause();
         source.walk(DateTime(2026, 10, 18, 10), 300);
         now = DateTime(2026, 10, 18, 11);
         await c.resume();
         expect(c.awaySummary, isNull);
         expect(c.quietReport!.banked, 300);
-        expect(c.journal.single.summary.walked, 300, reason: 'still kept');
+        expect(c.journal.first.summary.walked, 300, reason: 'still kept');
         c.clearQuietReport();
         expect(c.quietReport, isNull);
       },

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
-import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 import 'action_sheet.dart';
@@ -55,12 +54,6 @@ class AdventureTab extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (c.awaySummary case final summary?)
-            AwaySummaryCard(
-              summary: summary,
-              labels: labels,
-              onDismiss: c.dismissAwaySummary,
-            ),
           if (c.syncError != null)
             const Card(
               child: ListTile(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
+import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'home_shell.dart';
 import 'level_up_screen.dart';
@@ -54,9 +55,11 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
             ControllerStatus.unavailable => const UnavailableScreen(),
             ControllerStatus.needsPermission => const PermissionScreen(),
             ControllerStatus.ready =>
-              widget.controller.levelCards.isEmpty
-                  ? const HomeShell()
-                  : const LevelUpScreen(),
+              widget.controller.levelCards.isNotEmpty
+                  ? const LevelUpScreen()
+                  : widget.controller.awaySummary != null
+                  ? const AwayScreen()
+                  : const HomeShell(),
           },
         ),
       ),

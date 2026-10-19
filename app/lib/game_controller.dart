@@ -49,8 +49,16 @@ class GameController extends ChangeNotifier {
   ControllerStatus status = ControllerStatus.loading;
   SaveData? _save;
 
-  /// The report on screen, or null once dismissed.
+  /// The "While you were away" screen's report, or null when it isn't shown
+  /// (spec 0004 amendment 2).
   AwaySummary? awaySummary;
+
+  /// A report where nothing happened but steps, for a short note instead of
+  /// the screen; cleared once shown.
+  AwaySummary? quietReport;
+
+  /// The player closed this return's screen: late steps don't reopen it.
+  bool _closed = false;
 
   /// Recent reports, newest first, kept in the save (spec 0004 §2).
   List<JournalEntry> get journal => _save?.journal ?? const [];
@@ -149,7 +157,9 @@ class GameController extends ChangeNotifier {
       _save!.withGame(report.state),
       JournalEntry(started: _clock(), summary: summary, testWalk: true),
     );
-    awaySummary = summary;
+    _closed = false;
+    awaySummary = null;
+    _show(summary);
     await store.save(_save!);
     notifyListeners();
   });
@@ -169,7 +179,24 @@ class GameController extends ChangeNotifier {
 
   void dismissAwaySummary() {
     awaySummary = null;
+    _closed = true;
     notifyListeners();
+  }
+
+  void clearQuietReport() {
+    quietReport = null;
+    notifyListeners();
+  }
+
+  /// The screen when something happened, otherwise the short note.
+  void _show(AwaySummary report) {
+    if (_closed) return;
+    if (report.isEventful) {
+      awaySummary = report;
+      quietReport = null;
+    } else if (awaySummary == null) {
+      quietReport = report;
+    }
   }
 
   void showLastAwaySummary() {
@@ -277,6 +304,8 @@ class GameController extends ChangeNotifier {
     // Real steps never join a test walk's entry (spec 0004 §3).
     if (_freshReturn || journal.isEmpty || journal.first.testWalk) {
       _save = _addEntry(_save!, JournalEntry(started: now, summary: summary));
+      _closed = false;
+      awaySummary = null;
     } else {
       final first = journal.first;
       _save = _save!.copyWith(
@@ -287,7 +316,7 @@ class GameController extends ChangeNotifier {
       );
     }
     _freshReturn = false;
-    awaySummary = lastAwaySummary;
+    _show(lastAwaySummary!);
     return true;
   }
 

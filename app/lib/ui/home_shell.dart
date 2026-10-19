@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'achievements_tab.dart';
 import 'adventure_tab.dart';
+import 'away_summary_card.dart';
 import 'character_tab.dart';
+import 'controller_scope.dart';
 import 'journal_screen.dart';
+import 'labels.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -19,6 +22,21 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    // Nothing happened but steps: a short note, not the screen (spec 0004
+    // amendment 2).
+    if (c.quietReport != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final quiet = c.quietReport;
+        if (!mounted || quiet == null) return;
+        c.clearQuietReport();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reportLines(quiet, Labels(c.game.data)).join(' ')),
+          ),
+        );
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_tab]),

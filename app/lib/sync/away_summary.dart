@@ -209,6 +209,11 @@ class AwaySummary {
 
   bool get isEmpty => walked == 0;
 
+  /// Something happened beyond steps going to the bank or toward an
+  /// unfinished unit: worth its own screen (spec 0004 amendment 2).
+  bool get isEventful =>
+      actions.isNotEmpty || levelsReached.isNotEmpty || achievements.isNotEmpty;
+
   factory AwaySummary.fromJson(Map<String, Object?> j) => AwaySummary(
     walked: j['walked']! as int,
     activitySteps: j['activitySteps']! as int,

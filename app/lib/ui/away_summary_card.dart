@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../sync/away_summary.dart';
+import 'controller_scope.dart';
+import 'journal_screen.dart';
 import 'labels.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
@@ -52,51 +54,61 @@ List<String> reportLines(AwaySummary s, Labels labels) => [
         'could not be saved.',
 ];
 
-class AwaySummaryCard extends StatelessWidget {
-  const AwaySummaryCard({
-    super.key,
-    required this.summary,
-    required this.labels,
-    required this.onDismiss,
-  });
-
-  final AwaySummary summary;
-  final Labels labels;
-  final VoidCallback onDismiss;
+/// "While you were away": opens by itself when something happened, after
+/// any level-up cards, and looks like a journal entry (spec 0004 amendment 2).
+class AwayScreen extends StatelessWidget {
+  const AwayScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final lines = reportLines(summary, labels);
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'While you were away',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            for (final l in lines)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: reportLine(l, labels),
+    final c = ControllerScope.of(context);
+    final labels = Labels(c.game.data);
+    final text = Theme.of(context).textTheme;
+    final summary = c.awaySummary;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('While you were away'),
+        automaticallyImplyLeading: false,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (c.journal.isNotEmpty)
+                    Text(
+                      journalTime(c.journal.first.started, c.now),
+                      style: text.titleMedium,
+                    ),
+                  const SizedBox(height: 8),
+                  if (summary != null)
+                    for (final l in reportLines(summary, labels))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: reportLine(l, labels),
+                      ),
+                ],
               ),
-            const SizedBox(height: 4),
-            Text(
-              'Steps can reach Health Connect a minute late, so this report '
-              'keeps updating for a couple of minutes.',
-              style: Theme.of(context).textTheme.bodySmall,
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(onPressed: onDismiss, child: const Text('OK')),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Steps can reach Health Connect a minute late, so this report '
+            'keeps updating for a couple of minutes. It stays in your '
+            'journal.',
+            style: text.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            key: const ValueKey('away-continue'),
+            onPressed: c.dismissAwaySummary,
+            child: const Text('Continue'),
+          ),
+        ],
       ),
     );
   }

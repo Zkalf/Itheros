@@ -185,7 +185,14 @@ void main() {
 
   testWidgets('criterion 11: only banked steps show a short note', (t) async {
     final (c, source) = await pumpGame(t);
+    // First Steps (an achievement) out of the way first.
     c.pause();
+    source.walk(DateTime(2026, 10, 18, 9, 10), 150);
+    now = DateTime(2026, 10, 18, 9, 20);
+    await c.resume();
+    c
+      ..dismissAwaySummary()
+      ..pause();
     source.walk(DateTime(2026, 10, 18, 10), 300);
     now = DateTime(2026, 10, 18, 11);
     await c.resume();
@@ -672,14 +679,19 @@ void main() {
     testWidgets(
       'criterion 5: +1,000 walks 1,000 steps, marked in the journal',
       (t) async {
-        final (c, _) = await pumpGame(t);
+        final (c, source) = await pumpGame(t);
+        // First Steps (an achievement) out of the way first.
+        c.pause();
+        source.walk(DateTime(2026, 10, 18, 8, 50), 150);
+        await c.resume();
+        c.dismissAwaySummary();
         await c.setTestWalk(true);
         await t.pump();
         await t.tap(find.descendant(of: card, matching: find.text('+1,000')));
         await settle(t, c);
         await t.pump();
         await t.pump(const Duration(milliseconds: 500));
-        expect(c.state.bank, 1000, reason: 'resting: the steps are banked');
+        expect(c.state.bank, 1150, reason: 'resting: 150 + 1,000 banked');
         expect(
           find.textContaining('You walked 1,000 steps.'),
           findsOneWidget,
