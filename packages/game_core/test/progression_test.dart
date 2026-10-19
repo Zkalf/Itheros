@@ -38,9 +38,9 @@ void main() {
     expect((l3.hp, l3.attack, l3.defense), (50, 7, 4));
   });
 
-  test('bank cap is 1,000 + 500 per level', () {
-    expect(game.bankCap(stateAt(game)), 1500);
-    expect(game.bankCap(stateAt(game, level: 5)), 3500);
+  test('bank cap is 9,500 + 500 per level (spec 0003 §6)', () {
+    expect(game.bankCap(stateAt(game)), 10000);
+    expect(game.bankCap(stateAt(game, level: 5)), 12000);
   });
 
   test('levelling up during catch-up raises the cap immediately', () {
@@ -49,7 +49,7 @@ void main() {
     s = game.startActivity(s, const Activity.fight('goblin'));
     final r = game.applySteps(s, 100);
     expect(r.events.whereType<LevelUp>().map((e) => e.level), contains(2));
-    expect(game.bankCap(r.state), 2000);
+    expect(game.bankCap(r.state), 10500);
   });
 
   group('gear', () {
@@ -174,10 +174,10 @@ void main() {
 
     test('Marathon raises the bank cap by 500', () {
       final s = stateAt(game)..counters['steps.walked'] = 42194;
-      expect(game.bankCap(s), 1500);
+      expect(game.bankCap(s), 10000);
       final r = game.applySteps(s, 1);
       expect(r.state.achievements, contains('marathon'));
-      expect(game.bankCap(r.state), 2000);
+      expect(game.bankCap(r.state), 10500);
     });
 
     test('Smith unlocks on the first crafted item', () {

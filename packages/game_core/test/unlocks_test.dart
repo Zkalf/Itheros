@@ -46,9 +46,6 @@ void main() {
         const Activity.fight('goblin_brute'),
       );
     });
-    test('an enemy at another location', () {
-      rejects(stateAt(game), const Activity.fight('goblin'));
-    });
     test('a locked node', () {
       rejects(
         stateAt(game, location: 'copper_hills'),
@@ -60,17 +57,6 @@ void main() {
     });
     test('travel without a route, or to where you are', () {
       rejects(stateAt(game), const Activity.travel('camp'));
-    });
-    test('crafting away from camp', () {
-      rejects(
-        stateAt(
-          game,
-          level: 3,
-          location: 'goblin_woods',
-          inventory: {'copper_ore': 5},
-        ),
-        const Activity.craft('copper_sword'),
-      );
     });
     test('crafting without materials', () {
       rejects(
@@ -90,5 +76,28 @@ void main() {
     expect(s.activity!.progress, 0);
     expect(s.bank, 100, reason: 'spec 0001 amendment 2');
     expect(s.inventory['copper_ore'], 5);
+  });
+
+  group('somewhere else: the character walks there first (spec 0003)', () {
+    test('a fight', () {
+      final s = game.startActivity(
+        stateAt(game),
+        const Activity.fight('goblin'),
+      );
+      expect(s.activity!.leg, 'goblin_woods');
+    });
+
+    test('crafting goes to the nearest crafting place', () {
+      final s = game.startActivity(
+        stateAt(
+          game,
+          level: 3,
+          location: 'goblin_woods',
+          inventory: {'copper_ore': 5},
+        ),
+        const Activity.craft('copper_sword'),
+      );
+      expect(s.activity!.leg, 'camp');
+    });
   });
 }

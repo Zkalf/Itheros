@@ -43,7 +43,7 @@ void main() {
     expect(r2.state.activity!.fight, isNotNull, reason: 'fight under way');
   });
 
-  test('defeat ends the activity and later steps go to the bank', () {
+  test('3 defeats end the activity and later steps go to the bank', () {
     final g = newTestGame(
       overrides: {
         'enemies': {
@@ -79,13 +79,13 @@ void main() {
     );
     final r = g.applySteps(fighting(g, 'goblin'), 100);
 
-    expect(r.events.whereType<FightLost>(), hasLength(1));
+    expect(r.events.whereType<FightLost>(), hasLength(3));
     expect(
       r.events.whereType<ActivityEnded>().single.reason,
       EndReason.defeated,
     );
     expect(r.state.activity, isNull);
-    expect(r.state.bank, 90, reason: 'one 10-step round, then 90 banked');
+    expect(r.state.bank, 70, reason: '3 lost 10-step rounds, then 70 banked');
     expect(r.state.inventory, isEmpty, reason: 'nothing is lost on defeat');
   });
 

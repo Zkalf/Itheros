@@ -31,15 +31,15 @@ void main() {
       expect(r.state.bank, 0);
     });
 
-    test('idle, bank 1,400, cap 1,500, 300 steps: bank 1,500, 200 lost', () {
-      final s = stateAt(game, bank: 1400);
-      expect(game.bankCap(s), 1500);
+    test('idle, bank 9,900, cap 10,000, 300 steps: bank 10,000, 200 lost', () {
+      final s = stateAt(game, bank: 9900);
+      expect(game.bankCap(s), 10000);
 
       final r = game.applySteps(s, 300);
 
       expect(r.banked, 100);
       expect(r.lost, 200);
-      expect(r.state.bank, 1500);
+      expect(r.state.bank, 10000);
     });
 
     test('crafting the last sword: done after 150 steps, ends, bank +250', () {
