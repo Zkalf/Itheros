@@ -25,7 +25,16 @@ class Labels {
   String location(String id) => data.locations[id]?.name ?? id;
   String enemy(String id) => data.enemies[id]?.name ?? id;
   String node(String id) => data.nodes[id]?.name ?? id;
-  String item(String id) => data.items[id]?.name ?? id;
+
+  /// An item's name; gear better than common adds its quality: "Bone sword
+  /// (Rare)" (spec 0005 decision 3).
+  String item(String key) {
+    final item = data.itemOf(key);
+    if (item == null) return key;
+    final q = data.qualityOf(key);
+    return q == data.qualities.first ? item.name : '${item.name} (${q.name})';
+  }
+
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 

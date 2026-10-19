@@ -62,11 +62,10 @@ class CharacterTab extends StatelessWidget {
         for (final slot in game.openSlots(s))
           ListTile(
             leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
-            title: Text(
-              s.equipment[slot] == null
-                  ? 'Empty'
-                  : labels.item(s.equipment[slot]!),
-            ),
+            title: switch (s.equipment[slot]) {
+              final key? => _name(game.data, labels, key),
+              null => const Text('Empty'),
+            },
             subtitle: Text(labels.slot(slot)),
             trailing: s.equipment[slot] == null
                 ? null
@@ -85,15 +84,19 @@ class CharacterTab extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Text('Nothing yet. Fight and gather to find things.'),
           ),
-        // In data order, so rows don't move when something is equipped.
-        for (final id in game.data.items.keys)
-          if (s.inventory[id] case final count?)
+        // In data order, then quality order, so rows don't move when
+        // something is equipped (spec 0005 §5).
+        for (final key in [
+          for (final id in game.data.items.keys)
+            for (final q in game.data.qualities) game.data.keyFor(id, q.id),
+        ])
+          if (s.inventory[key] case final count?)
             KeyedSubtree(
-              key: ValueKey('inventory-$id'),
+              key: ValueKey('inventory-$key'),
               child: ListTile(
                 key: const ValueKey('inventory-item'),
-                title: Text(labels.item(id)),
-                subtitle: _bonusText(game.data.items[id]),
+                title: _name(game.data, labels, key),
+                subtitle: _bonusText(game.data, key),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -102,11 +105,12 @@ class CharacterTab extends StatelessWidget {
                     // Kept empty for materials, so every count lines up.
                     SizedBox(
                       width: _buttonWidth,
-                      child: game.data.items[id]?.slot == null
+                      child: game.data.itemOf(key)?.slot == null
                           ? null
                           : FilledButton.tonal(
-                              key: ValueKey('equip-$id'),
-                              onPressed: () => _run(context, () => c.equip(id)),
+                              key: ValueKey('equip-$key'),
+                              onPressed: () =>
+                                  _run(context, () => c.equip(key)),
                               child: const Text('Equip'),
                             ),
                     ),
@@ -121,9 +125,25 @@ class CharacterTab extends StatelessWidget {
   /// Equip and Remove share one width, so the buttons form a column.
   static const _buttonWidth = 104.0;
 
-  static Widget? _bonusText(ItemDef? item) {
-    if (item == null || item.slot == null) return null;
-    final b = item.bonus;
+  /// An item's name, drawn in its quality's colour when better than common.
+  static Widget _name(GameData data, Labels labels, String key) {
+    final q = data.qualityOf(key);
+    final plain = q == data.qualities.first || data.itemOf(key)?.slot == null;
+    return Text(
+      labels.item(key),
+      style: plain
+          ? null
+          : TextStyle(
+              color: Color(
+                0xff000000 | int.parse(q.colour.substring(1), radix: 16),
+              ),
+            ),
+    );
+  }
+
+  static Widget? _bonusText(GameData data, String key) {
+    if (data.itemOf(key)?.slot == null) return null;
+    final b = data.bonusOf(key);
     return Text(
       [
         if (b.attack != 0) '+${b.attack} Attack',

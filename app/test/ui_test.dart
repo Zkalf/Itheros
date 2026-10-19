@@ -15,7 +15,6 @@ import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
-import 'package:walkingrpg/sync/away_summary.dart';
 
 import 'support.dart';
 
@@ -745,5 +744,25 @@ void main() {
         reason: 'equipped, and one left in the inventory',
       );
     });
+  });
+
+  test('every gear item in every quality equips, saves and has a name', () {
+    final labels = Labels(game.data);
+    for (final item in game.data.items.values.where((i) => i.slot != null)) {
+      for (final q in game.data.qualities) {
+        final key = game.data.keyFor(item.id, q.id);
+        var s = game.newGame(seed: 1)
+          ..xp = game.data.xpForLevel(30)
+          ..inventory[key] = 1;
+        s = game.equip(s, key);
+        expect(s.equipment[item.slot], key);
+        expect(game.owned(s, item.id), 1);
+        expect(game.stats(s).hp, greaterThan(0));
+        final back = GameState.fromJson(s.toJson());
+        expect(back.equipment[item.slot], key);
+        expect(labels.item(key), startsWith(item.name));
+        expect(labels.item(key), isNot(contains('@')));
+      }
+    }
   });
 }
