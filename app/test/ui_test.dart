@@ -922,4 +922,18 @@ void main() {
       expect(banner('Reached level 2!'), findsOneWidget);
     });
   });
+
+  testWidgets('equipped gear shows its stats, like the inventory', (t) async {
+    final (c, _) = await pumpGame(
+      t,
+      level: 3,
+      inventory: {'hide_vest@rare': 1, 'copper_sword': 1},
+    );
+    await c.equip('hide_vest@rare');
+    await c.equip('copper_sword');
+    await t.tap(find.text('Character'));
+    await t.pumpAndSettle();
+    expect(find.text('Body · +4 Defense · +14 HP'), findsOneWidget);
+    expect(find.text('Weapon · +3 Attack'), findsOneWidget);
+  });
 }
