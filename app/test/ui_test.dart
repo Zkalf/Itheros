@@ -823,13 +823,21 @@ void main() {
         c.dismissLevelCards();
         await t.pump();
       }
-      bool coloured(Widget w) =>
-          w is RichText &&
-          w.text.toPlainText().contains('Hide vest (') &&
-          (w.text as TextSpan).children?.any(
-                (s) => s is TextSpan && s.style?.color != null,
-              ) ==
-              true;
+      bool coloured(Widget w) {
+        if (w is! RichText) return false;
+        if (!w.text.toPlainText().contains('Hide vest (')) return false;
+        var found = false;
+        w.text.visitChildren((span) {
+          if (span is TextSpan &&
+              span.style?.color != null &&
+              (span.text ?? '').contains('Hide vest (')) {
+            found = true;
+          }
+          return !found;
+        });
+        return found;
+      }
+
       expect(find.byWidgetPredicate(coloured), findsWidgets);
 
       await t.tap(find.byKey(const ValueKey('journal-button')));

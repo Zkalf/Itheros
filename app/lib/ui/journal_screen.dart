@@ -72,7 +72,7 @@ class JournalScreen extends StatelessWidget {
                           for (final l in reportLines(e.summary, labels))
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(l),
+                              child: reportLine(l, labels),
                             ),
                         ],
                       ),

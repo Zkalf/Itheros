@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 
@@ -138,7 +139,7 @@ class CharacterTab extends StatelessWidget {
     final colour = switch (data.itemOf(key)?.slot) {
       null => scheme.onSurfaceVariant,
       _ when q == data.qualities.first => scheme.onSurface,
-      _ => Color(0xff000000 | int.parse(q.colour.substring(1), radix: 16)),
+      _ => qualityColour(q),
     };
     return Text(labels.owned(key), style: TextStyle(color: colour));
   }
