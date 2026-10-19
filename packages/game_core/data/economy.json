@@ -4,6 +4,7 @@
   "untilFromLevel": 5,
   "lossXpShare": 0.75,
   "lossesToGiveUp": 3,
+  "journalEntries": 20,
   "combatRoundSteps": 10,
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
   "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },

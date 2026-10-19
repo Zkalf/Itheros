@@ -52,8 +52,12 @@ class GameController extends ChangeNotifier {
   /// The report on screen, or null once dismissed.
   AwaySummary? awaySummary;
 
-  /// The most recent report, kept so it can be shown again after dismissal.
-  AwaySummary? lastAwaySummary;
+  /// Recent reports, newest first, kept in the save (spec 0004 §2).
+  List<JournalEntry> get journal => _save?.journal ?? const [];
+
+  /// The most recent report, so it can be shown again after dismissal.
+  AwaySummary? get lastAwaySummary =>
+      journal.isEmpty ? null : journal.first.summary;
   DateTime? _awayUntil;
   bool _freshReturn = false;
 
@@ -124,6 +128,30 @@ class GameController extends ChangeNotifier {
 
   Future<void> setNextGoalHidden(bool hidden) =>
       _update((s) => s.copyWith(nextGoalHidden: hidden));
+
+  /// The hidden test walk switch (spec 0004 §3).
+  bool get testWalkOn => _save!.testWalk;
+
+  Future<void> setTestWalk(bool on) => _update((s) => s.copyWith(testWalk: on));
+
+  /// Applies [steps] pretend steps exactly as walked ones, after a normal
+  /// sync, as a journal entry of its own. Health Connect crediting is left
+  /// alone, so later real syncs are unchanged (spec 0004 §3).
+  Future<void> testWalk(int steps) => _serial(() async {
+    await _syncNow(away: false);
+    final report = game.applySteps(state, steps);
+    final summary = AwaySummary.fromReports([report]);
+    _levelCards.addAll(summary.levelsReached);
+    _save = _addEntry(
+      _save!.withGame(report.state),
+      JournalEntry(started: _clock(), summary: summary, testWalk: true),
+    );
+    awaySummary = summary;
+    // Real steps arriving next start their own entry.
+    _freshReturn = true;
+    await store.save(_save!);
+    notifyListeners();
+  });
 
   /// Areas and monsters whose flavour line was shown (spec 0002 §9.5).
   Set<String> get seen => _save!.seen;
@@ -218,32 +246,47 @@ class GameController extends ChangeNotifier {
     }
     syncError = null;
     _levelCards.addAll(result.summary.levelsReached);
-    if (!result.summary.isEmpty) {
-      _save = result.save;
-      await store.save(_save!);
-    } else if (result.save.credited.length != _save!.credited.length) {
-      _save = result.save; // pruned old days
-      await store.save(_save!);
-    }
-    _report(result.summary, away: away);
+    // Also saves when old days were pruned from the credit.
+    var changed =
+        !result.summary.isEmpty ||
+        result.save.credited.length != _save!.credited.length;
+    if (changed) _save = result.save;
+    if (_report(result.summary, away: away)) changed = true;
+    if (changed) await store.save(_save!);
     notifyListeners();
   }
 
-  /// Adds a sync's results to the away report. A return (open or resume)
-  /// starts a new report unless the previous one is still on screen; syncs
-  /// within [awayGrace] after it are added too, and re-show the report.
-  void _report(AwaySummary summary, {required bool away}) {
+  SaveData _addEntry(SaveData save, JournalEntry entry) => save.copyWith(
+    journal: [entry, ...save.journal].take(game.data.journalEntries).toList(),
+  );
+
+  /// Adds a sync's results to the away report and the journal. A return
+  /// (open or resume) starts a new entry unless the previous report is still
+  /// on screen; syncs within [awayGrace] after it are added too, and re-show
+  /// the report. Returns whether the journal changed.
+  bool _report(AwaySummary summary, {required bool away}) {
     final now = _clock();
     if (away) {
       _awayUntil = now.add(awayGrace);
       _freshReturn = awaySummary == null;
     }
     final inGrace = _awayUntil != null && now.isBefore(_awayUntil!);
-    if (summary.isEmpty || !(away || inGrace)) return;
-    final last = lastAwaySummary;
-    lastAwaySummary = _freshReturn || last == null ? summary : last + summary;
+    if (summary.isEmpty || !(away || inGrace)) return false;
+    final journal = _save!.journal;
+    if (_freshReturn || journal.isEmpty) {
+      _save = _addEntry(_save!, JournalEntry(started: now, summary: summary));
+    } else {
+      final first = journal.first;
+      _save = _save!.copyWith(
+        journal: [
+          first.withSummary(first.summary + summary),
+          ...journal.skip(1),
+        ],
+      );
+    }
     _freshReturn = false;
     awaySummary = lastAwaySummary;
+    return true;
   }
 
   void _setStatus(ControllerStatus s) {

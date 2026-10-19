@@ -15,8 +15,19 @@ class Game {
 
   final GameData data;
 
-  GameState newGame({required int seed}) =>
-      GameState(location: data.startLocation, rngState: Rng.seeded(seed).state);
+  GameState newGame({required int seed}) => _visit(
+    GameState(location: data.startLocation, rngState: Rng.seeded(seed).state),
+    data.startLocation,
+  );
+
+  /// Counts [area] as visited, once (spec 0004 §4). Mutates and returns [s].
+  GameState _visit(GameState s, String area) {
+    if ((s.counters['visited.$area'] ?? 0) == 0) {
+      s.counters['visited.$area'] = 1;
+      s.count('areas.visited');
+    }
+    return s;
+  }
 
   int level(GameState s) => data.levelForXp(s.xp);
 
@@ -162,8 +173,15 @@ class Game {
 
   /// Brings a state read from an older save up to date. Version 1 saves
   /// keep their level and their progress through it (spec 0002 §2). Version
-  /// 2 saves need nothing: their activity loaded as a 1-action queue.
+  /// 2 saves need nothing more: their activity loaded as a 1-action queue.
+  /// Saves before version 4 count the area they are in as visited (spec
+  /// 0004 decision 9).
   GameState migrate(GameState s) {
+    final n = _migrateXp(s);
+    return s.loadedVersion < 4 ? _visit(n.copy(), n.location) : n;
+  }
+
+  GameState _migrateXp(GameState s) {
     if (s.loadedVersion != 1) return s;
     const v1 = [0, 20, 100, 300, 700, 1540, 3390, 7460, 16400, 28000];
     var l = 1;
@@ -630,8 +648,7 @@ class _Run {
       if (act.progress < cost) return;
       act.progress -= cost;
       if (act.leg case final leg?) {
-        s.location = leg;
-        events.add(Arrived(leg));
+        _arrive(leg);
         act.leg = game._nextLeg(s, act.activity);
         if (act.activity.kind == ActivityKind.travel && act.leg == null) {
           _end(act, EndReason.arrived);
@@ -659,6 +676,12 @@ class _Run {
     }
   }
 
+  void _arrive(String area) {
+    s.location = area;
+    game._visit(s, area);
+    events.add(Arrived(area));
+  }
+
   bool _canStartNext(Activity a) =>
       a.kind != ActivityKind.craft || game.hasMaterials(s, a.target);
 
@@ -667,8 +690,7 @@ class _Run {
     final a = act.activity;
     switch (a.kind) {
       case ActivityKind.travel:
-        s.location = a.target;
-        events.add(Arrived(a.target));
+        _arrive(a.target);
         return EndReason.arrived;
       case ActivityKind.fight:
         return _combatRound(act);

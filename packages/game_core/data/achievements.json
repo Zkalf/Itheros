@@ -9,6 +9,7 @@
     { "id": "kings_bane", "name": "King's Bane", "counter": "kills.graveyard_king", "atLeast": 1 },
     { "id": "chieftains_bane", "name": "Chieftain's Bane", "counter": "kills.ogre_chieftain", "atLeast": 1 },
     { "id": "dragonslayer", "name": "Dragonslayer", "counter": "kills.young_dragon", "atLeast": 1 },
-    { "id": "bear_hunter", "name": "Bear Hunter", "counter": "kills.old_bear", "atLeast": 1 }
+    { "id": "bear_hunter", "name": "Bear Hunter", "counter": "kills.old_bear", "atLeast": 1 },
+    { "id": "travelling_salesman", "name": "Travelling Salesman", "counter": "areas.visited", "atLeast": 10 }
   ]
 }

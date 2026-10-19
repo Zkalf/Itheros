@@ -132,10 +132,11 @@ class GameState {
     );
   }
 
+  /// 4: visited areas are counted (spec 0004); same format as 3.
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 3;
+  static const schemaVersion = 4;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;

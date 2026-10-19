@@ -281,6 +281,7 @@ class GameData {
        untilFromLevel = _int(economy, 'untilFromLevel'),
        lossXpShare = (economy['lossXpShare'] as num).toDouble(),
        lossesToGiveUp = _int(economy, 'lossesToGiveUp'),
+       journalEntries = _int(economy, 'journalEntries'),
        startLocation = _str(world, 'startLocation'),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
@@ -357,6 +358,9 @@ class GameData {
 
   /// Losses in a row that end a fight action.
   final int lossesToGiveUp;
+
+  /// How many reports the app's journal keeps (spec 0004 decision 2).
+  final int journalEntries;
   final String startLocation;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
@@ -435,6 +439,7 @@ class GameData {
       'queueSlots must start at level 1',
     );
     check(lossesToGiveUp >= 1, 'lossesToGiveUp must be >= 1');
+    check(journalEntries >= 1, 'journalEntries must be >= 1');
     check(
       ranks.isNotEmpty && ranks.first.level == 1,
       'ranks must start at level 1',
