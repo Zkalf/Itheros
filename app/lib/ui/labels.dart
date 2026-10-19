@@ -35,6 +35,15 @@ class Labels {
     return q == data.qualities.first ? item.name : '${item.name} (${q.name})';
   }
 
+  /// A piece of gear you own, always with its quality: "Hide vest (Common)",
+  /// "Bone sword (Rare)". Materials keep their plain name.
+  String owned(String key) {
+    final item = data.itemOf(key);
+    if (item == null) return key;
+    if (item.slot == null) return item.name;
+    return '${item.name} (${data.qualityOf(key).name})';
+  }
+
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 
@@ -114,7 +123,7 @@ class Labels {
     final gains = [
       if (log.wins > 0) plural(log.wins, 'win'),
       if (log.xp > 0) '+${fmt(log.xp)} XP',
-      if (log.items.isNotEmpty) counts(log.items, item),
+      if (log.items.isNotEmpty) counts(log.items, owned),
     ];
     final ended = log.ended;
     final then = log.next != null ? ' Next: ${short(log.next!)}.' : '';
@@ -175,8 +184,7 @@ class Labels {
   /// The "Next goal" line (spec 0002 §9.3). [grey] marks a grey source.
   String goal(Goal g, {required bool canCraftHere, bool grey = false}) =>
       switch (g) {
-        EquipGoal(:final item) =>
-          'Equip the ${this.item(item)} (Character tab).',
+        EquipGoal(:final item) => 'Equip the ${owned(item)} (Character tab).',
         CraftGoal(:final recipe) =>
           'Craft the ${this.recipe(recipe)}'
               '${canCraftHere ? ' here' : ' at Camp or an outpost'}.',

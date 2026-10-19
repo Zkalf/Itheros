@@ -517,7 +517,11 @@ void main() {
       );
       await openCharacter(t);
       final before = names(t);
-      expect(before, ['Goblin hide', 'Copper sword', 'Hide vest']);
+      expect(before, [
+        'Goblin hide',
+        'Copper sword (Common)',
+        'Hide vest (Common)',
+      ]);
 
       await t.tap(find.byKey(const ValueKey('equip-hide_vest')));
       await settle(t, c);
@@ -711,7 +715,10 @@ void main() {
           items: {'hide_vest': 1, 'hide_vest@rare': 1},
         ),
       );
-      expect(lines.single, contains('Hide vest ×1, Hide vest (Rare) ×1'));
+      expect(
+        lines.single,
+        contains('Hide vest (Common) ×1, Hide vest (Rare) ×1'),
+      );
     });
 
     testWidgets('each quality is its own row, in colour, with its stats', (
@@ -728,7 +735,7 @@ void main() {
           .widgetList<ListTile>(find.byKey(const ValueKey('inventory-item')))
           .map((tile) => (tile.title! as Text).data!)
           .toList();
-      expect(rows, ['Hide vest', 'Hide vest (Rare)']);
+      expect(rows, ['Hide vest (Common)', 'Hide vest (Rare)']);
 
       final rare = t.widget<Text>(find.text('Hide vest (Rare)'));
       expect(rare.style?.color, const Color(0xff42a5f5));
@@ -770,10 +777,15 @@ void main() {
     await pumpGame(t, level: 3, inventory: {'hide_vest': 1, 'goblin_hide': 3});
     await t.tap(find.text('Character'));
     await t.pumpAndSettle();
-    final scheme = Theme.of(t.element(find.text('Hide vest'))).colorScheme;
+    final scheme = Theme.of(t.element(find.text('Hide vest (Common)')))
+        .colorScheme;
     Color? colour(String text) => t.widget<Text>(find.text(text)).style?.color;
-    expect(colour('Hide vest'), scheme.onSurface, reason: 'common gear');
+    expect(
+      colour('Hide vest (Common)'),
+      scheme.onSurface,
+      reason: 'common gear',
+    );
     expect(colour('Goblin hide'), scheme.onSurfaceVariant, reason: 'material');
-    expect(colour('Hide vest'), isNot(colour('Goblin hide')));
+    expect(colour('Hide vest (Common)'), isNot(colour('Goblin hide')));
   });
 }
