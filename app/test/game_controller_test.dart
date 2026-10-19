@@ -429,4 +429,25 @@ void main() {
     expect(c.journal[1].testWalk, isTrue);
     expect(c.journal[1].summary.walked, 1000);
   });
+
+  test('every return is its own entry, read or not (amendment 1)', () async {
+    final c = controller();
+    await c.start();
+    c.pause();
+    source.walk(DateTime(2026, 10, 18, 10), 300);
+    now = DateTime(2026, 10, 18, 11);
+    await c.resume();
+    // The card is never dismissed.
+    c.pause();
+    source.walk(DateTime(2026, 10, 18, 12), 40);
+    now = DateTime(2026, 10, 18, 13);
+    await c.resume();
+
+    expect(c.journal, hasLength(2));
+    expect(c.journal.first.started, DateTime(2026, 10, 18, 13));
+    expect(c.journal.first.summary.walked, 40);
+    expect(c.journal[1].started, DateTime(2026, 10, 18, 11));
+    expect(c.journal[1].summary.walked, 300);
+    expect(c.awaySummary!.walked, 40, reason: 'the card shows the newest');
+  });
 }
