@@ -255,4 +255,59 @@ void main() {
     expect(loaded.inventory, {'hide_vest': 1});
     expect(game.stats(loaded).attack, game.stats(s).attack);
   });
+
+  test('"until I have N" counts every quality of a gear drop', () {
+    final g = arenaGame([
+      monster(
+        'rat',
+        extra: {
+          'drops': [
+            {'item': 'hide_vest', 'chance': 1.0},
+          ],
+        },
+      ),
+    ]);
+    var s = stateAt(g, location: 'arena', level: 5, seed: 9);
+    s = g.startActivity(
+      s,
+      const Activity.fight('rat'),
+      stop: StopCondition.untilHave('hide_vest', 40),
+    );
+    final r = g.applySteps(s, 10 * 100);
+    expect(g.owned(r.state, 'hide_vest'), 40);
+    expect(r.events.whereType<ActivityEnded>().single.reason, EndReason.enough);
+    expect(
+      r.state.inventory.keys.where((k) => k.startsWith('hide_vest')).length,
+      greaterThan(1),
+      reason: '40 vests in more than one quality',
+    );
+  });
+
+  test('gear rolls replay the same, at once or in chunks', () {
+    GameState start() {
+      final s = stateAt(
+        game,
+        level: 6,
+        seed: 11,
+        inventory: {'bones': 6 * 40, 'copper_ore': 2 * 40},
+      );
+      return game.startActivity(s, const Activity.craft('bone_sword'));
+    }
+
+    final once = game.applySteps(start(), 200 * 40).state;
+    var chunked = start();
+    for (var i = 0; i < 40; i++) {
+      chunked = game.applySteps(chunked, 200).state;
+    }
+    expect(game.applySteps(start(), 200 * 40).state.toJson(), once.toJson());
+    expect(chunked.toJson(), once.toJson());
+  });
+
+  test('a quality or item the data no longer knows does not crash', () {
+    expect(data.qualityOf('bone_sword@shiny').id, 'common');
+    expect(data.bonusOf('bone_sword@shiny').attack, 5);
+    expect(data.bonusOf('gone_item@rare').attack, 0);
+    final s = stateAt(game, level: 6)..equipment['weapon'] = 'bone_sword@shiny';
+    expect(() => game.stats(s), returnsNormally);
+  });
 }
