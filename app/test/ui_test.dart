@@ -31,6 +31,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   int? xp,
   String location = 'camp',
   Map<String, int> inventory = const {},
+  Map<String, int> counters = const {},
   bool granted = true,
 }) async {
   tester.view.physicalSize = const Size(1080, 4000);
@@ -42,7 +43,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
   final state = game.newGame(seed: 1)
     ..xp = xp ?? game.data.xpForLevel(level)
     ..location = location
-    ..inventory.addAll(inventory);
+    ..inventory.addAll(inventory)
+    ..counters.addAll(counters);
   final store = MemorySaveStore(
     granted
         ? SaveData(
@@ -75,6 +77,21 @@ Future<void> openTab(WidgetTester tester, String screen) async {
   await tester.pumpAndSettle();
 }
 
+/// Opens the Map and taps [area] on it.
+Future<void> openArea(WidgetTester tester, String area) async {
+  if (find.byKey(ValueKey('area-$area')).evaluate().isEmpty) {
+    await openTab(tester, 'map');
+  }
+  await tester.tap(find.byKey(ValueKey('area-$area')));
+  await tester.pumpAndSettle();
+}
+
+/// Closes an open bottom sheet.
+Future<void> closeSheet(WidgetTester tester) async {
+  await tester.tapAt(const Offset(5, 5));
+  await tester.pumpAndSettle();
+}
+
 Future<void> settle(WidgetTester tester, GameController c) async {
   await c.idle();
   await tester.pump();
@@ -82,12 +99,17 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 
 void main() {
   moreScreens();
+  theMap();
   group('criterion 8: locked systems are hidden', () {
     testWidgets('level 1 at camp: no crafting, no Copper Hills', (t) async {
       await pumpGame(t);
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       expect(option('travel', 'goblin_woods'), findsOneWidget);
+      await closeSheet(t);
+      await openArea(t, 'copper_hills');
       expect(option('travel', 'copper_hills'), findsNothing);
+      expect(find.textContaining('Thick fog'), findsOneWidget);
+      await closeSheet(t);
       expect(find.byKey(const ValueKey('tab-craft')), findsNothing);
       expect(option('craft', 'copper_sword'), findsNothing);
     });
@@ -96,7 +118,7 @@ void main() {
       t,
     ) async {
       await pumpGame(t, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       expect(option('fight', 'goblin'), findsOneWidget);
       expect(option('fight', 'goblin_brute'), findsNothing);
       expect(find.text('Gather'), findsNothing);
@@ -104,8 +126,10 @@ void main() {
 
     testWidgets('level 2 shows Copper Hills and mining there', (t) async {
       await pumpGame(t, level: 2, location: 'copper_hills');
-      await openTab(t, 'map');
+      await openArea(t, 'copper_hills');
       expect(option('gather', 'copper_vein'), findsOneWidget);
+      await closeSheet(t);
+      await openArea(t, 'camp');
       expect(option('travel', 'camp'), findsOneWidget);
     });
 
@@ -120,14 +144,14 @@ void main() {
 
     testWidgets('level 4 shows the goblin brute', (t) async {
       await pumpGame(t, level: 4, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       expect(option('fight', 'goblin_brute'), findsOneWidget);
     });
   });
 
   testWidgets('tapping a destination starts walking there', (t) async {
     final (c, _) = await pumpGame(t);
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     await t.tap(option('travel', 'goblin_woods'));
     await settle(t, c);
     await openTab(t, 'now');
@@ -142,7 +166,7 @@ void main() {
     final stop = find.byKey(const ValueKey('stop-activity'));
     expect(stop, findsNothing, reason: 'resting');
 
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     await t.tap(option('travel', 'goblin_woods'));
     await settle(t, c);
     await openTab(t, 'now');
@@ -166,7 +190,7 @@ void main() {
     await settle(t, c);
 
     expect(find.text('Camp'), findsOneWidget);
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     expect(option('travel', 'goblin_woods'), findsOneWidget);
   });
 
@@ -174,7 +198,7 @@ void main() {
     t,
   ) async {
     final (c, source) = await pumpGame(t);
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     await t.tap(option('travel', 'goblin_woods'));
     await settle(t, c);
 
@@ -226,7 +250,7 @@ void main() {
 
   testWidgets('a single step reads as "1 step"', (t) async {
     final (c, source) = await pumpGame(t);
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     await t.tap(option('travel', 'goblin_woods'));
     await settle(t, c);
 
@@ -313,7 +337,7 @@ void main() {
   group('spec 0002 criterion 10', () {
     testWidgets('a skull or red fight asks first', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       expect(find.text('💀'), findsOneWidget, reason: 'the Old Bear');
 
       await t.tap(option('fight', 'old_bear'));
@@ -323,6 +347,7 @@ void main() {
       await t.pumpAndSettle();
       expect(c.state.activity, isNull);
 
+      await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'old_bear'));
       await t.pumpAndSettle();
       await t.tap(find.text('Fight anyway'));
@@ -332,7 +357,7 @@ void main() {
 
     testWidgets('a yellow fight starts without asking', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await settle(t, c);
       expect(find.text('Deadly'), findsNothing);
@@ -397,14 +422,14 @@ void main() {
       t,
     ) async {
       await pumpGame(t);
-      await openTab(t, 'map');
-      expect(find.text('Goblin Woods · 200 steps away'), findsOneWidget);
+      await openArea(t, 'goblin_woods');
+      expect(find.text('200 steps away'), findsOneWidget);
       expect(option('fight', 'goblin'), findsOneWidget);
     });
 
     testWidgets('below level 5 a tap starts at once', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await settle(t, c);
       expect(find.text('Stop when'), findsNothing);
@@ -415,7 +440,7 @@ void main() {
       t,
     ) async {
       final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
-      await openTab(t, 'map');
+      await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await t.pumpAndSettle();
       expect(find.text('Stop when'), findsOneWidget);
@@ -428,6 +453,7 @@ void main() {
       await t.pumpAndSettle();
       expect(c.state.activity!.stop, const StopCondition.untilGrey());
 
+      await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'goblin_brute'));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('stop-untilHave')));
@@ -541,7 +567,7 @@ void main() {
     t,
   ) async {
     await pumpGame(t, level: 3, location: 'goblin_woods');
-    await openTab(t, 'map');
+    await openArea(t, 'goblin_woods');
     expect(option('fight', 'goblin'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
@@ -980,7 +1006,7 @@ void moreScreens() {
       await pumpGame(t);
       await t.tap(find.byKey(const ValueKey('open-map')));
       await t.pumpAndSettle();
-      expect(option('travel', 'goblin_woods'), findsOneWidget);
+      expect(find.byKey(const ValueKey('area-goblin_woods')), findsOneWidget);
     });
 
     testWidgets('criteria 3 and 4: the fight log and the tally', (t) async {
@@ -1053,6 +1079,77 @@ void moreScreens() {
       await openTab(t, 'character');
       expect(find.byKey(const ValueKey('heading-gear')), findsNothing);
       expect(find.byKey(const ValueKey('heading-materials')), findsOneWidget);
+    });
+  });
+}
+
+void theMap() {
+  group('the map (spec 0006 §2.2)', () {
+    Finder inArea(String area, String text) => find.descendant(
+      of: find.byKey(ValueKey('area-$area')),
+      matching: find.text(text),
+    );
+
+    testWidgets('criterion 5: above your level is fog, named ???', (t) async {
+      await pumpGame(t);
+      await openTab(t, 'map');
+      expect(inArea('goblin_woods', 'Goblin Woods'), findsOneWidget);
+      for (final a in ['copper_hills', 'old_graveyard', 'dragons_peak']) {
+        expect(inArea(a, '???'), findsOneWidget, reason: a);
+      }
+      expect(find.text('Old Graveyard'), findsNothing);
+      await openArea(t, 'old_graveyard');
+      expect(
+        find.text('Thick fog. The Guild opens this road at level 6.'),
+        findsOneWidget,
+      );
+      expect(find.text('Skeleton'), findsNothing);
+    });
+
+    testWidgets('at level 10 the fog has lifted', (t) async {
+      await pumpGame(t, level: 10);
+      await openTab(t, 'map');
+      expect(find.text('???'), findsNothing);
+      expect(inArea('dragons_peak', "Dragon's Peak"), findsOneWidget);
+    });
+
+    testWidgets('criterion 6: only found drops, no chances', (t) async {
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        counters: {'found.goblin.goblin_hide': 1},
+      );
+      await openArea(t, 'goblin_woods');
+      expect(
+        find.textContaining('Drops: Goblin hide, ??? · 1 of 2 found'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('%'), findsNothing);
+    });
+
+    testWidgets('a fight starts from the sheet, which closes', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await openArea(t, 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(c.state.activity!.activity, const Activity.fight('goblin'));
+    });
+
+    testWidgets('travel to a far place from its sheet', (t) async {
+      final (c, _) = await pumpGame(t, level: 6);
+      await openArea(t, 'old_graveyard');
+      expect(find.text('500 steps away'), findsOneWidget);
+      await t.tap(option('travel', 'old_graveyard'));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('start-now')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(
+        c.state.activity!.activity,
+        const Activity.travel('old_graveyard'),
+      );
     });
   });
 }

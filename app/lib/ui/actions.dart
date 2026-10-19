@@ -23,6 +23,7 @@ class ActionTile extends StatelessWidget {
     required this.subtitle,
     this.enabled = true,
     this.deadly = false,
+    this.startFrom,
   });
 
   final GameController controller;
@@ -32,6 +33,10 @@ class ActionTile extends StatelessWidget {
   final String subtitle;
   final bool enabled;
   final bool deadly;
+
+  /// Set in a sheet: the sheet closes, and the action starts from this
+  /// screen's context instead.
+  final BuildContext? startFrom;
 
   @override
   Widget build(BuildContext context) {
@@ -45,14 +50,28 @@ class ActionTile extends StatelessWidget {
       trailing: active ? const Chip(label: Text('Active')) : null,
       onTap: active || !enabled
           ? null
-          : () => startAction(context, controller, activity, deadly: deadly),
+          : () {
+              final from = startFrom;
+              if (from != null) Navigator.pop(context);
+              startAction(
+                from ?? context,
+                controller,
+                activity,
+                deadly: deadly,
+              );
+            },
     );
   }
 }
 
 /// A row for fighting [enemy]: level badge, stats, XP, and for red or skull
 /// monsters a warning first (spec 0002 §9.2).
-Widget enemyTile(GameController c, String enemy, {String? drops}) {
+Widget enemyTile(
+  GameController c,
+  String enemy, {
+  String? drops,
+  BuildContext? startFrom,
+}) {
   final game = c.game;
   final e = game.data.enemies[enemy]!;
   final band = game.enemyBand(c.state, enemy);
@@ -72,6 +91,7 @@ Widget enemyTile(GameController c, String enemy, {String? drops}) {
         ].join(' · ') +
         (drops == null ? '' : '\n$drops'),
     deadly: band.colour == LevelColour.red || band.colour == LevelColour.skull,
+    startFrom: startFrom,
   );
 }
 
@@ -83,7 +103,7 @@ const _traitName = {
 };
 
 /// A row for mining [node].
-Widget nodeTile(GameController c, String node) {
+Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
   final game = c.game;
   final n = game.data.nodes[node]!;
   final labels = Labels(game.data);
@@ -95,6 +115,7 @@ Widget nodeTile(GameController c, String node) {
     subtitle:
         '${n.steps} steps per ${labels.item(n.item)} · '
         '${fadedXp(n.xp, n.unlockLevel, game, c.state)} XP',
+    startFrom: startFrom,
   );
 }
 
