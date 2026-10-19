@@ -16,6 +16,7 @@ import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
+import 'package:walkingrpg/ui/map_tab.dart';
 
 import 'support.dart';
 
@@ -100,6 +101,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 void main() {
   moreScreens();
   theMap();
+  mapGaps();
   group('criterion 8: locked systems are hidden', () {
     testWidgets('level 1 at camp: no crafting, no Copper Hills', (t) async {
       await pumpGame(t);
@@ -1151,5 +1153,37 @@ void theMap() {
         const Activity.travel('old_graveyard'),
       );
     });
+  });
+}
+
+void mapGaps() {
+  testWidgets('spec 0006 criterion 2: mining starts from the map', (t) async {
+    final (c, _) = await pumpGame(t, level: 2, location: 'copper_hills');
+    await openArea(t, 'copper_hills');
+    await t.tap(option('gather', 'copper_vein'));
+    await settle(t, c);
+    expect(c.state.activity!.activity, const Activity.gather('copper_vein'));
+  });
+
+  testWidgets('spec 0006 criterion 5: paths into the fog have no count', (
+    t,
+  ) async {
+    await pumpGame(t);
+    await openTab(t, 'map');
+    final painter = t
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((p) => p.painter)
+        .whereType<MapPainter>()
+        .single;
+    final labels = [for (final p in painter.paths) p.$3];
+    final open = [
+      for (final r in game.data.routes)
+        game.data.locations[r.from]!.unlockLevel <= 1 &&
+            game.data.locations[r.to]!.unlockLevel <= 1,
+    ];
+    for (var i = 0; i < labels.length; i++) {
+      expect(labels[i] == null, !open[i], reason: game.data.routes[i].to);
+    }
+    expect(labels, contains('200'), reason: 'Camp to Goblin Woods');
   });
 }

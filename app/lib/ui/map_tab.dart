@@ -47,7 +47,7 @@ class MapTab extends StatelessWidget {
                   children: [
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: _MapPainter(
+                        painter: MapPainter(
                           river: [
                             for (final p in game.data.mapRiver)
                               Offset(p.x * width, p.y * height),
@@ -72,7 +72,11 @@ class MapTab extends StatelessWidget {
                     ),
                     for (final area in game.data.locations.keys)
                       Positioned(
-                        left: at(area).dx - _label / 2,
+                        // Kept inside the map, so edge names stay tappable.
+                        left: (at(area).dx - _label / 2).clamp(
+                          0,
+                          width - _label,
+                        ),
                         top: at(area).dy - _marker,
                         width: _label,
                         child: _Place(
@@ -177,8 +181,9 @@ class _Place extends StatelessWidget {
 
 /// The river, then the paths: solid with their step cost between open
 /// places, dashed and unlabelled into the fog.
-class _MapPainter extends CustomPainter {
-  _MapPainter({
+@visibleForTesting
+class MapPainter extends CustomPainter {
+  MapPainter({
     required this.river,
     required this.paths,
     required this.water,
@@ -188,6 +193,8 @@ class _MapPainter extends CustomPainter {
   });
 
   final List<Offset> river;
+
+  /// Each path's ends and its step count; null for a path into the fog.
   final List<(Offset, Offset, String?)> paths;
   final Color water;
   final Color road;
@@ -256,7 +263,7 @@ class _MapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MapPainter old) =>
+  bool shouldRepaint(MapPainter old) =>
       old.paths != paths || old.water != water || old.road != road;
 }
 

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -41,14 +39,6 @@ class CraftTab extends StatelessWidget {
                 : const Text('Crafting walks you there first.'),
           ),
         ),
-        if (recipes.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Recipes open at level '
-              '${game.data.recipes.values.map((r) => r.unlockLevel).reduce(math.min)}.',
-            ),
-          ),
         for (final id in recipes) _RecipeTile(controller: c, recipe: id),
       ],
     );
