@@ -425,7 +425,9 @@ void main() {
       );
       expect(find.textContaining('Stopped: goal reached.'), findsOneWidget);
       expect(
-        find.text('Skipped the Copper sword: not enough Copper ore (needs 5 more).'),
+        find.text(
+          'Skipped the Copper sword: not enough Copper ore (needs 5 more).',
+        ),
         findsOneWidget,
       );
     });
