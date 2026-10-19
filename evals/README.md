@@ -19,5 +19,5 @@ matches the last full run. Worktrees are made from HEAD, so commit first.
   nothing is the right answer).
 - `checks/<id>.ps1`: dot-source `..\lib.ps1`, use the `Expect*` helpers, end with `Finish`. Check files and git
   state, never transcript wording. Checks run from this repo, so an agent can't weaken them.
-- Every incident from real use gets a regression eval (E14, E17–E19, E21 so far).
+- Every incident from real use gets a regression eval (E14, E17–E19, E21, E22 so far).
 - Confirm with `-NoAgent` that the check fails without the change, then run the eval once.

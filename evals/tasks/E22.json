@@ -1,0 +1,8 @@
+{
+    "id":  "E22",
+    "title":  "Incident (seeded): achievement shows a counter name",
+    "prompt":  "On the Achievements tab, Travelling Salesman says areas.visited instead of a goal. Fix it.",
+    "check":  "checks/E22.ps1",
+    "timeoutMinutes":  20,
+    "setup":  "setup/E22.ps1"
+}
