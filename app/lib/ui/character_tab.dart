@@ -63,7 +63,7 @@ class CharacterTab extends StatelessWidget {
           ListTile(
             leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
             title: switch (s.equipment[slot]) {
-              final key? => _name(game.data, labels, key),
+              final key? => _name(context, game.data, labels, key),
               null => const Text('Empty'),
             },
             subtitle: Text(labels.slot(slot)),
@@ -95,7 +95,7 @@ class CharacterTab extends StatelessWidget {
               key: ValueKey('inventory-$key'),
               child: ListTile(
                 key: const ValueKey('inventory-item'),
-                title: _name(game.data, labels, key),
+                title: _name(context, game.data, labels, key),
                 subtitle: _bonusText(game.data, key),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -125,20 +125,22 @@ class CharacterTab extends StatelessWidget {
   /// Equip and Remove share one width, so the buttons form a column.
   static const _buttonWidth = 104.0;
 
-  /// An item's name, drawn in its quality's colour when better than common.
-  static Widget _name(GameData data, Labels labels, String key) {
+  /// An item's name: gear better than common in its quality's colour, common
+  /// gear in full text colour, materials softer, so gear stands out.
+  static Widget _name(
+    BuildContext context,
+    GameData data,
+    Labels labels,
+    String key,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
     final q = data.qualityOf(key);
-    final plain = q == data.qualities.first || data.itemOf(key)?.slot == null;
-    return Text(
-      labels.item(key),
-      style: plain
-          ? null
-          : TextStyle(
-              color: Color(
-                0xff000000 | int.parse(q.colour.substring(1), radix: 16),
-              ),
-            ),
-    );
+    final colour = switch (data.itemOf(key)?.slot) {
+      null => scheme.onSurfaceVariant,
+      _ when q == data.qualities.first => scheme.onSurface,
+      _ => Color(0xff000000 | int.parse(q.colour.substring(1), radix: 16)),
+    };
+    return Text(labels.item(key), style: TextStyle(color: colour));
   }
 
   static Widget? _bonusText(GameData data, String key) {
