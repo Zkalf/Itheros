@@ -36,7 +36,10 @@ class Labels {
 
   String endReason(ActivityEnded e) => switch (e.reason) {
     EndReason.arrived => 'Arrived at ${location(e.activity.target)}',
-    EndReason.defeated => 'Defeated by the ${enemy(e.activity.target)}',
+    EndReason.defeated =>
+      'Gave up on the ${enemy(e.activity.target)} after 3 losses in a row',
+    EndReason.grey => 'Stopped: the ${enemy(e.activity.target)} turned grey',
+    EndReason.enough => 'Stopped: ${activity(e.activity)} reached its goal',
     EndReason.noMaterials =>
       'Out of materials for ${recipe(e.activity.target)}',
   };
@@ -65,6 +68,10 @@ class Labels {
       '+1 talent point. Talents arrive in a later update; your points wait '
           'for you.',
     NewsKind.yourLevel => 'The ${enemy(n.id)} is now your level',
+    NewsKind.queueSlots =>
+      'Your queue now holds ${n.id} actions: plan ahead, and the next one starts by itself',
+    NewsKind.untilN =>
+      'New stop condition: "until I have N" (and "until N crafted")',
     NewsKind.turnedGrey =>
       'The ${enemy(n.id)} turned grey: little XP, but it still drops its loot',
   };

@@ -162,6 +162,7 @@ class _LevelCard extends StatelessWidget {
     NewsKind.recipe => Icons.handyman,
     NewsKind.gearSlot => Icons.shield,
     NewsKind.turnedGrey => Icons.trending_down,
+    NewsKind.queueSlots || NewsKind.untilN => Icons.playlist_add,
     NewsKind.rank || NewsKind.talentPoint => Icons.auto_awesome,
   };
 }

@@ -45,7 +45,7 @@ class AwaySummary {
           achievements.add(id);
         case ActivityEnded():
           ended.add(e);
-        case Arrived():
+        case Arrived() || ActionStarted() || ActionSkipped():
           break;
       }
     }

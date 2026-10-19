@@ -1,5 +1,9 @@
 {
-  "bankCap": { "base": 1000, "perLevel": 500 },
+  "bankCap": { "base": 9500, "perLevel": 500 },
+  "queueSlots": [{ "level": 1, "slots": 1 }, { "level": 5, "slots": 2 }, { "level": 8, "slots": 3 }],
+  "untilFromLevel": 5,
+  "lossXpShare": 0.75,
+  "lossesToGiveUp": 3,
   "combatRoundSteps": 10,
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
   "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },

@@ -11,8 +11,6 @@ void main() {
 
   test('every level from 2 to 30 brings a named unlock (spec 0002 §8)', () {
     for (var level = 2; level <= 30; level++) {
-      // Level 5's news is the queue, which comes with spec 0003.
-      if (level == 5) continue;
       final named = game
           .levelNews(level)
           .where((n) => n.kind != NewsKind.talentPoint);

@@ -72,6 +72,10 @@ class Game {
         if (r.unlockLevel == level) LevelNews(NewsKind.recipe, r.id),
       for (final e in data.gearSlots.entries)
         if (e.value == level && level > 1) LevelNews(NewsKind.gearSlot, e.key),
+      for (final e in data.queueSlots.entries)
+        if (e.key == level && level > 1)
+          LevelNews(NewsKind.queueSlots, '${e.value}'),
+      if (level == data.untilFromLevel) const LevelNews(NewsKind.untilN, ''),
       if (level >= data.talentPointsFrom)
         const LevelNews(NewsKind.talentPoint, ''),
       for (final e in enemies)
@@ -157,9 +161,10 @@ class Game {
   }
 
   /// Brings a state read from an older save up to date. Version 1 saves
-  /// keep their level and their progress through it (spec 0002 §2).
+  /// keep their level and their progress through it (spec 0002 §2). Version
+  /// 2 saves need nothing: their activity loaded as a 1-action queue.
   GameState migrate(GameState s) {
-    if (s.loadedVersion == GameState.schemaVersion) return s;
+    if (s.loadedVersion != 1) return s;
     const v1 = [0, 20, 100, 300, 700, 1540, 3390, 7460, 16400, 28000];
     var l = 1;
     while (l < v1.length && s.xp >= v1[l]) {
@@ -175,18 +180,24 @@ class Game {
     return s.copy()..xp = floor + progress;
   }
 
-  /// Steps the current activity's next unit costs, or null when idle.
+  /// Steps the running action's next unit costs (a travel leg, round, ore
+  /// or craft), or null when resting.
   int? unitCost(GameState s) {
-    final a = s.activity?.activity;
-    return a == null ? null : _costOf(s, a);
+    final act = s.activity;
+    return act == null ? null : _costOf(s, act);
   }
 
-  int _costOf(GameState s, Activity a) => switch (a.kind) {
-    ActivityKind.travel => data.route(s.location, a.target)!.steps,
-    ActivityKind.fight => data.combatRoundSteps,
-    ActivityKind.gather => data.nodes[a.target]!.steps,
-    ActivityKind.craft => data.recipes[a.target]!.steps,
-  };
+  int _costOf(GameState s, RunningActivity act) {
+    final a = act.activity;
+    if (act.leg case final leg?) return data.route(s.location, leg)!.steps;
+    return switch (a.kind) {
+      // A version 2 save walking to a neighbour, with no leg set.
+      ActivityKind.travel => data.route(s.location, a.target)!.steps,
+      ActivityKind.fight => data.combatRoundSteps,
+      ActivityKind.gather => data.nodes[a.target]!.steps,
+      ActivityKind.craft => data.recipes[a.target]!.steps,
+    };
+  }
 
   // Queries for the UI. Locked content is left out, not greyed out (spec §5).
 
@@ -211,61 +222,291 @@ class Game {
         if (r.unlockLevel <= level(s)) r.id,
   ];
 
+  /// Open locations, nearest first, with their walking distance from here
+  /// (spec 0003 §8: plan a day from anywhere).
+  Map<String, int> openLocationsByDistance(GameState s) {
+    final dist = _paths(s).$1;
+    return Map.fromEntries(
+      dist.entries.toList()..sort((a, b) => a.value.compareTo(b.value)),
+    );
+  }
+
+  /// Unlocked monsters at [location], if it is open.
+  List<String> enemiesAt(GameState s, String location) => [
+    if (data.locations[location]!.unlockLevel <= level(s))
+      for (final e in data.locations[location]!.enemies)
+        if (data.enemies[e]!.unlockLevel <= level(s)) e,
+  ];
+
+  /// Unlocked gathering spots at [location], if it is open.
+  List<String> nodesAt(GameState s, String location) => [
+    if (data.locations[location]!.unlockLevel <= level(s))
+      for (final n in data.locations[location]!.nodes)
+        if (data.nodes[n]!.unlockLevel <= level(s)) n,
+  ];
+
+  /// Unlocked recipes (they can be crafted at any crafting place).
+  List<String> unlockedRecipes(GameState s) => [
+    for (final r in data.recipes.values)
+      if (r.unlockLevel <= level(s)) r.id,
+  ];
+
   bool hasMaterials(GameState s, String recipe) => data
       .recipes[recipe]!
       .inputs
       .entries
       .every((e) => (s.inventory[e.key] ?? 0) >= e.value);
 
+  /// Owned [item]s, equipped ones included.
+  int owned(GameState s, String item) =>
+      (s.inventory[item] ?? 0) +
+      s.equipment.values.where((i) => i == item).length;
+
+  /// How many actions the queue holds at the player's level, the running
+  /// one included (spec 0003 §2).
+  int queueSlots(GameState s) =>
+      data.queueSlots.entries.lastWhere((e) => e.key <= level(s)).value;
+
+  /// Whether "until I have N" and "until N crafted" are open.
+  bool countConditionsOpen(GameState s) => level(s) >= data.untilFromLevel;
+
+  /// The conditions [a] may stop on; "never" may still be refused by its
+  /// place in the queue.
+  List<StopKind> stopKindsFor(GameState s, Activity a) => [
+    if (a.kind == ActivityKind.fight) StopKind.untilGrey,
+    if (countConditionsOpen(s))
+      if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
+        StopKind.untilHave
+      else if (a.kind == ActivityKind.craft)
+        StopKind.untilCrafted,
+    StopKind.never,
+  ];
+
+  /// Items "until I have N" can count for [a]: a monster's drops or a
+  /// spot's item.
+  List<String> countableItems(Activity a) => switch (a.kind) {
+    ActivityKind.fight => {
+      for (final d in data.enemies[a.target]!.drops) d.item,
+    }.toList(),
+    ActivityKind.gather => [data.nodes[a.target]!.item],
+    _ => const [],
+  };
+
   // Player actions. Free: they cost no steps.
 
-  /// Starts [a], replacing (and discarding the progress of) any current
-  /// activity. Throws [ActivityError] if the rules don't allow it.
-  GameState startActivity(GameState s, Activity a) {
-    final lvl = level(s);
-    switch (a.kind) {
-      case ActivityKind.travel:
-        if (data.route(s.location, a.target) == null) {
-          throw ActivityError('No route from ${s.location} to ${a.target}');
-        }
-        if (data.locations[a.target]!.unlockLevel > lvl) {
-          throw ActivityError('${a.target} is locked');
-        }
-      case ActivityKind.fight:
-        if (!_here(s).enemies.contains(a.target)) {
-          throw ActivityError('No ${a.target} at ${s.location}');
-        }
-        if (data.enemies[a.target]!.unlockLevel > lvl) {
-          throw ActivityError('${a.target} is locked');
-        }
-      case ActivityKind.gather:
-        if (!_here(s).nodes.contains(a.target)) {
-          throw ActivityError('No ${a.target} at ${s.location}');
-        }
-        if (data.nodes[a.target]!.unlockLevel > lvl) {
-          throw ActivityError('${a.target} is locked');
-        }
-      case ActivityKind.craft:
-        final recipe = data.recipes[a.target];
-        if (recipe == null) throw ActivityError('Unknown recipe ${a.target}');
-        if (!_here(s).crafting) {
-          throw ActivityError('Crafting is not possible at ${s.location}');
-        }
-        if (recipe.unlockLevel > lvl) {
-          throw ActivityError('${a.target} is locked');
-        }
-        if (!hasMaterials(s, a.target)) {
-          throw ActivityError('Not enough materials for ${a.target}');
-        }
+  /// Adds [a] to the end of the queue with [stop] (default: until grey for
+  /// fights, never otherwise). With nothing running, or a 1-slot queue, it
+  /// starts now instead (spec 0003 §2). Throws [ActivityError] if the rules
+  /// don't allow it.
+  GameState addAction(GameState s, Activity a, {StopCondition? stop}) {
+    final st = stop ?? StopCondition.defaultFor(a);
+    if (s.activity == null || queueSlots(s) == 1) {
+      return startActivity(s, a, stop: st);
     }
-    return _refundProgress(s.copy())..activity = RunningActivity(a);
+    _checkStop(s, a, st);
+    if (1 + s.queue.length >= queueSlots(s)) {
+      throw ActivityError('The queue is full.');
+    }
+    final last = s.queue.isEmpty
+        ? PlannedAction(s.activity!.activity, s.activity!.stop)
+        : s.queue.last;
+    if (last.stop.kind == StopKind.never &&
+        last.activity.kind != ActivityKind.travel) {
+      throw ActivityError(
+        'The last action never stops. Change its stop condition first.',
+      );
+    }
+    final why = _cannotStart(s, a, st);
+    if (why == SkipReason.locked || why == SkipReason.noRoute) {
+      throw ActivityError(_explain(s, a, st, why!));
+    }
+    return s.copy()..queue.add(PlannedAction(a, st));
   }
 
-  /// Ends the current activity; the character rests. Unspent progress goes
-  /// to the bank (spec 0001 amendment 2).
+  /// Starts [a] now with [stop], replacing (and refunding the progress of)
+  /// the running action; the rest of the queue stays. If [a] happens
+  /// elsewhere, the character walks there first. Throws [ActivityError] if
+  /// it can't start.
+  GameState startActivity(
+    GameState s,
+    Activity a, {
+    StopCondition stop = const StopCondition.never(),
+  }) {
+    _checkStop(s, a, stop);
+    final why = _cannotStart(s, a, stop);
+    if (why != null) throw ActivityError(_explain(s, a, stop, why));
+    final n = _refundProgress(s.copy())
+      ..activity = RunningActivity(a, stop: stop);
+    n.activity!.leg = _nextLeg(n, a);
+    return n;
+  }
+
+  /// Ends the running action and starts the next one; with nothing next the
+  /// character rests. Unspent progress goes to the bank (spec 0001
+  /// amendment 2).
   GameState stopActivity(GameState s) {
     if (s.activity == null) throw ActivityError('Nothing to stop');
-    return _refundProgress(s.copy())..activity = null;
+    final n = _refundProgress(s.copy())..activity = null;
+    _startNext(n, null);
+    return n;
+  }
+
+  /// Removes the action at [index]: 0 is the running one (the same as
+  /// [stopActivity]), 1 the first waiting one, and so on.
+  GameState removeAction(GameState s, int index) {
+    if (index == 0) return stopActivity(s);
+    if (index < 1 || index > s.queue.length) {
+      throw ActivityError('No action $index in the queue');
+    }
+    return s.copy()..queue.removeAt(index - 1);
+  }
+
+  /// Throws if [stop] doesn't fit [a] (spec 0003 §3).
+  void _checkStop(GameState s, Activity a, StopCondition stop) {
+    if (!stopKindsFor(s, a).contains(stop.kind)) {
+      throw ActivityError('That stop condition is not possible here.');
+    }
+    if (stop.kind == StopKind.untilHave &&
+        (!countableItems(a).contains(stop.item) || stop.count < 1)) {
+      throw ActivityError('That item does not come from here.');
+    }
+    if (stop.kind == StopKind.untilCrafted && stop.count < 1) {
+      throw ActivityError('Craft at least one.');
+    }
+  }
+
+  /// Why [a] can't start now, or null if it can (spec 0003 §4).
+  SkipReason? _cannotStart(GameState s, Activity a, StopCondition stop) {
+    final lvl = level(s);
+    final opensAt = switch (a.kind) {
+      ActivityKind.travel => data.locations[a.target]?.unlockLevel,
+      ActivityKind.fight => data.enemies[a.target]?.unlockLevel,
+      ActivityKind.gather => data.nodes[a.target]?.unlockLevel,
+      ActivityKind.craft => data.recipes[a.target]?.unlockLevel,
+    };
+    if (opensAt == null || opensAt > lvl) return SkipReason.locked;
+    if (a.kind == ActivityKind.travel && a.target == s.location) {
+      return SkipReason.alreadyDone;
+    }
+    if (_placeFor(s, a) == null) return SkipReason.noRoute;
+    if (a.kind == ActivityKind.craft && !hasMaterials(s, a.target)) {
+      return SkipReason.noMaterials;
+    }
+    if (_stopMet(s, a, stop, crafted: 0) != null) return SkipReason.alreadyDone;
+    return null;
+  }
+
+  String _explain(GameState s, Activity a, StopCondition stop, SkipReason r) {
+    final name =
+        switch (a.kind) {
+          ActivityKind.travel => data.locations[a.target]?.name,
+          ActivityKind.fight => data.enemies[a.target]?.name,
+          ActivityKind.gather => data.nodes[a.target]?.name,
+          ActivityKind.craft =>
+            data.items[data.recipes[a.target]?.output]?.name,
+        } ??
+        a.target;
+    return switch (r) {
+      SkipReason.locked => '$name is locked',
+      SkipReason.noRoute => 'No open route to $name',
+      SkipReason.noMaterials => 'Not enough materials for $name',
+      SkipReason.alreadyDone => switch (stop.kind) {
+        _ when a.kind == ActivityKind.travel => 'You are already at $name',
+        StopKind.untilGrey => 'The $name is already grey',
+        _ => 'You already have ${stop.count} ${data.items[stop.item]?.name}',
+      },
+    };
+  }
+
+  /// Why an action stops by its condition now, or null (spec 0003 §3).
+  EndReason? _stopMet(
+    GameState s,
+    Activity a,
+    StopCondition stop, {
+    required int crafted,
+  }) => switch (stop.kind) {
+    StopKind.untilGrey =>
+      enemyBand(s, a.target).colour == LevelColour.grey ? EndReason.grey : null,
+    StopKind.untilHave =>
+      owned(s, stop.item!) >= stop.count ? EndReason.enough : null,
+    StopKind.untilCrafted => crafted >= stop.count ? EndReason.enough : null,
+    StopKind.never => null,
+  };
+
+  /// Where [a] happens: its monster's or spot's location, the nearest
+  /// crafting place, or the travel target. Null if no open route leads
+  /// there.
+  String? _placeFor(GameState s, Activity a) {
+    final dist = _paths(s).$1;
+    final candidates = switch (a.kind) {
+      ActivityKind.travel => [a.target],
+      ActivityKind.fight => [
+        for (final l in data.locations.values)
+          if (l.enemies.contains(a.target)) l.id,
+      ],
+      ActivityKind.gather => [
+        for (final l in data.locations.values)
+          if (l.nodes.contains(a.target)) l.id,
+      ],
+      ActivityKind.craft => [
+        for (final l in data.locations.values)
+          if (l.crafting) l.id,
+      ],
+    }.where(dist.containsKey).toList();
+    if (candidates.isEmpty) return null;
+    return candidates.reduce((x, y) => dist[x]! <= dist[y]! ? x : y);
+  }
+
+  /// The first leg toward where [a] happens, or null when already there.
+  String? _nextLeg(GameState s, Activity a) {
+    final to = _placeFor(s, a);
+    if (to == null || to == s.location) return null;
+    final previous = _paths(s).$2;
+    var at = to;
+    while (previous[at] != s.location) {
+      at = previous[at]!;
+    }
+    return at;
+  }
+
+  /// Shortest walking distances from here to every open location, and the
+  /// previous stop on each shortest route.
+  (Map<String, int>, Map<String, String>) _paths(GameState s) {
+    final lvl = level(s);
+    final dist = {s.location: 0};
+    final previous = <String, String>{};
+    final todo = {s.location};
+    while (todo.isNotEmpty) {
+      final at = todo.reduce((a, b) => dist[a]! <= dist[b]! ? a : b);
+      todo.remove(at);
+      for (final to in data.destinationsFrom(at)) {
+        if (data.locations[to]!.unlockLevel > lvl) continue;
+        final d = dist[at]! + data.route(at, to)!.steps;
+        if (d < (dist[to] ?? 1 << 30)) {
+          dist[to] = d;
+          previous[to] = at;
+          todo.add(to);
+        }
+      }
+    }
+    return (dist, previous);
+  }
+
+  /// Starts the first waiting action that can start, skipping the others
+  /// with a reason. Mutates [s].
+  void _startNext(GameState s, List<GameEvent>? events) {
+    while (s.queue.isNotEmpty) {
+      final p = s.queue.removeAt(0);
+      final why = _cannotStart(s, p.activity, p.stop);
+      if (why != null) {
+        events?.add(ActionSkipped(p.activity, why));
+        continue;
+      }
+      s.activity = RunningActivity(p.activity, stop: p.stop)
+        ..leg = _nextLeg(s, p.activity);
+      events?.add(ActionStarted(p.activity));
+      return;
+    }
   }
 
   /// Moves the current activity's unspent progress into the bank, up to the
@@ -357,20 +598,42 @@ class _Run {
     );
   }
 
-  /// Completes every unit the paid progress covers. A unit is never left
-  /// half-paid: if the next one can't start, the activity ends and leftover
-  /// progress goes to the bank.
+  /// Completes every unit the paid progress covers: travel legs first, then
+  /// the action's own units. A unit is never left half-paid: when the action
+  /// stops (its condition, out of materials, 3 losses, arrival), leftover
+  /// progress goes to the bank and the next action starts (spec 0003 §4).
   void _advance(RunningActivity act) {
     while (identical(s.activity, act)) {
-      final cost = game._costOf(s, act.activity);
+      final cost = game._costOf(s, act);
       if (act.progress < cost) return;
       act.progress -= cost;
+      if (act.leg case final leg?) {
+        s.location = leg;
+        events.add(Arrived(leg));
+        act.leg = game._nextLeg(s, act.activity);
+        if (act.activity.kind == ActivityKind.travel && act.leg == null) {
+          _end(act, EndReason.arrived);
+        }
+        continue;
+      }
       final ended = _completeUnit(act);
       if (ended != null) {
         _end(act, ended);
-      } else if (!_canStartNext(act.activity)) {
-        _end(act, EndReason.noMaterials);
+        continue;
       }
+      if (act.fight == null) {
+        final done = game._stopMet(
+          s,
+          act.activity,
+          act.stop,
+          crafted: act.crafted,
+        );
+        if (done != null) {
+          _end(act, done);
+          continue;
+        }
+      }
+      if (!_canStartNext(act.activity)) _end(act, EndReason.noMaterials);
     }
   }
 
@@ -400,6 +663,7 @@ class _Run {
         final xp = _faded(recipe.xp, recipe.unlockLevel);
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
         s.addItem(recipe.output);
+        act.crafted++;
         s.count('crafted.total');
         s.count('crafted.${recipe.output}');
         events.add(Crafted(recipe.output, xp));
@@ -449,6 +713,7 @@ class _Run {
 
   EndReason? _win(RunningActivity act, EnemyDef enemy) {
     act.fight = null;
+    act.lossStreak = 0;
     final drops = <String, int>{};
     void drop(DropDef d) {
       drops[d.item] = (drops[d.item] ?? 0) + d.count;
@@ -468,10 +733,23 @@ class _Run {
     return null;
   }
 
-  EndReason _lose(RunningActivity act, EnemyDef enemy) {
+  /// A loss keeps everything and pays a share of the XP for the health
+  /// knocked off; no loot. The action gives up after a few losses in a row
+  /// (spec 0003 §5).
+  EndReason? _lose(RunningActivity act, EnemyDef enemy) {
+    final share = (enemy.stats.hp - act.fight!.enemyHp) / enemy.stats.hp;
     act.fight = null;
-    events.add(FightLost(enemy.id));
-    return EndReason.defeated;
+    final pct = data.bandFor(enemy.level, game.level(s)).xpPercent;
+    final xp = share <= 0
+        ? 0
+        : math.max(
+            1,
+            (enemy.xp * data.lossXpShare * share * pct / 100).floor(),
+          );
+    events.add(FightLost(enemy.id, xp, share));
+    _gainXp(xp);
+    act.lossStreak++;
+    return act.lossStreak >= data.lossesToGiveUp ? EndReason.defeated : null;
   }
 
   /// [xp] for something at [level], faded by the colour table; at least 1
@@ -500,6 +778,7 @@ class _Run {
   void _end(RunningActivity act, EndReason reason) {
     game._refundProgress(s).activity = null;
     events.add(ActivityEnded(act.activity, reason));
+    game._startNext(s, events);
   }
 
   void _checkAchievements() {

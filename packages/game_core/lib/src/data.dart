@@ -274,6 +274,13 @@ class GameData {
        ),
        ranks = List.unmodifiable(_maps(economy, 'ranks').map(RankDef._)),
        talentPointsFrom = _int(economy, 'talentPointsFrom'),
+       queueSlots = Map.unmodifiable({
+         for (final q in _maps(economy, 'queueSlots'))
+           _int(q, 'level'): _int(q, 'slots'),
+       }),
+       untilFromLevel = _int(economy, 'untilFromLevel'),
+       lossXpShare = (economy['lossXpShare'] as num).toDouble(),
+       lossesToGiveUp = _int(economy, 'lossesToGiveUp'),
        startLocation = _str(world, 'startLocation'),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
@@ -337,6 +344,19 @@ class GameData {
 
   /// One talent point per level from this level on.
   final int talentPointsFrom;
+
+  /// Queue size from a level on, lowest level first; the first is level 1
+  /// (spec 0003 §2).
+  final Map<int, int> queueSlots;
+
+  /// Level from which "until I have N" and "until N crafted" open.
+  final int untilFromLevel;
+
+  /// Share of a monster's XP a loss pays, times the health knocked off.
+  final double lossXpShare;
+
+  /// Losses in a row that end a fight action.
+  final int lossesToGiveUp;
   final String startLocation;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
@@ -410,6 +430,11 @@ class GameData {
       );
     }
     check(gearSlots.values.every((l) => l >= 1), 'gearSlots: levels >= 1');
+    check(
+      queueSlots.isNotEmpty && queueSlots.keys.first == 1,
+      'queueSlots must start at level 1',
+    );
+    check(lossesToGiveUp >= 1, 'lossesToGiveUp must be >= 1');
     check(
       ranks.isNotEmpty && ranks.first.level == 1,
       'ranks must start at level 1',

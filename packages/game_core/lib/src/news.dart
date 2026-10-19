@@ -14,6 +14,12 @@ enum NewsKind {
 
   /// A monster that just turned grey; it still drops its loot.
   turnedGrey,
+
+  /// The queue grows to [LevelNews.id] actions (spec 0003 §2).
+  queueSlots,
+
+  /// "Until I have N" and "until N crafted" open (spec 0003 §3).
+  untilN,
 }
 
 class LevelNews {
@@ -21,8 +27,8 @@ class LevelNews {
 
   final NewsKind kind;
 
-  /// Rank name, location, enemy, node, recipe or slot id; empty for a
-  /// talent point.
+  /// Rank name, location, enemy, node, recipe or slot id, or the queue
+  /// size; empty for a talent point or "until N".
   final String id;
 
   @override
