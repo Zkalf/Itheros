@@ -765,4 +765,15 @@ void main() {
       }
     }
   });
+
+  testWidgets('common gear and materials have different colours', (t) async {
+    await pumpGame(t, level: 3, inventory: {'hide_vest': 1, 'goblin_hide': 3});
+    await t.tap(find.text('Character'));
+    await t.pumpAndSettle();
+    final scheme = Theme.of(t.element(find.text('Hide vest'))).colorScheme;
+    Color? colour(String text) => t.widget<Text>(find.text(text)).style?.color;
+    expect(colour('Hide vest'), scheme.onSurface, reason: 'common gear');
+    expect(colour('Goblin hide'), scheme.onSurfaceVariant, reason: 'material');
+    expect(colour('Hide vest'), isNot(colour('Goblin hide')));
+  });
 }
