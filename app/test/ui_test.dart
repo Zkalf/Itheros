@@ -12,6 +12,7 @@ import 'package:walkingrpg/steps/fake_step_source.dart';
 import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
+import 'package:walkingrpg/ui/journal_screen.dart';
 
 import 'support.dart';
 
@@ -175,8 +176,9 @@ void main() {
     await t.pump();
     expect(find.text('While you were away'), findsNothing);
 
-    await t.tap(find.byIcon(Icons.history));
-    await t.pump();
+    await t.tap(find.byKey(const ValueKey('journal-button')));
+    await t.pumpAndSettle();
+    expect(find.text('Today 11:00'), findsOneWidget);
     expect(find.text('You walked 300 steps.'), findsOneWidget);
   });
 
@@ -564,5 +566,103 @@ void main() {
         reason: 'Remove and Equip are the same size',
       );
     });
+  });
+
+  group('journal (spec 0004)', () {
+    test('times read as today, yesterday, or a date', () {
+      final now = DateTime(2026, 10, 18, 20);
+      expect(journalTime(DateTime(2026, 10, 18, 14, 5), now), 'Today 14:05');
+      expect(
+        journalTime(DateTime(2026, 10, 17, 18, 30), now),
+        'Yesterday 18:30',
+      );
+      expect(
+        journalTime(DateTime(2026, 10, 16, 9, 12), now),
+        'Fri 16 Oct 09:12',
+      );
+    });
+
+    testWidgets('with nothing walked yet it says so', (t) async {
+      await pumpGame(t);
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      expect(find.textContaining('No reports yet'), findsOneWidget);
+    });
+
+    testWidgets('lists entries newest first', (t) async {
+      final (c, source) = await pumpGame(t);
+      for (final (hour, steps) in [(10, 120), (12, 340)]) {
+        c
+          ..dismissAwaySummary()
+          ..pause();
+        source.walk(DateTime(2026, 10, 18, hour - 1), steps);
+        now = DateTime(2026, 10, 18, hour);
+        await c.resume();
+      }
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      final first = t.getTopLeft(find.text('Today 12:00')).dy;
+      final second = t.getTopLeft(find.text('Today 10:00')).dy;
+      expect(first, lessThan(second));
+      expect(find.text('You walked 340 steps.'), findsOneWidget);
+      expect(find.text('You walked 120 steps.'), findsOneWidget);
+    });
+  });
+
+  group('test walk (spec 0004 §3)', () {
+    final rank = find.text('Recruit');
+    final card = find.byKey(const ValueKey('test-walk'));
+
+    Future<void> tapRank(WidgetTester t, int times) async {
+      for (var i = 0; i < times; i++) {
+        await t.tap(rank);
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('criterion 4: seven taps on the rank switch it on and off', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t);
+      await t.tap(find.text('Character'));
+      await t.pumpAndSettle();
+      await tapRank(t, 6);
+      expect(c.testWalkOn, isFalse, reason: 'six is not enough');
+      await tapRank(t, 1);
+      expect(c.testWalkOn, isTrue);
+      expect(find.text('Test walk on'), findsOneWidget);
+
+      await t.tap(find.text('Adventure'));
+      await t.pumpAndSettle();
+      expect(card, findsOneWidget);
+
+      await t.tap(find.text('Character'));
+      await t.pumpAndSettle();
+      await tapRank(t, 7);
+      expect(c.testWalkOn, isFalse);
+      await t.tap(find.text('Adventure'));
+      await t.pumpAndSettle();
+      expect(card, findsNothing);
+    });
+
+    testWidgets(
+      'criterion 5: +1,000 walks 1,000 steps, marked in the journal',
+      (t) async {
+        final (c, _) = await pumpGame(t);
+        await c.setTestWalk(true);
+        await t.pump();
+        await t.tap(find.descendant(of: card, matching: find.text('+1,000')));
+        await settle(t, c);
+        await t.pump();
+        expect(c.state.bank, 1000, reason: 'resting: the steps are banked');
+        expect(find.text('You walked 1,000 steps.'), findsOneWidget);
+
+        await t.tap(find.byKey(const ValueKey('journal-button')));
+        await t.pumpAndSettle();
+        expect(find.text('Today 09:00 (test walk)'), findsOneWidget);
+      },
+    );
   });
 }
