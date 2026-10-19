@@ -76,6 +76,7 @@ class _AchievementTile extends StatelessWidget {
       'gathered' => 'Gather $n × ${labels.item(parts.last)}',
       'crafted' when parts.last == 'total' => 'Craft $n item(s)',
       'crafted' => 'Craft $n × ${labels.item(parts.last)}',
+      'areas' => 'Arrive at all $n areas',
       _ => '${a.counter} ≥ $n',
     };
   }
