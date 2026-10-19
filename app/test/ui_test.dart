@@ -12,6 +12,7 @@ import 'package:walkingrpg/steps/fake_step_source.dart';
 import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
+import 'package:walkingrpg/ui/adventure_tab.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
@@ -152,7 +153,7 @@ void main() {
     expect(option('travel', 'goblin_woods'), findsOneWidget);
   });
 
-  testWidgets('the away card shows what happened and can be dismissed', (
+  testWidgets('criterion 10: the "While you were away" screen, then the game', (
     t,
   ) async {
     final (c, source) = await pumpGame(t);
@@ -165,23 +166,37 @@ void main() {
     await t.pump();
 
     expect(find.text('While you were away'), findsOneWidget);
+    expect(find.text('Today 11:00'), findsOneWidget);
     expect(find.text('You walked 300 steps.'), findsOneWidget);
     expect(find.text('Arrived at Goblin Woods.'), findsOneWidget);
     expect(find.text('Saved 100 steps in your step bank.'), findsOneWidget);
+    expect(find.byType(AdventureTab), findsNothing, reason: 'own screen');
 
-    await t.tap(
-      find.descendant(
-        of: find.byType(AwaySummaryCard),
-        matching: find.text('OK'),
-      ),
-    );
+    await t.tap(find.byKey(const ValueKey('away-continue')));
     await t.pump();
     expect(find.text('While you were away'), findsNothing);
+    expect(find.byType(AdventureTab), findsOneWidget);
 
     await t.tap(find.byKey(const ValueKey('journal-button')));
     await t.pumpAndSettle();
     expect(find.text('Today 11:00'), findsOneWidget);
     expect(find.text('You walked 300 steps.'), findsOneWidget);
+  });
+
+  testWidgets('criterion 11: only banked steps show a short note', (t) async {
+    final (c, source) = await pumpGame(t);
+    c.pause();
+    source.walk(DateTime(2026, 10, 18, 10), 300);
+    now = DateTime(2026, 10, 18, 11);
+    await c.resume();
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+    expect(find.text('While you were away'), findsNothing);
+    expect(find.byType(AdventureTab), findsOneWidget);
+    expect(
+      find.text('You walked 300 steps. Saved 300 steps in your step bank.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a single step reads as "1 step"', (t) async {
@@ -193,6 +208,7 @@ void main() {
     now = DateTime(2026, 10, 18, 11);
     await c.resume();
     await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
 
     expect(find.text('You walked 1 step.'), findsOneWidget);
   });
@@ -662,8 +678,13 @@ void main() {
         await t.tap(find.descendant(of: card, matching: find.text('+1,000')));
         await settle(t, c);
         await t.pump();
+        await t.pump(const Duration(milliseconds: 500));
         expect(c.state.bank, 1000, reason: 'resting: the steps are banked');
-        expect(find.text('You walked 1,000 steps.'), findsOneWidget);
+        expect(
+          find.textContaining('You walked 1,000 steps.'),
+          findsOneWidget,
+          reason: 'only banked: a note',
+        );
 
         await t.tap(find.byKey(const ValueKey('journal-button')));
         await t.pumpAndSettle();
@@ -840,6 +861,8 @@ void main() {
 
       expect(find.byWidgetPredicate(coloured), findsWidgets);
 
+      await t.tap(find.byKey(const ValueKey('away-continue')));
+      await t.pump();
       await t.tap(find.byKey(const ValueKey('journal-button')));
       await t.pumpAndSettle();
       expect(find.byWidgetPredicate(coloured), findsWidgets);

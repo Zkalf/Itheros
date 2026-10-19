@@ -154,13 +154,14 @@ void main() {
     test('steps arriving just after opening join the report', () async {
       // The 00:06 case on the Fairphone: 1 step on open, 261 thirty seconds later.
       final c = await returned(stepsOnOpen: 1);
-      expect(c.awaySummary!.walked, 1);
+      expect(c.journal.first.summary.walked, 1);
 
       source.walk(DateTime(2026, 10, 18, 9, 45), 261);
       now = DateTime(2026, 10, 18, 10, 0, 30);
       await c.syncNow();
 
-      expect(c.awaySummary!.walked, 262);
+      expect(c.journal.first.summary.walked, 262);
+      expect(c.awaySummary!.walked, 262, reason: 'arrived: the screen opens');
     });
 
     test('a return with no steps yet still collects late ones', () async {
@@ -175,7 +176,7 @@ void main() {
     });
 
     test(
-      'a dismissed report comes back, complete, if late steps arrive',
+      'once closed, late steps join the entry without reopening it',
       () async {
         final c = await returned(stepsOnOpen: 1);
         c.dismissAwaySummary();
@@ -184,7 +185,8 @@ void main() {
         now = DateTime(2026, 10, 18, 10, 0, 30);
         await c.syncNow();
 
-        expect(c.awaySummary!.walked, 262);
+        expect(c.awaySummary, isNull);
+        expect(c.journal.first.summary.walked, 262);
       },
     );
 
@@ -223,7 +225,7 @@ void main() {
       now = DateTime(2026, 10, 18, 12);
       await c.resume();
 
-      expect(c.awaySummary!.walked, 40);
+      expect(c.journal.first.summary.walked, 40);
     });
   });
 
@@ -379,7 +381,8 @@ void main() {
       expect(c.state.counters['steps.walked'], 1500);
       expect(c.journal.first.testWalk, isTrue);
       expect(c.journal.first.summary.walked, 1000);
-      expect(c.awaySummary!.walked, 1000);
+      expect(c.awaySummary, isNull, reason: 'resting: only banked');
+      expect(c.quietReport!.walked, 1000);
     });
 
     test('criterion 5: the next real sync credits only real steps', () async {
@@ -448,6 +451,52 @@ void main() {
     expect(c.journal.first.summary.walked, 40);
     expect(c.journal[1].started, DateTime(2026, 10, 18, 11));
     expect(c.journal[1].summary.walked, 300);
-    expect(c.awaySummary!.walked, 40, reason: 'the card shows the newest');
+    expect(c.quietReport!.walked, 40, reason: 'the note shows the newest');
+  });
+
+  group('the "While you were away" screen (spec 0004 amendment 2)', () {
+    test(
+      'criterion 11: steps that only went to the bank make a note',
+      () async {
+        final c = controller();
+        await c.start();
+        c.pause();
+        source.walk(DateTime(2026, 10, 18, 10), 300);
+        now = DateTime(2026, 10, 18, 11);
+        await c.resume();
+        expect(c.awaySummary, isNull);
+        expect(c.quietReport!.banked, 300);
+        expect(c.journal.single.summary.walked, 300, reason: 'still kept');
+        c.clearQuietReport();
+        expect(c.quietReport, isNull);
+      },
+    );
+
+    test('criterion 10: something happened, so the screen opens', () async {
+      final c = controller();
+      await c.start();
+      await c.startActivity(const Activity.travel('goblin_woods'));
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 10), 300);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      expect(c.awaySummary!.walked, 300);
+      expect(c.quietReport, isNull);
+    });
+
+    test('late steps that finish something open it within the grace', () async {
+      final c = controller();
+      await c.start();
+      await c.startActivity(const Activity.travel('goblin_woods'));
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 9, 30), 50);
+      now = DateTime(2026, 10, 18, 10);
+      await c.resume();
+      expect(c.awaySummary, isNull, reason: 'only on the way');
+      source.walk(DateTime(2026, 10, 18, 9, 45), 200);
+      now = DateTime(2026, 10, 18, 10, 0, 30);
+      await c.syncNow();
+      expect(c.awaySummary!.walked, 250, reason: 'arrived');
+    });
   });
 }
