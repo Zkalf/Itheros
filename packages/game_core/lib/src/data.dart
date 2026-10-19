@@ -406,11 +406,15 @@ class GameData {
   /// The item a key stands for.
   ItemDef? itemOf(String key) => items[key.split(qualityMark).first];
 
-  /// The quality of a key; common when it names none.
+  /// The quality of a key; common when it names none, or one the data no
+  /// longer has (an old save must still load).
   QualityDef qualityOf(String key) {
     final parts = key.split(qualityMark);
     if (parts.length < 2) return qualities.first;
-    return qualities.firstWhere((q) => q.id == parts[1]);
+    return qualities.firstWhere(
+      (q) => q.id == parts[1],
+      orElse: () => qualities.first,
+    );
   }
 
   /// The key for [item] of [quality] (a quality id).
@@ -420,7 +424,7 @@ class GameData {
   /// An item's stats with its quality: each stat it has becomes
   /// `max(round(stat × (1 + bonus)), stat + tier)` (spec 0005 decision 7).
   Stats bonusOf(String key) {
-    final base = itemOf(key)!.bonus;
+    final base = itemOf(key)?.bonus ?? const Stats();
     final q = qualityOf(key);
     final tier = qualities.indexOf(q);
     int up(int v) => v == 0 || tier == 0

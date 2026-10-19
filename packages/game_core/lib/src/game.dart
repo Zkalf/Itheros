@@ -830,8 +830,6 @@ class _Run {
     return act.lossStreak >= data.lossesToGiveUp ? EndReason.defeated : null;
   }
 
-  /// [xp] for something at [level], faded by the colour table; at least 1
-  /// (spec 0002 §3).
   /// [item]'s key: gear rolls a quality, materials stay plain.
   String _withQuality(String item, int itemLevel) {
     if (data.items[item]!.slot == null) return item;
@@ -843,6 +841,8 @@ class _Run {
     return data.keyFor(item, q);
   }
 
+  /// [xp] for something at [level], faded by the colour table; at least 1
+  /// (spec 0002 §3).
   int _faded(int xp, int level) {
     final band = data.bandFor(level, game.level(s));
     return math.max(1, xp * band.xpPercent ~/ 100);
