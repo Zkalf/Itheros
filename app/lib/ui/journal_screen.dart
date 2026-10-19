@@ -69,6 +69,7 @@ class JournalScreen extends StatelessWidget {
                             style: text.titleMedium,
                           ),
                           const SizedBox(height: 8),
+                          ...reportBanners(e.summary, labels),
                           for (final l in reportLines(e.summary, labels))
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),

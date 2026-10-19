@@ -40,14 +40,59 @@ List<TextSpan> reportSpans(String line, GameData data) {
 Widget reportLine(String line, Labels labels) =>
     Text.rich(TextSpan(children: reportSpans(line, labels.data)));
 
+/// The big moments of a report, shown as banners above its lines (spec 0004
+/// amendment 3): levels reached, then achievements.
+List<Widget> reportBanners(AwaySummary s, Labels labels) => [
+  for (final l in s.levelsReached)
+    ReportBanner(icon: Icons.military_tech, text: 'Reached level $l!'),
+  for (final a in s.achievements)
+    ReportBanner(
+      icon: Icons.emoji_events,
+      text: 'Achievement unlocked: ${labels.achievement(a)}',
+    ),
+];
+
+/// A highlighted line with an icon, in the theme's highlight colour.
+class ReportBanner extends StatelessWidget {
+  const ReportBanner({super.key, required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('report-banner'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(color: scheme.onTertiaryContainer),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The lines of one report, as the card and the journal show them.
 List<String> reportLines(AwaySummary s, Labels labels) => [
   'You walked ${plural(s.walked, 'step')}.',
   if (s.boostUsed > 0)
     'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
   for (final a in s.actions) ...labels.actionLines(a),
-  for (final l in s.levelsReached) 'Reached level $l!',
-  for (final a in s.achievements) 'Achievement: ${labels.achievement(a)}.',
   if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
   if (s.lost > 0)
     'Your step bank was full, so ${plural(s.lost, 'step')} '
@@ -85,6 +130,7 @@ class AwayScreen extends StatelessWidget {
                       style: text.titleMedium,
                     ),
                   const SizedBox(height: 8),
+                  if (summary != null) ...reportBanners(summary, labels),
                   if (summary != null)
                     for (final l in reportLines(summary, labels))
                       Padding(
