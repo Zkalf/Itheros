@@ -123,7 +123,12 @@ foreach ($t in $tasks) {
   $notes = @($checkOut -split "`r?`n" | Where-Object { $_ -match '^FAIL:' } | ForEach-Object { $_.Substring(6) })
   if ($agent -and $agent.timedOut) { $notes += "timed out after $($t.timeoutMinutes) min" }
   if ($agent -and $agent.error) { $notes += $agent.error }
-  if ($agent -and $agent.denied.Count) { $notes += "denied: $($agent.denied -join ' ; ')" }
+  # Full denied commands are in the transcript ($runDir\<id>.json); the table gets a count and the first one.
+  if ($agent -and $agent.denied.Count) {
+    $first = ($agent.denied[0] -replace '\s+', ' ').Trim()
+    if ($first.Length -gt 80) { $first = $first.Substring(0, 80) + '...' }
+    $notes += "$($agent.denied.Count) denied, first: $first"
+  }
 
   if ($NoAgent) {
     # Sanity: on an untouched worktree a check must give its expected verdict (most must fail).
@@ -157,7 +162,7 @@ $passed = @($results | Where-Object pass).Count
 $lines = @(
   "# Eval run $runId",
   '',
-  "Commit $commit · Claude setup $configHash · Model $(if ($Model) { $Model } else { 'default' }) · " +
+  "Commit $commit, Claude setup $configHash, Model $(if ($Model) { $Model } else { 'default' }), " +
     "Passed $passed / $($results.Count)",
   '',
   '| Eval | Title | Result | Minutes | Turns | Cost (USD, est.) | Notes |',

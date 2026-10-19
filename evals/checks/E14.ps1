@@ -9,7 +9,7 @@ $tests = @($changed | Where-Object { $_ -match '^app/test/.+\.dart$' })
 Expect ($tests.Count -ge 1) 'no widget test added under app/test/'
 foreach ($f in $tests) {
   $text = Read-Text $Worktree $f
-  Expect ($text -notmatch 'Directory\.systemTemp|SaveStore\(') "$f uses real file I/O (use MemorySaveStore)"
+  Expect ($text -notmatch 'Directory\.systemTemp|\bSaveStore\(') "$f uses real file I/O (use MemorySaveStore)"
 }
 Expect (@($tests | Where-Object { (Read-Text $Worktree $_) -match 'Achievement' }).Count -ge 1) 'no test mentions the Achievements tab'
 Expect-Green $Worktree
