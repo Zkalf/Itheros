@@ -70,9 +70,12 @@ class CharacterTab extends StatelessWidget {
             subtitle: Text(labels.slot(slot)),
             trailing: s.equipment[slot] == null
                 ? null
-                : TextButton(
-                    onPressed: () => _run(context, () => c.unequip(slot)),
-                    child: const Text('Remove'),
+                : SizedBox(
+                    width: _buttonWidth,
+                    child: OutlinedButton(
+                      onPressed: () => _run(context, () => c.unequip(slot)),
+                      child: const Text('Remove'),
+                    ),
                   ),
           ),
         const SizedBox(height: 16),
@@ -95,14 +98,18 @@ class CharacterTab extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('×$count'),
-                    if (game.data.items[id]?.slot != null) ...[
-                      const SizedBox(width: 12),
-                      FilledButton.tonal(
-                        key: ValueKey('equip-$id'),
-                        onPressed: () => _run(context, () => c.equip(id)),
-                        child: const Text('Equip'),
-                      ),
-                    ],
+                    const SizedBox(width: 12),
+                    // Kept empty for materials, so every count lines up.
+                    SizedBox(
+                      width: _buttonWidth,
+                      child: game.data.items[id]?.slot == null
+                          ? null
+                          : FilledButton.tonal(
+                              key: ValueKey('equip-$id'),
+                              onPressed: () => _run(context, () => c.equip(id)),
+                              child: const Text('Equip'),
+                            ),
+                    ),
                   ],
                 ),
               ),
@@ -110,6 +117,9 @@ class CharacterTab extends StatelessWidget {
       ],
     );
   }
+
+  /// Equip and Remove share one width, so the buttons form a column.
+  static const _buttonWidth = 104.0;
 
   static Widget? _bonusText(ItemDef? item) {
     if (item == null || item.slot == null) return null;
