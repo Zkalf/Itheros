@@ -66,6 +66,7 @@ class MapTab extends StatelessWidget {
                           water: scheme.primaryContainer,
                           road: scheme.outline,
                           text: scheme.onSurfaceVariant,
+                          ground: scheme.surface,
                         ),
                       ),
                     ),
@@ -183,6 +184,7 @@ class _MapPainter extends CustomPainter {
     required this.water,
     required this.road,
     required this.text,
+    required this.ground,
   });
 
   final List<Offset> river;
@@ -190,6 +192,9 @@ class _MapPainter extends CustomPainter {
   final Color water;
   final Color road;
   final Color text;
+
+  /// Behind each step count, so it reads where paths cross labels.
+  final Color ground;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -239,6 +244,13 @@ class _MapPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       final mid = (a + b) / 2 - Offset(label.width / 2, label.height / 2);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          (mid & label.size).inflate(3),
+          const Radius.circular(4),
+        ),
+        Paint()..color = ground,
+      );
       label.paint(canvas, mid);
     }
   }
