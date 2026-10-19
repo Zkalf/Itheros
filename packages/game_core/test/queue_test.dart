@@ -109,6 +109,26 @@ void main() {
       expect(r.state.activity, isNull, reason: 'resting');
     });
 
+    test('a skipped craft names the materials it lacks', () {
+      var s = stateAt(
+        game,
+        level: 6,
+        location: 'goblin_woods',
+        inventory: {'bones': 2},
+      );
+      s = game.addAction(
+        s,
+        goblins,
+        stop: StopCondition.untilHave('goblin_hide', 1),
+      );
+      s = game.addAction(s, const Activity.craft('bone_sword'));
+      final r = game.applySteps(s, 2000);
+      expect(all<ActionSkipped>(r).single.missing, {
+        'bones': 4,
+        'copper_ore': 2,
+      });
+    });
+
     test('a fight "until grey" whose monster is already grey', () {
       var s = stateAt(game, level: 8, location: 'goblin_woods');
       s = game.addAction(
@@ -273,6 +293,23 @@ void main() {
       final s = game.stopActivity(three());
       expect(s.activity!.activity, brutes);
       expect(s.queue.map((p) => p.activity), [mining]);
+    });
+
+    test('Stop reports the waiting actions it skipped, and why', () {
+      var s = stateAt(game, level: 5, location: 'goblin_woods');
+      s = game.addAction(
+        s,
+        goblins,
+        stop: StopCondition.untilHave('goblin_hide', 9),
+      );
+      s = game.addAction(s, const Activity.craft('copper_sword'));
+      final events = <GameEvent>[];
+      s = game.stopActivity(s, events: events);
+      expect(s.activity, isNull, reason: 'resting');
+      final skipped = events.whereType<ActionSkipped>().single;
+      expect(skipped.activity, const Activity.craft('copper_sword'));
+      expect(skipped.reason, SkipReason.noMaterials);
+      expect(skipped.missing, {'copper_ore': 5});
     });
 
     test('removing a queued action keeps the rest in order', () {

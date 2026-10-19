@@ -425,7 +425,7 @@ void main() {
       );
       expect(find.textContaining('Stopped: goal reached.'), findsOneWidget);
       expect(
-        find.text('Skipped the Copper sword: not enough materials.'),
+        find.text('Skipped the Copper sword: not enough Copper ore (needs 5 more).'),
         findsOneWidget,
       );
     });
@@ -455,12 +455,84 @@ void main() {
       );
     });
 
+    testWidgets('Stop says why it skipped a waiting action', (t) async {
+      final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      await c.addAction(
+        const Activity.fight('goblin'),
+        stop: StopCondition.untilHave('goblin_hide', 9),
+      );
+      await c.addAction(const Activity.craft('copper_sword'));
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('stop-activity')));
+      await settle(t, c);
+      await t.pump();
+      expect(find.text('Resting'), findsOneWidget);
+      expect(
+        find.text(
+          'Skipped the Copper sword: not enough Copper ore (needs 5 more).',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('from level 5 a craft can be queued before its materials', (
       t,
     ) async {
       await pumpGame(t, level: 5);
       final tile = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(tile.enabled, isTrue);
+    });
+  });
+
+  testWidgets('activity rows have no arrow: the whole row is the button', (
+    t,
+  ) async {
+    await pumpGame(t, level: 3, location: 'goblin_woods');
+    expect(option('fight', 'goblin'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
+
+  group('inventory', () {
+    Future<void> openCharacter(WidgetTester t) async {
+      await t.tap(find.text('Character'));
+      await t.pumpAndSettle();
+    }
+
+    List<String> names(WidgetTester t) => t
+        .widgetList<ListTile>(find.byKey(const ValueKey('inventory-item')))
+        .map((tile) => (tile.title! as Text).data!)
+        .toList();
+
+    testWidgets('keeps its order when an item is equipped', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 3,
+        inventory: {'copper_sword': 1, 'hide_vest': 2, 'goblin_hide': 3},
+      );
+      await openCharacter(t);
+      final before = names(t);
+      expect(before, ['Goblin hide', 'Copper sword', 'Hide vest']);
+
+      await t.tap(find.byKey(const ValueKey('equip-hide_vest')));
+      await settle(t, c);
+      expect(names(t), before, reason: 'one Hide vest is left');
+
+      await t.tap(find.byKey(const ValueKey('equip-copper_sword')));
+      await settle(t, c);
+      await t.tap(find.text('Remove').first);
+      await settle(t, c);
+      expect(names(t), before, reason: 'the sword is back in its place');
+    });
+
+    testWidgets('shows how many apart from the Equip button', (t) async {
+      await pumpGame(t, level: 3, inventory: {'hide_vest': 2});
+      await openCharacter(t);
+      final equip = find.byKey(const ValueKey('equip-hide_vest'));
+      expect(
+        find.descendant(of: equip, matching: find.text('Equip')),
+        findsOneWidget,
+      );
+      expect(find.text('×2'), findsOneWidget);
     });
   });
 }
