@@ -65,10 +65,16 @@ class Labels {
     },
   };
 
-  /// Why a queued action never started.
-  String skipReason(Activity a, SkipReason r) => switch (r) {
+  /// Why a queued action never started. [missing]: what a craft lacked.
+  String skipReason(
+    Activity a,
+    SkipReason r, {
+    Map<String, int> missing = const {},
+  }) => switch (r) {
     SkipReason.locked => 'not unlocked yet',
     SkipReason.noRoute => 'no open route there',
+    SkipReason.noMaterials when missing.isNotEmpty =>
+      'not enough ${missing.entries.map((e) => '${item(e.key)} (needs ${fmt(e.value)} more)').join(', ')}',
     SkipReason.noMaterials => 'not enough materials',
     SkipReason.alreadyDone => switch (a.kind) {
       ActivityKind.travel => 'you were already there',
@@ -76,6 +82,10 @@ class Labels {
       _ => 'the goal was already reached',
     },
   };
+
+  /// "Skipped the Bone shield: not enough Bones (needs 2 more)."
+  String skipLine(Activity a, SkipReason r, Map<String, int> missing) =>
+      'Skipped the ${short(a)}: ${skipReason(a, r, missing: missing)}.';
 
   /// A short name for an action: "Skeleton", "Copper vein", "Bone sword".
   String short(Activity a) => switch (a.kind) {
@@ -90,7 +100,7 @@ class Labels {
   List<String> actionLines(ActionLog log) {
     final a = log.activity;
     if (log.skipped case final why?) {
-      return ['Skipped the ${short(a)}: ${skipReason(a, why)}.'];
+      return [skipLine(a, why, log.missing)];
     }
     final gains = [
       if (log.wins > 0) plural(log.wins, 'win'),

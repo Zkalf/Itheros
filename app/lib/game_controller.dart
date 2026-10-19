@@ -161,11 +161,22 @@ class GameController extends ChangeNotifier {
       _act((s) => game.addAction(s, a, stop: stop));
 
   /// Removes the action at [index]; 0 is the running one (spec 0003 §2).
-  Future<void> removeAction(int index) =>
-      _act((s) => game.removeAction(s, index));
+  /// Returns the waiting actions that couldn't start next, and why.
+  Future<List<ActionSkipped>> removeAction(int index) =>
+      _actSkipping((s, events) => game.removeAction(s, index, events: events));
 
-  /// Rests; unspent steps go to the bank (spec 0001 amendment 2).
-  Future<void> stopActivity() => _act(game.stopActivity);
+  /// Starts the next action, or rests; unspent steps go to the bank (spec
+  /// 0001 amendment 2). Returns the waiting actions that couldn't start.
+  Future<List<ActionSkipped>> stopActivity() =>
+      _actSkipping((s, events) => game.stopActivity(s, events: events));
+
+  Future<List<ActionSkipped>> _actSkipping(
+    GameState Function(GameState, List<GameEvent>) action,
+  ) async {
+    final events = <GameEvent>[];
+    await _act((s) => action(s, events));
+    return events.whereType<ActionSkipped>().toList();
+  }
 
   Future<void> equip(String item) => _act((s) => game.equip(s, item));
 

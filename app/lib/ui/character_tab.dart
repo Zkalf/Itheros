@@ -82,17 +82,31 @@ class CharacterTab extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Text('Nothing yet. Fight and gather to find things.'),
           ),
-        for (final e in s.inventory.entries)
-          ListTile(
-            title: Text(labels.item(e.key)),
-            subtitle: _bonusText(game.data.items[e.key]),
-            trailing: game.data.items[e.key]?.slot == null
-                ? Text('×${e.value}')
-                : FilledButton.tonal(
-                    onPressed: () => _run(context, () => c.equip(e.key)),
-                    child: Text('Equip (×${e.value})'),
-                  ),
-          ),
+        // In data order, so rows don't move when something is equipped.
+        for (final id in game.data.items.keys)
+          if (s.inventory[id] case final count?)
+            KeyedSubtree(
+              key: ValueKey('inventory-$id'),
+              child: ListTile(
+                key: const ValueKey('inventory-item'),
+                title: Text(labels.item(id)),
+                subtitle: _bonusText(game.data.items[id]),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('×$count'),
+                    if (game.data.items[id]?.slot != null) ...[
+                      const SizedBox(width: 12),
+                      FilledButton.tonal(
+                        key: ValueKey('equip-$id'),
+                        onPressed: () => _run(context, () => c.equip(id)),
+                        child: const Text('Equip'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
       ],
     );
   }

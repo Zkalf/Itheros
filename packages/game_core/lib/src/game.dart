@@ -257,6 +257,12 @@ class Game {
       .entries
       .every((e) => (s.inventory[e.key] ?? 0) >= e.value);
 
+  /// How many more of each input [recipe] needs, in recipe order.
+  Map<String, int> missingFor(GameState s, String recipe) => {
+    for (final e in data.recipes[recipe]!.inputs.entries)
+      if (e.value - (s.inventory[e.key] ?? 0) case final n when n > 0) e.key: n,
+  };
+
   /// Owned [item]s, equipped ones included.
   int owned(GameState s, String item) =>
       (s.inventory[item] ?? 0) +
@@ -350,18 +356,19 @@ class Game {
 
   /// Ends the running action and starts the next one; with nothing next the
   /// character rests. Unspent progress goes to the bank (spec 0001
-  /// amendment 2).
-  GameState stopActivity(GameState s) {
+  /// amendment 2). Waiting actions that can't start are skipped and added
+  /// to [events].
+  GameState stopActivity(GameState s, {List<GameEvent>? events}) {
     if (s.activity == null) throw ActivityError('Nothing to stop');
     final n = _refundProgress(s.copy())..activity = null;
-    _startNext(n, null);
+    _startNext(n, events);
     return n;
   }
 
   /// Removes the action at [index]: 0 is the running one (the same as
   /// [stopActivity]), 1 the first waiting one, and so on.
-  GameState removeAction(GameState s, int index) {
-    if (index == 0) return stopActivity(s);
+  GameState removeAction(GameState s, int index, {List<GameEvent>? events}) {
+    if (index == 0) return stopActivity(s, events: events);
     if (index < 1 || index > s.queue.length) {
       throw ActivityError('No action $index in the queue');
     }
@@ -506,7 +513,15 @@ class Game {
       final p = s.queue.removeAt(0);
       final why = _cannotStart(s, p.activity, p.stop);
       if (why != null) {
-        events?.add(ActionSkipped(p.activity, why));
+        events?.add(
+          ActionSkipped(
+            p.activity,
+            why,
+            missing: why == SkipReason.noMaterials
+                ? missingFor(s, p.activity.target)
+                : const {},
+          ),
+        );
         continue;
       }
       s.activity = RunningActivity(p.activity, stop: p.stop)

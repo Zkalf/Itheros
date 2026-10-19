@@ -43,9 +43,7 @@ class AdventureTab extends StatelessWidget {
         title: Text(title),
         subtitle: Text(subtitle),
         enabled: enabled,
-        trailing: active
-            ? const Chip(label: Text('Active'))
-            : const Icon(Icons.chevron_right),
+        trailing: active ? const Chip(label: Text('Active')) : null,
         onTap: active || !enabled
             ? null
             : () => _start(context, c, activity, deadly: deadly),
@@ -438,7 +436,7 @@ class _QueueCard extends StatelessWidget {
             ),
             OutlinedButton.icon(
               key: const ValueKey('stop-activity'),
-              onPressed: controller.stopActivity,
+              onPressed: () => _stop(context, 0),
               icon: const Icon(Icons.stop),
               label: Text(s.queue.isEmpty ? 'Stop' : 'Stop · next'),
             ),
@@ -506,7 +504,7 @@ class _QueueCard extends StatelessWidget {
               key: ValueKey('remove-${i + 1}'),
               tooltip: 'Remove',
               icon: const Icon(Icons.close),
-              onPressed: () => controller.removeAction(i + 1),
+              onPressed: () => _stop(context, i + 1),
             ),
           ),
         if (slots > 1)
@@ -525,6 +523,23 @@ class _QueueCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: body,
+        ),
+      ),
+    );
+  }
+
+  /// Removes the action at [index] (0: Stop) and says which waiting actions
+  /// couldn't start after it.
+  Future<void> _stop(BuildContext context, int index) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final skipped = await controller.removeAction(index);
+    if (skipped.isEmpty) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          skipped
+              .map((e) => labels.skipLine(e.activity, e.reason, e.missing))
+              .join('\n'),
         ),
       ),
     );

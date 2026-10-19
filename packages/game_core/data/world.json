@@ -6,7 +6,7 @@
     { "id": "goblin_woods", "name": "Goblin Woods", "unlockLevel": 1, "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": [],
       "flavour": "Goblin Woods: small thieves, big brothers, and something that growls in the deep." },
     { "id": "copper_hills", "name": "Copper Hills", "unlockLevel": 2, "enemies": [], "nodes": ["copper_vein"],
-      "flavour": "Copper Hills: green rock that rings when you hit it." },
+      "flavour": "Copper Hills: red-brown rock that rings when you hit it." },
     { "id": "old_graveyard", "name": "Old Graveyard", "unlockLevel": 6, "enemies": ["skeleton", "zombie", "graveyard_king"], "nodes": [],
       "flavour": "Old Graveyard: the dead here don't rest, and one of them wears a crown." },
     { "id": "grey_moor", "name": "Grey Moor", "unlockLevel": 10, "crafting": true, "enemies": ["wolf", "ghost", "bandit"], "nodes": [],

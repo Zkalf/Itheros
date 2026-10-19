@@ -42,9 +42,12 @@ class ActionStarted extends GameEvent {
 
 /// A queued action couldn't start and was dropped.
 class ActionSkipped extends GameEvent {
-  const ActionSkipped(this.activity, this.reason);
+  const ActionSkipped(this.activity, this.reason, {this.missing = const {}});
   final Activity activity;
   final SkipReason reason;
+
+  /// For a craft without materials: how many more of each input it needed.
+  final Map<String, int> missing;
 }
 
 class Gathered extends GameEvent {

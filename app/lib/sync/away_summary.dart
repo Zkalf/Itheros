@@ -10,6 +10,7 @@ class ActionLog {
     this.losses = const [],
     this.ended,
     this.skipped,
+    this.missing = const {},
     this.next,
   });
 
@@ -25,6 +26,9 @@ class ActionLog {
   /// Set when it never started.
   final SkipReason? skipped;
 
+  /// What a skipped craft lacked (item: how many more).
+  final Map<String, int> missing;
+
   /// The action that started after this one ended (skipped ones aside).
   final Activity? next;
 
@@ -38,6 +42,7 @@ class ActionLog {
     losses: losses,
     ended: ended,
     skipped: skipped,
+    missing: missing,
     next: a,
   );
 
@@ -49,6 +54,7 @@ class ActionLog {
     losses: [...losses, ...o.losses],
     ended: o.ended,
     skipped: o.skipped,
+    missing: o.missing,
     next: o.next,
   );
 }
@@ -127,8 +133,8 @@ class AwaySummary {
           if (i >= 0 && logs[i].next == null) {
             logs[i] = logs[i].withNext(activity);
           }
-        case ActionSkipped(:final activity, :final reason):
-          logs.add(ActionLog(activity, skipped: reason));
+        case ActionSkipped(:final activity, :final reason, :final missing):
+          logs.add(ActionLog(activity, skipped: reason, missing: missing));
         case Arrived():
           break;
       }
