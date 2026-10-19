@@ -69,6 +69,15 @@ if ($Release) {
   }
 }
 
+# Plan 0002 T5: warn (don't fail) when the Claude setup changed since the last full eval run.
+$latest = "$root\evals\results\latest.json"
+$hash = & "$PSScriptRoot\config-hash.ps1" -Root $root
+$evaluated = if (Test-Path $latest) { (Get-Content -Raw $latest | ConvertFrom-Json).configHash }
+if ($hash -ne $evaluated) {
+  Write-Host "`nWARNING: Claude setup $hash has no full eval run (last: $(if ($evaluated) { $evaluated } else { 'none' }))." -ForegroundColor Yellow
+  Write-Host '         Commit, then run .\evals\run.ps1 (evals/README.md).' -ForegroundColor Yellow
+}
+
 if ($failed.Count) {
   Write-Host "`nCHECK FAILED: $($failed -join ', ')" -ForegroundColor Red
   exit 1
