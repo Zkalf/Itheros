@@ -4,12 +4,14 @@
 // fake-async test zone.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/game_controller.dart';
 import 'package:walkingrpg/persistence/save_data.dart';
 import 'package:walkingrpg/persistence/save_store.dart';
 import 'package:walkingrpg/steps/fake_step_source.dart';
 import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
+import 'package:walkingrpg/ui/away_summary_card.dart';
 
 import 'support.dart';
 
@@ -22,6 +24,7 @@ Finder option(String kind, String target) =>
 Future<(GameController, FakeStepSource)> pumpGame(
   WidgetTester tester, {
   int level = 1,
+  int? xp,
   String location = 'camp',
   Map<String, int> inventory = const {},
   bool granted = true,
@@ -33,7 +36,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
 
   final source = FakeStepSource(granted: granted);
   final state = game.newGame(seed: 1)
-    ..xp = game.data.xpForLevel(level)
+    ..xp = xp ?? game.data.xpForLevel(level)
     ..location = location
     ..inventory.addAll(inventory);
   final store = MemorySaveStore(
@@ -163,7 +166,12 @@ void main() {
     expect(find.text('Arrived at Goblin Woods.'), findsOneWidget);
     expect(find.text('Saved 100 steps in your step bank.'), findsOneWidget);
 
-    await t.tap(find.text('OK'));
+    await t.tap(
+      find.descendant(
+        of: find.byType(AwaySummaryCard),
+        matching: find.text('OK'),
+      ),
+    );
     await t.pump();
     expect(find.text('While you were away'), findsNothing);
 
@@ -183,5 +191,158 @@ void main() {
     await t.pump();
 
     expect(find.text('You walked 1 step.'), findsOneWidget);
+  });
+
+  group('spec 0002 criterion 9: level-up cards', () {
+    Future<GameController> walkWhileAway(
+      WidgetTester t, {
+      required int steps,
+      int level = 1,
+      int? xp,
+      String location = 'goblin_woods',
+      String enemy = 'goblin',
+    }) async {
+      final (c, source) = await pumpGame(
+        t,
+        level: level,
+        xp: xp,
+        location: location,
+      );
+      await c.startActivity(Activity.fight(enemy));
+      source.walk(DateTime(2026, 10, 18, 10), steps);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      return c;
+    }
+
+    testWidgets('show on open, before the report, collapsed past 3', (t) async {
+      final c = await walkWhileAway(t, steps: 5000);
+      final levels = c.levelCards;
+      expect(levels.length, greaterThan(3));
+      expect(find.text('While you were away'), findsNothing);
+      expect(
+        find.text('Levels ${levels.first}–${levels[levels.length - 2]}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('New monster: Goblin brute (Goblin Woods)'),
+        findsOneWidget,
+      );
+
+      await t.tap(find.text('Next'));
+      await t.pumpAndSettle();
+      expect(find.text('Level ${levels.last}!'), findsOneWidget);
+
+      await t.tap(find.text('Continue'));
+      await t.pump();
+      expect(find.text('While you were away'), findsOneWidget);
+    });
+
+    testWidgets('Skip all goes straight to the report', (t) async {
+      final c = await walkWhileAway(t, steps: 5000);
+      expect(c.levelCards, isNotEmpty);
+      await t.tap(find.text('Skip all'));
+      await t.pump();
+      expect(c.levelCards, isEmpty);
+      expect(find.text('While you were away'), findsOneWidget);
+    });
+
+    testWidgets('level 10 is the Adventurer ceremony', (t) async {
+      await walkWhileAway(
+        t,
+        steps: 200,
+        level: 9,
+        xp: game.data.xpForLevel(10) - 1,
+        location: 'old_graveyard',
+        enemy: 'skeleton',
+      );
+      expect(find.text('Level 10!'), findsOneWidget);
+      expect(find.text('Adventurer'), findsOneWidget);
+      expect(find.text(game.data.ranks[1].line), findsOneWidget);
+      expect(find.textContaining('+1 talent point'), findsOneWidget);
+    });
+  });
+
+  group('spec 0002 criterion 10', () {
+    testWidgets('a skull or red fight asks first', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      expect(find.text('💀'), findsOneWidget, reason: 'the Old Bear');
+
+      await t.tap(option('fight', 'old_bear'));
+      await t.pumpAndSettle();
+      expect(find.text('You will almost certainly lose.'), findsOneWidget);
+      await t.tap(find.text('Cancel'));
+      await t.pumpAndSettle();
+      expect(c.state.activity, isNull);
+
+      await t.tap(option('fight', 'old_bear'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Fight anyway'));
+      await settle(t, c);
+      expect(c.state.activity!.activity, const Activity.fight('old_bear'));
+    });
+
+    testWidgets('a yellow fight starts without asking', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await settle(t, c);
+      expect(find.text('Deadly'), findsNothing);
+      expect(c.state.activity!.activity, const Activity.fight('goblin'));
+    });
+
+    testWidgets('"Next goal" has no Hide before level 10', (t) async {
+      await pumpGame(t, location: 'goblin_woods');
+      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
+      expect(
+        find.text('The Goblin in Goblin Woods is your level.'),
+        findsOneWidget,
+      );
+      expect(find.text('Hide'), findsNothing);
+    });
+
+    testWidgets('from level 10 it can be hidden and turned back on', (t) async {
+      final (c, _) = await pumpGame(t, level: 10, location: 'old_graveyard');
+      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
+      await t.tap(find.text('Hide'));
+      await settle(t, c);
+      expect(find.byKey(const ValueKey('next-goal')), findsNothing);
+
+      await t.tap(find.text('Character'));
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('show-next-goal')));
+      await settle(t, c);
+      await t.tap(find.text('Adventure'));
+      await t.pump();
+      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
+    });
+  });
+
+  testWidgets('a loss in the report carries the monster\'s hint', (t) async {
+    final (c, source) = await pumpGame(t, location: 'goblin_woods');
+    await c.startActivity(const Activity.fight('old_bear'));
+    source.walk(DateTime(2026, 10, 18, 10), 30);
+    now = DateTime(2026, 10, 18, 11);
+    await c.resume();
+    await t.pump();
+    expect(
+      find.textContaining(game.data.enemies['old_bear']!.lossHint!),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('flavour lines show once', (t) async {
+    final (c, _) = await pumpGame(t, location: 'goblin_woods');
+    final line = game.data.locations['goblin_woods']!.flavour!;
+    expect(find.text(line), findsOneWidget);
+    await t.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('discoveries')),
+        matching: find.text('OK'),
+      ),
+    );
+    await settle(t, c);
+    expect(find.text(line), findsNothing);
+    expect(c.seen, contains('goblin_woods'));
   });
 }

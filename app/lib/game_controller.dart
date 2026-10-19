@@ -109,6 +109,35 @@ class GameController extends ChangeNotifier {
     if (status == ControllerStatus.ready) await _syncNow(away: false);
   });
 
+  /// Levels reached and not yet celebrated, oldest first (spec 0002 §9.1).
+  /// Shown before the away report.
+  List<int> get levelCards => List.unmodifiable(_levelCards);
+  final _levelCards = <int>[];
+
+  void dismissLevelCards() {
+    _levelCards.clear();
+    notifyListeners();
+  }
+
+  /// The player hid "Next goal" (spec 0002 §9.3).
+  bool get nextGoalHidden => _save!.nextGoalHidden;
+
+  Future<void> setNextGoalHidden(bool hidden) =>
+      _update((s) => s.copyWith(nextGoalHidden: hidden));
+
+  /// Areas and monsters whose flavour line was shown (spec 0002 §9.5).
+  Set<String> get seen => _save!.seen;
+
+  Future<void> markSeen(Iterable<String> ids) =>
+      _update((s) => s.copyWith(seen: {...s.seen, ...ids}));
+
+  /// Saves a change to screen settings. Costs no steps, so no sync first.
+  Future<void> _update(SaveData Function(SaveData) change) => _serial(() async {
+    _save = change(_save!);
+    await store.save(_save!);
+    notifyListeners();
+  });
+
   void dismissAwaySummary() {
     awaySummary = null;
     notifyListeners();
@@ -165,6 +194,7 @@ class GameController extends ChangeNotifier {
       return;
     }
     syncError = null;
+    _levelCards.addAll(result.summary.levelsReached);
     if (!result.summary.isEmpty) {
       _save = result.save;
       await store.save(_save!);

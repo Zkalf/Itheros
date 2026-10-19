@@ -76,10 +76,6 @@ FightEstimate estimateFight(Stats me, EnemyDef e) {
   return FightEstimate(false, 1000, 0);
 }
 
-/// How an item ranks against others in the same slot.
-int gearScore(ItemDef item) =>
-    item.bonus.attack * 5 + item.bonus.defense * 3 + item.bonus.hp;
-
 /// A player at [level] wearing, per open slot, the best item a recipe up to
 /// [level] makes ("the gear of that stretch"), or no gear at all. Recipes
 /// needing any of [without] are skipped (a boss's own drops).
@@ -98,8 +94,7 @@ GameState referencePlayer(
     final slot = item.slot;
     if (slot == null || !open.contains(slot)) continue;
     final current = s.equipment[slot];
-    if (current == null ||
-        gearScore(item) > gearScore(game.data.items[current]!)) {
+    if (current == null || item.score > game.data.items[current]!.score) {
       s.equipment[slot] = item.id;
     }
   }
@@ -248,7 +243,7 @@ class SensiblePlayer {
   int _have(GameState s, String item) =>
       (s.inventory[item] ?? 0) + (s.equipment.containsValue(item) ? 1 : 0);
 
-  int _score(String? item) => item == null ? 0 : gearScore(data.items[item]!);
+  int _score(String? item) => item == null ? 0 : data.items[item]!.score;
 
   Activity _goal(GameState s) {
     final lvl = game.level(s);

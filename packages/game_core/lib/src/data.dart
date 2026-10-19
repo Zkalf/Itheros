@@ -204,6 +204,9 @@ class ItemDef {
   /// Equipment slot, or null for materials.
   final String? slot;
   final Stats bonus;
+
+  /// How it ranks against other gear for the same slot.
+  int get score => bonus.attack * 5 + bonus.defense * 3 + bonus.hp;
 }
 
 class RecipeDef {

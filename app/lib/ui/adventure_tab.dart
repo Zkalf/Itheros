@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -5,6 +7,7 @@ import '../game_controller.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'level_badge.dart';
 
 /// Where you are, what you're doing, and what you can do here. Locked
 /// content is hidden, not greyed out (spec 0001 §5).
@@ -25,22 +28,25 @@ class AdventureTab extends StatelessWidget {
 
     Widget option({
       required Activity activity,
-      required IconData icon,
+      required Widget leading,
       required String title,
       required String subtitle,
       bool enabled = true,
+      bool deadly = false,
     }) {
       final active = current == activity;
       return ListTile(
         key: ValueKey('option-${activity.kind.name}-${activity.target}'),
-        leading: Icon(icon),
+        leading: leading,
         title: Text(title),
         subtitle: Text(subtitle),
         enabled: enabled,
         trailing: active
             ? const Chip(label: Text('Active'))
             : const Icon(Icons.chevron_right),
-        onTap: active || !enabled ? null : () => _start(context, c, activity),
+        onTap: active || !enabled
+            ? null
+            : () => _start(context, c, activity, deadly: deadly),
       );
     }
 
@@ -64,40 +70,49 @@ class AdventureTab extends StatelessWidget {
               ),
             ),
           _StatusCard(controller: c, labels: labels),
+          _NextGoal(controller: c, labels: labels),
+          _Discoveries(controller: c, labels: labels),
           _ActivityCard(controller: c, labels: labels),
           if (enemies.isNotEmpty) const _Heading('Fight'),
           for (final id in enemies)
-            option(
-              activity: Activity.fight(id),
-              icon: Icons.sports_kabaddi,
-              title: labels.enemy(id),
-              subtitle: _enemyText(game.data.enemies[id]!, game.data),
-            ),
+            if (game.enemyBand(s, id) case final band)
+              option(
+                activity: Activity.fight(id),
+                leading: LevelBadge(
+                  level: game.data.enemies[id]!.level,
+                  colour: band.colour,
+                ),
+                title: labels.enemy(id),
+                subtitle: _enemyText(game.data.enemies[id]!, band, game.data),
+                deadly:
+                    band.colour == LevelColour.red ||
+                    band.colour == LevelColour.skull,
+              ),
           if (nodes.isNotEmpty) const _Heading('Gather'),
           for (final id in nodes)
             option(
               activity: Activity.gather(id),
-              icon: Icons.landscape,
+              leading: const Icon(Icons.landscape),
               title: labels.node(id),
               subtitle:
                   '${game.data.nodes[id]!.steps} steps per '
                   '${labels.item(game.data.nodes[id]!.item)} · '
-                  '${game.data.nodes[id]!.xp} XP',
+                  '${_faded(game.data.nodes[id]!.xp, game.data.nodes[id]!.unlockLevel, game, s)} XP',
             ),
           if (recipes.isNotEmpty) const _Heading('Craft'),
           for (final id in recipes)
             option(
               activity: Activity.craft(id),
-              icon: Icons.handyman,
+              leading: const Icon(Icons.handyman),
               title: labels.recipe(id),
-              subtitle: _recipeText(game.data.recipes[id]!, s, labels),
+              subtitle: _recipeText(game.data.recipes[id]!, s, game, labels),
               enabled: game.hasMaterials(s, id),
             ),
           if (destinations.isNotEmpty) const _Heading('Travel'),
           for (final id in destinations)
             option(
               activity: Activity.travel(id),
-              icon: Icons.signpost,
+              leading: const Icon(Icons.signpost),
               title: labels.location(id),
               subtitle: '${fmt(game.data.route(s.location, id)!.steps)} steps',
             ),
@@ -113,30 +128,166 @@ class AdventureTab extends StatelessWidget {
     );
   }
 
-  static String _enemyText(EnemyDef e, GameData data) =>
-      'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense} · '
-      '${e.xp} XP · ${data.combatRoundSteps} steps per round';
+  static String _enemyText(EnemyDef e, LevelBand band, GameData data) => [
+    if (band.colour == LevelColour.orange) 'Risky',
+    'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
+    if (e.traits.isNotEmpty) e.traits.map((t) => _traitName[t]).join(', '),
+    '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
+    '${data.combatRoundSteps} steps per round',
+  ].join(' · ');
 
-  static String _recipeText(RecipeDef r, GameState s, Labels labels) {
+  static const _traitName = {
+    Trait.quick: 'Quick',
+    Trait.slow: 'Slow',
+    Trait.ghostly: 'Ghostly',
+    Trait.regenerates: 'Regenerates',
+  };
+
+  /// [xp] for something at [level], as the player would get it now.
+  static int _faded(int xp, int level, Game game, GameState s) => math.max(
+    1,
+    xp * game.data.bandFor(level, game.level(s)).xpPercent ~/ 100,
+  );
+
+  static String _recipeText(
+    RecipeDef r,
+    GameState s,
+    Game game,
+    Labels labels,
+  ) {
     final needs = r.inputs.entries
         .map(
           (e) => '${labels.item(e.key)} ${s.inventory[e.key] ?? 0}/${e.value}',
         )
         .join(', ');
-    return 'Needs $needs · ${r.steps} steps · ${r.xp} XP';
+    return 'Needs $needs · ${r.steps} steps · '
+        '${_faded(r.xp, r.unlockLevel, game, s)} XP';
   }
 
   static Future<void> _start(
     BuildContext context,
     GameController c,
-    Activity a,
-  ) async {
+    Activity a, {
+    bool deadly = false,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
+    if (deadly) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Deadly'),
+          content: const Text('You will almost certainly lose.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Fight anyway'),
+            ),
+          ],
+        ),
+      );
+      if (go != true) return;
+    }
     try {
       await c.startActivity(a);
     } on ActivityError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
+  }
+}
+
+/// "Next goal" (spec 0002 §9.3). Always shown before level 10; from then
+/// on it can be hidden, and turned back on in the Character tab.
+class _NextGoal extends StatelessWidget {
+  const _NextGoal({required this.controller, required this.labels});
+
+  final GameController controller;
+  final Labels labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = controller.game;
+    final s = controller.state;
+    final canHide = game.level(s) >= 10;
+    if (canHide && controller.nextGoalHidden) return const SizedBox.shrink();
+    final goal = game.nextGoal(s);
+    if (goal == null) return const SizedBox.shrink();
+    final grey = switch (goal) {
+      CollectGoal(:final source) when source.kind == ActivityKind.fight =>
+        game.enemyBand(s, source.target).colour == LevelColour.grey,
+      _ => false,
+    };
+    return Card(
+      key: const ValueKey('next-goal'),
+      child: ListTile(
+        leading: const Icon(Icons.flag),
+        title: const Text('Next goal'),
+        subtitle: Text(
+          labels.goal(
+            goal,
+            canCraftHere: game.data.locations[s.location]!.crafting,
+            grey: grey,
+          ),
+        ),
+        trailing: canHide
+            ? TextButton(
+                onPressed: () => controller.setNextGoalHidden(true),
+                child: const Text('Hide'),
+              )
+            : null,
+      ),
+    );
+  }
+}
+
+/// Flavour lines for the area and monsters here, the first time they're
+/// seen (spec 0002 §9.5).
+class _Discoveries extends StatelessWidget {
+  const _Discoveries({required this.controller, required this.labels});
+
+  final GameController controller;
+  final Labels labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = controller.game;
+    final s = controller.state;
+    final here = game.data.locations[s.location]!;
+    final lines = <String, String>{
+      here.id: ?here.flavour,
+      for (final id in game.availableEnemies(s))
+        id: ?game.data.enemies[id]!.flavour,
+    }..removeWhere((id, _) => controller.seen.contains(id));
+    if (lines.isEmpty) return const SizedBox.shrink();
+    return Card(
+      key: const ValueKey('discoveries'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final l in lines.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  l,
+                  style: const TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => controller.markSeen(lines.keys),
+                child: const Text('OK'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

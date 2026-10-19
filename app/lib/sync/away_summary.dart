@@ -10,7 +10,7 @@ class AwaySummary {
     this.banked = 0,
     this.lost = 0,
     this.fightsWon = const {},
-    this.fightsLost = 0,
+    this.lossesTo = const {},
     this.itemsGained = const {},
     this.levelsReached = const [],
     this.achievements = const [],
@@ -23,7 +23,7 @@ class AwaySummary {
   factory AwaySummary._of(StepReport r) {
     final won = <String, int>{};
     final items = <String, int>{};
-    var lostFights = 0;
+    final lost = <String, int>{};
     final levels = <int>[];
     final achievements = <String>[];
     final ended = <ActivityEnded>[];
@@ -33,8 +33,8 @@ class AwaySummary {
         case FightWon(:final enemy, :final drops):
           won[enemy] = (won[enemy] ?? 0) + 1;
           drops.forEach(gain);
-        case FightLost():
-          lostFights++;
+        case FightLost(:final enemy):
+          lost[enemy] = (lost[enemy] ?? 0) + 1;
         case Gathered(:final item):
           gain(item, 1);
         case Crafted(:final item):
@@ -56,7 +56,7 @@ class AwaySummary {
       banked: r.banked,
       lost: r.lost,
       fightsWon: won,
-      fightsLost: lostFights,
+      lossesTo: lost,
       itemsGained: items,
       levelsReached: levels,
       achievements: achievements,
@@ -70,7 +70,9 @@ class AwaySummary {
   final int banked;
   final int lost;
   final Map<String, int> fightsWon;
-  final int fightsLost;
+
+  /// Fights lost, by monster (spec 0002 §9.4: each gets its hint).
+  final Map<String, int> lossesTo;
   final Map<String, int> itemsGained;
   final List<int> levelsReached;
   final List<String> achievements;
@@ -85,7 +87,7 @@ class AwaySummary {
     banked: banked + o.banked,
     lost: lost + o.lost,
     fightsWon: _add(fightsWon, o.fightsWon),
-    fightsLost: fightsLost + o.fightsLost,
+    lossesTo: _add(lossesTo, o.lossesTo),
     itemsGained: _add(itemsGained, o.itemsGained),
     levelsReached: [...levelsReached, ...o.levelsReached],
     achievements: [...achievements, ...o.achievements],

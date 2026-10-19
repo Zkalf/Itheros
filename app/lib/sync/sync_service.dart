@@ -86,7 +86,7 @@ class SyncService {
     }
 
     return SyncResult(
-      SaveData(game: state, firstDay: save.firstDay, credited: credited),
+      save.copyWith(game: state, credited: credited),
       AwaySummary.fromReports(reports),
     );
   }

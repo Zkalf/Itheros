@@ -24,7 +24,10 @@ class AwaySummaryCard extends StatelessWidget {
         'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
       if (s.fightsWon.isNotEmpty)
         'Won: ${labels.counts(s.fightsWon, labels.enemy)}.',
-      if (s.fightsLost > 0) 'Lost ${plural(s.fightsLost, 'fight')}.',
+      for (final e in s.lossesTo.entries)
+        'Lost to the ${labels.enemy(e.key)}'
+            '${e.value > 1 ? ' ×${e.value}' : ''}. '
+            '${labels.data.enemies[e.key]?.lossHint ?? ''}',
       if (s.itemsGained.isNotEmpty)
         'Gained: ${labels.counts(s.itemsGained, labels.item)}.',
       for (final l in s.levelsReached) 'Reached level $l!',

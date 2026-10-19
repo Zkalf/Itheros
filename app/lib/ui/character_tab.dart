@@ -15,10 +15,8 @@ class CharacterTab extends StatelessWidget {
     final s = c.state;
     final labels = Labels(game.data);
     final stats = game.stats(s);
-    final slots = {
-      for (final i in game.data.items.values)
-        if (i.slot != null) i.slot!,
-    };
+    final level = game.level(s);
+    final points = game.talentPoints(level);
     final text = Theme.of(context).textTheme;
 
     return ListView(
@@ -27,28 +25,49 @@ class CharacterTab extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Column(
               children: [
-                _Stat('Level', '${game.level(s)}'),
-                _Stat('HP', '${stats.hp}'),
-                _Stat('Attack', '${stats.attack}'),
-                _Stat('Defense', '${stats.defense}'),
+                Text(game.rank(level).name, style: text.titleLarge),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _Stat('Level', '$level'),
+                    _Stat('HP', '${stats.hp}'),
+                    _Stat('Attack', '${stats.attack}'),
+                    _Stat('Defense', '${stats.defense}'),
+                  ],
+                ),
+                if (points > 0) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '$points talent point${points == 1 ? '' : 's'} waiting. '
+                    'Talents arrive in a later update.',
+                    style: text.bodySmall,
+                  ),
+                ],
               ],
             ),
           ),
         ),
+        if (level >= 10)
+          SwitchListTile(
+            key: const ValueKey('show-next-goal'),
+            title: const Text('Show "Next goal"'),
+            value: !c.nextGoalHidden,
+            onChanged: (show) => c.setNextGoalHidden(!show),
+          ),
         const SizedBox(height: 16),
         Text('Equipment', style: text.titleMedium),
-        for (final slot in slots)
+        for (final slot in game.openSlots(s))
           ListTile(
-            leading: Icon(slot == 'weapon' ? Icons.gavel : Icons.checkroom),
+            leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
             title: Text(
               s.equipment[slot] == null
                   ? 'Empty'
                   : labels.item(s.equipment[slot]!),
             ),
-            subtitle: Text(_capitalise(slot)),
+            subtitle: Text(labels.slot(slot)),
             trailing: s.equipment[slot] == null
                 ? null
                 : TextButton(
@@ -90,7 +109,14 @@ class CharacterTab extends StatelessWidget {
     );
   }
 
-  static String _capitalise(String s) => s[0].toUpperCase() + s.substring(1);
+  static const _slotIcons = {
+    'weapon': Icons.gavel,
+    'body': Icons.checkroom,
+    'shield': Icons.shield,
+    'head': Icons.face,
+    'feet': Icons.hiking,
+    'amulet': Icons.diamond,
+  };
 
   static Future<void> _run(
     BuildContext context,

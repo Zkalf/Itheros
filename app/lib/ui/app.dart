@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../game_controller.dart';
 import 'controller_scope.dart';
 import 'home_shell.dart';
+import 'level_up_screen.dart';
 import 'onboarding_screens.dart';
 
 class WalkingRpgApp extends StatefulWidget {
@@ -52,7 +53,10 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
             ControllerStatus.loading => const LoadingScreen(),
             ControllerStatus.unavailable => const UnavailableScreen(),
             ControllerStatus.needsPermission => const PermissionScreen(),
-            ControllerStatus.ready => const HomeShell(),
+            ControllerStatus.ready =>
+              widget.controller.levelCards.isEmpty
+                  ? const HomeShell()
+                  : const LevelUpScreen(),
           },
         ),
       ),

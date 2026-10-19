@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'activity.dart';
 import 'data.dart';
 import 'events.dart';
+import 'goal.dart';
 import 'news.dart';
 import 'rng.dart';
 import 'state.dart';
@@ -80,6 +81,79 @@ class Game {
             data.bandFor(e.level, level - 1).colour != LevelColour.grey)
           LevelNews(NewsKind.turnedGrey, e.id),
     ];
+  }
+
+  /// What to do next, or null when nothing applies (spec 0002 §9.3).
+  Goal? nextGoal(GameState s) {
+    final lvl = level(s);
+    final open = openSlots(s);
+    int worn(String slot) => data.items[s.equipment[slot]]?.score ?? 0;
+    int gain(String item) =>
+        data.items[item]!.score - worn(data.items[item]!.slot!);
+
+    final better = [
+      for (final item in s.inventory.keys)
+        if (data.items[item]?.slot case final slot?)
+          if (open.contains(slot) && gain(item) > 0) item,
+    ]..sort((a, b) => gain(b).compareTo(gain(a)));
+    if (better.isNotEmpty) return EquipGoal(better.first);
+
+    final upgrades = [
+      for (final r in data.recipes.values)
+        if (r.unlockLevel <= lvl)
+          if (data.items[r.output]!.slot case final slot?)
+            if (open.contains(slot) &&
+                (s.inventory[r.output] ?? 0) == 0 &&
+                s.equipment[slot] != r.output &&
+                gain(r.output) > 0)
+              r,
+    ]..sort((a, b) => gain(b.output).compareTo(gain(a.output)));
+    for (final r in upgrades) {
+      if (hasMaterials(s, r.id)) return CraftGoal(r.id);
+    }
+    for (final r in upgrades) {
+      for (final input in r.inputs.entries) {
+        final missing = input.value - (s.inventory[input.key] ?? 0);
+        if (missing <= 0) continue;
+        final source = _safeSource(s, input.key);
+        if (source != null) return CollectGoal(input.key, missing, source);
+        break;
+      }
+    }
+
+    EnemyDef? best;
+    var bestRate = 0.0;
+    final me = stats(s);
+    for (final e in data.enemies.values) {
+      if (e.unlockLevel > lvl ||
+          enemyBand(s, e.id).colour != LevelColour.yellow) {
+        continue;
+      }
+      final hit = math.max(1, me.attack - e.stats.defense / 2);
+      final rate = e.xp / (e.stats.hp / hit).ceil();
+      if (rate > bestRate) (best, bestRate) = (e, rate);
+    }
+    return best == null ? null : FightGoal(best.id);
+  }
+
+  /// A gathering spot for [item], or the most generous monster dropping it
+  /// that is at most yellow.
+  Activity? _safeSource(GameState s, String item) {
+    final lvl = level(s);
+    for (final n in data.nodes.values) {
+      if (n.item == item && n.unlockLevel <= lvl) return Activity.gather(n.id);
+    }
+    EnemyDef? best;
+    var bestChance = 0.0;
+    for (final e in data.enemies.values) {
+      if (e.unlockLevel > lvl || e.level > lvl + 2) continue;
+      for (final d in e.drops) {
+        if (d.item == item && d.chance * d.count > bestChance) {
+          (best, bestChance) = (e, d.chance * d.count);
+        }
+      }
+    }
+    return best == null ? null : Activity.fight(best.id);
   }
 
   /// Brings a state read from an older save up to date. Version 1 saves
