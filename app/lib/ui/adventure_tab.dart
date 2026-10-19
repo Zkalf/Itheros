@@ -70,6 +70,7 @@ class AdventureTab extends StatelessWidget {
               ),
             ),
           _StatusCard(controller: c, labels: labels),
+          if (c.testWalkOn) _TestWalkCard(controller: c),
           _NextGoal(controller: c, labels: labels),
           _Discoveries(controller: c, labels: labels),
           _QueueCard(controller: c, labels: labels),
@@ -322,6 +323,41 @@ class _Discoveries extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Pretend steps for testing at home (spec 0004 §3). Shown while the
+/// hidden switch on the Character tab is on.
+class _TestWalkCard extends StatelessWidget {
+  const _TestWalkCard({required this.controller});
+
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    key: const ValueKey('test-walk'),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Test walk', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text('Adds pretend steps, as if you walked them.'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final n in const [100, 1000, 5000])
+                FilledButton.tonal(
+                  onPressed: () => controller.testWalk(n),
+                  child: Text('+${fmt(n)}'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _Heading extends StatelessWidget {

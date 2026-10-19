@@ -73,6 +73,9 @@ class GameController extends ChangeNotifier {
 
   GameState get state => _save!.game;
 
+  /// The controller's clock, for screens that show times.
+  DateTime get now => _clock();
+
   Future<void> start() => _serial(() async {
     if (!await permissions.isAvailable()) {
       return _setStatus(ControllerStatus.unavailable);

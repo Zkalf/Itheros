@@ -27,7 +27,7 @@ class CharacterTab extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Text(game.rank(level).name, style: text.titleLarge),
+                _RankTitle(game.rank(level).name),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -153,6 +153,46 @@ class CharacterTab extends StatelessWidget {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
+}
+
+/// The rank name. Seven quick taps switch test walk on or off (spec 0004
+/// decision 5).
+class _RankTitle extends StatefulWidget {
+  const _RankTitle(this.name);
+
+  final String name;
+
+  @override
+  State<_RankTitle> createState() => _RankTitleState();
+}
+
+class _RankTitleState extends State<_RankTitle> {
+  static const _taps = 7;
+  static const _gap = Duration(seconds: 2);
+
+  var _count = 0;
+  DateTime? _last;
+
+  void _tap() {
+    final now = DateTime.now();
+    final last = _last;
+    _count = last != null && now.difference(last) < _gap ? _count + 1 : 1;
+    _last = now;
+    if (_count < _taps) return;
+    _count = 0;
+    final c = ControllerScope.of(context);
+    final on = !c.testWalkOn;
+    c.setTestWalk(on);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text('Test walk ${on ? 'on' : 'off'}')));
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: _tap,
+    child: Text(widget.name, style: Theme.of(context).textTheme.titleLarge),
+  );
 }
 
 class _Stat extends StatelessWidget {

@@ -3,6 +3,20 @@ import 'package:flutter/material.dart';
 import '../sync/away_summary.dart';
 import 'labels.dart';
 
+/// The lines of one report, as the card and the journal show them.
+List<String> reportLines(AwaySummary s, Labels labels) => [
+  'You walked ${plural(s.walked, 'step')}.',
+  if (s.boostUsed > 0)
+    'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
+  for (final a in s.actions) ...labels.actionLines(a),
+  for (final l in s.levelsReached) 'Reached level $l!',
+  for (final a in s.achievements) 'Achievement: ${labels.achievement(a)}.',
+  if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
+  if (s.lost > 0)
+    'Your step bank was full, so ${plural(s.lost, 'step')} '
+        'could not be saved.',
+];
+
 class AwaySummaryCard extends StatelessWidget {
   const AwaySummaryCard({
     super.key,
@@ -17,19 +31,7 @@ class AwaySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = summary;
-    final lines = <String>[
-      'You walked ${plural(s.walked, 'step')}.',
-      if (s.boostUsed > 0)
-        'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
-      for (final a in s.actions) ...labels.actionLines(a),
-      for (final l in s.levelsReached) 'Reached level $l!',
-      for (final a in s.achievements) 'Achievement: ${labels.achievement(a)}.',
-      if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
-      if (s.lost > 0)
-        'Your step bank was full, so ${plural(s.lost, 'step')} '
-            'could not be saved.',
-    ];
+    final lines = reportLines(summary, labels);
     final scheme = Theme.of(context).colorScheme;
     return Card(
       color: scheme.secondaryContainer,

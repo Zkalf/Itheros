@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'achievements_tab.dart';
 import 'adventure_tab.dart';
 import 'character_tab.dart';
-import 'controller_scope.dart';
+import 'journal_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -19,20 +19,18 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final c = ControllerScope.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_tab]),
         actions: [
-          if (c.lastAwaySummary != null && c.awaySummary == null)
-            IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: 'Show the last "while you were away" report',
-              onPressed: () {
-                c.showLastAwaySummary();
-                setState(() => _tab = 0);
-              },
+          IconButton(
+            key: const ValueKey('journal-button'),
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'Journal',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const JournalScreen()),
             ),
+          ),
         ],
       ),
       body: switch (_tab) {
