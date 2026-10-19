@@ -114,7 +114,7 @@ void main() {
     await t.tap(option('travel', 'goblin_woods'));
     await settle(t, c);
     expect(find.text('Walking to Goblin Woods'), findsOneWidget);
-    expect(find.text('0 / 200 steps'), findsOneWidget);
+    expect(find.text('Walking to Goblin Woods: 0 / 200 steps'), findsOneWidget);
   });
 
   testWidgets('Stop is shown only while active, and banks unspent steps', (
@@ -344,5 +344,90 @@ void main() {
     await settle(t, c);
     expect(find.text(line), findsNothing);
     expect(c.seen, contains('goblin_woods'));
+  });
+
+  group('spec 0003: running your day', () {
+    testWidgets('every open area is listed, nearest first, with distance', (
+      t,
+    ) async {
+      await pumpGame(t);
+      expect(find.text('Goblin Woods · 200 steps away'), findsOneWidget);
+      expect(option('fight', 'goblin'), findsOneWidget);
+    });
+
+    testWidgets('below level 5 a tap starts at once', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await settle(t, c);
+      expect(find.text('Stop when'), findsNothing);
+      expect(c.state.activity!.activity, const Activity.fight('goblin'));
+    });
+
+    testWidgets('from level 5: pick a stop condition, start, then queue', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await t.pumpAndSettle();
+      expect(find.text('Stop when'), findsOneWidget);
+      final grey = t.widget<ChoiceChip>(
+        find.byKey(const ValueKey('stop-untilGrey')),
+      );
+      expect(grey.selected, isTrue, reason: 'the default for fights');
+      await t.tap(find.byKey(const ValueKey('start-now')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.activity!.stop, const StopCondition.untilGrey());
+
+      await t.tap(option('fight', 'goblin_brute'));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('stop-untilHave')));
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('add-to-queue')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(
+        c.state.queue.single.activity,
+        const Activity.fight('goblin_brute'),
+      );
+      expect(c.state.queue.single.stop.kind, StopKind.untilHave);
+      expect(find.byKey(const ValueKey('queued-0')), findsOneWidget);
+      expect(find.text('2 of 2 actions planned'), findsOneWidget);
+
+      await t.tap(find.byKey(const ValueKey('remove-1')));
+      await settle(t, c);
+      expect(c.state.queue, isEmpty);
+      expect(find.byKey(const ValueKey('queued-0')), findsNothing);
+    });
+
+    testWidgets('criterion 9: the report tells each action\'s story', (
+      t,
+    ) async {
+      final (c, source) = await pumpGame(t, level: 5);
+      await c.addAction(
+        const Activity.fight('goblin'),
+        stop: StopCondition.untilHave('goblin_hide', 2),
+      );
+      await c.addAction(const Activity.craft('copper_sword'));
+      source.walk(DateTime(2026, 10, 18, 10), 2000);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      if (c.levelCards.isNotEmpty) {
+        c.dismissLevelCards();
+        await t.pump();
+      }
+      expect(
+        find.textContaining(
+          RegExp(r'^Fought the Goblin: \d+ wins, \+\d+ XP, .*Goblin hide'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Stopped: goal reached.'), findsOneWidget);
+      expect(
+        find.text('Skipped the Copper sword: not enough materials.'),
+        findsOneWidget,
+      );
+    });
   });
 }

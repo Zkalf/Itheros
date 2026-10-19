@@ -7,6 +7,7 @@ import '../game_controller.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'action_sheet.dart';
 import 'level_badge.dart';
 
 /// Where you are, what you're doing, and what you can do here. Locked
@@ -20,9 +21,10 @@ class AdventureTab extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final labels = Labels(game.data);
-    final enemies = game.availableEnemies(s);
-    final nodes = game.availableNodes(s);
-    final recipes = game.availableRecipes(s);
+    // Every open area, nearest first, so a day can be planned from anywhere
+    // (spec 0003 §8).
+    final areas = game.openLocationsByDistance(s);
+    final recipes = game.unlockedRecipes(s);
     final destinations = game.travelDestinations(s);
     final current = s.activity?.activity;
 
@@ -72,34 +74,50 @@ class AdventureTab extends StatelessWidget {
           _StatusCard(controller: c, labels: labels),
           _NextGoal(controller: c, labels: labels),
           _Discoveries(controller: c, labels: labels),
-          _ActivityCard(controller: c, labels: labels),
-          if (enemies.isNotEmpty) const _Heading('Fight'),
-          for (final id in enemies)
-            if (game.enemyBand(s, id) case final band)
-              option(
-                activity: Activity.fight(id),
-                leading: LevelBadge(
-                  level: game.data.enemies[id]!.level,
-                  colour: band.colour,
-                ),
-                title: labels.enemy(id),
-                subtitle: _enemyText(game.data.enemies[id]!, band, game.data),
-                deadly:
-                    band.colour == LevelColour.red ||
-                    band.colour == LevelColour.skull,
+          _QueueCard(controller: c, labels: labels),
+          for (final MapEntry(key: place, value: steps) in areas.entries)
+            if ((game.enemiesAt(s, place), game.nodesAt(s, place))
+                case (final enemies, final nodes)
+                when enemies.isNotEmpty || nodes.isNotEmpty) ...[
+              _Heading(
+                '${labels.location(place)} · '
+                '${steps == 0 ? 'here' : '${fmt(steps)} steps away'}',
               ),
-          if (nodes.isNotEmpty) const _Heading('Gather'),
-          for (final id in nodes)
-            option(
-              activity: Activity.gather(id),
-              leading: const Icon(Icons.landscape),
-              title: labels.node(id),
-              subtitle:
-                  '${game.data.nodes[id]!.steps} steps per '
-                  '${labels.item(game.data.nodes[id]!.item)} · '
-                  '${_faded(game.data.nodes[id]!.xp, game.data.nodes[id]!.unlockLevel, game, s)} XP',
+              for (final id in enemies)
+                if (game.enemyBand(s, id) case final band)
+                  option(
+                    activity: Activity.fight(id),
+                    leading: LevelBadge(
+                      level: game.data.enemies[id]!.level,
+                      colour: band.colour,
+                    ),
+                    title: labels.enemy(id),
+                    subtitle: _enemyText(
+                      game.data.enemies[id]!,
+                      band,
+                      game.data,
+                    ),
+                    deadly:
+                        band.colour == LevelColour.red ||
+                        band.colour == LevelColour.skull,
+                  ),
+              for (final id in nodes)
+                option(
+                  activity: Activity.gather(id),
+                  leading: const Icon(Icons.landscape),
+                  title: labels.node(id),
+                  subtitle:
+                      '${game.data.nodes[id]!.steps} steps per '
+                      '${labels.item(game.data.nodes[id]!.item)} · '
+                      '${_faded(game.data.nodes[id]!.xp, game.data.nodes[id]!.unlockLevel, game, s)} XP',
+                ),
+            ],
+          if (recipes.isNotEmpty)
+            _Heading(
+              game.data.locations[s.location]!.crafting
+                  ? 'Craft · here'
+                  : 'Craft · at the nearest camp or outpost',
             ),
-          if (recipes.isNotEmpty) const _Heading('Craft'),
           for (final id in recipes)
             option(
               activity: Activity.craft(id),
@@ -191,8 +209,23 @@ class AdventureTab extends StatelessWidget {
       );
       if (go != true) return;
     }
+    if (!context.mounted) return;
     try {
-      await c.startActivity(a);
+      // One slot: it starts at once, as before level 5 (spec 0003
+      // decision 1). Otherwise the player picks a stop condition and
+      // whether to start now or queue it.
+      if (c.game.queueSlots(c.state) == 1) {
+        await c.addAction(a);
+        return;
+      }
+      final choice = await showModalBottomSheet<(StopCondition, bool)>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => ActionSheet(controller: c, activity: a),
+      );
+      if (choice == null) return;
+      final (stop, now) = choice;
+      await (now ? c.startActivity(a, stop: stop) : c.addAction(a, stop: stop));
     } on ActivityError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
@@ -357,8 +390,9 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.controller, required this.labels});
+/// The running action and the ones waiting after it (spec 0003 §8).
+class _QueueCard extends StatelessWidget {
+  const _QueueCard({required this.controller, required this.labels});
 
   final GameController controller;
   final Labels labels;
@@ -369,20 +403,28 @@ class _ActivityCard extends StatelessWidget {
     final s = controller.state;
     final run = s.activity;
     final text = Theme.of(context).textTheme;
+    final slots = game.queueSlots(s);
 
     final List<Widget> body;
     if (run == null) {
       body = [
         Text('Resting', style: text.titleMedium),
         const SizedBox(height: 4),
-        const Text(
-          'Pick something to do below. Until then, your steps go '
-          'to the step bank.',
+        Text(
+          slots == 1
+              ? 'Pick something to do below. Until then, your steps go to '
+                    'the step bank.'
+              : 'Plan up to $slots actions below; each starts when the one '
+                    'before it stops. Until then, your steps go to the step '
+                    'bank.',
         ),
       ];
     } else {
       final cost = game.unitCost(s)!;
       final fight = run.fight;
+      final enemyHp = run.activity.kind == ActivityKind.fight
+          ? game.data.enemies[run.activity.target]!.stats.hp
+          : 0;
       body = [
         Row(
           children: [
@@ -396,15 +438,29 @@ class _ActivityCard extends StatelessWidget {
               key: const ValueKey('stop-activity'),
               onPressed: controller.stopActivity,
               icon: const Icon(Icons.stop),
-              label: const Text('Stop'),
+              label: Text(s.queue.isEmpty ? 'Stop' : 'Stop · next'),
             ),
           ],
         ),
+        if (run.activity.kind != ActivityKind.travel)
+          Text(
+            labels.stop(
+              run.stop,
+              run.activity,
+              owned: run.stop.item == null ? 0 : game.owned(s, run.stop.item!),
+              crafted: run.crafted,
+            ),
+          ),
         const SizedBox(height: 8),
         _Bar(
-          label: run.activity.kind == ActivityKind.fight
-              ? 'Next round: ${run.progress} / $cost steps'
-              : '${fmt(run.progress)} / ${fmt(cost)} steps',
+          label: switch (run) {
+            RunningActivity(:final leg?) =>
+              'Walking to ${labels.location(leg)}: '
+                  '${fmt(run.progress)} / ${fmt(cost)} steps',
+            _ when run.activity.kind == ActivityKind.fight =>
+              'Next round: ${run.progress} / $cost steps',
+            _ => '${fmt(run.progress)} / ${fmt(cost)} steps',
+          },
           value: run.progress / cost,
         ),
         if (fight != null) ...[
@@ -417,13 +473,48 @@ class _ActivityCard extends StatelessWidget {
           _Bar(
             label:
                 '${labels.enemy(run.activity.target)}: '
-                '${fight.enemyHp} / '
-                '${game.data.enemies[run.activity.target]!.stats.hp} HP',
-            value:
-                fight.enemyHp /
-                game.data.enemies[run.activity.target]!.stats.hp,
+                '${fight.enemyHp} / $enemyHp HP',
+            value: fight.enemyHp / enemyHp,
           ),
         ],
+        if (run.lossStreak > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Lost ${run.lossStreak} in a row; it gives up at '
+            '${game.data.lossesToGiveUp}.',
+            style: text.bodySmall,
+          ),
+        ],
+        for (var i = 0; i < s.queue.length; i++)
+          ListTile(
+            key: ValueKey('queued-$i'),
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(radius: 14, child: Text('${i + 2}')),
+            title: Text(labels.short(s.queue[i].activity)),
+            subtitle: Text(
+              labels.stop(
+                s.queue[i].stop,
+                s.queue[i].activity,
+                owned: s.queue[i].stop.item == null
+                    ? 0
+                    : game.owned(s, s.queue[i].stop.item!),
+              ),
+            ),
+            trailing: IconButton(
+              key: ValueKey('remove-${i + 1}'),
+              tooltip: 'Remove',
+              icon: const Icon(Icons.close),
+              onPressed: () => controller.removeAction(i + 1),
+            ),
+          ),
+        if (slots > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${1 + s.queue.length} of $slots actions planned',
+              style: text.bodySmall,
+            ),
+          ),
       ];
     }
     return Card(

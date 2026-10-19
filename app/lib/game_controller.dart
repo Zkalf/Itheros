@@ -149,8 +149,20 @@ class GameController extends ChangeNotifier {
   }
 
   /// Throws [ActivityError] if the rules don't allow [a].
-  Future<void> startActivity(Activity a) =>
-      _act((s) => game.startActivity(s, a));
+  Future<void> startActivity(
+    Activity a, {
+    StopCondition stop = const StopCondition.never(),
+  }) => _act((s) => game.startActivity(s, a, stop: stop));
+
+  /// Adds [a] to the queue, or starts it with nothing running or a 1-slot
+  /// queue (spec 0003 §2). Throws [ActivityError] if the rules don't allow
+  /// it.
+  Future<void> addAction(Activity a, {StopCondition? stop}) =>
+      _act((s) => game.addAction(s, a, stop: stop));
+
+  /// Removes the action at [index]; 0 is the running one (spec 0003 §2).
+  Future<void> removeAction(int index) =>
+      _act((s) => game.removeAction(s, index));
 
   /// Rests; unspent steps go to the bank (spec 0001 amendment 2).
   Future<void> stopActivity() => _act(game.stopActivity);

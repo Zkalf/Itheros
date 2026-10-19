@@ -333,6 +333,13 @@ class Game {
     StopCondition stop = const StopCondition.never(),
   }) {
     _checkStop(s, a, stop);
+    if (s.queue.isNotEmpty &&
+        stop.kind == StopKind.never &&
+        a.kind != ActivityKind.travel) {
+      throw ActivityError(
+        'Actions are waiting after this one, so it needs a stop condition.',
+      );
+    }
     final why = _cannotStart(s, a, stop);
     if (why != null) throw ActivityError(_explain(s, a, stop, why));
     final n = _refundProgress(s.copy())

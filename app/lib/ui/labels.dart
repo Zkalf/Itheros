@@ -1,5 +1,7 @@
 import 'package:game_core/game_core.dart';
 
+import '../sync/away_summary.dart';
+
 /// 12345 -> "12,345".
 String fmt(int n) {
   final s = n.abs().toString();
@@ -34,15 +36,92 @@ class Labels {
     ActivityKind.craft => 'Crafting ${recipe(a.target)}',
   };
 
-  String endReason(ActivityEnded e) => switch (e.reason) {
-    EndReason.arrived => 'Arrived at ${location(e.activity.target)}',
-    EndReason.defeated =>
-      'Gave up on the ${enemy(e.activity.target)} after 3 losses in a row',
-    EndReason.grey => 'Stopped: the ${enemy(e.activity.target)} turned grey',
-    EndReason.enough => 'Stopped: ${activity(e.activity)} reached its goal',
-    EndReason.noMaterials =>
-      'Out of materials for ${recipe(e.activity.target)}',
+  /// Why an action ended, as a sentence without the full stop.
+  String endReason(Activity a, EndReason r) => switch (r) {
+    EndReason.arrived => 'Arrived at ${location(a.target)}',
+    EndReason.defeated => 'Gave up after 3 losses in a row',
+    EndReason.grey => 'Stopped: the ${enemy(a.target)} turned grey',
+    EndReason.enough => 'Stopped: goal reached',
+    EndReason.noMaterials => 'Stopped: out of materials',
   };
+
+  /// A stop condition, with progress toward it (spec 0003 §3).
+  String stop(
+    StopCondition c,
+    Activity a, {
+    required int owned,
+    int crafted = 0,
+  }) => switch (c.kind) {
+    StopKind.untilGrey => 'Until it turns grey',
+    StopKind.untilHave =>
+      'Until you have ${fmt(c.count)} ${item(c.item!)} '
+          '(${fmt(owned)} / ${fmt(c.count)})',
+    StopKind.untilCrafted =>
+      'Until ${fmt(c.count)} crafted (${fmt(crafted)} / ${fmt(c.count)})',
+    StopKind.never => switch (a.kind) {
+      ActivityKind.travel => 'Until you arrive',
+      ActivityKind.craft => 'Until materials run out',
+      _ => 'Keeps going',
+    },
+  };
+
+  /// Why a queued action never started.
+  String skipReason(Activity a, SkipReason r) => switch (r) {
+    SkipReason.locked => 'not unlocked yet',
+    SkipReason.noRoute => 'no open route there',
+    SkipReason.noMaterials => 'not enough materials',
+    SkipReason.alreadyDone => switch (a.kind) {
+      ActivityKind.travel => 'you were already there',
+      ActivityKind.fight => 'it was already grey or the goal was reached',
+      _ => 'the goal was already reached',
+    },
+  };
+
+  /// A short name for an action: "Skeleton", "Copper vein", "Bone sword".
+  String short(Activity a) => switch (a.kind) {
+    ActivityKind.travel => 'walk to ${location(a.target)}',
+    ActivityKind.fight => enemy(a.target),
+    ActivityKind.gather => node(a.target),
+    ActivityKind.craft => recipe(a.target),
+  };
+
+  /// The report lines for one action (spec 0003 §7). [next] is the action
+  /// after it, if any.
+  List<String> actionLines(ActionLog log, ActionLog? next) {
+    final a = log.activity;
+    if (log.skipped case final why?) {
+      return ['Skipped the ${short(a)}: ${skipReason(a, why)}.'];
+    }
+    final gains = [
+      if (log.wins > 0) plural(log.wins, 'win'),
+      if (log.xp > 0) '+${fmt(log.xp)} XP',
+      if (log.items.isNotEmpty) counts(log.items, item),
+    ];
+    final ended = log.ended;
+    final then = ended != null && next != null && next.skipped == null
+        ? ' Next: ${short(next.activity)}.'
+        : '';
+    final lines = <String>[
+      if (a.kind != ActivityKind.travel)
+        '${switch (a.kind) {
+              ActivityKind.fight => 'Fought the ${enemy(a.target)}',
+              ActivityKind.gather => 'Mined the ${node(a.target)}',
+              _ => 'Crafted the ${recipe(a.target)}',
+            }}${gains.isEmpty ? '' : ': ${gains.join(', ')}'}.'
+            '${ended == null ? '' : ' ${endReason(a, ended)}.'}$then'
+      else if (ended == EndReason.arrived)
+        'Arrived at ${location(a.target)}.$then',
+      for (final l in log.losses.take(3))
+        'Lost to the ${enemy(l.enemy)} (knocked off '
+            '${(l.share * 100).round()}% of its health), +${fmt(l.xp)} XP.',
+      if (log.losses.length > 3)
+        '…and ${log.losses.length - 3} more '
+            '${log.losses.length == 4 ? 'loss' : 'losses'}.',
+      for (final enemy in {for (final l in log.losses) l.enemy})
+        ?data.enemies[enemy]?.lossHint,
+    ];
+    return lines;
+  }
 
   String counts(Map<String, int> m, String Function(String) name) =>
       m.entries.map((e) => '${name(e.key)} ×${e.value}').join(', ');

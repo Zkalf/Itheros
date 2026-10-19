@@ -130,7 +130,7 @@ void main() {
 
     final s = c.awaySummary!;
     expect(s.walked, 300);
-    expect(s.activitiesEnded.single.reason, EndReason.arrived);
+    expect(s.actions.single.ended, EndReason.arrived);
     expect(s.banked, 100);
 
     c.dismissAwaySummary();

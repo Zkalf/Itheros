@@ -193,6 +193,27 @@ void main() {
       );
     });
 
+    test('"Start now" with actions waiting needs a stop condition', () {
+      var s = stateAt(game, level: 5, location: 'goblin_woods');
+      s = game.addAction(
+        s,
+        goblins,
+        stop: StopCondition.untilHave('goblin_hide', 9),
+      );
+      s = game.addAction(s, brutes);
+      expect(
+        () => game.startActivity(s, mining),
+        throwsA(isA<ActivityError>()),
+      );
+      s = game.startActivity(
+        s,
+        mining,
+        stop: StopCondition.untilHave('copper_ore', 3),
+      );
+      expect(s.activity!.activity, mining);
+      expect(s.queue.map((p) => p.activity), [brutes]);
+    });
+
     test('gathering in an earlier slot needs "until I have N"', () {
       var s = game.addAction(stateAt(game, level: 5), mining);
       expect(() => game.addAction(s, goblins), throwsA(isA<ActivityError>()));
