@@ -23,12 +23,17 @@ enum _Screen {
   map('Map', Icons.map),
   craft('Craft', Icons.handyman),
   character('Character', Icons.person),
-  achievements('Achievements', Icons.emoji_events);
+  // "Achievements" is too long for the bar.
+  achievements('Achievements', Icons.emoji_events, label: 'Trophies');
 
-  const _Screen(this.title, this.icon);
+  const _Screen(this.title, this.icon, {String? label})
+    : label = label ?? title;
 
   final String title;
   final IconData icon;
+
+  /// The bottom bar's name, when shorter than [title].
+  final String label;
 }
 
 class _HomeShellState extends State<HomeShell> {
@@ -92,7 +97,7 @@ class _HomeShellState extends State<HomeShell> {
             NavigationDestination(
               key: ValueKey('tab-${screen.name}'),
               icon: Icon(screen.icon),
-              label: screen.title,
+              label: screen.label,
             ),
         ],
       ),
