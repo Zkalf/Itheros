@@ -17,5 +17,12 @@
     { "atLeast": -6, "colour": "green", "xp": 20 },
     { "colour": "grey", "xp": 5 }
   ],
-  "gearSlots": { "weapon": 1, "body": 1, "shield": 7, "head": 12, "feet": 17, "amulet": 20 }
+  "gearSlots": { "weapon": 1, "body": 1, "shield": 7, "head": 12, "feet": 17, "amulet": 20 },
+  "talentPointsFrom": 10,
+  "ranks": [
+    { "level": 1, "name": "Recruit", "line": "The Guild takes you in. Recruits stay within the guarded lands." },
+    { "level": 10, "name": "Adventurer", "line": "The Guild names you Adventurer. You may travel beyond the river." },
+    { "level": 20, "name": "Veteran", "line": "The Guild names you Veteran. The mountain roads are yours." },
+    { "level": 30, "name": "Champion", "line": "The Guild names you Champion. Even dragons have heard of you." }
+  ]
 }

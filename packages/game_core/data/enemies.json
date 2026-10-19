@@ -1,19 +1,191 @@
 {
   "enemies": [
     {
-      "id": "goblin", "name": "Goblin", "unlockLevel": 1,
+      "id": "goblin", "name": "Goblin", "unlockLevel": 1, "level": 1,
       "hp": 20, "attack": 4, "defense": 1, "xp": 10,
       "drops": [
         { "item": "goblin_hide", "chance": 0.5, "count": 1 },
         { "item": "rusty_dagger", "chance": 0.05, "count": 1 }
-      ]
+      ],
+      "flavour": "Goblin: quick fingers, rusty knives.",
+      "lossHint": "Goblins are weak alone. Try again: a better weapon helps."
     },
     {
-      "id": "goblin_brute", "name": "Goblin brute", "unlockLevel": 4,
-      "hp": 45, "attack": 8, "defense": 3, "xp": 30,
+      "id": "goblin_brute", "name": "Goblin brute", "unlockLevel": 4, "level": 4,
+      "hp": 45, "attack": 8, "defense": 3, "xp": 14,
       "drops": [
         { "item": "goblin_hide", "chance": 1.0, "count": 2 }
-      ]
+      ],
+      "flavour": "Goblin brute: twice the size, half the patience.",
+      "lossHint": "Brutes hit hard. A hide vest and a copper sword make the difference."
+    },
+    {
+      "id": "old_bear", "name": "Old Bear", "unlockLevel": 1, "level": 16,
+      "traits": ["quick"],
+      "hp": 140, "attack": 40, "defense": 14, "xp": 50,
+      "drops": [
+        { "item": "bear_pelt_cloak", "chance": 0.25, "count": 1 }
+      ],
+      "flavour": "Old Bear: it was here before the goblins. It will be here after.",
+      "lossHint": "The Old Bear is quick and hits hard. Come back much stronger."
+    },
+    {
+      "id": "skeleton", "name": "Skeleton", "unlockLevel": 6, "level": 6,
+      "hp": 40, "attack": 11, "defense": 16, "xp": 19,
+      "drops": [
+        { "item": "bones", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Skeleton: nothing to hurt but bone, and bone is hard.",
+      "lossHint": "Skeletons shrug off weak blows. A stronger weapon helps."
+    },
+    {
+      "id": "zombie", "name": "Zombie", "unlockLevel": 8, "level": 8,
+      "traits": ["slow"],
+      "hp": 220, "attack": 15, "defense": 6, "xp": 62,
+      "drops": [
+        { "item": "grave_cloth", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Zombie: slow, but it never stops coming.",
+      "lossHint": "Zombies are slow but hit hard, and fights are long. Defence helps: try a shield."
+    },
+    {
+      "id": "graveyard_king", "name": "Graveyard King", "unlockLevel": 6, "level": 10,
+      "hp": 260, "attack": 12, "defense": 22, "xp": 150,
+      "drops": [
+        { "item": "bones", "chance": 1.0, "count": 3 },
+        { "item": "grave_cloth", "chance": 1.0, "count": 2 }
+      ],
+      "firstKillDrops": [
+        { "item": "kings_blade", "count": 1 }
+      ],
+      "flavour": "Graveyard King: he ruled once. He still thinks he does.",
+      "lossHint": "The Graveyard King's armour is heavy: a stronger weapon helps. Bring a shield and body armour too."
+    },
+    {
+      "id": "wolf", "name": "Wolf", "unlockLevel": 10, "level": 11,
+      "traits": ["quick"],
+      "hp": 100, "attack": 22, "defense": 6, "xp": 31,
+      "drops": [
+        { "item": "wolf_pelt", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Wolf: it bites before you've drawn your sword.",
+      "lossHint": "Wolves strike first. More defence and HP help."
+    },
+    {
+      "id": "ghost", "name": "Ghost", "unlockLevel": 10, "level": 13,
+      "traits": ["ghostly"],
+      "hp": 100, "attack": 15, "defense": 10, "xp": 38,
+      "drops": [
+        { "item": "ectoplasm", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Ghost: your armour means nothing to it.",
+      "lossHint": "Ghosts pass through armour. More HP and a faster kill help."
+    },
+    {
+      "id": "bandit", "name": "Bandit", "unlockLevel": 10, "level": 15,
+      "hp": 90, "attack": 40, "defense": 10, "xp": 30,
+      "drops": [
+        { "item": "leather", "chance": 0.6, "count": 1 },
+        { "item": "iron_ore", "chance": 0.4, "count": 1 }
+      ],
+      "flavour": "Bandit: all knife, no armour.",
+      "lossHint": "Bandits hit very hard but go down fast. Defence helps."
+    },
+    {
+      "id": "giant_spider", "name": "Giant spider", "unlockLevel": 10, "level": 16,
+      "traits": ["quick"],
+      "hp": 100, "attack": 42, "defense": 8, "xp": 34,
+      "drops": [
+        { "item": "silk", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Giant spider: you see the legs before the rest.",
+      "lossHint": "Spiders strike first and hard. Defence helps."
+    },
+    {
+      "id": "troll", "name": "Troll", "unlockLevel": 10, "level": 18,
+      "traits": ["regenerates"], "regen": 8,
+      "hp": 100, "attack": 37, "defense": 16, "xp": 71,
+      "drops": [
+        { "item": "troll_hide", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Troll: cut it and it closes. Cut it faster.",
+      "lossHint": "Trolls heal every round. A big weapon beats the healing."
+    },
+    {
+      "id": "ogre_chieftain", "name": "Ogre Chieftain", "unlockLevel": 10, "level": 20,
+      "traits": ["slow"],
+      "hp": 730, "attack": 37, "defense": 20, "xp": 560,
+      "drops": [
+        { "item": "troll_hide", "chance": 1.0, "count": 3 }
+      ],
+      "firstKillDrops": [
+        { "item": "chieftains_amulet", "count": 1 }
+      ],
+      "flavour": "Ogre Chieftain: the bridge is his. So is the toll.",
+      "lossHint": "The Ogre Chieftain is slow, but every blow crushes. Bring iron and troll gear."
+    },
+    {
+      "id": "stone_golem", "name": "Stone golem", "unlockLevel": 10, "level": 21,
+      "traits": ["slow"],
+      "hp": 300, "attack": 42, "defense": 40, "xp": 215,
+      "drops": [
+        { "item": "stone_core", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Stone golem: a mountain that learned to walk.",
+      "lossHint": "Golems are almost unbreakable. Bring your best weapon."
+    },
+    {
+      "id": "harpy", "name": "Harpy", "unlockLevel": 10, "level": 23,
+      "traits": ["quick", "ghostly"],
+      "hp": 200, "attack": 32, "defense": 20, "xp": 98,
+      "drops": [
+        { "item": "feathers", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Harpy: it dives from the sun, claws first.",
+      "lossHint": "Harpies strike first, and their claws ignore armour. More HP helps."
+    },
+    {
+      "id": "wraith", "name": "Wraith", "unlockLevel": 10, "level": 25,
+      "traits": ["ghostly", "regenerates"], "regen": 10,
+      "hp": 180, "attack": 30, "defense": 24, "xp": 138,
+      "drops": [
+        { "item": "soul_dust", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Wraith: cold hands, and it mends as it fights.",
+      "lossHint": "Wraiths ignore armour and heal. A big weapon and lots of HP help."
+    },
+    {
+      "id": "wyvern", "name": "Wyvern", "unlockLevel": 10, "level": 27,
+      "traits": ["quick"],
+      "hp": 230, "attack": 66, "defense": 24, "xp": 143,
+      "drops": [
+        { "item": "wyvern_scale", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Wyvern: a dragon's little cousin, and just as rude.",
+      "lossHint": "Wyverns strike first and hard. Defence helps."
+    },
+    {
+      "id": "fire_drake", "name": "Fire drake", "unlockLevel": 10, "level": 28,
+      "traits": ["regenerates"], "regen": 12,
+      "hp": 155, "attack": 63, "defense": 40, "xp": 183,
+      "drops": [
+        { "item": "drake_fang", "chance": 0.6, "count": 1 }
+      ],
+      "flavour": "Fire drake: armoured, burning, and healing in its own fire.",
+      "lossHint": "Drakes are armoured and heal. Bring your biggest weapon."
+    },
+    {
+      "id": "young_dragon", "name": "Young Dragon", "unlockLevel": 10, "level": 30,
+      "traits": ["quick", "regenerates"], "regen": 10,
+      "hp": 720, "attack": 50, "defense": 44, "xp": 950,
+      "drops": [
+        { "item": "dragon_scale", "chance": 1.0, "count": 2 }
+      ],
+      "firstKillDrops": [
+        { "item": "dragons_heart", "count": 1 }
+      ],
+      "flavour": "Young Dragon: young for a dragon. Old for everything else.",
+      "lossHint": "The Young Dragon is quick, armoured, heals and hits hard. Bring the full mithril set."
     }
   ]
 }

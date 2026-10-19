@@ -34,7 +34,8 @@ class LocationDef {
       unlockLevel = _int(j, 'unlockLevel'),
       crafting = j['crafting'] as bool? ?? false,
       enemies = _strList(j, 'enemies'),
-      nodes = _strList(j, 'nodes');
+      nodes = _strList(j, 'nodes'),
+      flavour = j['flavour'] as String?;
 
   final String id;
   final String name;
@@ -42,6 +43,22 @@ class LocationDef {
   final bool crafting;
   final List<String> enemies;
   final List<String> nodes;
+
+  /// One line shown the first time the area appears (spec 0002 §9.5).
+  final String? flavour;
+}
+
+/// A title the player earns at [level], with its ceremony line
+/// (spec 0002 decision 10).
+class RankDef {
+  RankDef._(Map<String, Object?> j)
+    : level = _int(j, 'level'),
+      name = _str(j, 'name'),
+      line = _str(j, 'line');
+
+  final int level;
+  final String name;
+  final String line;
 }
 
 /// Routes are walkable in both directions.
@@ -110,7 +127,9 @@ class EnemyDef {
       traits = Set.unmodifiable(_strList(j, 'traits').map(_trait)),
       regen = _intOr(j, 'regen'),
       drops = _maps(j, 'drops').map(DropDef._).toList(),
-      firstKillDrops = _maps(j, 'firstKillDrops').map(DropDef._).toList();
+      firstKillDrops = _maps(j, 'firstKillDrops').map(DropDef._).toList(),
+      lossHint = j['lossHint'] as String?,
+      flavour = j['flavour'] as String?;
 
   final String id;
   final String name;
@@ -130,6 +149,12 @@ class EnemyDef {
 
   /// Dropped once, on the first kill (spec 0002 §5.3).
   final List<DropDef> firstKillDrops;
+
+  /// Added to the report after a loss (spec 0002 §9.4).
+  final String? lossHint;
+
+  /// One line shown the first time it appears (spec 0002 §9.5).
+  final String? flavour;
 
   bool has(Trait t) => traits.contains(t);
 }
@@ -237,6 +262,8 @@ class GameData {
        gearSlots = Map.unmodifiable(
          _map(economy, 'gearSlots').map((k, v) => MapEntry(k, v as int)),
        ),
+       ranks = List.unmodifiable(_maps(economy, 'ranks').map(RankDef._)),
+       talentPointsFrom = _int(economy, 'talentPointsFrom'),
        startLocation = _str(world, 'startLocation'),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
@@ -294,6 +321,12 @@ class GameData {
 
   /// Gear slot to the level it opens at, in display order.
   final Map<String, int> gearSlots;
+
+  /// Titles by level, lowest first; the first is held from level 1.
+  final List<RankDef> ranks;
+
+  /// One talent point per level from this level on.
+  final int talentPointsFrom;
   final String startLocation;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
@@ -367,6 +400,13 @@ class GameData {
       );
     }
     check(gearSlots.values.every((l) => l >= 1), 'gearSlots: levels >= 1');
+    check(
+      ranks.isNotEmpty && ranks.first.level == 1,
+      'ranks must start at level 1',
+    );
+    for (var i = 1; i < ranks.length; i++) {
+      check(ranks[i].level > ranks[i - 1].level, 'ranks must be in order');
+    }
     for (final i in items.values) {
       check(
         i.slot == null || gearSlots.containsKey(i.slot),

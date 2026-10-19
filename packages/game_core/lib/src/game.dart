@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'activity.dart';
 import 'data.dart';
 import 'events.dart';
+import 'news.dart';
 import 'rng.dart';
 import 'state.dart';
 
@@ -47,6 +48,39 @@ class Game {
   /// Colour and XP share of [enemy] for this player (spec 0002 §3).
   LevelBand enemyBand(GameState s, String enemy) =>
       data.bandFor(data.enemies[enemy]!.level, level(s));
+
+  /// The rank held at [level].
+  RankDef rank(int level) => data.ranks.lastWhere((r) => r.level <= level);
+
+  /// Talent points earned by [level] (spec 0002 decision 7).
+  int talentPoints(int level) => math.max(0, level - data.talentPointsFrom + 1);
+
+  /// What reaching [level] brings, for its level-up card (spec 0002 §9.1).
+  List<LevelNews> levelNews(int level) {
+    final enemies = data.enemies.values.where((e) => e.unlockLevel <= level);
+    return [
+      for (final r in data.ranks)
+        if (r.level == level && level > 1) LevelNews(NewsKind.rank, r.name),
+      for (final l in data.locations.values)
+        if (l.unlockLevel == level) LevelNews(NewsKind.area, l.id),
+      for (final e in data.enemies.values)
+        if (e.unlockLevel == level) LevelNews(NewsKind.monster, e.id),
+      for (final n in data.nodes.values)
+        if (n.unlockLevel == level) LevelNews(NewsKind.gatheringSpot, n.id),
+      for (final r in data.recipes.values)
+        if (r.unlockLevel == level) LevelNews(NewsKind.recipe, r.id),
+      for (final e in data.gearSlots.entries)
+        if (e.value == level && level > 1) LevelNews(NewsKind.gearSlot, e.key),
+      if (level >= data.talentPointsFrom)
+        const LevelNews(NewsKind.talentPoint, ''),
+      for (final e in enemies)
+        if (e.level == level) LevelNews(NewsKind.yourLevel, e.id),
+      for (final e in enemies)
+        if (data.bandFor(e.level, level).colour == LevelColour.grey &&
+            data.bandFor(e.level, level - 1).colour != LevelColour.grey)
+          LevelNews(NewsKind.turnedGrey, e.id),
+    ];
+  }
 
   /// Brings a state read from an older save up to date. Version 1 saves
   /// keep their level and their progress through it (spec 0002 §2).

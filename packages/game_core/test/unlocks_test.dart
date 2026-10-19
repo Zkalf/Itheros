@@ -13,9 +13,9 @@ void main() {
     expect(game.availableRecipes(s), isEmpty);
   });
 
-  test('level 1 in Goblin Woods: goblins only, no brute', () {
+  test('level 1 in Goblin Woods: goblins and the Old Bear, no brute', () {
     final s = stateAt(game, location: 'goblin_woods');
-    expect(game.availableEnemies(s), ['goblin']);
+    expect(game.availableEnemies(s), ['goblin', 'old_bear']);
     expect(game.availableNodes(s), isEmpty);
   });
 
@@ -33,7 +33,7 @@ void main() {
 
   test('level 4 unlocks the goblin brute', () {
     final s = stateAt(game, level: 4, location: 'goblin_woods');
-    expect(game.availableEnemies(s), ['goblin', 'goblin_brute']);
+    expect(game.availableEnemies(s), ['goblin', 'goblin_brute', 'old_bear']);
   });
 
   group('startActivity rejects', () {
