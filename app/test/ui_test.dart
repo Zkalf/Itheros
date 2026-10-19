@@ -536,5 +536,33 @@ void main() {
       );
       expect(find.text('×2'), findsOneWidget);
     });
+    testWidgets('counts and buttons line up in columns', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 3,
+        inventory: {'goblin_hide': 3, 'copper_sword': 1, 'hide_vest': 2},
+      );
+      await c.equip('copper_sword');
+      await openCharacter(t);
+      await t.pumpAndSettle();
+      expect(
+        t.getTopRight(find.text('×3')).dx,
+        t.getTopRight(find.text('×2')).dx,
+        reason: 'a material count sits in the same column as a gear count',
+      );
+      Finder button(Finder label) => find
+          .ancestor(of: label, matching: find.bySubtype<ButtonStyleButton>())
+          .first;
+      expect(
+        t.getTopRight(button(find.text('Remove'))).dx,
+        t.getTopRight(find.byKey(const ValueKey('equip-hide_vest'))).dx,
+        reason: 'Remove and Equip end at the same edge',
+      );
+      expect(
+        t.getSize(button(find.text('Remove'))).width,
+        t.getSize(find.byKey(const ValueKey('equip-hide_vest'))).width,
+        reason: 'Remove and Equip are the same size',
+      );
+    });
   });
 }
