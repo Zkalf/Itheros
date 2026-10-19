@@ -198,9 +198,23 @@ class Game {
   /// 2 saves need nothing more: their activity loaded as a 1-action queue.
   /// Saves before version 4 count the area they are in as visited (spec
   /// 0004 decision 9).
+  /// Saves before version 5 count a drop as found if the monster was killed
+  /// and the item is owned or worn (spec 0006 decision 6).
   GameState migrate(GameState s) {
-    final n = _migrateXp(s);
-    return s.loadedVersion < 4 ? _visit(n.copy(), n.location) : n;
+    var n = _migrateXp(s);
+    if (s.loadedVersion < 4) n = _visit(n.copy(), n.location);
+    if (s.loadedVersion < 5) n = _findOwnedDrops(n.copy());
+    return n;
+  }
+
+  GameState _findOwnedDrops(GameState s) {
+    for (final e in data.enemies.keys) {
+      if ((s.counters['kills.$e'] ?? 0) == 0) continue;
+      for (final item in dropItems(e)) {
+        if (owned(s, item) > 0) s.counters[foundCounter(e, item)] = 1;
+      }
+    }
+    return s;
   }
 
   GameState _migrateXp(GameState s) {
@@ -291,6 +305,41 @@ class Game {
       if (r.unlockLevel <= level(s)) r.id,
   ];
 
+  /// Whether [area] is still in the fog: above the player's level (spec
+  /// 0006 decision 2).
+  bool isFogged(GameState s, String area) =>
+      data.locations[area]!.unlockLevel > level(s);
+
+  /// The nearest open crafting place and its distance, or null if none is
+  /// reachable.
+  (String, int)? nearestForge(GameState s) {
+    final dist = _paths(s).$1;
+    (String, int)? best;
+    for (final l in data.locations.values) {
+      final d = dist[l.id];
+      if (l.crafting && d != null && (best == null || d < best.$2)) {
+        best = (l.id, d);
+      }
+    }
+    return best;
+  }
+
+  /// Every item [enemy] can drop, boss uniques last, each once.
+  List<String> dropItems(String enemy) => {
+    for (final d in data.enemies[enemy]!.drops) d.item,
+    for (final d in data.enemies[enemy]!.firstKillDrops) d.item,
+  }.toList();
+
+  /// The counter set when [item] first drops from [enemy] (spec 0006
+  /// decision 5).
+  static String foundCounter(String enemy, String item) => 'found.$enemy.$item';
+
+  /// [enemy]'s drops the player has found, in [dropItems] order.
+  List<String> foundDrops(GameState s, String enemy) => [
+    for (final item in dropItems(enemy))
+      if ((s.counters[foundCounter(enemy, item)] ?? 0) > 0) item,
+  ];
+
   bool hasMaterials(GameState s, String recipe) => data
       .recipes[recipe]!
       .inputs
@@ -328,8 +377,10 @@ class Game {
     if (countConditionsOpen(s))
       if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
         StopKind.untilHave
-      else if (a.kind == ActivityKind.craft)
+      else if (a.kind == ActivityKind.craft) ...[
         StopKind.untilCrafted,
+        StopKind.untilQuality,
+      ],
     StopKind.never,
   ];
 
@@ -432,6 +483,9 @@ class Game {
     if (stop.kind == StopKind.untilCrafted && stop.count < 1) {
       throw ActivityError('Craft at least one.');
     }
+    if (stop.kind == StopKind.untilQuality && _tier(stop.item) < 1) {
+      throw ActivityError('Pick a quality better than common.');
+    }
   }
 
   /// Why [a] can't start now, or null if it can (spec 0003 §4).
@@ -451,7 +505,9 @@ class Game {
     if (a.kind == ActivityKind.craft && !hasMaterials(s, a.target)) {
       return SkipReason.noMaterials;
     }
-    if (_stopMet(s, a, stop, crafted: 0) != null) return SkipReason.alreadyDone;
+    if (_stopMet(s, a, stop, crafted: 0, gained: const {}) != null) {
+      return SkipReason.alreadyDone;
+    }
     return null;
   }
 
@@ -483,14 +539,25 @@ class Game {
     Activity a,
     StopCondition stop, {
     required int crafted,
+    required Map<String, int> gained,
   }) => switch (stop.kind) {
     StopKind.untilGrey =>
       enemyBand(s, a.target).colour == LevelColour.grey ? EndReason.grey : null,
     StopKind.untilHave =>
       owned(s, stop.item!) >= stop.count ? EndReason.enough : null,
     StopKind.untilCrafted => crafted >= stop.count ? EndReason.enough : null,
+    StopKind.untilQuality =>
+      gained.keys.any(
+            (k) =>
+                data.qualities.indexOf(data.qualityOf(k)) >= _tier(stop.item),
+          )
+          ? EndReason.enough
+          : null,
     StopKind.never => null,
   };
+
+  /// The place of quality [id] in the quality order; -1 if unknown.
+  int _tier(String? id) => data.qualities.indexWhere((q) => q.id == id);
 
   /// Where [a] happens: its monster's or spot's location, the nearest
   /// crafting place, or the travel target. Null if no open route leads
@@ -693,6 +760,7 @@ class _Run {
           act.activity,
           act.stop,
           crafted: act.crafted,
+          gained: act.gained,
         );
         if (done != null) {
           _end(act, done);
@@ -725,6 +793,7 @@ class _Run {
         final node = data.nodes[a.target]!;
         final xp = _faded(node.xp, node.unlockLevel);
         s.addItem(node.item);
+        _gain(act, node.item);
         s.count('gathered.${node.item}');
         events.add(Gathered(node.item, xp));
         _gainXp(xp);
@@ -735,6 +804,7 @@ class _Run {
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
         final made = _withQuality(recipe.output, recipe.unlockLevel);
         s.addItem(made);
+        _gain(act, made);
         act.crafted++;
         s.count('crafted.total');
         s.count('crafted.${recipe.output}');
@@ -756,42 +826,78 @@ class _Run {
     );
     fight.round++;
 
-    if (enemy.has(Trait.quick)) {
-      if (_monsterTurn(enemy, fight, me)) return _lose(act, enemy);
-      if (_playerTurn(enemy, fight, me)) return _win(act, enemy);
-    } else {
-      if (_playerTurn(enemy, fight, me)) return _win(act, enemy);
-      if (_monsterTurn(enemy, fight, me)) return _lose(act, enemy);
+    int? dealt;
+    int? taken;
+    bool playerTurn() {
+      final hit = _damage(me.attack, enemy.stats.defense);
+      dealt = hit;
+      fight.enemyHp -= hit;
+      return fight.enemyHp <= 0;
     }
-    return null;
+
+    bool monsterTurn() {
+      taken = _monsterTurn(enemy, fight, me);
+      return fight.playerHp <= 0;
+    }
+
+    final FightOutcome? outcome;
+    if (enemy.has(Trait.quick)) {
+      outcome = monsterTurn()
+          ? FightOutcome.lost
+          : (playerTurn() ? FightOutcome.won : null);
+    } else {
+      outcome = playerTurn()
+          ? FightOutcome.won
+          : (monsterTurn() ? FightOutcome.lost : null);
+    }
+    act.log.add(
+      RoundLog(
+        round: fight.round,
+        dealt: dealt,
+        taken: taken,
+        outcome: outcome,
+      ),
+    );
+    while (act.log.length > data.fightLogRounds) {
+      act.log.removeAt(0);
+    }
+    return switch (outcome) {
+      FightOutcome.won => _win(act, enemy),
+      FightOutcome.lost => _lose(act, enemy),
+      null => null,
+    };
   }
 
-  /// Returns whether the monster died.
-  bool _playerTurn(EnemyDef enemy, FightState fight, Stats me) {
-    fight.enemyHp -= _damage(me.attack, enemy.stats.defense);
-    return fight.enemyHp <= 0;
-  }
-
-  /// Returns whether the player died.
-  bool _monsterTurn(EnemyDef enemy, FightState fight, Stats me) {
+  /// The monster's strike, or null when it doesn't strike (slow). It
+  /// regenerates if the player survives.
+  int? _monsterTurn(EnemyDef enemy, FightState fight, Stats me) {
+    int? hit;
     if (!enemy.has(Trait.slow) || fight.round.isEven) {
       final defense = enemy.has(Trait.ghostly) ? 0 : me.defense;
-      fight.playerHp -= _damage(enemy.stats.attack, defense);
-      if (fight.playerHp <= 0) return true;
+      hit = _damage(enemy.stats.attack, defense);
+      fight.playerHp -= hit;
+      if (fight.playerHp <= 0) return hit;
     }
     fight.enemyHp = math.min(enemy.stats.hp, fight.enemyHp + enemy.regen);
-    return false;
+    return hit;
   }
+
+  /// Adds [key] to the running action's tally.
+  void _gain(RunningActivity act, String key) =>
+      act.gained[key] = (act.gained[key] ?? 0) + 1;
 
   EndReason? _win(RunningActivity act, EnemyDef enemy) {
     act.fight = null;
     act.lossStreak = 0;
+    act.won++;
     final drops = <String, int>{};
     void drop(DropDef d) {
       for (var i = 0; i < d.count; i++) {
         final key = _withQuality(d.item, enemy.level);
         drops[key] = (drops[key] ?? 0) + 1;
         s.addItem(key);
+        _gain(act, key);
+        s.counters[Game.foundCounter(enemy.id, d.item)] = 1;
       }
     }
 
@@ -824,6 +930,7 @@ class _Run {
             // The epsilon keeps 26.9999... from rounding down to 26.
             (enemy.xp * data.lossXpShare * share * pct / 100 + 1e-9).floor(),
           );
+    act.lost++;
     events.add(FightLost(enemy.id, xp, share));
     _gainXp(xp);
     act.lossStreak++;

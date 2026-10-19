@@ -15,6 +15,7 @@
   "qualityPerLevel": 0.02,
   "qualityMaxLevels": 10,
   "combatRoundSteps": 10,
+  "fightLogRounds": 4,
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
   "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },
   "damageVariance": 0.2,

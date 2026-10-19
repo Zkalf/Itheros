@@ -31,7 +31,7 @@ class Activity {
   String toString() => 'Activity.${kind.name}($target)';
 }
 
-enum StopKind { untilGrey, untilHave, untilCrafted, never }
+enum StopKind { untilGrey, untilHave, untilCrafted, untilQuality, never }
 
 /// When a queued action ends by itself (spec 0003 §3).
 class StopCondition {
@@ -45,6 +45,11 @@ class StopCondition {
   /// Crafting: this action crafted [count] items.
   const StopCondition.untilCrafted(int count)
     : this._(StopKind.untilCrafted, count: count);
+
+  /// Crafting: this action made an item of [quality] (an id) or better
+  /// (spec 0006 decision 9).
+  const StopCondition.untilQuality(String quality)
+    : this._(StopKind.untilQuality, item: quality);
 
   /// Keeps going; only allowed for the last action.
   const StopCondition.never() : this._(StopKind.never);

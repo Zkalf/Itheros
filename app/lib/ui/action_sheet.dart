@@ -24,6 +24,7 @@ class _ActionSheetState extends State<ActionSheet> {
   late StopKind _kind;
   String? _item;
   var _count = 1;
+  var _quality = 'rare';
 
   Game get _game => widget.controller.game;
 
@@ -51,6 +52,7 @@ class _ActionSheetState extends State<ActionSheet> {
     StopKind.untilGrey => const StopCondition.untilGrey(),
     StopKind.untilHave => StopCondition.untilHave(_item!, _count),
     StopKind.untilCrafted => StopCondition.untilCrafted(_count),
+    StopKind.untilQuality => StopCondition.untilQuality(_quality),
     StopKind.never => const StopCondition.never(),
   };
 
@@ -68,6 +70,7 @@ class _ActionSheetState extends State<ActionSheet> {
       StopKind.untilGrey => 'Until grey',
       StopKind.untilHave => 'Until I have N',
       StopKind.untilCrafted => 'Until N crafted',
+      StopKind.untilQuality => 'Until a quality',
       StopKind.never => 'Never stop',
     };
 
@@ -110,6 +113,21 @@ class _ActionSheetState extends State<ActionSheet> {
                     DropdownMenuItem(value: i, child: Text(labels.item(i))),
                 ],
                 onChanged: (i) => setState(() => _item = i),
+              ),
+            ],
+            if (_kind == StopKind.untilQuality) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final q in _game.data.qualities.skip(1))
+                    ChoiceChip(
+                      key: ValueKey('quality-${q.id}'),
+                      label: Text('${q.name} or better'),
+                      selected: _quality == q.id,
+                      onSelected: (_) => setState(() => _quality = q.id),
+                    ),
+                ],
               ),
             ],
             if (_kind == StopKind.untilHave ||

@@ -44,6 +44,19 @@ class Labels {
     return '${item.name} (${data.qualityOf(key).name})';
   }
 
+  String qualityName(String id) =>
+      data.qualities.where((q) => q.id == id).firstOrNull?.name ?? id;
+
+  /// A fight log line (spec 0006 decision 8): "Round 3 · You hit for 6 ·
+  /// Skeleton hits for 3", ending with who was beaten.
+  String round(RoundLog r, String enemyId) => [
+    'Round ${r.round}',
+    if (r.dealt case final d?) 'You hit for $d',
+    if (r.taken case final t?) '${enemy(enemyId)} hits for $t',
+    if (r.outcome == FightOutcome.won) '${enemy(enemyId)} is beaten',
+    if (r.outcome == FightOutcome.lost) 'You are beaten',
+  ].join(' · ');
+
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 
@@ -76,6 +89,7 @@ class Labels {
           '(${fmt(owned)} / ${fmt(c.count)})',
     StopKind.untilCrafted =>
       'Until ${fmt(c.count)} crafted (${fmt(crafted)} / ${fmt(c.count)})',
+    StopKind.untilQuality => 'Until ${qualityName(c.item!)} or better',
     StopKind.never => switch (a.kind) {
       ActivityKind.travel => 'Until you arrive',
       ActivityKind.craft => 'Until materials run out',

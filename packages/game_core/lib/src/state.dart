@@ -23,6 +23,37 @@ class FightState {
   };
 }
 
+/// How a fight ended, on the round that ended it.
+enum FightOutcome { won, lost }
+
+/// One fight round, for the fight log (spec 0006 decision 8). [dealt] or
+/// [taken] is null when that side didn't strike.
+class RoundLog {
+  const RoundLog({required this.round, this.dealt, this.taken, this.outcome});
+
+  factory RoundLog.fromJson(Map<String, Object?> json) => RoundLog(
+    round: json['round'] as int,
+    dealt: json['dealt'] as int?,
+    taken: json['taken'] as int?,
+    outcome: switch (json['outcome']) {
+      final String o => FightOutcome.values.byName(o),
+      _ => null,
+    },
+  );
+
+  final int round;
+  final int? dealt;
+  final int? taken;
+  final FightOutcome? outcome;
+
+  Map<String, Object?> toJson() => {
+    'round': round,
+    if (dealt != null) 'dealt': dealt,
+    if (taken != null) 'taken': taken,
+    if (outcome != null) 'outcome': outcome!.name,
+  };
+}
+
 /// The activity in progress, with steps paid toward its current unit.
 class RunningActivity {
   RunningActivity(
@@ -33,7 +64,13 @@ class RunningActivity {
     this.leg,
     this.lossStreak = 0,
     this.crafted = 0,
-  }) : stop = stop ?? StopCondition.defaultFor(activity);
+    this.won = 0,
+    this.lost = 0,
+    Map<String, int>? gained,
+    List<RoundLog>? log,
+  }) : stop = stop ?? StopCondition.defaultFor(activity),
+       gained = gained ?? {},
+       log = log ?? [];
 
   factory RunningActivity.fromJson(Map<String, Object?> json) =>
       RunningActivity(
@@ -49,6 +86,14 @@ class RunningActivity {
         leg: json['leg'] as String?,
         lossStreak: json['lossStreak'] as int? ?? 0,
         crafted: json['crafted'] as int? ?? 0,
+        // Version 4 saves have no tally: it starts empty.
+        won: json['won'] as int? ?? 0,
+        lost: json['lost'] as int? ?? 0,
+        gained: json['gained'] == null ? null : _intMap(json['gained']),
+        log: [
+          for (final r in json['log'] as List<Object?>? ?? const [])
+            RoundLog.fromJson(r! as Map<String, Object?>),
+        ],
       );
 
   final Activity activity;
@@ -72,6 +117,15 @@ class RunningActivity {
   /// Items this action crafted.
   int crafted;
 
+  /// The tally (spec 0006 decision 7): fights won and lost, and every item
+  /// key gained, while this action ran.
+  int won;
+  int lost;
+  final Map<String, int> gained;
+
+  /// The last few fight rounds, oldest first (spec 0006 decision 8).
+  final List<RoundLog> log;
+
   Map<String, Object?> toJson() => {
     ...activity.toJson(),
     'stop': stop.toJson(),
@@ -80,6 +134,10 @@ class RunningActivity {
     'leg': leg,
     'lossStreak': lossStreak,
     'crafted': crafted,
+    'won': won,
+    'lost': lost,
+    'gained': Map.of(gained),
+    'log': [for (final r in log) r.toJson()],
   };
 }
 
@@ -132,11 +190,12 @@ class GameState {
     );
   }
 
+  /// 5: the running action's tally and fight log, found drops (spec 0006).
   /// 4: visited areas are counted (spec 0004); same format as 3.
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 4;
+  static const schemaVersion = 5;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;

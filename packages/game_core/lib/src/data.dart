@@ -36,7 +36,11 @@ class LocationDef {
       crafting = j['crafting'] as bool? ?? false,
       enemies = _strList(j, 'enemies'),
       nodes = _strList(j, 'nodes'),
-      flavour = j['flavour'] as String?;
+      flavour = j['flavour'] as String?,
+      map = switch (j['map']) {
+        final Map<String, Object?> m => MapPoint.fromJson(m),
+        _ => null,
+      };
 
   final String id;
   final String name;
@@ -47,6 +51,20 @@ class LocationDef {
 
   /// One line shown the first time the area appears (spec 0002 §9.5).
   final String? flavour;
+
+  /// Where the area is drawn on the map (spec 0006 decision 4).
+  final MapPoint? map;
+}
+
+/// A point on the map: 0-1 across its width ([x]) and down its height ([y]).
+class MapPoint {
+  const MapPoint(this.x, this.y);
+
+  factory MapPoint.fromJson(Map<String, Object?> j) =>
+      MapPoint((j['x'] as num).toDouble(), (j['y'] as num).toDouble());
+
+  final double x;
+  final double y;
 }
 
 /// A title the player earns at [level], with its ceremony line
@@ -311,7 +329,12 @@ class GameData {
        ),
        qualityPerLevel = (economy['qualityPerLevel'] as num).toDouble(),
        qualityMaxLevels = _int(economy, 'qualityMaxLevels'),
+       fightLogRounds = _int(economy, 'fightLogRounds'),
        startLocation = _str(world, 'startLocation'),
+       mapAspect = (world['mapAspect'] as num? ?? 1).toDouble(),
+       mapRiver = List.unmodifiable(
+         _maps(world, 'mapRiver').map(MapPoint.fromJson),
+       ),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
          (d) => d.id,
@@ -399,6 +422,9 @@ class GameData {
   final double qualityPerLevel;
   final int qualityMaxLevels;
 
+  /// Fight rounds the running action remembers (spec 0006 decision 8).
+  final int fightLogRounds;
+
   /// Separates an item id from its quality in inventory and equipment keys:
   /// `bone_sword@rare`. Common gear and materials use the plain id.
   static const qualityMark = '@';
@@ -444,6 +470,12 @@ class GameData {
   }
 
   final String startLocation;
+
+  /// The map's height as a share of its width.
+  final double mapAspect;
+
+  /// The river, as a line through these points (spec 0006 §2.2).
+  final List<MapPoint> mapRiver;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
   final Map<String, NodeDef> nodes;
@@ -599,6 +631,13 @@ class GameData {
       }
     }
     check(combatRoundSteps > 0, 'combatRoundSteps must be > 0');
+    check(fightLogRounds > 0, 'fightLogRounds must be > 0');
+    for (final p in [...mapRiver, for (final l in locations.values) ?l.map]) {
+      check(
+        p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1,
+        'map points must be within 0-1',
+      );
+    }
   }
 }
 
