@@ -261,15 +261,15 @@ class GameController extends ChangeNotifier {
     journal: [entry, ...save.journal].take(game.data.journalEntries).toList(),
   );
 
-  /// Adds a sync's results to the away report and the journal. A return
-  /// (open or resume) starts a new entry unless the previous report is still
-  /// on screen; syncs within [awayGrace] after it are added too, and re-show
-  /// the report. Returns whether the journal changed.
+  /// Adds a sync's results to the away report and the journal. Every return
+  /// (open or resume) starts a new entry, read or not (spec 0004 amendment
+  /// 1); syncs within [awayGrace] after it are added to it, and re-show the
+  /// report. Returns whether the journal changed.
   bool _report(AwaySummary summary, {required bool away}) {
     final now = _clock();
     if (away) {
       _awayUntil = now.add(awayGrace);
-      _freshReturn = awaySummary == null;
+      _freshReturn = true;
     }
     final inGrace = _awayUntil != null && now.isBefore(_awayUntil!);
     if (summary.isEmpty || !(away || inGrace)) return false;
