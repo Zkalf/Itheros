@@ -150,8 +150,6 @@ class GameController extends ChangeNotifier {
       JournalEntry(started: _clock(), summary: summary, testWalk: true),
     );
     awaySummary = summary;
-    // Real steps arriving next start their own entry.
-    _freshReturn = true;
     await store.save(_save!);
     notifyListeners();
   });
@@ -276,7 +274,8 @@ class GameController extends ChangeNotifier {
     final inGrace = _awayUntil != null && now.isBefore(_awayUntil!);
     if (summary.isEmpty || !(away || inGrace)) return false;
     final journal = _save!.journal;
-    if (_freshReturn || journal.isEmpty) {
+    // Real steps never join a test walk's entry (spec 0004 §3).
+    if (_freshReturn || journal.isEmpty || journal.first.testWalk) {
       _save = _addEntry(_save!, JournalEntry(started: now, summary: summary));
     } else {
       final first = journal.first;

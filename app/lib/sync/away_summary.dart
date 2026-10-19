@@ -49,11 +49,11 @@ class ActionLog {
           FightLost(enemy, xp, share.toDouble()),
     ],
     ended: switch (j['ended']) {
-      final String n => EndReason.values.byName(n),
+      final String n => EndReason.values.asNameMap()[n],
       _ => null,
     },
     skipped: switch (j['skipped']) {
-      final String n => SkipReason.values.byName(n),
+      final String n => SkipReason.values.asNameMap()[n],
       _ => null,
     },
     missing: _ints(j['missing']),
