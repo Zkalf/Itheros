@@ -16,8 +16,12 @@ void main() {
   /// Spec 0002 §3: XP per step for a monster of [level].
   double rate(int level) => 0.2 * math.pow(1.1, level - 1);
 
-  FightRecord even(EnemyDef e) =>
-      measureFights(game, referencePlayer(game, e.level), e.id);
+  // Gear made from a boss's own drops is never worn against it.
+  FightRecord even(EnemyDef e) => measureFights(
+    game,
+    referencePlayer(game, e.level, without: bossOnlyItems(game, e.id)),
+    e.id,
+  );
 
   final normal =
       game.data.enemies.values

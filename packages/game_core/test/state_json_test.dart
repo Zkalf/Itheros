@@ -50,10 +50,17 @@ void main() {
       expect(s.xp, floor + (next - floor) ~/ 2);
     });
 
-    test('a level 10 save past the old cap starts level 10 afresh', () {
-      final s = loadV1(50000);
+    test('XP past the old level 10 cap carries into level 10', () {
+      final floor = game.data.xpForLevel(10);
+      final s = loadV1(28000 + 2000);
       expect(game.level(s), 10);
-      expect(s.xp, game.data.xpForLevel(10));
+      expect(s.xp, floor + 2000);
+    });
+
+    test('...but never past level 10', () {
+      final s = loadV1(500000);
+      expect(game.level(s), 10);
+      expect(s.xp, game.data.xpForLevel(11) - 1);
     });
 
     test('a fight in progress carries over', () {

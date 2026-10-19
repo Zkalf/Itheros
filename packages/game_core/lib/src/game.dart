@@ -165,13 +165,14 @@ class Game {
     while (l < v1.length && s.xp >= v1[l]) {
       l++;
     }
-    final fraction = l < v1.length
-        ? (s.xp - v1[l - 1]) / (v1[l] - v1[l - 1])
-        : 0.0;
     final floor = data.xpForLevel(l);
-    final n = s.copy()
-      ..xp = floor + ((data.xpForLevel(l + 1) - floor) * fraction).floor();
-    return n;
+    final cost = data.xpForLevel(l + 1) - floor;
+    // Version 1 capped at level 10 but kept counting XP: that XP carries
+    // into level 10, short of level 11.
+    final progress = l < v1.length
+        ? (cost * (s.xp - v1[l - 1]) / (v1[l] - v1[l - 1])).floor()
+        : math.min(s.xp - v1.last, cost - 1);
+    return s.copy()..xp = floor + progress;
   }
 
   /// Steps the current activity's next unit costs, or null when idle.
