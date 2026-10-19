@@ -8,6 +8,7 @@ import 'persistence/save_data.dart';
 import 'persistence/save_store.dart';
 import 'steps/step_source.dart';
 import 'sync/away_summary.dart';
+import 'sync/day_key.dart';
 import 'sync/sync_service.dart';
 
 enum ControllerStatus { loading, unavailable, needsPermission, ready }
@@ -83,6 +84,10 @@ class GameController extends ChangeNotifier {
 
   /// The controller's clock, for screens that show times.
   DateTime get now => _clock();
+
+  /// Today's Health Connect total as last read; test walks don't count
+  /// (spec 0006 decision 10).
+  int get stepsToday => _save!.credited[dayKey(now)] ?? 0;
 
   Future<void> start() => _serial(() async {
     if (!await permissions.isAvailable()) {

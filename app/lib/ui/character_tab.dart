@@ -51,13 +51,6 @@ class CharacterTab extends StatelessWidget {
             ),
           ),
         ),
-        if (level >= 10)
-          SwitchListTile(
-            key: const ValueKey('show-next-goal'),
-            title: const Text('Show "Next goal"'),
-            value: !c.nextGoalHidden,
-            onChanged: (show) => c.setNextGoalHidden(!show),
-          ),
         const SizedBox(height: 16),
         Text('Equipment', style: text.titleMedium),
         for (final slot in game.openSlots(s))
@@ -91,40 +84,66 @@ class CharacterTab extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Text('Nothing yet. Fight and gather to find things.'),
           ),
-        // In data order, then quality order, so rows don't move when
-        // something is equipped (spec 0005 §5).
-        for (final key in [
-          for (final id in game.data.items.keys)
-            for (final q in game.data.qualities) game.data.keyFor(id, q.id),
-        ])
-          if (s.inventory[key] case final count?)
-            KeyedSubtree(
-              key: ValueKey('inventory-$key'),
-              child: ListTile(
-                key: const ValueKey('inventory-item'),
-                title: _name(context, game.data, labels, key),
-                subtitle: _bonusText(game.data, key),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('×$count'),
-                    const SizedBox(width: 12),
-                    // Kept empty for materials, so every count lines up.
-                    SizedBox(
-                      width: _buttonWidth,
-                      child: game.data.itemOf(key)?.slot == null
-                          ? null
-                          : FilledButton.tonal(
-                              key: ValueKey('equip-$key'),
-                              onPressed: () =>
-                                  _run(context, () => c.equip(key)),
-                              child: const Text('Equip'),
-                            ),
-                    ),
-                  ],
-                ),
+        // Gear, then materials (spec 0006 §2.4); each in data order, then
+        // quality order, so rows don't move when something is equipped
+        // (spec 0005 §5).
+        for (final gear in [true, false]) ...[
+          if (s.inventory.keys.any(
+            (k) => (game.data.itemOf(k)?.slot != null) == gear,
+          ))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                gear ? 'Gear' : 'Materials',
+                key: ValueKey(gear ? 'heading-gear' : 'heading-materials'),
+                style: text.titleSmall,
               ),
             ),
+          for (final key in [
+            for (final item in game.data.items.values)
+              if ((item.slot != null) == gear)
+                for (final q in game.data.qualities)
+                  game.data.keyFor(item.id, q.id),
+          ])
+            if (s.inventory[key] case final count?)
+              KeyedSubtree(
+                key: ValueKey('inventory-$key'),
+                child: ListTile(
+                  key: const ValueKey('inventory-item'),
+                  title: _name(context, game.data, labels, key),
+                  subtitle: _bonusText(game.data, key),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('×$count'),
+                      const SizedBox(width: 12),
+                      // Kept empty for materials, so every count lines up.
+                      SizedBox(
+                        width: _buttonWidth,
+                        child: game.data.itemOf(key)?.slot == null
+                            ? null
+                            : FilledButton.tonal(
+                                key: ValueKey('equip-$key'),
+                                onPressed: () =>
+                                    _run(context, () => c.equip(key)),
+                                child: const Text('Equip'),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+        if (level >= 10) ...[
+          const SizedBox(height: 16),
+          Text('Settings', style: text.titleMedium),
+          SwitchListTile(
+            key: const ValueKey('show-next-goal'),
+            title: const Text('Show "Next goal"'),
+            value: !c.nextGoalHidden,
+            onChanged: (show) => c.setNextGoalHidden(!show),
+          ),
+        ],
       ],
     );
   }
@@ -156,14 +175,8 @@ class CharacterTab extends StatelessWidget {
   }
 
   /// "+4 Defense", "+14 HP": a gear key's stats, quality included.
-  static List<String> _bonusParts(GameData data, String key) {
-    final b = data.bonusOf(key);
-    return [
-      if (b.attack != 0) '+${b.attack} Attack',
-      if (b.defense != 0) '+${b.defense} Defense',
-      if (b.hp != 0) '+${b.hp} HP',
-    ];
-  }
+  static List<String> _bonusParts(GameData data, String key) =>
+      Labels(data).bonus(data.bonusOf(key));
 
   static const _slotIcons = {
     'weapon': Icons.gavel,

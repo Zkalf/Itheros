@@ -57,6 +57,13 @@ class Labels {
     if (r.outcome == FightOutcome.lost) 'You are beaten',
   ].join(' · ');
 
+  /// "+4 Defense", "+14 HP": the stats a piece of gear adds.
+  List<String> bonus(Stats b) => [
+    if (b.attack != 0) '+${b.attack} Attack',
+    if (b.defense != 0) '+${b.defense} Defense',
+    if (b.hp != 0) '+${b.hp} HP',
+  ];
+
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 

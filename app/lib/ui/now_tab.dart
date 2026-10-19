@@ -1,54 +1,23 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
-import 'action_sheet.dart';
-import 'level_badge.dart';
 
-/// Where you are, what you're doing, and what you can do here. Locked
-/// content is hidden, not greyed out (spec 0001 §5).
-class AdventureTab extends StatelessWidget {
-  const AdventureTab({super.key});
+/// What the character is doing right now, the queue and the step bank
+/// (spec 0006 §2.1).
+class NowTab extends StatelessWidget {
+  const NowTab({super.key, this.onOpenMap});
+
+  /// Shows the Map, from the resting card.
+  final VoidCallback? onOpenMap;
 
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
-    final game = c.game;
-    final s = c.state;
-    final labels = Labels(game.data);
-    // Every open area, nearest first, so a day can be planned from anywhere
-    // (spec 0003 §8).
-    final areas = game.openLocationsByDistance(s);
-    final recipes = game.unlockedRecipes(s);
-    final destinations = game.travelDestinations(s);
-    final current = s.activity?.activity;
-
-    Widget option({
-      required Activity activity,
-      required Widget leading,
-      required String title,
-      required String subtitle,
-      bool enabled = true,
-      bool deadly = false,
-    }) {
-      final active = current == activity;
-      return ListTile(
-        key: ValueKey('option-${activity.kind.name}-${activity.target}'),
-        leading: leading,
-        title: Text(title),
-        subtitle: Text(subtitle),
-        enabled: enabled,
-        trailing: active ? const Chip(label: Text('Active')) : null,
-        onTap: active || !enabled
-            ? null
-            : () => _start(context, c, activity, deadly: deadly),
-      );
-    }
-
+    final labels = Labels(c.game.data);
     return RefreshIndicator(
       onRefresh: c.syncNow,
       child: ListView(
@@ -66,68 +35,7 @@ class AdventureTab extends StatelessWidget {
           if (c.testWalkOn) _TestWalkCard(controller: c),
           _NextGoal(controller: c, labels: labels),
           _Discoveries(controller: c, labels: labels),
-          _QueueCard(controller: c, labels: labels),
-          for (final MapEntry(key: place, value: steps) in areas.entries)
-            if ((game.enemiesAt(s, place), game.nodesAt(s, place))
-                case (final enemies, final nodes)
-                when enemies.isNotEmpty || nodes.isNotEmpty) ...[
-              _Heading(
-                '${labels.location(place)} · '
-                '${steps == 0 ? 'here' : '${fmt(steps)} steps away'}',
-              ),
-              for (final id in enemies)
-                if (game.enemyBand(s, id) case final band)
-                  option(
-                    activity: Activity.fight(id),
-                    leading: LevelBadge(
-                      level: game.data.enemies[id]!.level,
-                      colour: band.colour,
-                    ),
-                    title: labels.enemy(id),
-                    subtitle: _enemyText(
-                      game.data.enemies[id]!,
-                      band,
-                      game.data,
-                    ),
-                    deadly:
-                        band.colour == LevelColour.red ||
-                        band.colour == LevelColour.skull,
-                  ),
-              for (final id in nodes)
-                option(
-                  activity: Activity.gather(id),
-                  leading: const Icon(Icons.landscape),
-                  title: labels.node(id),
-                  subtitle:
-                      '${game.data.nodes[id]!.steps} steps per '
-                      '${labels.item(game.data.nodes[id]!.item)} · '
-                      '${_faded(game.data.nodes[id]!.xp, game.data.nodes[id]!.unlockLevel, game, s)} XP',
-                ),
-            ],
-          if (recipes.isNotEmpty)
-            _Heading(
-              game.data.locations[s.location]!.crafting
-                  ? 'Craft · here'
-                  : 'Craft · at the nearest camp or outpost',
-            ),
-          for (final id in recipes)
-            option(
-              activity: Activity.craft(id),
-              leading: const Icon(Icons.handyman),
-              title: labels.recipe(id),
-              subtitle: _recipeText(game.data.recipes[id]!, s, game, labels),
-              // From 2 slots a craft can be queued before its materials
-              // are gathered (spec 0003 §4).
-              enabled: game.hasMaterials(s, id) || game.queueSlots(s) > 1,
-            ),
-          if (destinations.isNotEmpty) const _Heading('Travel'),
-          for (final id in destinations)
-            option(
-              activity: Activity.travel(id),
-              leading: const Icon(Icons.signpost),
-              title: labels.location(id),
-              subtitle: '${fmt(game.data.route(s.location, id)!.steps)} steps',
-            ),
+          _QueueCard(controller: c, labels: labels, onOpenMap: onOpenMap),
           const SizedBox(height: 16),
           Text(
             'Steps arrive from Health Connect about once a minute. '
@@ -138,91 +46,6 @@ class AdventureTab extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _enemyText(EnemyDef e, LevelBand band, GameData data) => [
-    if (band.colour == LevelColour.orange) 'Risky',
-    'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
-    if (e.traits.isNotEmpty) e.traits.map((t) => _traitName[t]).join(', '),
-    '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
-    '${data.combatRoundSteps} steps per round',
-  ].join(' · ');
-
-  static const _traitName = {
-    Trait.quick: 'Quick',
-    Trait.slow: 'Slow',
-    Trait.ghostly: 'Ghostly',
-    Trait.regenerates: 'Regenerates',
-  };
-
-  /// [xp] for something at [level], as the player would get it now.
-  static int _faded(int xp, int level, Game game, GameState s) => math.max(
-    1,
-    xp * game.data.bandFor(level, game.level(s)).xpPercent ~/ 100,
-  );
-
-  static String _recipeText(
-    RecipeDef r,
-    GameState s,
-    Game game,
-    Labels labels,
-  ) {
-    final needs = r.inputs.entries
-        .map(
-          (e) => '${labels.item(e.key)} ${s.inventory[e.key] ?? 0}/${e.value}',
-        )
-        .join(', ');
-    return 'Needs $needs · ${r.steps} steps · '
-        '${_faded(r.xp, r.unlockLevel, game, s)} XP';
-  }
-
-  static Future<void> _start(
-    BuildContext context,
-    GameController c,
-    Activity a, {
-    bool deadly = false,
-  }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    if (deadly) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Deadly'),
-          content: const Text('You will almost certainly lose.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Fight anyway'),
-            ),
-          ],
-        ),
-      );
-      if (go != true) return;
-    }
-    if (!context.mounted) return;
-    try {
-      // One slot: it starts at once, as before level 5 (spec 0003
-      // decision 1). Otherwise the player picks a stop condition and
-      // whether to start now or queue it.
-      if (c.game.queueSlots(c.state) == 1) {
-        await c.addAction(a);
-        return;
-      }
-      final choice = await showModalBottomSheet<(StopCondition, bool)>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => ActionSheet(controller: c, activity: a),
-      );
-      if (choice == null) return;
-      final (stop, now) = choice;
-      await (now ? c.startActivity(a, stop: stop) : c.addAction(a, stop: stop));
-    } on ActivityError catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    }
   }
 }
 
@@ -353,18 +176,6 @@ class _TestWalkCard extends StatelessWidget {
   );
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 20, 4, 4),
-    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-  );
-}
-
 class _StatusCard extends StatelessWidget {
   const _StatusCard({required this.controller, required this.labels});
 
@@ -412,6 +223,11 @@ class _StatusCard extends StatelessWidget {
               'counts double.',
               style: text.bodySmall,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Walked today: ${fmt(controller.stepsToday)}',
+              key: const ValueKey('walked-today'),
+            ),
           ],
         ),
       ),
@@ -421,10 +237,15 @@ class _StatusCard extends StatelessWidget {
 
 /// The running action and the ones waiting after it (spec 0003 §8).
 class _QueueCard extends StatelessWidget {
-  const _QueueCard({required this.controller, required this.labels});
+  const _QueueCard({
+    required this.controller,
+    required this.labels,
+    this.onOpenMap,
+  });
 
   final GameController controller;
   final Labels labels;
+  final VoidCallback? onOpenMap;
 
   @override
   Widget build(BuildContext context) {
@@ -441,12 +262,21 @@ class _QueueCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           slots == 1
-              ? 'Pick something to do below. Until then, your steps go to '
-                    'the step bank.'
-              : 'Plan up to $slots actions below; each starts when the one '
-                    'before it stops. Until then, your steps go to the step '
-                    'bank.',
+              ? 'Your steps go to the step bank. Pick something to do on '
+                    'the Map or Craft screen.'
+              : 'Your steps go to the step bank. Plan up to $slots actions '
+                    'on the Map or Craft screen; each starts when the one '
+                    'before it stops.',
         ),
+        if (onOpenMap != null) ...[
+          const SizedBox(height: 8),
+          FilledButton.tonalIcon(
+            key: const ValueKey('open-map'),
+            onPressed: onOpenMap,
+            icon: const Icon(Icons.map),
+            label: const Text('Open the map'),
+          ),
+        ],
       ];
     } else {
       final cost = game.unitCost(s)!;
@@ -476,7 +306,9 @@ class _QueueCard extends StatelessWidget {
             labels.stop(
               run.stop,
               run.activity,
-              owned: run.stop.item == null ? 0 : game.owned(s, run.stop.item!),
+              owned: run.stop.kind == StopKind.untilHave
+                  ? game.owned(s, run.stop.item!)
+                  : 0,
               crafted: run.crafted,
             ),
           ),
@@ -513,6 +345,37 @@ class _QueueCard extends StatelessWidget {
             '${game.data.lossesToGiveUp}.',
             style: text.bodySmall,
           ),
+        ],
+        if (run.log.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Column(
+            key: const ValueKey('fight-log'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final r in run.log)
+                Text(
+                  labels.round(r, run.activity.target),
+                  style: text.bodySmall,
+                ),
+            ],
+          ),
+        ],
+        if (run.won + run.lost > 0 || run.gained.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('So far', style: text.titleSmall),
+          if (run.won + run.lost > 0)
+            Text(
+              '${fmt(run.won)} won · ${fmt(run.lost)} lost',
+              key: const ValueKey('tally-fights'),
+            ),
+          if (run.gained.isNotEmpty)
+            KeyedSubtree(
+              key: const ValueKey('tally-items'),
+              child: reportLine(
+                labels.counts(_ordered(run.gained), labels.owned),
+                labels,
+              ),
+            ),
         ],
         for (var i = 0; i < s.queue.length; i++)
           ListTile(
@@ -555,6 +418,16 @@ class _QueueCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// [gained] in item data order, then quality order, like the inventory.
+  Map<String, int> _ordered(Map<String, int> gained) {
+    final data = controller.game.data;
+    return {
+      for (final id in data.items.keys)
+        for (final q in data.qualities)
+          data.keyFor(id, q.id): ?gained[data.keyFor(id, q.id)],
+    };
   }
 
   /// Removes the action at [index] (0: Stop) and says which waiting actions
