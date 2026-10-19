@@ -788,4 +788,53 @@ void main() {
     expect(colour('Goblin hide'), scheme.onSurfaceVariant, reason: 'material');
     expect(colour('Hide vest (Common)'), isNot(colour('Goblin hide')));
   });
+
+  group('quality colour in reports', () {
+    const line =
+        'Crafted the Hide vest: +30 XP, Hide vest (Common) ×1, '
+        'Hide vest (Rare) ×1, Bear-pelt cloak (Legendary) ×1.';
+
+    test('better-than-common gear is coloured; the rest stays plain', () {
+      final spans = reportSpans(line, game.data);
+      expect(spans.map((s) => s.text).join(), line, reason: 'nothing lost');
+      Color? colourOf(String text) =>
+          spans.firstWhere((s) => s.text == text).style?.color;
+      expect(colourOf('Hide vest (Rare)'), const Color(0xff42a5f5));
+      expect(colourOf('Bear-pelt cloak (Legendary)'), const Color(0xffff9800));
+      expect(spans.where((s) => s.style?.color != null).map((s) => s.text), [
+        'Hide vest (Rare)',
+        'Bear-pelt cloak (Legendary)',
+      ]);
+    });
+
+    testWidgets('the report card and the journal draw it', (t) async {
+      final (c, source) = await pumpGame(
+        t,
+        level: 3,
+        inventory: {'goblin_hide': 4 * 30},
+      );
+      await c.startActivity(const Activity.craft('hide_vest'));
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 10), 150 * 30);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      if (c.levelCards.isNotEmpty) {
+        c.dismissLevelCards();
+        await t.pump();
+      }
+      bool coloured(Widget w) =>
+          w is RichText &&
+          w.text.toPlainText().contains('Hide vest (') &&
+          (w.text as TextSpan).children?.any(
+                (s) => s is TextSpan && s.style?.color != null,
+              ) ==
+              true;
+      expect(find.byWidgetPredicate(coloured), findsWidgets);
+
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      expect(find.byWidgetPredicate(coloured), findsWidgets);
+    });
+  });
 }
