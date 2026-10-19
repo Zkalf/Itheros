@@ -9,10 +9,13 @@ import 'package:walkingrpg/game_controller.dart';
 import 'package:walkingrpg/persistence/save_data.dart';
 import 'package:walkingrpg/persistence/save_store.dart';
 import 'package:walkingrpg/steps/fake_step_source.dart';
+import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
+import 'package:walkingrpg/ui/labels.dart';
+import 'package:walkingrpg/sync/away_summary.dart';
 
 import 'support.dart';
 
@@ -688,6 +691,59 @@ void main() {
           reason: '${a.id} shows "${a.counter}"',
         );
       }
+    });
+  });
+
+  group('item qualities (spec 0005 criterion 9)', () {
+    final labels = Labels(game.data);
+
+    test('names read "Bone sword (Rare)"; common and materials stay plain', () {
+      expect(labels.item('bone_sword@rare'), 'Bone sword (Rare)');
+      expect(labels.item('bone_sword@legendary'), 'Bone sword (Legendary)');
+      expect(labels.item('bone_sword'), 'Bone sword');
+      expect(labels.item('bones'), 'Bones');
+    });
+
+    test('the report names the quality', () {
+      final lines = labels.actionLines(
+        const ActionLog(
+          Activity.craft('hide_vest'),
+          xp: 30,
+          items: {'hide_vest': 1, 'hide_vest@rare': 1},
+        ),
+      );
+      expect(lines.single, contains('Hide vest ×1, Hide vest (Rare) ×1'));
+    });
+
+    testWidgets('each quality is its own row, in colour, with its stats', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 3,
+        inventory: {'hide_vest@rare': 2, 'hide_vest': 1},
+      );
+      await t.tap(find.text('Character'));
+      await t.pumpAndSettle();
+      final rows = t
+          .widgetList<ListTile>(find.byKey(const ValueKey('inventory-item')))
+          .map((tile) => (tile.title! as Text).data!)
+          .toList();
+      expect(rows, ['Hide vest', 'Hide vest (Rare)']);
+
+      final rare = t.widget<Text>(find.text('Hide vest (Rare)'));
+      expect(rare.style?.color, const Color(0xff42a5f5));
+      expect(find.text('+4 Defense · +14 HP'), findsOneWidget);
+      expect(find.text('+2 Defense · +10 HP'), findsOneWidget);
+
+      await t.tap(find.byKey(const ValueKey('equip-hide_vest@rare')));
+      await settle(t, c);
+      expect(c.state.equipment['body'], 'hide_vest@rare');
+      expect(
+        find.text('Hide vest (Rare)'),
+        findsNWidgets(2),
+        reason: 'equipped, and one left in the inventory',
+      );
     });
   });
 }
