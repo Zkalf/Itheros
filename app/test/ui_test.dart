@@ -665,4 +665,29 @@ void main() {
       },
     );
   });
+
+  group('achievements tab', () {
+    testWidgets('Travelling Salesman reads as a goal, not a counter name', (
+      t,
+    ) async {
+      await pumpGame(t);
+      await t.tap(find.text('Achievements'));
+      await t.pumpAndSettle();
+      expect(find.text('Travelling Salesman'), findsOneWidget);
+      expect(find.text('Arrive at all 10 areas'), findsOneWidget);
+    });
+
+    testWidgets('no achievement shows a raw counter name', (t) async {
+      await pumpGame(t);
+      await t.tap(find.text('Achievements'));
+      await t.pumpAndSettle();
+      for (final a in game.data.achievements.values) {
+        expect(
+          find.textContaining(a.counter),
+          findsNothing,
+          reason: '${a.id} shows "${a.counter}"',
+        );
+      }
+    });
+  });
 }
