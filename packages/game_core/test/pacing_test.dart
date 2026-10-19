@@ -1,5 +1,6 @@
-// Pacing: spec 0001 acceptance criteria 5 and 6, played by the scripted
-// sensible player in lib/simulation.dart.
+// Pacing, played by the scripted sensible player in lib/simulation.dart:
+// spec 0001 acceptance criterion 5 and spec 0002 criterion 3 (which replaces
+// spec 0001 criterion 6).
 import 'package:game_core/simulation.dart';
 import 'package:test/test.dart';
 
@@ -10,24 +11,24 @@ void main() {
 
   for (final seed in [1, 2, 3]) {
     group('seed $seed', () {
-      final result = simulate(game, stepsPerDay: 5000, days: 12, seed: seed);
+      final result = simulate(game, stepsPerDay: 5000, days: 100, seed: seed);
 
-      test('criterion 5: level 2 within 350 walked steps', () {
+      test('spec 0001 criterion 5: level 2 within 350 walked steps', () {
         expect(result.walkedToLevel2, isNotNull);
         expect(result.walkedToLevel2, lessThanOrEqualTo(350));
       });
 
-      test('criterion 6: level 5 on day 1 at 5,000 steps/day', () {
+      test('spec 0002 criterion 3: level 5 on day 1 at 5,000 steps/day', () {
         expect(result.dayReached(5), 1);
       });
 
-      test(
-        'criterion 6: level 10 within days 7-11 at 5,000 steps/day',
-        () => expect(result.dayReached(10), inInclusiveRange(7, 11)),
-        skip:
-            'Superseded by spec 0002 (level 10 on day 12-16); '
-            'replaced in plan 0003 M3',
-      );
+      test('spec 0002 criterion 3: level 10 on day 12-16', () {
+        expect(result.dayReached(10), inInclusiveRange(12, 16));
+      });
+
+      test('spec 0002 criterion 3: level 30 on day 80-100', () {
+        expect(result.dayReached(30), inInclusiveRange(80, 100));
+      });
     });
   }
 }

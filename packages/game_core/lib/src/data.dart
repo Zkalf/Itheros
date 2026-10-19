@@ -117,6 +117,9 @@ enum Trait {
 }
 
 class EnemyDef {
+  /// One `enemies.json` entry; for tuning tools trying variants.
+  factory EnemyDef.fromJson(Map<String, Object?> j) = EnemyDef._;
+
   EnemyDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
@@ -128,6 +131,7 @@ class EnemyDef {
       regen = _intOr(j, 'regen'),
       drops = _maps(j, 'drops').map(DropDef._).toList(),
       firstKillDrops = _maps(j, 'firstKillDrops').map(DropDef._).toList(),
+      lurker = j['lurker'] as bool? ?? false,
       lossHint = j['lossHint'] as String?,
       flavour = j['flavour'] as String?;
 
@@ -149,6 +153,9 @@ class EnemyDef {
 
   /// Dropped once, on the first kill (spec 0002 §5.3).
   final List<DropDef> firstKillDrops;
+
+  /// Far above its area, there to be seen early (spec 0002 §5.4).
+  final bool lurker;
 
   /// Added to the report after a loss (spec 0002 §9.4).
   final String? lossHint;

@@ -42,8 +42,7 @@ void main(List<String> args) {
   }
   final c = result.finalState.counters;
   stdout.writeln(
-    'Totals: ${c['kills.goblin'] ?? 0} goblins, '
-    '${c['kills.goblin_brute'] ?? 0} brutes, '
-    '${c['gathered.copper_ore'] ?? 0} ore, ${c['crafted.total'] ?? 0} crafted',
+    'Totals: ${[for (final e in c.entries)
+      if (!e.key.startsWith('steps.')) '${e.key} ${e.value}'].join(', ')}',
   );
 }

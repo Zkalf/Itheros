@@ -12,7 +12,7 @@
     },
     {
       "id": "goblin_brute", "name": "Goblin brute", "unlockLevel": 4, "level": 4,
-      "hp": 45, "attack": 8, "defense": 3, "xp": 14,
+      "hp": 45, "attack": 8, "defense": 3, "xp": 13,
       "drops": [
         { "item": "goblin_hide", "chance": 1.0, "count": 2 }
       ],
@@ -20,9 +20,9 @@
       "lossHint": "Brutes hit hard. A hide vest and a copper sword make the difference."
     },
     {
-      "id": "old_bear", "name": "Old Bear", "unlockLevel": 1, "level": 16,
+      "id": "old_bear", "name": "Old Bear", "unlockLevel": 1, "level": 16, "lurker": true,
       "traits": ["quick"],
-      "hp": 140, "attack": 40, "defense": 14, "xp": 50,
+      "hp": 140, "attack": 40, "defense": 14, "xp": 58,
       "drops": [
         { "item": "bear_pelt_cloak", "chance": 0.25, "count": 1 }
       ],
@@ -83,7 +83,7 @@
     },
     {
       "id": "bandit", "name": "Bandit", "unlockLevel": 10, "level": 15,
-      "hp": 90, "attack": 40, "defense": 10, "xp": 30,
+      "hp": 90, "attack": 40, "defense": 10, "xp": 33,
       "drops": [
         { "item": "leather", "chance": 0.6, "count": 1 },
         { "item": "iron_ore", "chance": 0.4, "count": 1 }
@@ -94,7 +94,7 @@
     {
       "id": "giant_spider", "name": "Giant spider", "unlockLevel": 10, "level": 16,
       "traits": ["quick"],
-      "hp": 100, "attack": 42, "defense": 8, "xp": 34,
+      "hp": 100, "attack": 42, "defense": 8, "xp": 37,
       "drops": [
         { "item": "silk", "chance": 0.6, "count": 1 }
       ],
@@ -104,7 +104,7 @@
     {
       "id": "troll", "name": "Troll", "unlockLevel": 10, "level": 18,
       "traits": ["regenerates"], "regen": 8,
-      "hp": 100, "attack": 37, "defense": 16, "xp": 71,
+      "hp": 100, "attack": 37, "defense": 16, "xp": 68,
       "drops": [
         { "item": "troll_hide", "chance": 0.6, "count": 1 }
       ],
@@ -114,7 +114,7 @@
     {
       "id": "ogre_chieftain", "name": "Ogre Chieftain", "unlockLevel": 10, "level": 20,
       "traits": ["slow"],
-      "hp": 730, "attack": 37, "defense": 20, "xp": 560,
+      "hp": 750, "attack": 38, "defense": 20, "xp": 330,
       "drops": [
         { "item": "troll_hide", "chance": 1.0, "count": 3 }
       ],
@@ -176,8 +176,8 @@
     },
     {
       "id": "young_dragon", "name": "Young Dragon", "unlockLevel": 10, "level": 30,
-      "traits": ["quick", "regenerates"], "regen": 10,
-      "hp": 720, "attack": 50, "defense": 44, "xp": 950,
+      "traits": ["quick", "regenerates"], "regen": 12,
+      "hp": 300, "attack": 43, "defense": 60, "xp": 860,
       "drops": [
         { "item": "dragon_scale", "chance": 1.0, "count": 2 }
       ],
