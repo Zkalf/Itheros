@@ -410,4 +410,23 @@ void main() {
       expect(again.testWalkOn, isTrue);
     });
   });
+
+  test('real steps never join a test walk entry (spec 0004 §3)', () async {
+    final c = controller();
+    await c.start();
+    now = DateTime(2026, 10, 18, 10);
+    await c.testWalk(1000);
+    // The test walk's card is left on screen; the player walks off.
+    c.pause();
+    source.walk(DateTime(2026, 10, 18, 11), 300);
+    now = DateTime(2026, 10, 18, 12);
+    await c.resume();
+
+    expect(c.journal, hasLength(2));
+    expect(c.journal.first.testWalk, isFalse);
+    expect(c.journal.first.summary.walked, 300);
+    expect(c.journal.first.started, DateTime(2026, 10, 18, 12));
+    expect(c.journal[1].testWalk, isTrue);
+    expect(c.journal[1].summary.walked, 1000);
+  });
 }
