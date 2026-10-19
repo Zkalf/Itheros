@@ -13,6 +13,9 @@ Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -Fi
 auto-approved by permission rules (headless and eval runs deny it).
 - `.\scripts\check.ps1` — format, analyze, tests. The definition of green.
 - `.\scripts\check.ps1 -Release` — also builds the release APK and fails if it requests INTERNET.
+- `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
+- One command per tool call: no `;` chains or pipes (`Push-Location app; flutter test …`). Chained commands are never
+  auto-approved; use the scripts above.
 - `.\scripts\device-smoke.ps1 [-Install]` — on the Fairphone (USB): app starts, reads steps, no crash; screenshot.
 - Bug fixes follow the `bugfix` skill (failing test committed first; `.\scripts\lock-tests.ps1` freezes `test/` files).
 - The `verifier` subagent checks a change against its spec's acceptance criteria before committing.
@@ -29,6 +32,9 @@ auto-approved by permission rules (headless and eval runs deny it).
   file I/O (it hangs in the fake-async test zone).
 
 ## Rules
+- Content and tuning that fit existing systems (enemies, locations, items, gear slots, achievements, numbers) are
+  data-only changes in `data/*.json`: no new spec needed, but `check.ps1` (pacing tests) stays green. Spec 0001's
+  scope list (decision 11) bounded the first build, not later content. New rules or systems go intent → spec → plan.
 - Health data stays on the device: no INTERNET permission, no network code.
 - Read steps with Health Connect's **aggregate** (`getTotalStepsInInterval` with default args). Never pass
   `includeManualEntry: false`: the plugin then sums raw records without de-duplication (double-counts phone + watch).

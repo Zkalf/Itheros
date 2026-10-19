@@ -35,7 +35,8 @@ $allowedTools = @(
   'PowerShell(git *)', 'PowerShell(dart *)', 'PowerShell(flutter *)',
   'PowerShell(Push-Location *)', 'PowerShell(Pop-Location)',
   'PowerShell(.\scripts\check.ps1)', 'PowerShell(.\scripts\check.ps1 *)',
-  'PowerShell(.\scripts\lock-tests.ps1)', 'PowerShell(.\scripts\lock-tests.ps1 *)'
+  'PowerShell(.\scripts\lock-tests.ps1)', 'PowerShell(.\scripts\lock-tests.ps1 *)',
+  'PowerShell(.\scripts\test.ps1 *)'
 )
 
 $tasks = @(Get-ChildItem (Join-Path $PSScriptRoot 'tasks\*.json') | Sort-Object Name |
