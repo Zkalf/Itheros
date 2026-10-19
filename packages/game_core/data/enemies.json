@@ -56,7 +56,7 @@
         { "item": "grave_cloth", "chance": 1.0, "count": 2 }
       ],
       "firstKillDrops": [
-        { "item": "kings_blade", "count": 1 }
+        { "item": "kings_blade", "count": 1, "repeatChance": 0.01 }
       ],
       "flavour": "Graveyard King: he ruled once. He still thinks he does.",
       "lossHint": "The Graveyard King's armour is heavy: a stronger weapon helps. Bring a shield and body armour too."
@@ -119,7 +119,7 @@
         { "item": "troll_hide", "chance": 1.0, "count": 3 }
       ],
       "firstKillDrops": [
-        { "item": "chieftains_amulet", "count": 1 }
+        { "item": "chieftains_amulet", "count": 1, "repeatChance": 0.01 }
       ],
       "flavour": "Ogre Chieftain: the bridge is his. So is the toll.",
       "lossHint": "The Ogre Chieftain is slow, but every blow crushes. Bring iron and troll gear."
@@ -182,7 +182,7 @@
         { "item": "dragon_scale", "chance": 1.0, "count": 2 }
       ],
       "firstKillDrops": [
-        { "item": "dragons_heart", "count": 1 }
+        { "item": "dragons_heart", "count": 1, "repeatChance": 0.01 }
       ],
       "flavour": "Young Dragon: young for a dragon. Old for everything else.",
       "lossHint": "The Young Dragon is quick, armoured, heals and hits hard. Bring the full mithril set."

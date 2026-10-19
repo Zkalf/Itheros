@@ -156,15 +156,18 @@ void main() {
   });
 
   group('criterion 6: boss uniques', () {
-    test('every boss unique can drop again at 5% per later kill', () {
-      for (final id in ['graveyard_king', 'ogre_chieftain', 'young_dragon']) {
-        final drops = data.enemies[id]!.firstKillDrops;
-        expect(drops, isNotEmpty);
-        for (final d in drops) {
-          expect(d.repeatChance, 0.05, reason: '$id ${d.item}');
+    test(
+      'every boss unique can drop again at 1% per later kill (amendment 1)',
+      () {
+        for (final id in ['graveyard_king', 'ogre_chieftain', 'young_dragon']) {
+          final drops = data.enemies[id]!.firstKillDrops;
+          expect(drops, isNotEmpty);
+          for (final d in drops) {
+            expect(d.repeatChance, 0.01, reason: '$id ${d.item}');
+          }
         }
-      }
-    });
+      },
+    );
 
     test('sure on the first kill, then at the repeat chance, with quality', () {
       final g = arenaGame([

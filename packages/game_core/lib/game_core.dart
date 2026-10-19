@@ -11,4 +11,5 @@ export 'src/events.dart';
 export 'src/game.dart';
 export 'src/goal.dart';
 export 'src/news.dart';
+export 'src/rng.dart';
 export 'src/state.dart';

@@ -94,7 +94,7 @@ GameState referencePlayer(
     final slot = item.slot;
     if (slot == null || !open.contains(slot)) continue;
     final current = s.equipment[slot];
-    if (current == null || item.score > game.data.items[current]!.score) {
+    if (current == null || item.score > game.data.scoreOf(current)) {
       s.equipment[slot] = item.id;
     }
   }
@@ -241,10 +241,10 @@ class SensiblePlayer {
     return game.startActivity(s, hop);
   }
 
-  int _have(GameState s, String item) =>
-      (s.inventory[item] ?? 0) + (s.equipment.containsValue(item) ? 1 : 0);
+  int _have(GameState s, String item) => game.owned(s, item);
 
-  int _score(String? item) => item == null ? 0 : data.items[item]!.score;
+  /// Gear rank with quality (spec 0005 criterion 7).
+  int _score(String? key) => key == null ? 0 : data.scoreOf(key);
 
   Activity _goal(GameState s) {
     final lvl = game.level(s);
@@ -366,7 +366,7 @@ class SensiblePlayer {
   GameState _equipBest(GameState s) {
     final open = game.openSlots(s);
     for (final item in s.inventory.keys.toList()) {
-      final slot = data.items[item]?.slot;
+      final slot = data.itemOf(item)?.slot;
       if (slot != null &&
           open.contains(slot) &&
           _score(item) > _score(s.equipment[slot])) {

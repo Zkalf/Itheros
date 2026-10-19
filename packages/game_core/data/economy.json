@@ -5,6 +5,15 @@
   "lossXpShare": 0.75,
   "lossesToGiveUp": 3,
   "journalEntries": 20,
+  "qualities": [
+    { "id": "common", "name": "Common", "colour": "#e0e0e0", "bonus": 0, "chance": 0.70 },
+    { "id": "uncommon", "name": "Uncommon", "colour": "#4caf50", "bonus": 0.20, "chance": 0.20 },
+    { "id": "rare", "name": "Rare", "colour": "#42a5f5", "bonus": 0.40, "chance": 0.07 },
+    { "id": "epic", "name": "Epic", "colour": "#ab47bc", "bonus": 0.70, "chance": 0.025 },
+    { "id": "legendary", "name": "Legendary", "colour": "#ff9800", "bonus": 1.00, "chance": 0.005 }
+  ],
+  "qualityPerLevel": 0.02,
+  "qualityMaxLevels": 10,
   "combatRoundSteps": 10,
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
   "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },

@@ -43,9 +43,30 @@ class Game {
     var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
     final open = openSlots(s);
     s.equipment.forEach((slot, item) {
-      if (open.contains(slot)) total += data.items[item]!.bonus;
+      if (open.contains(slot)) total += data.bonusOf(item);
     });
     return total;
+  }
+
+  /// Picks a quality id for gear of [itemLevel] made or found by a player of
+  /// [playerLevel] (spec 0005 §3). Uses one roll of [rng].
+  String rollQuality(
+    Rng rng, {
+    required int playerLevel,
+    required int itemLevel,
+  }) {
+    final above = math.min(
+      data.qualityMaxLevels,
+      math.max(0, playerLevel - itemLevel),
+    );
+    final boost = 1 + data.qualityPerLevel * above;
+    var roll = rng.nextDouble();
+    for (final q in data.qualities.reversed) {
+      if (q == data.qualities.first) break;
+      roll -= q.chance * boost;
+      if (roll < 0) return q.id;
+    }
+    return data.qualities.first.id;
   }
 
   /// Total XP needed for the next level. There is no level cap.
@@ -102,14 +123,16 @@ class Game {
   Goal? nextGoal(GameState s) {
     final lvl = level(s);
     final open = openSlots(s);
-    int worn(String slot) => data.items[s.equipment[slot]]?.score ?? 0;
-    int gain(String item) =>
-        data.items[item]!.score - worn(data.items[item]!.slot!);
+    int worn(String slot) => switch (s.equipment[slot]) {
+      final key? => data.scoreOf(key),
+      null => 0,
+    };
+    int gain(String key) => data.scoreOf(key) - worn(data.itemOf(key)!.slot!);
 
     final better = [
-      for (final item in s.inventory.keys)
-        if (data.items[item]?.slot case final slot?)
-          if (open.contains(slot) && gain(item) > 0) item,
+      for (final key in s.inventory.keys)
+        if (data.itemOf(key)?.slot case final slot?)
+          if (open.contains(slot) && gain(key) > 0) key,
     ]..sort((a, b) => gain(b).compareTo(gain(a)));
     if (better.isNotEmpty) return EquipGoal(better.first);
 
@@ -118,8 +141,7 @@ class Game {
         if (r.unlockLevel <= lvl)
           if (data.items[r.output]!.slot case final slot?)
             if (open.contains(slot) &&
-                (s.inventory[r.output] ?? 0) == 0 &&
-                s.equipment[slot] != r.output &&
+                owned(s, r.output) == 0 &&
                 gain(r.output) > 0)
               r,
     ]..sort((a, b) => gain(b.output).compareTo(gain(a.output)));
@@ -281,10 +303,15 @@ class Game {
       if (e.value - (s.inventory[e.key] ?? 0) case final n when n > 0) e.key: n,
   };
 
-  /// Owned [item]s, equipped ones included.
-  int owned(GameState s, String item) =>
-      (s.inventory[item] ?? 0) +
-      s.equipment.values.where((i) => i == item).length;
+  /// Owned [item]s of every quality, equipped ones included.
+  int owned(GameState s, String item) {
+    bool isIt(String key) => data.itemOf(key)?.id == item;
+    var n = s.equipment.values.where(isIt).length;
+    s.inventory.forEach((key, count) {
+      if (isIt(key)) n += count;
+    });
+    return n;
+  }
 
   /// How many actions the queue holds at the player's level, the running
   /// one included (spec 0003 §2).
@@ -559,7 +586,7 @@ class Game {
   }
 
   GameState equip(GameState s, String item) {
-    final slot = data.items[item]?.slot;
+    final slot = data.itemOf(item)?.slot;
     if (slot == null) throw ActivityError('$item cannot be equipped');
     if (!openSlots(s).contains(slot)) throw ActivityError('$slot is locked');
     if ((s.inventory[item] ?? 0) < 1) throw ActivityError('No $item to equip');
@@ -706,11 +733,12 @@ class _Run {
         final recipe = data.recipes[a.target]!;
         final xp = _faded(recipe.xp, recipe.unlockLevel);
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
-        s.addItem(recipe.output);
+        final made = _withQuality(recipe.output, recipe.unlockLevel);
+        s.addItem(made);
         act.crafted++;
         s.count('crafted.total');
         s.count('crafted.${recipe.output}');
-        events.add(Crafted(recipe.output, xp));
+        events.add(Crafted(made, xp));
         _gainXp(xp);
         return null;
     }
@@ -760,15 +788,20 @@ class _Run {
     act.lossStreak = 0;
     final drops = <String, int>{};
     void drop(DropDef d) {
-      drops[d.item] = (drops[d.item] ?? 0) + d.count;
-      s.addItem(d.item, d.count);
+      for (var i = 0; i < d.count; i++) {
+        final key = _withQuality(d.item, enemy.level);
+        drops[key] = (drops[key] ?? 0) + 1;
+        s.addItem(key);
+      }
     }
 
     for (final d in enemy.drops) {
       if (rng.nextDouble() < d.chance) drop(d);
     }
-    if ((s.counters['kills.${enemy.id}'] ?? 0) == 0) {
-      enemy.firstKillDrops.forEach(drop);
+    // Boss uniques: sure the first time, then now and then (spec 0005 §1).
+    final firstKill = (s.counters['kills.${enemy.id}'] ?? 0) == 0;
+    for (final d in enemy.firstKillDrops) {
+      if (firstKill || rng.nextDouble() < d.repeatChance) drop(d);
     }
     final xp = _faded(enemy.xp, enemy.level);
     s.count('kills.${enemy.id}');
@@ -799,6 +832,17 @@ class _Run {
 
   /// [xp] for something at [level], faded by the colour table; at least 1
   /// (spec 0002 §3).
+  /// [item]'s key: gear rolls a quality, materials stay plain.
+  String _withQuality(String item, int itemLevel) {
+    if (data.items[item]!.slot == null) return item;
+    final q = game.rollQuality(
+      rng,
+      playerLevel: game.level(s),
+      itemLevel: itemLevel,
+    );
+    return data.keyFor(item, q);
+  }
+
   int _faded(int xp, int level) {
     final band = data.bandFor(level, game.level(s));
     return math.max(1, xp * band.xpPercent ~/ 100);

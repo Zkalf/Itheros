@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 /// Character stats. Also used for gear bonuses and per-level growth.
 class Stats {
@@ -94,11 +95,34 @@ class DropDef {
   DropDef._(Map<String, Object?> j)
     : item = _str(j, 'item'),
       chance = (j['chance'] as num? ?? 1).toDouble(),
-      count = _intOr(j, 'count', 1);
+      count = _intOr(j, 'count', 1),
+      repeatChance = (j['repeatChance'] as num? ?? 0).toDouble();
 
   final String item;
   final double chance;
   final int count;
+
+  /// For a first-kill drop: the chance it drops again on later kills (spec
+  /// 0005 decision 6).
+  final double repeatChance;
+}
+
+/// A gear quality (spec 0005 §2). [bonus] is the share added to each stat.
+class QualityDef {
+  QualityDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      name = _str(j, 'name'),
+      colour = _str(j, 'colour'),
+      bonus = (j['bonus'] as num).toDouble(),
+      chance = (j['chance'] as num).toDouble();
+
+  final String id;
+  final String name;
+
+  /// `#rrggbb`.
+  final String colour;
+  final double bonus;
+  final double chance;
 }
 
 /// Monster twists (spec 0002 §5.1).
@@ -282,6 +306,11 @@ class GameData {
        lossXpShare = (economy['lossXpShare'] as num).toDouble(),
        lossesToGiveUp = _int(economy, 'lossesToGiveUp'),
        journalEntries = _int(economy, 'journalEntries'),
+       qualities = List.unmodifiable(
+         _maps(economy, 'qualities').map(QualityDef._),
+       ),
+       qualityPerLevel = (economy['qualityPerLevel'] as num).toDouble(),
+       qualityMaxLevels = _int(economy, 'qualityMaxLevels'),
        startLocation = _str(world, 'startLocation'),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
@@ -361,6 +390,55 @@ class GameData {
 
   /// How many reports the app's journal keeps (spec 0004 decision 2).
   final int journalEntries;
+
+  /// Gear qualities, common first (spec 0005 §2).
+  final List<QualityDef> qualities;
+
+  /// How much each level above an item raises the better qualities' chances,
+  /// and for how many levels at most (spec 0005 §3).
+  final double qualityPerLevel;
+  final int qualityMaxLevels;
+
+  /// Separates an item id from its quality in inventory and equipment keys:
+  /// `bone_sword@rare`. Common gear and materials use the plain id.
+  static const qualityMark = '@';
+
+  /// The item a key stands for.
+  ItemDef? itemOf(String key) => items[key.split(qualityMark).first];
+
+  /// The quality of a key; common when it names none.
+  QualityDef qualityOf(String key) {
+    final parts = key.split(qualityMark);
+    if (parts.length < 2) return qualities.first;
+    return qualities.firstWhere((q) => q.id == parts[1]);
+  }
+
+  /// The key for [item] of [quality] (a quality id).
+  String keyFor(String item, String quality) =>
+      quality == qualities.first.id ? item : '$item$qualityMark$quality';
+
+  /// An item's stats with its quality: each stat it has becomes
+  /// `max(round(stat × (1 + bonus)), stat + tier)` (spec 0005 decision 7).
+  Stats bonusOf(String key) {
+    final base = itemOf(key)!.bonus;
+    final q = qualityOf(key);
+    final tier = qualities.indexOf(q);
+    int up(int v) => v == 0 || tier == 0
+        ? v
+        : math.max((v * (1 + q.bonus)).round(), v + tier);
+    return Stats(
+      hp: up(base.hp),
+      attack: up(base.attack),
+      defense: up(base.defense),
+    );
+  }
+
+  /// How a key ranks against other gear for the same slot, quality included.
+  int scoreOf(String key) {
+    final b = bonusOf(key);
+    return b.attack * 5 + b.defense * 3 + b.hp;
+  }
+
   final String startLocation;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
@@ -440,6 +518,20 @@ class GameData {
     );
     check(lossesToGiveUp >= 1, 'lossesToGiveUp must be >= 1');
     check(journalEntries >= 1, 'journalEntries must be >= 1');
+    check(
+      qualities.isNotEmpty && qualities.first.bonus == 0,
+      'the first quality must be plain (bonus 0)',
+    );
+    check(
+      (qualities.fold(0.0, (t, q) => t + q.chance) - 1).abs() < 1e-9,
+      'quality chances must add up to 1',
+    );
+    for (var i = 1; i < qualities.length; i++) {
+      check(
+        qualities[i].bonus > qualities[i - 1].bonus,
+        'qualities must get better in order',
+      );
+    }
     check(
       ranks.isNotEmpty && ranks.first.level == 1,
       'ranks must start at level 1',

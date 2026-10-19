@@ -53,10 +53,20 @@ void main() {
         return g.applySteps(s, 2000).state;
       }
 
-      final yellow = after(1);
-      final grey = after(20);
-      expect(grey.inventory, yellow.inventory);
-      expect(grey.inventory['goblin_hide'], greaterThan(50));
+      // The same items; only gear quality may differ (spec 0005 §3).
+      Map<String, int> items(GameState s) {
+        final n = <String, int>{};
+        s.inventory.forEach((key, count) {
+          final id = g.data.itemOf(key)!.id;
+          n[id] = (n[id] ?? 0) + count;
+        });
+        return n;
+      }
+
+      final yellow = items(after(1));
+      final grey = items(after(20));
+      expect(grey, yellow);
+      expect(grey['goblin_hide'], greaterThan(50));
     });
   });
 
