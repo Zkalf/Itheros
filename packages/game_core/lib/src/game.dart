@@ -28,16 +28,42 @@ class Game {
 
   Stats stats(GameState s) {
     var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
-    for (final item in s.equipment.values) {
-      total += data.items[item]!.bonus;
-    }
+    final open = openSlots(s);
+    s.equipment.forEach((slot, item) {
+      if (open.contains(slot)) total += data.items[item]!.bonus;
+    });
     return total;
   }
 
-  /// Total XP needed for the next level, or null at the level cap.
-  int? xpForNextLevel(GameState s) {
-    final l = level(s);
-    return l < data.maxLevel ? data.xpForLevel(l + 1) : null;
+  /// Total XP needed for the next level. There is no level cap.
+  int xpForNextLevel(GameState s) => data.xpForLevel(level(s) + 1);
+
+  /// Gear slots open at the player's level, in display order.
+  List<String> openSlots(GameState s) => [
+    for (final e in data.gearSlots.entries)
+      if (e.value <= level(s)) e.key,
+  ];
+
+  /// Colour and XP share of [enemy] for this player (spec 0002 §3).
+  LevelBand enemyBand(GameState s, String enemy) =>
+      data.bandFor(data.enemies[enemy]!.level, level(s));
+
+  /// Brings a state read from an older save up to date. Version 1 saves
+  /// keep their level and their progress through it (spec 0002 §2).
+  GameState migrate(GameState s) {
+    if (s.loadedVersion == GameState.schemaVersion) return s;
+    const v1 = [0, 20, 100, 300, 700, 1540, 3390, 7460, 16400, 28000];
+    var l = 1;
+    while (l < v1.length && s.xp >= v1[l]) {
+      l++;
+    }
+    final fraction = l < v1.length
+        ? (s.xp - v1[l - 1]) / (v1[l] - v1[l - 1])
+        : 0.0;
+    final floor = data.xpForLevel(l);
+    final n = s.copy()
+      ..xp = floor + ((data.xpForLevel(l + 1) - floor) * fraction).floor();
+    return n;
   }
 
   /// Steps the current activity's next unit costs, or null when idle.
@@ -145,6 +171,7 @@ class Game {
   GameState equip(GameState s, String item) {
     final slot = data.items[item]?.slot;
     if (slot == null) throw ActivityError('$item cannot be equipped');
+    if (!openSlots(s).contains(slot)) throw ActivityError('$slot is locked');
     if ((s.inventory[item] ?? 0) < 1) throw ActivityError('No $item to equip');
     final n = s.copy()..addItem(item, -1);
     final old = n.equipment[slot];
@@ -253,25 +280,28 @@ class _Run {
         return _combatRound(act);
       case ActivityKind.gather:
         final node = data.nodes[a.target]!;
+        final xp = _faded(node.xp, node.unlockLevel);
         s.addItem(node.item);
         s.count('gathered.${node.item}');
-        events.add(Gathered(node.item, node.xp));
-        _gainXp(node.xp);
+        events.add(Gathered(node.item, xp));
+        _gainXp(xp);
         return null;
       case ActivityKind.craft:
         final recipe = data.recipes[a.target]!;
+        final xp = _faded(recipe.xp, recipe.unlockLevel);
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
         s.addItem(recipe.output);
         s.count('crafted.total');
         s.count('crafted.${recipe.output}');
-        events.add(Crafted(recipe.output, recipe.xp));
-        _gainXp(recipe.xp);
+        events.add(Crafted(recipe.output, xp));
+        _gainXp(xp);
         return null;
     }
   }
 
-  /// One auto-resolved round. The player strikes first. HP is full at the
-  /// start of each fight (spec §4).
+  /// One auto-resolved round. The player strikes first unless the monster is
+  /// quick. HP is full at the start of each fight (spec 0001 §4). Traits:
+  /// spec 0002 §5.1.
   EndReason? _combatRound(RunningActivity act) {
     final enemy = data.enemies[act.activity.target]!;
     final me = game.stats(s);
@@ -279,30 +309,67 @@ class _Run {
       playerHp: me.hp,
       enemyHp: enemy.stats.hp,
     );
+    fight.round++;
 
-    fight.enemyHp -= _damage(me.attack, enemy.stats.defense);
-    if (fight.enemyHp <= 0) {
-      act.fight = null;
-      final drops = <String, int>{};
-      for (final d in enemy.drops) {
-        if (rng.nextDouble() < d.chance) {
-          drops[d.item] = (drops[d.item] ?? 0) + d.count;
-          s.addItem(d.item, d.count);
-        }
-      }
-      s.count('kills.${enemy.id}');
-      events.add(FightWon(enemy.id, enemy.xp, drops));
-      _gainXp(enemy.xp);
-      return null;
-    }
-
-    fight.playerHp -= _damage(enemy.stats.attack, me.defense);
-    if (fight.playerHp <= 0) {
-      act.fight = null;
-      events.add(FightLost(enemy.id));
-      return EndReason.defeated;
+    if (enemy.has(Trait.quick)) {
+      if (_monsterTurn(enemy, fight, me)) return _lose(act, enemy);
+      if (_playerTurn(enemy, fight, me)) return _win(act, enemy);
+    } else {
+      if (_playerTurn(enemy, fight, me)) return _win(act, enemy);
+      if (_monsterTurn(enemy, fight, me)) return _lose(act, enemy);
     }
     return null;
+  }
+
+  /// Returns whether the monster died.
+  bool _playerTurn(EnemyDef enemy, FightState fight, Stats me) {
+    fight.enemyHp -= _damage(me.attack, enemy.stats.defense);
+    return fight.enemyHp <= 0;
+  }
+
+  /// Returns whether the player died.
+  bool _monsterTurn(EnemyDef enemy, FightState fight, Stats me) {
+    if (!enemy.has(Trait.slow) || fight.round.isEven) {
+      final defense = enemy.has(Trait.ghostly) ? 0 : me.defense;
+      fight.playerHp -= _damage(enemy.stats.attack, defense);
+      if (fight.playerHp <= 0) return true;
+    }
+    fight.enemyHp = math.min(enemy.stats.hp, fight.enemyHp + enemy.regen);
+    return false;
+  }
+
+  EndReason? _win(RunningActivity act, EnemyDef enemy) {
+    act.fight = null;
+    final drops = <String, int>{};
+    void drop(DropDef d) {
+      drops[d.item] = (drops[d.item] ?? 0) + d.count;
+      s.addItem(d.item, d.count);
+    }
+
+    for (final d in enemy.drops) {
+      if (rng.nextDouble() < d.chance) drop(d);
+    }
+    if ((s.counters['kills.${enemy.id}'] ?? 0) == 0) {
+      enemy.firstKillDrops.forEach(drop);
+    }
+    final xp = _faded(enemy.xp, enemy.level);
+    s.count('kills.${enemy.id}');
+    events.add(FightWon(enemy.id, xp, drops));
+    _gainXp(xp);
+    return null;
+  }
+
+  EndReason _lose(RunningActivity act, EnemyDef enemy) {
+    act.fight = null;
+    events.add(FightLost(enemy.id));
+    return EndReason.defeated;
+  }
+
+  /// [xp] for something at [level], faded by the colour table; at least 1
+  /// (spec 0002 §3).
+  int _faded(int xp, int level) {
+    final band = data.bandFor(level, game.level(s));
+    return math.max(1, xp * band.xpPercent ~/ 100);
   }
 
   int _damage(int attack, int defense) {

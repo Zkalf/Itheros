@@ -2,17 +2,25 @@ import 'activity.dart';
 
 /// HP of both sides in the fight currently being resolved.
 class FightState {
-  FightState({required this.playerHp, required this.enemyHp});
+  FightState({required this.playerHp, required this.enemyHp, this.round = 0});
 
   factory FightState.fromJson(Map<String, Object?> json) => FightState(
     playerHp: json['playerHp'] as int,
     enemyHp: json['enemyHp'] as int,
+    round: json['round'] as int? ?? 0,
   );
 
   int playerHp;
   int enemyHp;
 
-  Map<String, Object?> toJson() => {'playerHp': playerHp, 'enemyHp': enemyHp};
+  /// Rounds already fought.
+  int round;
+
+  Map<String, Object?> toJson() => {
+    'playerHp': playerHp,
+    'enemyHp': enemyHp,
+    'round': round,
+  };
 }
 
 /// The activity in progress, with steps paid toward its current unit.
@@ -55,6 +63,7 @@ class GameState {
     Map<String, String>? equipment,
     Map<String, int>? counters,
     Set<String>? achievements,
+    this.loadedVersion = schemaVersion,
   }) : inventory = inventory ?? {},
        equipment = equipment ?? {},
        counters = counters ?? {},
@@ -62,10 +71,11 @@ class GameState {
 
   factory GameState.fromJson(Map<String, Object?> json) {
     final version = json['version'];
-    if (version != schemaVersion) {
+    if (version != 1 && version != schemaVersion) {
       throw FormatException('Unsupported save version: $version');
     }
     return GameState(
+      loadedVersion: version as int,
       location: json['location'] as String,
       rngState: json['rng'] as int,
       xp: json['xp'] as int,
@@ -84,7 +94,12 @@ class GameState {
     );
   }
 
-  static const schemaVersion = 1;
+  /// 2: spec 0002's XP table and fight rounds. Version 1 saves load, and
+  /// `Game.migrate` moves their XP to the new table.
+  static const schemaVersion = 2;
+
+  /// The save version this state was read from; not saved.
+  final int loadedVersion;
 
   String location;
   int xp;

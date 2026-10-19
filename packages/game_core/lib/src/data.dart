@@ -76,7 +76,7 @@ class NodeDef {
 class DropDef {
   DropDef._(Map<String, Object?> j)
     : item = _str(j, 'item'),
-      chance = (j['chance'] as num).toDouble(),
+      chance = (j['chance'] as num? ?? 1).toDouble(),
       count = _intOr(j, 'count', 1);
 
   final String item;
@@ -84,21 +84,79 @@ class DropDef {
   final int count;
 }
 
+/// Monster twists (spec 0002 §5.1).
+enum Trait {
+  /// Strikes first in each round.
+  quick,
+
+  /// Attacks only every second round.
+  slow,
+
+  /// Its hits ignore the player's defense.
+  ghostly,
+
+  /// Heals [EnemyDef.regen] after each of its turns.
+  regenerates,
+}
+
 class EnemyDef {
   EnemyDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
       unlockLevel = _int(j, 'unlockLevel'),
+      level = j['level'] as int? ?? _int(j, 'unlockLevel'),
       stats = Stats.fromJson(j),
       xp = _int(j, 'xp'),
-      drops = _maps(j, 'drops').map(DropDef._).toList();
+      traits = Set.unmodifiable(_strList(j, 'traits').map(_trait)),
+      regen = _intOr(j, 'regen'),
+      drops = _maps(j, 'drops').map(DropDef._).toList(),
+      firstKillDrops = _maps(j, 'firstKillDrops').map(DropDef._).toList();
 
   final String id;
   final String name;
+
+  /// The player level from which it shows.
   final int unlockLevel;
+
+  /// The monster's own level, which sets its colour (spec 0002 §3).
+  final int level;
   final Stats stats;
   final int xp;
+  final Set<Trait> traits;
+
+  /// HP healed per round when it [Trait.regenerates].
+  final int regen;
   final List<DropDef> drops;
+
+  /// Dropped once, on the first kill (spec 0002 §5.3).
+  final List<DropDef> firstKillDrops;
+
+  bool has(Trait t) => traits.contains(t);
+}
+
+Trait _trait(String name) {
+  for (final t in Trait.values) {
+    if (t.name == name) return t;
+  }
+  throw FormatException('Invalid game data: unknown trait $name');
+}
+
+/// Colour of something's level compared with the player's (spec 0002 §3).
+enum LevelColour { grey, green, yellow, orange, red, skull }
+
+/// One row of the colour table: applies from [atLeast] levels above the
+/// player (null: any difference).
+class LevelBand {
+  LevelBand._(Map<String, Object?> j)
+    : atLeast = j['atLeast'] as int?,
+      colour = LevelColour.values.byName(_str(j, 'colour')),
+      xpPercent = _int(j, 'xp');
+
+  final int? atLeast;
+  final LevelColour colour;
+
+  /// Share of the normal XP given, in percent.
+  final int xpPercent;
 }
 
 class ItemDef {
@@ -172,6 +230,13 @@ class GameData {
        xpToReachLevel = List.unmodifiable(
          (economy['xpToReachLevel'] as List<Object?>).cast<int>(),
        ),
+       xpGrowthAfterList = (economy['xpGrowthAfterList'] as num).toDouble(),
+       levelBands = List.unmodifiable(
+         _maps(economy, 'levelBands').map(LevelBand._),
+       ),
+       gearSlots = Map.unmodifiable(
+         _map(economy, 'gearSlots').map((k, v) => MapEntry(k, v as int)),
+       ),
        startLocation = _str(world, 'startLocation'),
        locations = _byId(
          _maps(world, 'locations').map(LocationDef._),
@@ -216,8 +281,19 @@ class GameData {
   /// Damage varies by ± this fraction.
   final double damageVariance;
 
-  /// Total XP needed to reach level `i + 1`. Its length is the level cap.
+  /// Total XP needed to reach level `i + 1`. Levels go on past the list
+  /// (spec 0002 §2): see [xpGrowthAfterList].
   final List<int> xpToReachLevel;
+
+  /// After the list, each level costs the previous level's cost times this.
+  final double xpGrowthAfterList;
+
+  /// Colour table, highest difference first; the last row applies to the
+  /// rest.
+  final List<LevelBand> levelBands;
+
+  /// Gear slot to the level it opens at, in display order.
+  final Map<String, int> gearSlots;
   final String startLocation;
   final Map<String, LocationDef> locations;
   final List<RouteDef> routes;
@@ -227,16 +303,33 @@ class GameData {
   final Map<String, RecipeDef> recipes;
   final Map<String, AchievementDef> achievements;
 
-  int get maxLevel => xpToReachLevel.length;
+  /// [xpToReachLevel], extended on demand past its end.
+  late final List<int> _thresholds = List.of(xpToReachLevel);
 
-  int xpForLevel(int level) => xpToReachLevel[level - 1];
+  int xpForLevel(int level) {
+    while (_thresholds.length < level) {
+      final n = _thresholds.length;
+      final cost = _thresholds[n - 1] - _thresholds[n - 2];
+      _thresholds.add(_thresholds[n - 1] + (cost * xpGrowthAfterList).round());
+    }
+    return _thresholds[level - 1];
+  }
 
   int levelForXp(int xp) {
     var level = 1;
-    while (level < maxLevel && xp >= xpToReachLevel[level]) {
+    while (xp >= xpForLevel(level + 1)) {
       level++;
     }
     return level;
+  }
+
+  /// The colour row for something at [level], seen by a player at
+  /// [playerLevel].
+  LevelBand bandFor(int level, int playerLevel) {
+    final diff = level - playerLevel;
+    return levelBands.firstWhere(
+      (b) => b.atLeast == null || diff >= b.atLeast!,
+    );
   }
 
   RouteDef? route(String from, String to) {
@@ -259,9 +352,27 @@ class GameData {
     }
 
     check(
-      xpToReachLevel.isNotEmpty && xpToReachLevel.first == 0,
-      'xpToReachLevel must start with 0',
+      xpToReachLevel.length >= 2 && xpToReachLevel.first == 0,
+      'xpToReachLevel must start with 0 and list at least 2 levels',
     );
+    check(xpGrowthAfterList >= 1, 'xpGrowthAfterList must be >= 1');
+    check(
+      levelBands.isNotEmpty && levelBands.last.atLeast == null,
+      'levelBands must end with a row without atLeast',
+    );
+    for (var i = 1; i < levelBands.length - 1; i++) {
+      check(
+        levelBands[i].atLeast! < levelBands[i - 1].atLeast!,
+        'levelBands must be ordered from the highest difference down',
+      );
+    }
+    check(gearSlots.values.every((l) => l >= 1), 'gearSlots: levels >= 1');
+    for (final i in items.values) {
+      check(
+        i.slot == null || gearSlots.containsKey(i.slot),
+        'item ${i.id}: unknown slot ${i.slot}',
+      );
+    }
     for (var i = 1; i < xpToReachLevel.length; i++) {
       check(
         xpToReachLevel[i] > xpToReachLevel[i - 1],
@@ -292,7 +403,12 @@ class GameData {
       check(n.steps > 0, 'node ${n.id}: steps must be > 0');
     }
     for (final e in enemies.values) {
-      for (final d in e.drops) {
+      check(e.level >= 1, 'enemy ${e.id}: level must be >= 1');
+      check(
+        e.has(Trait.regenerates) == (e.regen > 0),
+        'enemy ${e.id}: regen is set exactly when it regenerates',
+      );
+      for (final d in [...e.drops, ...e.firstKillDrops]) {
         check(
           items.containsKey(d.item),
           'enemy ${e.id}: unknown drop ${d.item}',

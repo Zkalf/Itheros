@@ -21,14 +21,22 @@ void main() {
 
     test('without it, the player strikes first and wins', () {
       final g = arenaGame([glassImp([])]);
-      var s = g.startActivity(stateAt(g, location: 'arena'), const Activity.fight('imp'));
+      var s = g.startActivity(
+        stateAt(g, location: 'arena'),
+        const Activity.fight('imp'),
+      );
       final r = g.applySteps(s, 10);
       expect(r.events.whereType<FightWon>(), hasLength(1));
     });
 
     test('the monster strikes first in each round', () {
-      final g = arenaGame([glassImp(['quick'])]);
-      var s = g.startActivity(stateAt(g, location: 'arena'), const Activity.fight('imp'));
+      final g = arenaGame([
+        glassImp(['quick']),
+      ]);
+      var s = g.startActivity(
+        stateAt(g, location: 'arena'),
+        const Activity.fight('imp'),
+      );
       final r = g.applySteps(s, 10);
       expect(r.events.whereType<FightLost>(), hasLength(1));
       expect(r.events.whereType<FightWon>(), isEmpty);
@@ -45,9 +53,10 @@ void main() {
         'traits': ['slow'],
       },
     );
-    expect([
-      for (var r = 1; r <= 4; r++) afterRounds(zombie, r)!.playerHp,
-    ], [30, 19, 19, 8]);
+    expect(
+      [for (var r = 1; r <= 4; r++) afterRounds(zombie, r)!.playerHp],
+      [30, 19, 19, 8],
+    );
   });
 
   test('ghostly: its hits ignore the player\'s defense', () {
@@ -112,7 +121,10 @@ void main() {
         },
       ),
     ]);
-    var s = g.startActivity(stateAt(g, location: 'arena'), const Activity.fight('king'));
+    var s = g.startActivity(
+      stateAt(g, location: 'arena'),
+      const Activity.fight('king'),
+    );
     final r = g.applySteps(s, 300);
     final won = r.events.whereType<FightWon>().toList();
     expect(won.length, 30);

@@ -2,7 +2,20 @@
   "bankCap": { "base": 1000, "perLevel": 500 },
   "combatRoundSteps": 10,
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
-  "statsPerLevel": { "hp": 5, "attack": 1, "defense": 1 },
+  "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },
   "damageVariance": 0.2,
-  "xpToReachLevel": [0, 20, 100, 300, 700, 1540, 3390, 7460, 16400, 28000]
+  "xpToReachLevel": [0, 20, 100, 300, 700, 1540, 3390, 7460, 16400, 28000],
+  "xpGrowthAfterList": 1.05,
+  "levelBands": [
+    { "atLeast": 10, "colour": "skull", "xp": 100 },
+    { "atLeast": 5, "colour": "red", "xp": 100 },
+    { "atLeast": 3, "colour": "orange", "xp": 100 },
+    { "atLeast": -2, "colour": "yellow", "xp": 100 },
+    { "atLeast": -3, "colour": "green", "xp": 80 },
+    { "atLeast": -4, "colour": "green", "xp": 60 },
+    { "atLeast": -5, "colour": "green", "xp": 40 },
+    { "atLeast": -6, "colour": "green", "xp": 20 },
+    { "colour": "grey", "xp": 5 }
+  ],
+  "gearSlots": { "weapon": 1, "body": 1, "shield": 7, "head": 12, "feet": 17, "amulet": 20 }
 }

@@ -140,6 +140,11 @@ class GameController extends ChangeNotifier {
 
   Future<void> _openSave({required bool away}) async {
     _save = await store.load();
+    final loaded = _save?.game;
+    if (loaded != null && loaded.loadedVersion != GameState.schemaVersion) {
+      _save = _save!.withGame(game.migrate(loaded));
+      await store.save(_save!);
+    }
     if (_save == null) {
       _save = await _sync.newSave(seed: _newSeed());
       await store.save(_save!);

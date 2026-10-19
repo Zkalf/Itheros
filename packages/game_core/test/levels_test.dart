@@ -140,6 +140,8 @@ void main() {
 
 /// The expected value for a difference between two listed ones.
 (LevelColour, int) _between(Map<int, (LevelColour, int)> table, int diff) {
-  final above = table.keys.where((k) => k > diff).reduce((a, b) => a < b ? a : b);
+  final above = table.keys
+      .where((k) => k > diff)
+      .reduce((a, b) => a < b ? a : b);
   return table[above]!;
 }

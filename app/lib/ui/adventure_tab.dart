@@ -184,10 +184,8 @@ class _StatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _Bar(
-              label: next == null
-                  ? 'XP ${fmt(s.xp)} (max level)'
-                  : 'XP ${fmt(s.xp)} / ${fmt(next)}',
-              value: next == null ? 1 : (s.xp - floor) / (next - floor),
+              label: 'XP ${fmt(s.xp)} / ${fmt(next)}',
+              value: (s.xp - floor) / (next - floor),
             ),
             const SizedBox(height: 12),
             _Bar(

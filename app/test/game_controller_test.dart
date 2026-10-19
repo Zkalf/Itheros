@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +88,24 @@ void main() {
       reopened.state.activity!.activity,
       const Activity.travel('goblin_woods'),
     );
+  });
+
+  test('a version 1 save is migrated and saved on open', () async {
+    final c = controller();
+    await c.start();
+    final file = File('${dir.path}${Platform.pathSeparator}save.json');
+    final json = jsonDecode(await file.readAsString()) as Map<String, Object?>;
+    (json['game'] as Map<String, Object?>)
+      ..['version'] = 1
+      ..['xp'] = 28000; // level 10 in spec 0001's table
+    await file.writeAsString(jsonEncode(json));
+
+    final reopened = controller();
+    await reopened.start();
+    expect(game.level(reopened.state), 10);
+    expect(reopened.state.xp, game.data.xpForLevel(10));
+    final saved = (await SaveStore(dir).load())!.game;
+    expect(saved.loadedVersion, GameState.schemaVersion);
   });
 
   test('a refused action throws and changes nothing', () async {
