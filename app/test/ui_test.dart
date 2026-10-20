@@ -1062,6 +1062,23 @@ void moreScreens() {
       expect(find.byKey(const ValueKey('area-goblin_woods')), findsOneWidget);
     });
 
+    testWidgets('amendment 3: resting opens Craft too, once it exists', (
+      t,
+    ) async {
+      await pumpGame(t);
+      expect(find.byKey(const ValueKey('open-craft')), findsNothing);
+      expect(find.textContaining('Craft screen'), findsNothing);
+    });
+
+    testWidgets('amendment 3: from level 3 a button opens Craft', (t) async {
+      await pumpGame(t, level: 3);
+      expect(find.byKey(const ValueKey('open-map')), findsOneWidget);
+      expect(find.textContaining('Map or Craft screen'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('open-craft')));
+      await t.pumpAndSettle();
+      expect(find.text('At the forge (Camp)'), findsOneWidget);
+    });
+
     testWidgets('criteria 3 and 4: the fight log and the tally', (t) async {
       final (c, source) = await pumpGame(t, level: 3, location: 'goblin_woods');
       await c.startActivity(

@@ -95,6 +95,9 @@ class _HomeShellState extends State<HomeShell> {
       body: switch (_screen) {
         _Screen.now => NowTab(
           onOpenMap: () => setState(() => _screen = _Screen.map),
+          onOpenCraft: screens.contains(_Screen.craft)
+              ? () => setState(() => _screen = _Screen.craft)
+              : null,
         ),
         _Screen.map => const MapTab(),
         _Screen.craft => const CraftTab(),

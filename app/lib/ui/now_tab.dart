@@ -9,10 +9,14 @@ import 'labels.dart';
 /// What the character is doing right now, the queue and the step bank
 /// (spec 0006 §2.1).
 class NowTab extends StatelessWidget {
-  const NowTab({super.key, this.onOpenMap});
+  const NowTab({super.key, this.onOpenMap, this.onOpenCraft});
 
   /// Shows the Map, from the resting card.
   final VoidCallback? onOpenMap;
+
+  /// Shows Craft, from the resting card; null while it is hidden (spec 0006
+  /// amendment 3).
+  final VoidCallback? onOpenCraft;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +39,12 @@ class NowTab extends StatelessWidget {
           if (c.testWalkOn) _TestWalkCard(controller: c),
           _NextGoal(controller: c, labels: labels),
           _Discoveries(controller: c, labels: labels),
-          _QueueCard(controller: c, labels: labels, onOpenMap: onOpenMap),
+          _QueueCard(
+            controller: c,
+            labels: labels,
+            onOpenMap: onOpenMap,
+            onOpenCraft: onOpenCraft,
+          ),
           const SizedBox(height: 16),
           Text(
             'Steps arrive from Health Connect about once a minute. '
@@ -246,11 +255,13 @@ class _QueueCard extends StatelessWidget {
     required this.controller,
     required this.labels,
     this.onOpenMap,
+    this.onOpenCraft,
   });
 
   final GameController controller;
   final Labels labels;
   final VoidCallback? onOpenMap;
+  final VoidCallback? onOpenCraft;
 
   @override
   Widget build(BuildContext context) {
@@ -262,26 +273,38 @@ class _QueueCard extends StatelessWidget {
 
     final List<Widget> body;
     if (run == null) {
+      final where = onOpenCraft != null ? 'the Map or Craft screen' : 'the Map';
       body = [
         Text('Resting', style: text.titleMedium),
         const SizedBox(height: 4),
         Text(
           slots == 1
               ? 'Your steps go to the step bank. Pick something to do on '
-                    'the Map or Craft screen.'
+                    '$where.'
               : 'Your steps go to the step bank. Plan up to $slots actions '
-                    'on the Map or Craft screen; each starts when the one '
-                    'before it stops.',
+                    'on $where; each starts when the one before it stops.',
         ),
-        if (onOpenMap != null) ...[
-          const SizedBox(height: 8),
-          FilledButton.tonalIcon(
-            key: const ValueKey('open-map'),
-            onPressed: onOpenMap,
-            icon: const Icon(Icons.map),
-            label: const Text('Open the map'),
-          ),
-        ],
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (onOpenMap != null)
+              FilledButton.tonalIcon(
+                key: const ValueKey('open-map'),
+                onPressed: onOpenMap,
+                icon: const Icon(Icons.map),
+                label: const Text('Open the map'),
+              ),
+            if (onOpenCraft != null)
+              FilledButton.tonalIcon(
+                key: const ValueKey('open-craft'),
+                onPressed: onOpenCraft,
+                icon: const Icon(Icons.handyman),
+                label: const Text('Open Craft'),
+              ),
+          ],
+        ),
       ];
     } else {
       final cost = game.unitCost(s)!;
