@@ -1242,6 +1242,31 @@ void mapGaps() {
 /// Owner's second playtest notes (2026-10-20).
 void playtest2() {
   group('playtest 2', () {
+    testWidgets('pages opened from the top bar end above the phone buttons', (
+      t,
+    ) async {
+      await pumpGame(t);
+      // The phone's own back/home/recent buttons cover the bottom 150 px.
+      t.view.padding = const FakeViewPadding(bottom: 150);
+      t.view.viewPadding = const FakeViewPadding(bottom: 150);
+      t.view.physicalSize = const Size(1080, 1200);
+      await t.pumpAndSettle();
+      await openAchievements(t);
+      await t.drag(find.byType(ListView), const Offset(0, -5000));
+      await t.pumpAndSettle();
+      final last = game.data.achievements.values.last.name;
+      expect(
+        t.getBottomLeft(find.text(last)).dy,
+        lessThanOrEqualTo(1200 - 150),
+        reason: 'the last achievement hides behind the phone buttons',
+      );
+      expect(
+        t.getRect(find.byType(ListView)).bottom -
+            t.getBottomLeft(find.text(last)).dy,
+        greaterThanOrEqualTo(150),
+      );
+    });
+
     testWidgets('"until I have N" offers only drops already found', (t) async {
       await pumpGame(t, level: 8, location: 'old_graveyard');
       await openArea(t, 'old_graveyard');
