@@ -5,6 +5,9 @@ $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
 Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
-Expect-NoChange $changed '^app/test/sync_service_test\.dart$' 'changed the sync tests instead of the code'
+# Adding a reproducing test is right (bugfix skill); changing or removing an existing one is not.
+$numstat = "$(git -C $Worktree diff --numstat $Base -- app/test/sync_service_test.dart)".Trim()
+$removed = if ($numstat) { [int]($numstat -split '\s+')[1] } else { 0 }
+Expect ($removed -eq 0) "changed or removed $removed line(s) of the sync tests instead of fixing the code"
 Expect-Green $Worktree
 Finish
