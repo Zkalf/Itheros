@@ -17,6 +17,8 @@ Future<void> main() async {
     source: source,
     permissions: source,
     store: SaveStore(await getApplicationSupportDirectory()),
+    // Owner builds pass --dart-define=TEST_WALK=true; friends' builds don't.
+    testWalkAllowed: const bool.fromEnvironment('TEST_WALK'),
   );
   runApp(WalkingRpgApp(controller: controller));
   await controller.start();

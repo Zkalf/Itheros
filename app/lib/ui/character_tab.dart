@@ -3,6 +3,7 @@ import 'package:game_core/game_core.dart';
 
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
+import '../version.dart';
 import 'labels.dart';
 
 /// Stats, equipped gear and inventory. Equipping costs no steps.
@@ -134,16 +135,20 @@ class CharacterTab extends StatelessWidget {
                 ),
               ),
         ],
-        if (level >= 10) ...[
-          const SizedBox(height: 16),
-          Text('Settings', style: text.titleMedium),
+        const SizedBox(height: 16),
+        Text('Settings', style: text.titleMedium),
+        if (level >= 10)
           SwitchListTile(
             key: const ValueKey('show-next-goal'),
             title: const Text('Show "Next goal"'),
             value: !c.nextGoalHidden,
             onChanged: (show) => c.setNextGoalHidden(!show),
           ),
-        ],
+        // Friends quote it when they report something (spec 0007 §7).
+        ListTile(
+          key: const ValueKey('version'),
+          title: Text('Version $appVersion', style: text.bodySmall),
+        ),
       ],
     );
   }
@@ -201,7 +206,7 @@ class CharacterTab extends StatelessWidget {
 }
 
 /// The rank name. Seven quick taps switch test walk on or off (spec 0004
-/// decision 5).
+/// decision 5), in owner builds only (spec 0007 §4).
 class _RankTitle extends StatefulWidget {
   const _RankTitle(this.name);
 
@@ -226,6 +231,7 @@ class _RankTitleState extends State<_RankTitle> {
     if (_count < _taps) return;
     _count = 0;
     final c = ControllerScope.of(context);
+    if (!c.testWalkAllowed) return;
     final on = !c.testWalkOn;
     c.setTestWalk(on);
     ScaffoldMessenger.of(context)

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A sword, point up and to the right, and a boot. 108x108 canvas; shapes stay inside the 66 dp safe circle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="45"
+        android:scaleX="0.78"
+        android:scaleY="0.78"
+        android:translateX="-4"
+        android:translateY="-4">
+        <!-- Blade -->
+        <path android:fillColor="#E8ECEF" android:pathData="M54,14 L59,22 L59,64 L49,64 L49,22 Z"/>
+        <path android:fillColor="#B8C0C6" android:pathData="M54,14 L54,64 L49,64 L49,22 Z"/>
+        <!-- Guard, grip, pommel -->
+        <path android:fillColor="#D4A72C" android:pathData="M40,64 L68,64 L68,70 L40,70 Z"/>
+        <path android:fillColor="#5C3A1A" android:pathData="M51,70 L57,70 L57,84 L51,84 Z"/>
+        <path android:fillColor="#D4A72C" android:pathData="M50,88 A4,4 0 1,0 58,88 A4,4 0 1,0 50,88 Z"/>
+    </group>
+    <!-- Boot, toe to the right -->
+    <path android:fillColor="#8B5A2B"
+        android:pathData="M57,50 L68,50 L68,64 Q68,66 70,66 L75,66 Q80,66 80,71 L80,74 L56,74 L56,51 Q56,50 57,50 Z"/>
+    <path android:fillColor="#5C3A1A" android:pathData="M56,50 L68,50 L68,54 L56,54 Z"/>
+    <path android:fillColor="#5C3A1A" android:pathData="M56,71 L80,71 L80,74 L56,74 Z"/>
+</vector>

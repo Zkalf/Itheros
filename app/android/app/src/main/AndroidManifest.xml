@@ -3,9 +3,11 @@
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
 
     <application
-        android:label="walkingrpg"
+        android:label="Itheros"
+        android:allowBackup="false"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"

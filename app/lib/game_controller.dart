@@ -27,11 +27,15 @@ class GameController extends ChangeNotifier {
     this.syncInterval = const Duration(seconds: 30),
     this.awayGrace = const Duration(minutes: 2),
     int Function()? newSeed,
+    this.testWalkAllowed = true,
   }) : _clock = clock ?? DateTime.now,
        _sync = SyncService(game: game, source: source, clock: clock),
        _newSeed = newSeed ?? (() => Random.secure().nextInt(1 << 32));
 
   final Game game;
+
+  /// Test walk exists in this build: owner builds only (spec 0007 §4).
+  final bool testWalkAllowed;
   final StepPermissions permissions;
   final SaveStorage store;
 
@@ -146,7 +150,7 @@ class GameController extends ChangeNotifier {
       _update((s) => s.copyWith(nextGoalHidden: hidden));
 
   /// The hidden test walk switch (spec 0004 §3).
-  bool get testWalkOn => _save!.testWalk;
+  bool get testWalkOn => testWalkAllowed && _save!.testWalk;
 
   Future<void> setTestWalk(bool on) => _update((s) => s.copyWith(testWalk: on));
 

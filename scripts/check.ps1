@@ -4,8 +4,9 @@
 
 .DESCRIPTION
   Default: format check, analyze and tests for every Dart/Flutter package.
-  -Release: also builds the release APK and fails if it requests the INTERNET
-  permission (spec 0001: health data stays on the device).
+  -Release: also builds the owner's release APK (with test walk) and runs
+  scripts\apk-check.ps1 on it: no INTERNET permission, no cloud backup (spec 0001:
+  health data stays on the device; spec 0007 §6).
   -Root: check another checkout (the eval grader checks throwaway worktrees with
   this repo's copy of the script, so an agent can't weaken the check it is graded by).
 
@@ -54,18 +55,10 @@ Step 'app: analyze' $app { flutter analyze --fatal-infos }
 if (Test-Path "$app\test") { Step 'app: test' $app { flutter test } }
 
 if ($Release) {
-  Step 'app: build release APK' $app { flutter build apk --release }
-  Step 'app: APK must not request INTERNET' $app {
-    $apk = "$app\build\app\outputs\flutter-apk\app-release.apk"
-    $aapt2 = Get-ChildItem "$env:ANDROID_HOME\build-tools\*\aapt2.exe" | Sort-Object FullName | Select-Object -Last 1
-    if (-not $aapt2) { throw 'aapt2 not found in ANDROID_HOME\build-tools' }
-    $perms = & $aapt2.FullName dump permissions $apk
-    if ($LASTEXITCODE -ne 0) { throw 'aapt2 dump permissions failed' }
-    $perms | Select-String 'uses-permission' | ForEach-Object { Write-Host "    $($_.Line.Trim())" }
-    if ($perms | Select-String "android.permission.INTERNET'") {
-      throw 'release APK requests android.permission.INTERNET'
-    }
-    $global:LASTEXITCODE = 0
+  # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.
+  Step 'app: build release APK' $app { flutter build apk --release --dart-define=TEST_WALK=true }
+  Step 'app: APK check (no INTERNET, no cloud backup)' $app {
+    & "$PSScriptRoot\apk-check.ps1" "$app\build\app\outputs\flutter-apk\app-release.apk"
   }
 }
 

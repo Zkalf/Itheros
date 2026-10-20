@@ -17,6 +17,7 @@ import 'package:walkingrpg/ui/home_shell.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/map_tab.dart';
+import 'package:walkingrpg/version.dart';
 
 import 'support.dart';
 
@@ -35,6 +36,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   Map<String, int> counters = const {},
   Map<String, String> equipment = const {},
   bool granted = true,
+  bool testWalkAllowed = true,
 }) async {
   tester.view.physicalSize = const Size(1080, 4000);
   tester.view.devicePixelRatio = 1;
@@ -66,6 +68,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
     clock: () => now,
     syncInterval: null,
     newSeed: () => 1,
+    testWalkAllowed: testWalkAllowed,
   );
   addTearDown(c.dispose);
   await tester.pumpWidget(WalkingRpgApp(controller: c));
@@ -736,6 +739,18 @@ void main() {
       expect(card, findsNothing);
     });
 
+    testWidgets('a friend build has no test walk (spec 0007 §4)', (t) async {
+      final (c, _) = await pumpGame(t, testWalkAllowed: false);
+      await openTab(t, 'character');
+      await tapRank(t, 7);
+      expect(c.testWalkOn, isFalse);
+      expect(find.text('Test walk on'), findsNothing);
+
+      await c.setTestWalk(true);
+      await openTab(t, 'now');
+      expect(card, findsNothing, reason: 'an old save with it on');
+    });
+
     testWidgets(
       'criterion 5: +1,000 walks 1,000 steps, marked in the journal',
       (t) async {
@@ -763,6 +778,14 @@ void main() {
         expect(find.text('Today 09:00 (test walk)'), findsOneWidget);
       },
     );
+  });
+
+  testWidgets('Settings show the version from level 1 (spec 0007 §7)', (
+    t,
+  ) async {
+    await pumpGame(t);
+    await openTab(t, 'character');
+    expect(find.text('Version $appVersion'), findsOneWidget);
   });
 
   group('achievements tab', () {

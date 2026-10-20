@@ -1,0 +1,148 @@
+{
+  "version": 3,
+  "firstDay": "2026-10-18",
+  "credited": {
+    "2026-10-18": 5000,
+    "2026-10-19": 5000,
+    "2026-10-20": 5000
+  },
+  "nextGoalHidden": false,
+  "seen": [
+    "camp",
+    "goblin_woods"
+  ],
+  "journal": [
+    {
+      "started": "2026-10-20T18:30:00.000",
+      "summary": {
+        "walked": 15000,
+        "activitySteps": 15000,
+        "boostUsed": 4800,
+        "banked": 4800,
+        "lost": 0,
+        "actions": [
+          {
+            "activity": {
+              "kind": "travel",
+              "target": "goblin_woods"
+            },
+            "wins": 0,
+            "xp": 0,
+            "items": {},
+            "losses": [],
+            "ended": "arrived",
+            "skipped": null,
+            "missing": {},
+            "next": null
+          },
+          {
+            "activity": {
+              "kind": "fight",
+              "target": "goblin"
+            },
+            "wins": 518,
+            "xp": 2940,
+            "items": {
+              "rusty_dagger": 20,
+              "goblin_hide": 262,
+              "rusty_dagger@uncommon": 4,
+              "rusty_dagger@rare": 2
+            },
+            "losses": [],
+            "ended": null,
+            "skipped": null,
+            "missing": {},
+            "next": null
+          }
+        ],
+        "levelsReached": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "achievements": [
+          "first_steps",
+          "goblin_slayer_1"
+        ]
+      },
+      "testWalk": false
+    }
+  ],
+  "testWalk": false,
+  "game": {
+    "version": 5,
+    "location": "goblin_woods",
+    "xp": 2940,
+    "bank": 0,
+    "activity": {
+      "kind": "fight",
+      "target": "goblin",
+      "stop": {
+        "kind": "untilGrey"
+      },
+      "progress": 0,
+      "fight": {
+        "playerHp": 78,
+        "enemyHp": 1,
+        "round": 2
+      },
+      "leg": null,
+      "lossStreak": 0,
+      "crafted": 0,
+      "won": 518,
+      "lost": 0,
+      "gained": {
+        "rusty_dagger": 20,
+        "goblin_hide": 262,
+        "rusty_dagger@uncommon": 4,
+        "rusty_dagger@rare": 2
+      },
+      "log": [
+        {
+          "round": 2,
+          "dealt": 8,
+          "taken": 1
+        },
+        {
+          "round": 3,
+          "dealt": 10,
+          "outcome": "won"
+        },
+        {
+          "round": 1,
+          "dealt": 10,
+          "taken": 1
+        },
+        {
+          "round": 2,
+          "dealt": 9,
+          "taken": 1
+        }
+      ]
+    },
+    "queue": [],
+    "inventory": {
+      "rusty_dagger": 20,
+      "goblin_hide": 262,
+      "rusty_dagger@uncommon": 4,
+      "rusty_dagger@rare": 2
+    },
+    "equipment": {},
+    "rng": 4056845967,
+    "counters": {
+      "visited.camp": 1,
+      "areas.visited": 2,
+      "steps.walked": 15000,
+      "visited.goblin_woods": 1,
+      "found.goblin.rusty_dagger": 1,
+      "kills.goblin": 518,
+      "found.goblin.goblin_hide": 1
+    },
+    "achievements": [
+      "first_steps",
+      "goblin_slayer_1"
+    ]
+  }
+}
