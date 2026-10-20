@@ -1,4 +1,4 @@
-# walk-sun-goose
+# walk-sun-goose (the game: Itheros)
 
 Android-first mobile combat RPG where real-world steps (Health Connect) drive all progress.
 Built with the AI-native SDLC playbook: intent → spec → plan → code, each accepted by the product owner (Zkalf).
@@ -12,7 +12,11 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -File …`: a nested interpreter can't be
 auto-approved by permission rules (headless and eval runs deny it).
 - `.\scripts\check.ps1` — format, analyze, tests. The definition of green.
-- `.\scripts\check.ps1 -Release` — also builds the release APK and fails if it requests INTERNET.
+- `.\scripts\check.ps1 -Release` — also builds the owner's release APK (with test walk) and runs
+  `scripts\apk-check.ps1` on it (fails on INTERNET or cloud backup).
+- `.\scripts\release.ps1 [-Fix] [-DryRun]` — releases to friends (spec 0007): version bump, check, friend APK (no
+  test walk), signature check, commit + tag + push, GitHub release from `releases/next.md`. The owner runs it; Claude
+  drafts `releases/next.md` (plain words for players) and may run `-DryRun`.
 - `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
 - One command per tool call: no `;` chains or pipes (`Push-Location app; flutter test …`). Chained commands are never
   auto-approved; use the scripts above.
@@ -35,7 +39,10 @@ auto-approved by permission rules (headless and eval runs deny it).
 - Content and tuning that fit existing systems (enemies, locations, items, gear slots, achievements, numbers) are
   data-only changes in `data/*.json`: no new spec needed, but `check.ps1` (pacing tests) stays green. Spec 0001's
   scope list (decision 11) bounded the first build, not later content. New rules or systems go intent → spec → plan.
-- Health data stays on the device: no INTERNET permission, no network code.
+- Health data stays on the device: no INTERNET permission, no network code, `allowBackup="false"`.
+- The release key (`%USERPROFILE%\.itheros\`, `app/android/key.properties`): never read, print, copy or commit it.
+  Friends' phones only accept updates signed with it.
+- Saves must load across versions: `app/test/fixtures/saves/` holds one per release; never edit or delete them.
 - Read steps with Health Connect's **aggregate** (`getTotalStepsInInterval` with default args). Never pass
   `includeManualEntry: false`: the plugin then sums raw records without de-duplication (double-counts phone + watch).
 - Steps are credited per local day (spec 0001 amendment 1, `lib/sync/sync_service.dart`); never per time window.
