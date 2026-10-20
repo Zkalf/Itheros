@@ -3,7 +3,8 @@
 The owner's runbook (plan 0009 D3). Claude prepares; only the owner releases. Spec 0007 has the rules behind it.
 
 ## A normal release
-1. Claude drafts `releases/next.md` (a few plain lines for players) in a pull request. Read it, then merge it.
+1. Claude drafts `releases/next.md` (a few plain lines for players) in a pull request. Read it, then merge it
+   (`.\scripts\merge.ps1 <number>`).
 2. In a PowerShell window in the project folder:
    ```
    git pull
