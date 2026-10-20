@@ -1242,7 +1242,7 @@ void mapGaps() {
 /// Owner's second playtest notes (2026-10-20).
 void playtest2() {
   group('playtest 2', () {
-    testWidgets('pages opened from the top bar end above the phone buttons', (
+    testWidgets('pages opened from the top bar stay above the phone buttons', (
       t,
     ) async {
       await pumpGame(t);
@@ -1252,6 +1252,11 @@ void playtest2() {
       t.view.physicalSize = const Size(1080, 1200);
       await t.pumpAndSettle();
       await openAchievements(t);
+      // At the top, nothing of the list may show behind the buttons.
+      expect(
+        t.getRect(find.byType(ListView)).bottom,
+        lessThanOrEqualTo(1200 - 150),
+      );
       await t.drag(find.byType(ListView), const Offset(0, -5000));
       await t.pumpAndSettle();
       final last = game.data.achievements.values.last.name;
@@ -1259,11 +1264,6 @@ void playtest2() {
         t.getBottomLeft(find.text(last)).dy,
         lessThanOrEqualTo(1200 - 150),
         reason: 'the last achievement hides behind the phone buttons',
-      );
-      expect(
-        t.getRect(find.byType(ListView)).bottom -
-            t.getBottomLeft(find.text(last)).dy,
-        greaterThanOrEqualTo(150),
       );
     });
 
