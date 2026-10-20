@@ -80,6 +80,11 @@ class _NextGoal extends StatelessWidget {
             goal,
             canCraftHere: game.data.locations[s.location]!.crafting,
             grey: grey,
+            yourLevel: switch (goal) {
+              FightGoal(:final enemy) =>
+                game.data.enemies[enemy]!.level == game.level(s),
+              _ => false,
+            },
           ),
         ),
         trailing: canHide

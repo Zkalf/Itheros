@@ -37,16 +37,37 @@ class _ActionSheetState extends State<ActionSheet> {
     // "Until grey" can't start on a monster that is already grey.
     if (_kind == StopKind.untilGrey &&
         _game.enemyBand(s, a.target).colour == LevelColour.grey) {
-      _kind = _game.stopKindsFor(s, a).contains(StopKind.untilHave)
+      _kind = _kinds.contains(StopKind.untilHave)
           ? StopKind.untilHave
           : StopKind.never;
     }
-    final items = _game.countableItems(a);
+    final items = _items;
     if (items.isNotEmpty) {
       _item = items.first;
       _count = _game.owned(s, items.first) + 5;
     }
   }
+
+  /// Items "until I have N" may count: a monster's drops only once found,
+  /// so the picker never names a "???" drop (spec 0006 criterion 6).
+  List<String> get _items {
+    final a = widget.activity;
+    final items = _game.countableItems(a);
+    if (a.kind != ActivityKind.fight) return items;
+    final found = _game.foundDrops(widget.controller.state, a.target);
+    return [
+      for (final i in items)
+        if (found.contains(i)) i,
+    ];
+  }
+
+  List<StopKind> get _kinds => [
+    for (final k in _game.stopKindsFor(
+      widget.controller.state,
+      widget.activity,
+    ))
+      if (k != StopKind.untilHave || _items.isNotEmpty) k,
+  ];
 
   StopCondition get _stop => switch (_kind) {
     StopKind.untilGrey => const StopCondition.untilGrey(),
@@ -63,8 +84,11 @@ class _ActionSheetState extends State<ActionSheet> {
     final a = widget.activity;
     final labels = Labels(_game.data);
     final text = Theme.of(context).textTheme;
-    final kinds = _game.stopKindsFor(s, a);
-    final room = s.activity != null && 1 + s.queue.length < _game.queueSlots(s);
+    final kinds = _kinds;
+    final slots =
+        s.activity != null && 1 + s.queue.length < _game.queueSlots(s);
+    final blocked = slots && _game.lastNeverStops(s);
+    final room = slots && !blocked;
 
     String kindName(StopKind k) => switch (k) {
       StopKind.untilGrey => 'Until grey',
@@ -109,7 +133,7 @@ class _ActionSheetState extends State<ActionSheet> {
               DropdownButton<String>(
                 value: _item,
                 items: [
-                  for (final i in _game.countableItems(a))
+                  for (final i in _items)
                     DropdownMenuItem(value: i, child: Text(labels.item(i))),
                 ],
                 onChanged: (i) => setState(() => _item = i),
@@ -152,6 +176,14 @@ class _ActionSheetState extends State<ActionSheet> {
                       style: text.bodySmall,
                     ),
                 ],
+              ),
+            ],
+            if (blocked) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Your current plan never stops, so nothing can wait after '
+                'it. Start this now instead, or stop that one first.',
+                style: text.bodySmall,
               ),
             ],
             const SizedBox(height: 16),

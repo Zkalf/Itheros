@@ -202,24 +202,30 @@ class Labels {
       'The ${enemy(n.id)} turned grey: little XP, but it still drops its loot',
   };
 
-  /// The "Next goal" line (spec 0002 §9.3). [grey] marks a grey source.
-  String goal(Goal g, {required bool canCraftHere, bool grey = false}) =>
-      switch (g) {
-        EquipGoal(:final item) => 'Equip the ${owned(item)} (Character tab).',
-        CraftGoal(:final recipe) =>
-          'Craft the ${this.recipe(recipe)}'
-              '${canCraftHere ? ' here' : ' at Camp or an outpost'}.',
-        CollectGoal(:final item, :final count, :final source) =>
-          switch (source.kind) {
-                ActivityKind.gather =>
-                  'Mine ${fmt(count)} more ${this.item(item)} at '
-                      '${homeOf(source.target)}.',
-                _ =>
-                  'Get ${fmt(count)} more ${this.item(item)} from the '
-                      '${enemy(source.target)} in ${homeOf(source.target)}.',
-              } +
-              (grey ? ' Grey monsters still drop their loot.' : ''),
-        FightGoal(:final enemy) =>
-          'The ${this.enemy(enemy)} in ${homeOf(enemy)} is your level.',
-      };
+  /// The "Next goal" line (spec 0002 §9.3). [grey] marks a grey source;
+  /// [yourLevel] a fight goal whose monster is exactly the player's level.
+  String goal(
+    Goal g, {
+    required bool canCraftHere,
+    bool grey = false,
+    bool yourLevel = false,
+  }) => switch (g) {
+    EquipGoal(:final item) => 'Equip the ${owned(item)} (Character tab).',
+    CraftGoal(:final recipe) =>
+      'Craft the ${this.recipe(recipe)}'
+          '${canCraftHere ? ' here' : ' at Camp or an outpost'}.',
+    CollectGoal(:final item, :final count, :final source) =>
+      switch (source.kind) {
+            ActivityKind.gather =>
+              'Mine ${fmt(count)} more ${this.item(item)} at '
+                  '${homeOf(source.target)}.',
+            _ =>
+              'Get ${fmt(count)} more ${this.item(item)} from the '
+                  '${enemy(source.target)} in ${homeOf(source.target)}.',
+          } +
+          (grey ? ' Grey monsters still drop their loot.' : ''),
+    FightGoal(:final enemy) =>
+      'The ${this.enemy(enemy)} in ${homeOf(enemy)} '
+          '${yourLevel ? 'is your level' : 'gives the most XP for your steps'}.',
+  };
 }

@@ -394,6 +394,20 @@ class Game {
     _ => const [],
   };
 
+  /// The last planned action (running or queued) never stops, so nothing
+  /// can wait behind it (spec 0003 decision 3). Travel always ends.
+  bool lastNeverStops(GameState s) {
+    final last = s.queue.isEmpty
+        ? switch (s.activity) {
+            final run? => PlannedAction(run.activity, run.stop),
+            null => null,
+          }
+        : s.queue.last;
+    return last != null &&
+        last.stop.kind == StopKind.never &&
+        last.activity.kind != ActivityKind.travel;
+  }
+
   // Player actions. Free: they cost no steps.
 
   /// Adds [a] to the end of the queue with [stop] (default: until grey for
@@ -409,11 +423,7 @@ class Game {
     if (1 + s.queue.length >= queueSlots(s)) {
       throw ActivityError('The queue is full.');
     }
-    final last = s.queue.isEmpty
-        ? PlannedAction(s.activity!.activity, s.activity!.stop)
-        : s.queue.last;
-    if (last.stop.kind == StopKind.never &&
-        last.activity.kind != ActivityKind.travel) {
+    if (lastNeverStops(s)) {
       throw ActivityError(
         'The last action never stops. Change its stop condition first.',
       );
