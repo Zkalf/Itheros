@@ -4,8 +4,9 @@ import 'package:game_core/game_core.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 
-class AchievementsTab extends StatelessWidget {
-  const AchievementsTab({super.key});
+/// Opens from the trophy button in the top bar (spec 0006 amendment 2).
+class AchievementsScreen extends StatelessWidget {
+  const AchievementsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,17 +14,20 @@ class AchievementsTab extends StatelessWidget {
     final s = c.state;
     final labels = Labels(c.game.data);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        for (final a in c.game.data.achievements.values)
-          _AchievementTile(
-            achievement: a,
-            unlocked: s.achievements.contains(a.id),
-            progress: s.counters[a.counter] ?? 0,
-            labels: labels,
-          ),
-      ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('Achievements')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          for (final a in c.game.data.achievements.values)
+            _AchievementTile(
+              achievement: a,
+              unlocked: s.achievements.contains(a.id),
+              progress: s.counters[a.counter] ?? 0,
+              labels: labels,
+            ),
+        ],
+      ),
     );
   }
 }

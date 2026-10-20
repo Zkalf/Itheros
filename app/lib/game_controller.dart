@@ -175,6 +175,13 @@ class GameController extends ChangeNotifier {
   Future<void> markSeen(Iterable<String> ids) =>
       _update((s) => s.copyWith(seen: {...s.seen, ...ids}));
 
+  /// Earned achievements not yet looked at, as [seen] ids: they put a dot
+  /// on the trophy button (spec 0006 amendment 2).
+  List<String> get unseenAchievements => [
+    for (final id in state.achievements)
+      if (!seen.contains('achievement.$id')) 'achievement.$id',
+  ];
+
   /// Saves a change to screen settings. Costs no steps, so no sync first.
   Future<void> _update(SaveData Function(SaveData) change) => _serial(() async {
     _save = change(_save!);

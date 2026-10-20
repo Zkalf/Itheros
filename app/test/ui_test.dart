@@ -74,7 +74,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   return (c, source);
 }
 
-/// Opens a bottom bar screen: now, map, craft, character, achievements.
+/// Opens a bottom bar screen: now, map, craft, character.
 Future<void> openTab(WidgetTester tester, String screen) async {
   await tester.tap(find.byKey(ValueKey('tab-$screen')));
   await tester.pumpAndSettle();
@@ -86,6 +86,12 @@ Future<void> openArea(WidgetTester tester, String area) async {
     await openTab(tester, 'map');
   }
   await tester.tap(find.byKey(ValueKey('area-$area')));
+  await tester.pumpAndSettle();
+}
+
+/// Opens Achievements from the trophy button (spec 0006 amendment 2).
+Future<void> openAchievements(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('achievements-button')));
   await tester.pumpAndSettle();
 }
 
@@ -764,14 +770,14 @@ void main() {
       t,
     ) async {
       await pumpGame(t);
-      await openTab(t, 'achievements');
+      await openAchievements(t);
       expect(find.text('Travelling Salesman'), findsOneWidget);
       expect(find.text('Arrive at all 10 areas'), findsOneWidget);
     });
 
     testWidgets('no achievement shows a raw counter name', (t) async {
       await pumpGame(t);
-      await openTab(t, 'achievements');
+      await openAchievements(t);
       for (final a in game.data.achievements.values) {
         expect(
           find.textContaining(a.counter),
@@ -991,19 +997,56 @@ void moreScreens() {
   group('more screens (spec 0006)', () {
     testWidgets('criterion 1: the bottom bar; it opens on Now', (t) async {
       await pumpGame(t);
-      for (final s in ['now', 'map', 'character', 'achievements']) {
+      for (final s in ['now', 'map', 'character']) {
         expect(find.byKey(ValueKey('tab-$s')), findsOneWidget, reason: s);
       }
+      expect(find.byKey(const ValueKey('tab-achievements')), findsNothing);
       expect(
         find.byKey(const ValueKey('tab-craft')),
         findsNothing,
         reason: 'no recipe before level 3',
       );
       expect(find.byKey(const ValueKey('walked-today')), findsOneWidget);
-      for (final s in ['map', 'character', 'achievements', 'now']) {
+      for (final s in ['map', 'character', 'now']) {
         await openTab(t, s);
         expect(find.byKey(const ValueKey('journal-button')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('achievements-button')),
+          findsOneWidget,
+        );
       }
+    });
+
+    testWidgets('amendment 2: a dot marks a new achievement until opened', (
+      t,
+    ) async {
+      final (c, source) = await pumpGame(t, location: 'goblin_woods');
+      bool dot() => t
+          .widget<Badge>(find.byKey(const ValueKey('achievements-dot')))
+          .isLabelVisible;
+      expect(dot(), isFalse);
+
+      await c.startActivity(const Activity.fight('goblin'));
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 10), 300);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      if (c.levelCards.isNotEmpty) {
+        c.dismissLevelCards();
+        await t.pump();
+      }
+      c.dismissAwaySummary();
+      await t.pumpAndSettle();
+      expect(c.state.achievements, contains('first_steps'));
+      expect(dot(), isTrue);
+
+      await openAchievements(t);
+      await settle(t, c);
+      expect(find.text('Achievements'), findsWidgets);
+      await t.pageBack();
+      await t.pumpAndSettle();
+      expect(dot(), isFalse);
     });
 
     testWidgets('craft opens with the first recipe', (t) async {

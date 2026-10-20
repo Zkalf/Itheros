@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'achievements_tab.dart';
+import 'achievements_screen.dart';
 import 'away_summary_card.dart';
 import 'character_tab.dart';
 import 'controller_scope.dart';
@@ -17,23 +17,18 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-/// The bottom bar's screens (spec 0006 decision 1).
+/// The bottom bar's screens (spec 0006 decision 1; achievements moved to
+/// the top bar by amendment 2).
 enum _Screen {
   now('Now', Icons.directions_walk),
   map('Map', Icons.map),
   craft('Craft', Icons.handyman),
-  character('Character', Icons.person),
-  // "Achievements" is too long for the bar.
-  achievements('Achievements', Icons.emoji_events, label: 'Trophies');
+  character('Character', Icons.person);
 
-  const _Screen(this.title, this.icon, {String? label})
-    : label = label ?? title;
+  const _Screen(this.title, this.icon);
 
   final String title;
   final IconData icon;
-
-  /// The bottom bar's name, when shorter than [title].
-  final String label;
 }
 
 class _HomeShellState extends State<HomeShell> {
@@ -71,6 +66,23 @@ class _HomeShellState extends State<HomeShell> {
         title: Text(_screen.title),
         actions: [
           IconButton(
+            key: const ValueKey('achievements-button'),
+            icon: Badge(
+              key: const ValueKey('achievements-dot'),
+              isLabelVisible: c.unseenAchievements.isNotEmpty,
+              child: const Icon(Icons.emoji_events),
+            ),
+            tooltip: 'Achievements',
+            onPressed: () {
+              c.markSeen(c.unseenAchievements);
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AchievementsScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             key: const ValueKey('journal-button'),
             icon: const Icon(Icons.menu_book),
             tooltip: 'Journal',
@@ -87,7 +99,6 @@ class _HomeShellState extends State<HomeShell> {
         _Screen.map => const MapTab(),
         _Screen.craft => const CraftTab(),
         _Screen.character => const CharacterTab(),
-        _Screen.achievements => const AchievementsTab(),
       },
       bottomNavigationBar: NavigationBar(
         selectedIndex: screens.indexOf(_screen),
@@ -97,7 +108,7 @@ class _HomeShellState extends State<HomeShell> {
             NavigationDestination(
               key: ValueKey('tab-${screen.name}'),
               icon: Icon(screen.icon),
-              label: screen.label,
+              label: screen.title,
             ),
         ],
       ),
