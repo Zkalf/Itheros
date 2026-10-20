@@ -15,6 +15,6 @@ if ($commits.Count -ge 2) {
   Expect (-not $touched.Count) "the fix changed the reproducing test: $($touched -join ', ')"
 }
 Expect (-not (Test-Path (Join-Path $Worktree '.claude\test-lock'))) 'tests were left locked'
-Expect ((Read-Text $Worktree 'app/lib/sync/away_summary.dart') -notmatch 'case Gathered\(\):\s*break;') 'gathered items are still left out of the report'
+Expect ((Read-Text $Worktree 'app/lib/sync/away_summary.dart') -notmatch 'case Gathered\(\):\s*xp \+= e\.xp;\s*case') 'gathered items are still left out of the report'
 Expect-Green $Worktree
 Finish
