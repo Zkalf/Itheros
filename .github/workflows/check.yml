@@ -1,0 +1,34 @@
+# Plan 0009 D1: the same check as on the owner's PC, on every pull request and push to main.
+# The release key never comes here: the APK is debug-signed, which still proves no INTERNET and no cloud backup.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - name: Format, analyze, tests, APK build and APK check
+        shell: powershell
+        run: .\scripts\check.ps1 -Release

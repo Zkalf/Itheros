@@ -19,8 +19,9 @@ $ErrorActionPreference = 'Stop'
 $root = if ($Root) { (Resolve-Path $Root).Path } else { Split-Path -Parent $PSScriptRoot }
 $failed = @()
 
-# Fresh shells may predate the tool installs; make sure they are on PATH.
-$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+# Fresh shells may predate the tool installs; make sure they are on PATH. Keep the current PATH too: in CI the
+# setup steps add Flutter and Java to this process only.
+$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
 if ($env:JAVA_HOME) { $env:JAVA_HOME = $env:JAVA_HOME.TrimEnd('\') }
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = [Environment]::GetEnvironmentVariable('ANDROID_HOME', 'User') }
 

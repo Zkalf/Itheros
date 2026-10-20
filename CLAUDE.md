@@ -19,7 +19,10 @@ auto-approved by permission rules (headless and eval runs deny it).
   drafts `releases/next.md` (plain words for players) and may run `-DryRun`. Runbook: `RELEASING.md`.
 - The production gate (plan 0009, `.claude/hooks/production-gate.ps1`) blocks Claude from releasing, merging PRs,
   pushing to `main` and touching the release key. Work on a short branch per change and open a PR
-  (`gh pr create`); the owner merges. Don't look for ways around the gate: if it blocks you, ask the owner.
+  (`gh pr create`, proof in the description); the owner merges with `.\scripts\merge.ps1 <number>` once the CI
+  check (`.github/workflows/check.yml`, the same `check.ps1 -Release`) is green. Don't look for ways around the
+  gate: if it blocks you, ask the owner. Write commit messages and PR bodies to files: inline text naming a blocked
+  command trips the gate.
 - `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
 - One command per tool call: no `;` chains or pipes (`Push-Location app; flutter test …`). Chained commands are never
   auto-approved; use the scripts above.
