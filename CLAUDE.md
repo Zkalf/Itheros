@@ -24,6 +24,10 @@ auto-approved by permission rules (headless and eval runs deny it).
   check (`.github/workflows/check.yml`, the same `check.ps1 -Release`) is green. Don't look for ways around the
   gate: if it blocks you, ask the owner. It judges the programs a command runs, not words in messages, heredocs or
   echo; its cases are in `scripts\test-gate.ps1` (part of `check.ps1`), and a new false alarm or gap gets a case.
+- Fast lane: a change that touches only config, docs or wording (not `app/`, `packages/`, `data/`, `scripts/`,
+  `.github/`, the gate hook, saves, health data or the release flow) skips the PR. Claude commits it on a short branch,
+  shows the diff, and the owner pushes it to `main` (`! git push origin <branch>:main`). Everything else takes the PR
+  path. When unsure, PR.
 - `gh` is `C:\Program Files\GitHub CLI\gh.exe` (signed in as the owner); shells started before its install don't have
   it on PATH.
 - `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
