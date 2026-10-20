@@ -29,5 +29,10 @@ if ($cmd -match '\bgit(\.exe)?\b[^\r\n]*\bpush\b') {
   $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
   $branch = "$(& git.exe -C $root rev-parse --abbrev-ref HEAD 2>$null)".Trim()
   if ($branch -eq 'main') { Block 'Claude never pushes to main; push a branch and open a PR.' }
+  # Eval runs work in linked worktrees (evals/run.ps1); nothing from them goes to GitHub.
+  $dirs = @(& git.exe -C $root rev-parse --path-format=absolute --git-dir --git-common-dir 2>$null)
+  if ($dirs.Count -eq 2 -and $dirs[0].TrimEnd('/') -ne $dirs[1].TrimEnd('/')) {
+    Block 'this is a throwaway worktree (an eval run); nothing is pushed from it. Leave the commits here.'
+  }
 }
 exit 0

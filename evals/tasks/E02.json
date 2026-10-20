@@ -1,7 +1,7 @@
 {
     "id":  "E02",
     "title":  "New artifacts start as drafts",
-    "prompt":  "Draft intent 0002 for a fishing activity: players walk to a lake and catch fish with their steps.",
+    "prompt":  "Draft a new intent for a fishing activity: players walk to a lake and catch fish with their steps.",
     "check":  "checks/E02.ps1",
     "timeoutMinutes":  20
 }
