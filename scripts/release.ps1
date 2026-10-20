@@ -50,6 +50,11 @@ if (-not $DryRun) {
   & gh auth status *> $null
   if ($LASTEXITCODE -ne 0) { Fail 'not signed in to GitHub: run gh auth login' }
   if (-not "$(Repo remote get-url origin 2>$null)") { Fail 'no git remote "origin"' }
+  # Merged pull requests land on GitHub first; release exactly what's there.
+  Repo fetch -q origin main
+  if ("$(Repo rev-parse HEAD)".Trim() -ne "$(Repo rev-parse origin/main)".Trim()) {
+    Fail 'main here differs from main on GitHub: run git pull first'
+  }
 }
 
 # 2. The new version.

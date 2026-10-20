@@ -16,7 +16,10 @@ auto-approved by permission rules (headless and eval runs deny it).
   `scripts\apk-check.ps1` on it (fails on INTERNET or cloud backup).
 - `.\scripts\release.ps1 [-Fix] [-DryRun]` — releases to friends (spec 0007): version bump, check, friend APK (no
   test walk), signature check, commit + tag + push, GitHub release from `releases/next.md`. The owner runs it; Claude
-  drafts `releases/next.md` (plain words for players) and may run `-DryRun`.
+  drafts `releases/next.md` (plain words for players) and may run `-DryRun`. Runbook: `RELEASING.md`.
+- The production gate (plan 0009, `.claude/hooks/production-gate.ps1`) blocks Claude from releasing, merging PRs,
+  pushing to `main` and touching the release key. Work on a short branch per change and open a PR
+  (`gh pr create`); the owner merges. Don't look for ways around the gate: if it blocks you, ask the owner.
 - `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
 - One command per tool call: no `;` chains or pipes (`Push-Location app; flutter test …`). Chained commands are never
   auto-approved; use the scripts above.
