@@ -3,7 +3,6 @@ import 'package:game_core/game_core.dart';
 
 import 'controller_scope.dart';
 import 'labels.dart';
-import 'page_padding.dart';
 
 /// Opens from the trophy button in the top bar (spec 0006 amendment 2).
 class AchievementsScreen extends StatelessWidget {
@@ -17,17 +16,19 @@ class AchievementsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Achievements')),
-      body: ListView(
-        padding: pagePadding(context),
-        children: [
-          for (final a in c.game.data.achievements.values)
-            _AchievementTile(
-              achievement: a,
-              unlocked: s.achievements.contains(a.id),
-              progress: s.counters[a.counter] ?? 0,
-              labels: labels,
-            ),
-        ],
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final a in c.game.data.achievements.values)
+              _AchievementTile(
+                achievement: a,
+                unlocked: s.achievements.contains(a.id),
+                progress: s.counters[a.counter] ?? 0,
+                labels: labels,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
-import 'page_padding.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
@@ -46,42 +45,44 @@ class JournalScreen extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Journal')),
-      body: c.journal.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'No reports yet. Pick something to do, go for a walk, and '
-                'what happened shows up here.',
-              ),
-            )
-          : ListView(
-              padding: pagePadding(context),
-              children: [
-                for (final e in c.journal)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${journalTime(e.started, c.now)}'
-                            '${e.testWalk ? ' (test walk)' : ''}',
-                            style: text.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          ...reportBanners(e.summary, labels),
-                          for (final l in reportLines(e.summary, labels))
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: reportLine(l, labels),
+      body: SafeArea(
+        child: c.journal.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'No reports yet. Pick something to do, go for a walk, and '
+                  'what happened shows up here.',
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  for (final e in c.journal)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${journalTime(e.started, c.now)}'
+                              '${e.testWalk ? ' (test walk)' : ''}',
+                              style: text.titleMedium,
                             ),
-                        ],
+                            const SizedBox(height: 8),
+                            ...reportBanners(e.summary, labels),
+                            for (final l in reportLines(e.summary, labels))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: reportLine(l, labels),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }

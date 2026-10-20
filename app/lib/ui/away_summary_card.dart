@@ -5,7 +5,6 @@ import '../sync/away_summary.dart';
 import 'controller_scope.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
-import 'page_padding.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
 Color qualityColour(QualityDef q) =>
@@ -116,46 +115,48 @@ class AwayScreen extends StatelessWidget {
         title: const Text('While you were away'),
         automaticallyImplyLeading: false,
       ),
-      body: ListView(
-        padding: pagePadding(context),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (c.journal.isNotEmpty)
-                    Text(
-                      journalTime(c.journal.first.started, c.now),
-                      style: text.titleMedium,
-                    ),
-                  const SizedBox(height: 8),
-                  if (summary != null) ...reportBanners(summary, labels),
-                  if (summary != null)
-                    for (final l in reportLines(summary, labels))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: reportLine(l, labels),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (c.journal.isNotEmpty)
+                      Text(
+                        journalTime(c.journal.first.started, c.now),
+                        style: text.titleMedium,
                       ),
-                ],
+                    const SizedBox(height: 8),
+                    if (summary != null) ...reportBanners(summary, labels),
+                    if (summary != null)
+                      for (final l in reportLines(summary, labels))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: reportLine(l, labels),
+                        ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Steps can reach Health Connect a minute late, so this report '
-            'keeps updating for a couple of minutes. It stays in your '
-            'journal.',
-            style: text.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            key: const ValueKey('away-continue'),
-            onPressed: c.dismissAwaySummary,
-            child: const Text('Continue'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Steps can reach Health Connect a minute late, so this report '
+              'keeps updating for a couple of minutes. It stays in your '
+              'journal.',
+              style: text.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              key: const ValueKey('away-continue'),
+              onPressed: c.dismissAwaySummary,
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
       ),
     );
   }
