@@ -1,7 +1,8 @@
 ﻿{
-    "run":  "20261019-091934",
-    "commit":  "d85c055",
-    "configHash":  "5aeed195e5ce",
-    "passed":  18,
-    "total":  21
+    "run":  "20261020-152531",
+    "commit":  "8c82747",
+    "configHash":  "04e62666f337",
+    "passed":  22,
+    "total":  22,
+    "note":  "Combined: the full run 20261020-152531 (13/22) plus reruns 20261020-185430 (8/9) and 20261020-192529 (3/3) on the same Claude setup, after fixing stale eval requests and seeds. E18 and E22 count from the last rerun only (their seeds hadn't applied in the full run)."
 }

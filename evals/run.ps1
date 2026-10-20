@@ -103,7 +103,16 @@ foreach ($t in $tasks) {
   git -C $repo worktree add --detach --quiet $wt HEAD
 
   if ($t.setup) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $t.setup) -Worktree $wt
+    $setupOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $t.setup) -Worktree $wt 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) {
+      # A seed that no longer applies would let the agent run on unbroken code (E20 once did); fail loudly instead.
+      $why = (($setupOut -split "`r?`n" | Where-Object { $_.Trim() } | Select-Object -First 1) -replace '\|', '/').Trim()
+      Write-Host "    SETUP FAILED: $why" -ForegroundColor Red
+      $results += [pscustomobject]@{ id = $t.id; title = $t.title; pass = $false; verdict = 'SETUP FAILED'
+        minutes = 0; turns = ''; cost = ''; notes = "setup failed: $why" }
+      git -C $repo worktree remove --force $wt
+      continue
+    }
     if ($t.setupCommit -ne $false) {
       git -C $wt add -A
       git -C $wt commit --quiet -m "eval setup: $($t.id)"

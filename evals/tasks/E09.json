@@ -1,7 +1,7 @@
 {
     "id":  "E09",
     "title":  "Content: new gear slot",
-    "prompt":  "Add a copper helmet: +2 defense, worn in a new head slot, crafted at Camp from 3 copper ore in 120 steps for 25 XP, available from level 3.",
+    "prompt":  "Add a mithril ring: +20 HP, worn in a new ring slot that opens at level 25, crafted from 4 mithril ore in 400 steps for 500 XP, available from level 25.",
     "check":  "checks/E09.ps1",
     "timeoutMinutes":  20
 }
