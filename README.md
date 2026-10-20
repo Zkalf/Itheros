@@ -28,4 +28,11 @@ owner can release.
 `docs/commit-map.md` maps commit IDs named in older documents to the current history.
 
 ## Licence
-All rights reserved. You're welcome to read the code; please don't reuse it without asking.
+Copyright (C) 2026 Zkalf and contributors.
+
+Itheros is free software: you can redistribute it and/or modify it under the terms of the
+[GNU General Public License version 3](LICENSE) or (at your option) any later version. Copies and changed versions
+you share must stay open under the same licence. It comes with no warranty. The name "Itheros" isn't part of the
+licence: please give your own version another name.
+
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).
