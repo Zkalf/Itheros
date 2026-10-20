@@ -1,6 +1,28 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(**/key.properties)",
+      "Edit(**/key.properties)",
+      "Write(**/key.properties)",
+      "Read(~/.itheros/**)",
+      "Edit(~/.itheros/**)",
+      "Write(~/.itheros/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/hooks/production-gate.ps1"],
+            "timeout": 15,
+            "statusMessage": "Checking the production gate"
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write",
         "hooks": [
