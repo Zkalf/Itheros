@@ -7,6 +7,7 @@ description: Use when fixing a bug or reported misbehaviour in this repo (wrong 
 
 A fix is only trusted when a test that failed before it passes after it, and the fix did not change that test.
 
+0. **Branch first.** On `main`, make a branch `fix/<name>` before any commit (the owner merges it later via a PR).
 1. **Find the rule.** Locate the spec section, amendment or acceptance criterion the bug breaks
    (`specs/`). If no rule covers it, ask the product owner before fixing.
 2. **Reproduce.** Write the smallest test that fails because of the bug, in the package where the rule lives
@@ -22,8 +23,8 @@ A fix is only trusted when a test that failed before it passes after it, and the
    product owner instead of unlocking to change it.
 7. **Unlock** (`.\scripts\lock-tests.ps1 -Unlock`) and **commit the fix**: `Fix: <behaviour>`, naming the reproducing
    commit.
-8. If the bug came from real use (an incident: a friend's or the owner's report), add a regression eval under
-   `evals/tasks/` and an incident record: copy `incidents/TEMPLATE.md` to `incidents/NNNN-<name>.md` (next free
-   number) and fill it in. If the lesson is a rule others could break again, add it to `CLAUDE.md`.
-9. Work on a branch (`fix/<name>`) and open a pull request with both commits and the record; the owner merges. A
-   finding too big for a fix (a missing rule or system) becomes a new `intent/` file instead.
+8. If the owner says the bug came from real use (an incident), add a regression eval under `evals/tasks/` and an
+   incident record: copy `incidents/TEMPLATE.md` to `incidents/NNNN-<name>.md` (next free number) and fill it in.
+   If the lesson is a rule others could break again, add it to `CLAUDE.md`.
+9. **Open a pull request:** push the branch and `gh pr create` with both commits named in the description; the
+   owner merges. A finding too big for a fix (a missing rule or system) becomes a new `intent/` file instead.

@@ -24,7 +24,9 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
   dropped.
 - No findings is a fine result: say so in one line.
 
-## Not reviewed
-- The save fixtures (`app/test/fixtures/saves/`): written by `release.ps1`, never edited.
+## Never changed, so any change is Important
+- The save fixtures (`app/test/fixtures/saves/`): only `release.ps1` adds one; none is edited or deleted.
+- Accepted intent, spec and plan files: they're the yardstick, not the subject. Changes come as new files.
+
+## Not reviewed line by line
 - `docs/commit-map.md`, `evals/results/`, generated files (`*.g.dart`, `pubspec.lock`, build output).
-- Accepted intent, spec and plan files: they're the yardstick, not the subject.
