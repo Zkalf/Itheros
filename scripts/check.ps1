@@ -39,6 +39,9 @@ function Step([string]$name, [string]$dir, [scriptblock]$block) {
   }
 }
 
+# The production gate (plan 0009): what it blocks and what it lets through.
+Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
+
 # Pure-Dart packages.
 Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
   $pkg = $_.FullName; $n = $_.Name
