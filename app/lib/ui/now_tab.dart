@@ -294,7 +294,7 @@ class _QueueCard extends StatelessWidget {
                 key: const ValueKey('open-map'),
                 onPressed: onOpenMap,
                 icon: const Icon(Icons.map),
-                label: const Text('Open the map'),
+                label: const Text('Open Map'),
               ),
             if (onOpenCraft != null)
               FilledButton.tonalIcon(
