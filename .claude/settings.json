@@ -3,10 +3,8 @@
     "deny": [
       "Read(**/key.properties)",
       "Edit(**/key.properties)",
-      "Write(**/key.properties)",
       "Read(~/.itheros/**)",
-      "Edit(~/.itheros/**)",
-      "Write(~/.itheros/**)"
+      "Edit(~/.itheros/**)"
     ]
   },
   "hooks": {
