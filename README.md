@@ -9,7 +9,9 @@ phone: the app has no internet permission at all.
 ## How it's built
 A solo hobby project, built with an AI-native development process: every change goes
 **intent → spec → plan → code**, and the product owner accepts each stage before the next begins.
-Accepted documents are never edited; changes come as numbered amendments.
+Accepted documents are never edited; changes come as numbered amendments. The AI assistant works on short
+branches and opens pull requests; an automatic check runs on each, and the owner's merge is the approval. Only the
+owner can release.
 
 | Folder | What's in it |
 |---|---|
@@ -19,7 +21,9 @@ Accepted documents are never edited; changes come as numbered amendments.
 | [`packages/game_core/`](packages/game_core/) | All game rules in pure Dart; tuning numbers in `data/*.json` |
 | [`app/`](app/) | The Flutter Android app |
 | [`evals/`](evals/), [`.claude/`](.claude/), [`CLAUDE.md`](CLAUDE.md) | The AI assistant's instructions, skills, hooks and the evals that test them |
-| [`releases/`](releases/) | Release notes for each version |
+| [`releases/`](releases/), [`RELEASING.md`](RELEASING.md) | Release notes for each version; how releases (and taking one back) work |
+| [`REVIEW.md`](REVIEW.md), [`.github/`](.github/) | How each pull request is reviewed; the check that runs on every one |
+| [`incidents/`](incidents/) | One record per bug from real use: cause, fix, lesson |
 
 `docs/commit-map.md` maps commit IDs named in older documents to the current history.
 
