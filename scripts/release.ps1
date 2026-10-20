@@ -39,7 +39,7 @@ function Repo { & git.exe -C $root @args }
 # 1. Preconditions.
 if ("$(Repo rev-parse --abbrev-ref HEAD)".Trim() -ne 'main') { Fail 'not on main' }
 if (Repo status --porcelain) { Fail 'the working tree has uncommitted changes; commit or stash them first' }
-if (-not (Test-Path $notes) -or -not (Get-Content -Raw $notes).Trim()) {
+if (-not (Test-Path $notes) -or -not (Get-Content -Raw -Encoding UTF8 $notes).Trim()) {
   Fail 'no release notes: write releases\next.md (a few plain lines for players) and commit it'
 }
 if (-not (Test-Path (Join-Path $app 'android\key.properties'))) {
@@ -53,7 +53,7 @@ if (-not $DryRun) {
 }
 
 # 2. The new version.
-$text = Get-Content -Raw $pubspec
+$text = Get-Content -Raw -Encoding UTF8 $pubspec
 $m = [regex]::Match($text, '(?m)^version: (\d+)\.(\d+)\.(\d+)\+(\d+)\s*$')
 if (-not $m.Success) { Fail 'pubspec.yaml has no "version: x.y.z+n" line' }
 $major, $minor, $patch, $build = 1..4 | ForEach-Object { [int]$m.Groups[$_].Value }
@@ -78,7 +78,7 @@ function Abort([string]$message) { Undo; Fail $message }
 
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($pubspec, ($text -replace '(?m)^version: [^\r\n]*', "version: $version+$build"), $utf8)
-[IO.File]::WriteAllText($versionDart, ((Get-Content -Raw $versionDart) -replace "appVersion = '[^']*'", "appVersion = '$version'"), $utf8)
+[IO.File]::WriteAllText($versionDart, ((Get-Content -Raw -Encoding UTF8 $versionDart) -replace "appVersion = '[^']*'", "appVersion = '$version'"), $utf8)
 
 # 3. The full check (format, analyze, tests: the save fixtures and the version line included).
 & "$PSScriptRoot\check.ps1"
@@ -126,7 +126,7 @@ $pushed = $true
 Write-Host '==> Publishing' -ForegroundColor Cyan
 $body = Join-Path $out 'notes.md'
 $footer = "`n`n---`nNew here? [How to install Itheros](https://github.com/$repo/blob/main/INSTALL.md)"
-[IO.File]::WriteAllText($body, (Get-Content -Raw (Join-Path $root "releases\$version.md")).Trim() + $footer, $utf8)
+[IO.File]::WriteAllText($body, (Get-Content -Raw -Encoding UTF8 (Join-Path $root "releases\$version.md")).Trim() + $footer, $utf8)
 & gh release create $tag $asset --repo $repo --title "Itheros $version" --notes-file $body
 if ($LASTEXITCODE -ne 0) {
   Fail "pushed, but the GitHub release failed. Retry with: gh release create $tag `"$asset`" --repo $repo --title `"Itheros $version`" --notes-file `"$body`""
