@@ -1,6 +1,6 @@
 # Plan 0009: Deploy and Maintain stages
 
-Status: draft
+Status: accepted (2026-10-20)
 Builds on: plan 0002 (Test stage), plan 0008 (GitHub repo, release command) · Playbook stages 5 and 6
 Product owner: Zkalf · Date: 2026-10-20
 
@@ -18,14 +18,21 @@ What the playbook has that this plan leaves out (enterprise-sized): managed sett
 audit, metric bands and σ-tier alerting, an on-call Slack agent.
 
 ## Steps
-### D1: Pull requests with CI
-- Claude works on a branch per plan milestone or bug fix and opens a PR (`gh pr create`) with the proof in the
-  description. The PR links its intent/spec/plan.
+### D1: Pull requests with CI (scaled trunk-based development)
+- `main` is the trunk and always releasable. Claude works on a short-lived branch (one per plan milestone, bug
+  fix or document; merged within a day) and opens a PR (`gh pr create`) with the proof in the description. The
+  PR links its intent/spec/plan. PRs are squash-merged, so each change is one commit on `main`.
+- `scripts\merge.ps1 <PR number>`: the owner's merge from the terminal. It shows the PR's title, description and
+  changed files and the check result, and merges only when the check is green. The GitHub app works too.
+- A PreToolUse hook blocks Claude from running `gh pr merge` or `merge.ps1` and from pushing to `main`: Claude
+  opens PRs, only the owner merges. (gh is signed in as the owner, so PRs appear under the owner's name; GitHub
+  doesn't allow approving your own PR, which is why the merge is the approval.)
 - `.github/workflows/check.yml`: on every PR and push to `main`, a Windows runner sets up Flutter and the Android
   SDK and runs `scripts\check.ps1 -Release`. It builds with the debug key (no key in CI, ever) and so still proves
   no INTERNET and no cloud backup.
-- Branch protection on `main`: a PR and a green check are required. **The owner's approval is the merge** (from
-  the GitHub app on the phone works too).
+- Branch protection on `main`: a PR and a green check are required. Admins may bypass it, so `release.ps1`
+  (the owner's) can still push its "Release x.y.z" commit and tag; the hook above keeps Claude from doing the
+  same. **The owner's approval is the merge.**
 - Accepting an intent, spec or plan becomes merging its PR, as the playbook describes.
 
 ### D2: REVIEW.md
@@ -54,13 +61,14 @@ the review (`/code-review` with the verifier's findings) and posts it on the PR.
 `scripts/` or `.claude/`.
 
 ## Owner decisions
-1. Use pull requests (D1) at all, or keep committing straight to `main`? (Claude recommends PRs: it's the heart of
-   the Deploy stage and a strong CV point; the cost is one tap to merge each change.)
+1. Use pull requests (D1) at all, or keep committing straight to `main`? **Decided 2026-10-20: yes, scaled
+   trunk-based development; the owner merges from the terminal (`merge.ps1`) or the GitHub app.**
 2. Scheduled eval runs in CI (the playbook's `agent-evals.yml`)? They need an Anthropic API key as a GitHub secret
-   and cost about $10 a run. Claude recommends **no** for now: keep running evals locally when the setup changes.
+   and cost about $10 a run. **Decided 2026-10-20: no for now; evals keep running locally when the setup changes.**
 
 ## Proof
-D1: a PR from Claude, CI green, merged by the owner; a PR with a failing check can't be merged. D2: the first
+D1: a PR from Claude, CI green, merged by the owner with `merge.ps1`; a PR with a failing check can't be merged;
+the hook blocks Claude's `gh pr merge` and push to `main`. D2: the first
 review posted per REVIEW.md. D3: the hook blocks `release.ps1` without `-DryRun`; a read of `key.properties` is
 denied; the rehearsal works. M1: the first incident record (from the next real report). M2: review findings fixed or
 dismissed with a reason.
