@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'page_padding.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
@@ -54,7 +55,7 @@ class JournalScreen extends StatelessWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: pagePadding(context),
               children: [
                 for (final e in c.journal)
                   Card(

@@ -5,6 +5,7 @@ import '../sync/away_summary.dart';
 import 'controller_scope.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
+import 'page_padding.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
 Color qualityColour(QualityDef q) =>
@@ -91,7 +92,7 @@ class ReportBanner extends StatelessWidget {
 List<String> reportLines(AwaySummary s, Labels labels) => [
   'You walked ${plural(s.walked, 'step')}.',
   if (s.boostUsed > 0)
-    'Your step bank added ${plural(s.boostUsed, 'extra step')}.',
+    'Used ${plural(s.boostUsed, 'step')} from your step bank.',
   for (final a in s.actions) ...labels.actionLines(a),
   if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
   if (s.lost > 0)
@@ -116,7 +117,7 @@ class AwayScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: pagePadding(context),
         children: [
           Card(
             child: Padding(
