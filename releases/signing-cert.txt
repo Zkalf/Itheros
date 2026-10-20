@@ -1,0 +1,4 @@
+# The Itheros release key's public certificate fingerprint (SHA-256), spec 0007 §3.
+# Not a secret. scripts/apk-check.ps1 -RequireReleaseKey compares every published APK with it.
+# Certificate: CN=Zkalf, O=Itheros
+d15422c3573cfa684f23292f17fefa0617486612bb83fed14e496f6e9e961a07
