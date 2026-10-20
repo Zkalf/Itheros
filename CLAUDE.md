@@ -22,8 +22,8 @@ auto-approved by permission rules (headless and eval runs deny it).
   PR (`gh pr create`, proof in the description), review it per `REVIEW.md` and post the review on it
   (`gh pr comment <number> --body-file <file>`); the owner merges with `.\scripts\merge.ps1 <number>` once the CI
   check (`.github/workflows/check.yml`, the same `check.ps1 -Release`) is green. Don't look for ways around the
-  gate: if it blocks you, ask the owner. Write commit messages and PR bodies to files: inline text naming a blocked
-  command trips the gate.
+  gate: if it blocks you, ask the owner. It judges the programs a command runs, not words in messages, heredocs or
+  echo; its cases are in `scripts\test-gate.ps1` (part of `check.ps1`), and a new false alarm or gap gets a case.
 - `gh` is `C:\Program Files\GitHub CLI\gh.exe` (signed in as the owner); shells started before its install don't have
   it on PATH.
 - `.\scripts\test.ps1 <test file> [-Name <test name>]` — one test file, from the repo root.
