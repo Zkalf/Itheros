@@ -33,6 +33,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   String location = 'camp',
   Map<String, int> inventory = const {},
   Map<String, int> counters = const {},
+  Map<String, String> equipment = const {},
   bool granted = true,
 }) async {
   tester.view.physicalSize = const Size(1080, 4000);
@@ -45,7 +46,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
     ..xp = xp ?? game.data.xpForLevel(level)
     ..location = location
     ..inventory.addAll(inventory)
-    ..counters.addAll(counters);
+    ..counters.addAll(counters)
+    ..equipment.addAll(equipment);
   final store = MemorySaveStore(
     granted
         ? SaveData(
@@ -99,6 +101,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  playtest2();
   moreScreens();
   theMap();
   mapGaps();
@@ -441,7 +444,12 @@ void main() {
     testWidgets('from level 5: pick a stop condition, start, then queue', (
       t,
     ) async {
-      final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        location: 'goblin_woods',
+        counters: {'found.goblin_brute.goblin_hide': 1},
+      );
       await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await t.pumpAndSettle();
@@ -1185,5 +1193,75 @@ void mapGaps() {
       expect(labels[i] == null, !open[i], reason: game.data.routes[i].to);
     }
     expect(labels, contains('200'), reason: 'Camp to Goblin Woods');
+  });
+}
+
+/// Owner's second playtest notes (2026-10-20).
+void playtest2() {
+  group('playtest 2', () {
+    testWidgets('"until I have N" offers only drops already found', (t) async {
+      await pumpGame(t, level: 8, location: 'old_graveyard');
+      await openArea(t, 'old_graveyard');
+      await t.tap(option('fight', 'zombie'));
+      await t.pumpAndSettle();
+      expect(find.text('Stop when'), findsOneWidget);
+      expect(find.byKey(const ValueKey('stop-untilHave')), findsNothing);
+      expect(find.text('Grave cloth'), findsNothing);
+    });
+
+    testWidgets('a found drop is offered, an unfound one is not', (t) async {
+      await pumpGame(
+        t,
+        level: 5,
+        location: 'goblin_woods',
+        counters: {'kills.goblin': 3, 'found.goblin.goblin_hide': 1},
+      );
+      await openArea(t, 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('stop-untilHave')));
+      await t.pumpAndSettle();
+      await t.tap(find.byType(DropdownButton<String>));
+      await t.pumpAndSettle();
+      expect(find.text('Goblin hide'), findsWidgets);
+      expect(find.text('Rusty dagger'), findsNothing);
+    });
+
+    testWidgets('nothing can be queued behind an action that never stops', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 8, location: 'copper_hills');
+      await c.addAction(const Activity.gather('copper_vein'));
+      await settle(t, c);
+      expect(c.state.activity!.stop.kind, StopKind.never);
+      await openArea(t, 'goblin_woods');
+      await t.tap(option('fight', 'goblin_brute'));
+      await t.pumpAndSettle();
+      expect(find.text('Stop when'), findsOneWidget);
+      expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
+      expect(find.byKey(const ValueKey('start-now')), findsOneWidget);
+    });
+
+    testWidgets('"Next goal" only says "your level" when it is', (t) async {
+      await pumpGame(
+        t,
+        level: 8,
+        location: 'old_graveyard',
+        equipment: {
+          'weapon': 'kings_blade',
+          'body': 'stitched_armour',
+          'shield': 'bone_shield',
+        },
+      );
+      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
+      expect(find.textContaining('Old Graveyard is your level'), findsNothing);
+      expect(
+        find.text(
+          'The Graveyard King in Old Graveyard gives the most XP for your steps.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('is your level'), findsNothing);
+    });
   });
 }
