@@ -64,6 +64,39 @@ class Labels {
     if (b.hp != 0) '+${b.hp} HP',
   ];
 
+  /// A change in stats, signed: "+2 Attack · −10 HP"; "No change" if none.
+  String delta(Stats d) {
+    String part(int v, String name) => '${v > 0 ? '+' : '−'}${v.abs()} $name';
+    final parts = [
+      if (d.attack != 0) part(d.attack, 'Attack'),
+      if (d.defense != 0) part(d.defense, 'Defense'),
+      if (d.hp != 0) part(d.hp, 'HP'),
+    ];
+    return parts.isEmpty ? 'No change' : parts.join(' · ');
+  }
+
+  /// An item drawn as an object (bag, doll, card title): its name only, the
+  /// quality shows as colour and on the card's kind line (spec 0008
+  /// decision 10).
+  String plain(String key) => data.itemOf(key)?.name ?? key;
+
+  /// The card's kind line: "Rare one-hand weapon · Main hand", "Material".
+  String kind(String key) {
+    final item = data.itemOf(key);
+    final slot = item?.slot;
+    if (item == null || slot == null) return 'Material';
+    final word = switch (slot) {
+      'mainHand' => item.twoHanded ? 'two-hand weapon' : 'one-hand weapon',
+      'offHand' => 'shield',
+      'head' => 'helm',
+      'neck' => 'amulet',
+      'chest' => 'chest armour',
+      'legs' => 'leggings',
+      _ => this.slot(slot).toLowerCase(),
+    };
+    return '${data.qualityOf(key).name} $word · ${this.slot(slot)}';
+  }
+
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 

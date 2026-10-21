@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:game_core/game_core.dart';
 
-import 'away_summary_card.dart';
+import 'bag_grid.dart';
 import 'controller_scope.dart';
-import 'labels.dart';
+import 'paper_doll.dart';
 
-/// Stats, equipped gear and inventory. Equipping costs no steps.
-class CharacterTab extends StatelessWidget {
+/// Who am I (spec 0008 §3.5): level, stats and rank above two small tabs,
+/// Gear (the paper doll) and Bag. Talents join them with their spec.
+/// Equipping costs no steps.
+class CharacterTab extends StatefulWidget {
   const CharacterTab({super.key});
+
+  @override
+  State<CharacterTab> createState() => _CharacterTabState();
+}
+
+class _CharacterTabState extends State<CharacterTab> {
+  var _bag = false;
 
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final game = c.game;
     final s = c.state;
-    final labels = Labels(game.data);
     final stats = game.stats(s);
     final level = game.level(s);
     final points = game.talentPoints(level);
@@ -52,143 +59,27 @@ class CharacterTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Equipment', style: text.titleMedium),
-        // Worn slots only, until the paper doll (plan 0010 M3).
-        for (final slot in game.data.gearSlots.map((g) => g.id))
-          if (s.equipment.containsKey(slot))
-            ListTile(
-              leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
-              title: switch (s.equipment[slot]) {
-                final key? => _name(context, game.data, labels, key),
-                null => const Text('Empty'),
-              },
-              subtitle: Text(
-                [
-                  labels.slot(slot),
-                  if (s.equipment[slot] case final key?)
-                    ..._bonusParts(game.data, key),
-                ].join(' · '),
-              ),
-              trailing: s.equipment[slot] == null
-                  ? null
-                  : SizedBox(
-                      width: _buttonWidth,
-                      child: OutlinedButton(
-                        onPressed: () => _run(context, () => c.unequip(slot)),
-                        child: const Text('Remove'),
-                      ),
-                    ),
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(
+              value: false,
+              label: Text('Gear', key: ValueKey('tab-gear')),
+              icon: Icon(Icons.accessibility_new),
             ),
+            ButtonSegment(
+              value: true,
+              label: Text('Bag', key: ValueKey('tab-bag')),
+              icon: Icon(Icons.backpack),
+            ),
+          ],
+          selected: {_bag},
+          showSelectedIcon: false,
+          onSelectionChanged: (v) => setState(() => _bag = v.single),
+        ),
         const SizedBox(height: 16),
-        Text('Inventory', style: text.titleMedium),
-        if (s.inventory.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Nothing yet. Fight and gather to find things.'),
-          ),
-        // Gear, then materials (spec 0006 §2.4); each in data order, then
-        // quality order, so rows don't move when something is equipped
-        // (spec 0005 §5).
-        for (final gear in [true, false]) ...[
-          if (s.inventory.keys.any(
-            (k) => (game.data.itemOf(k)?.slot != null) == gear,
-          ))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Text(
-                gear ? 'Gear' : 'Materials',
-                key: ValueKey(gear ? 'heading-gear' : 'heading-materials'),
-                style: text.titleSmall,
-              ),
-            ),
-          for (final key in [
-            for (final item in game.data.items.values)
-              if ((item.slot != null) == gear)
-                for (final q in game.data.qualities)
-                  game.data.keyFor(item.id, q.id),
-          ])
-            if (s.inventory[key] case final count?)
-              KeyedSubtree(
-                key: ValueKey('inventory-$key'),
-                child: ListTile(
-                  key: const ValueKey('inventory-item'),
-                  title: _name(context, game.data, labels, key),
-                  subtitle: _bonusText(game.data, key),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('×$count'),
-                      const SizedBox(width: 12),
-                      // Kept empty for materials, so every count lines up.
-                      SizedBox(
-                        width: _buttonWidth,
-                        child: game.data.itemOf(key)?.slot == null
-                            ? null
-                            : FilledButton.tonal(
-                                key: ValueKey('equip-$key'),
-                                onPressed: () =>
-                                    _run(context, () => c.equip(key)),
-                                child: const Text('Equip'),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-        ],
+        if (_bag) BagGrid(controller: c) else PaperDoll(controller: c),
       ],
     );
-  }
-
-  /// Equip and Remove share one width, so the buttons form a column.
-  static const _buttonWidth = 104.0;
-
-  /// An item's name: gear better than common in its quality's colour, common
-  /// gear in full text colour, materials softer, so gear stands out.
-  static Widget _name(
-    BuildContext context,
-    GameData data,
-    Labels labels,
-    String key,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    final q = data.qualityOf(key);
-    final colour = switch (data.itemOf(key)?.slot) {
-      null => scheme.onSurfaceVariant,
-      _ when q == data.qualities.first => scheme.onSurface,
-      _ => qualityColour(q),
-    };
-    return Text(labels.owned(key), style: TextStyle(color: colour));
-  }
-
-  static Widget? _bonusText(GameData data, String key) {
-    if (data.itemOf(key)?.slot == null) return null;
-    return Text(_bonusParts(data, key).join(' · '));
-  }
-
-  /// "+4 Defense", "+14 HP": a gear key's stats, quality included.
-  static List<String> _bonusParts(GameData data, String key) =>
-      Labels(data).bonus(data.bonusOf(key));
-
-  static const _slotIcons = {
-    'mainHand': Icons.gavel,
-    'chest': Icons.checkroom,
-    'offHand': Icons.shield,
-    'head': Icons.face,
-    'boots': Icons.hiking,
-    'neck': Icons.diamond,
-  };
-
-  static Future<void> _run(
-    BuildContext context,
-    Future<void> Function() action,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await action();
-    } on ActivityError catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    }
   }
 }
 

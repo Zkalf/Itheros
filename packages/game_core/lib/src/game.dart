@@ -374,6 +374,26 @@ class Game {
   /// decision 5).
   static String foundCounter(String enemy, String item) => 'found.$enemy.$item';
 
+  /// Monsters [item] has dropped from for this player, and the gathering
+  /// spots that give it, for the item card (spec 0008 §3.5). Monsters it
+  /// hasn't dropped from yet stay hidden (spec 0006 §2.2).
+  (List<String>, List<String>) itemSources(GameState s, String item) => (
+    [
+      for (final e in data.enemies.keys)
+        if ((s.counters[foundCounter(e, item)] ?? 0) > 0) e,
+    ],
+    [
+      for (final n in data.nodes.values)
+        if (n.item == item) n.id,
+    ],
+  );
+
+  /// Recipes that use [item], in data order.
+  List<String> itemUses(String item) => [
+    for (final r in data.recipes.values)
+      if (r.inputs.containsKey(item)) r.id,
+  ];
+
   /// [enemy]'s drops the player has found, in [dropItems] order.
   List<String> foundDrops(GameState s, String enemy) => [
     for (final item in dropItems(enemy))

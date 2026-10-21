@@ -250,7 +250,10 @@ class GameController extends ChangeNotifier {
     return events.whereType<ActionSkipped>().toList();
   }
 
-  Future<void> equip(String item) => _act((s) => game.equip(s, item));
+  /// Wears [item] in [slot], or in the first free slot it fits (spec 0008
+  /// decision 11).
+  Future<void> equip(String item, {String? slot}) =>
+      _act((s) => game.equip(s, item, slot: slot));
 
   Future<void> unequip(String slot) => _act((s) => game.unequip(s, slot));
 
