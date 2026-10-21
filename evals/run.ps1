@@ -5,7 +5,8 @@
 .DESCRIPTION
   Each task (evals/tasks/<id>.json) gets a fresh worktree of HEAD outside the repo, an optional setup script (for
   example a seeded bug, committed as the base), a headless `claude -p` session with a fixed tool allowlist, and then
-  its check script from THIS repo. Passing worktrees are removed; failing ones are kept for inspection.
+  its check script from THIS repo. Passing worktrees are removed, with any branches the agent made in them; failing
+  ones are kept for inspection.
 
   A full run (no -Id) writes evals/results/<run>.md and evals/results/latest.json (commit and Claude-setup hash).
 
@@ -95,11 +96,23 @@ function Invoke-Agent($task, [string]$wt, [string]$transcript) {
   }
 }
 
+function Get-Branches { @(git -C $repo for-each-ref --format='%(refname:short)' refs/heads) }
+
+# Branches the agent made in $wt: new since the task started and checked out there (the worktree's own reflog), so a
+# branch the owner makes in the main checkout meanwhile is never touched. Branches outlive the worktree, so an
+# agent following "short branch per change" once left one behind (docs-boost-display, E19).
+function Get-AgentBranches([string]$wt, [string[]]$before) {
+  $checkedOut = @(git -C $wt reflog --format=%gs | ForEach-Object {
+      if ($_ -match '^checkout: moving from \S+ to (\S+)$') { $Matches[1] } })
+  @(Get-Branches | Where-Object { $before -notcontains $_ -and $checkedOut -contains $_ })
+}
+
 $results = @()
 foreach ($t in $tasks) {
   $started = Get-Date
   Write-Host "==> $($t.id) $($t.title)" -ForegroundColor Cyan
   $wt = Join-Path $runDir $t.id
+  $branchesBefore = Get-Branches
   git -C $repo worktree add --detach --quiet $wt HEAD
 
   if ($t.setup) {
@@ -139,6 +152,7 @@ foreach ($t in $tasks) {
     if ($first.Length -gt 80) { $first = $first.Substring(0, 80) + '...' }
     $notes += "$($agent.denied.Count) denied, first: $first"
   }
+  $agentBranches = Get-AgentBranches $wt $branchesBefore
 
   if ($NoAgent) {
     # Sanity: on an untouched worktree a check must give its expected verdict (most must fail).
@@ -159,7 +173,12 @@ foreach ($t in $tasks) {
   }
 
   $keep = $KeepWorktrees -or ($NoAgent -and $verdict -notmatch '^sane') -or (-not $NoAgent -and -not $pass)
-  if (-not $keep) { git -C $repo worktree remove --force $wt }
+  if ($keep) {
+    if ($agentBranches.Count) { Write-Host "    Kept with the worktree: branch $($agentBranches -join ', ')" -ForegroundColor Yellow }
+  } else {
+    git -C $repo worktree remove --force $wt
+    foreach ($b in $agentBranches) { git -C $repo branch -D --quiet $b }
+  }
 }
 
 if ($NoAgent) {
