@@ -257,12 +257,27 @@ class Game {
   /// and the item is owned or worn (spec 0006 decision 6).
   /// Saves before version 6 move their gear onto the paper doll and count
   /// visited areas as explored (spec 0008 §2.4).
+  /// Any save holding a two-hander and an off-hand item puts the off-hand
+  /// item in the bag.
   GameState migrate(GameState s) {
     var n = _migrateXp(s);
     if (s.loadedVersion < 4) n = _visit(n.copy(), n.location);
     if (s.loadedVersion < 5) n = _findOwnedDrops(n.copy());
     if (s.loadedVersion < 6) n = _migrateLayout(n.copy());
-    return n;
+    return _freeOffHand(n);
+  }
+
+  /// A worn two-hander empties the off hand into the bag: an item may have
+  /// become two-handed since the save was made (spec 0009 §4.1).
+  GameState _freeOffHand(GameState s) {
+    final main = s.equipment['mainHand'];
+    if (main == null ||
+        !(data.itemOf(main)?.twoHanded ?? false) ||
+        !s.equipment.containsKey('offHand')) {
+      return s;
+    }
+    final n = s.copy();
+    return n..addItem(n.equipment.remove('offHand')!);
   }
 
   /// Each worn item goes to the first free slot of its item's kind in
