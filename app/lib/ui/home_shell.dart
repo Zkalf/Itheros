@@ -39,8 +39,7 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     // Every recipe shows from level 1 (spec 0008 decision 1).
-    final screens = _Screen.values;
-    if (!screens.contains(_screen)) _screen = _Screen.now;
+    const screens = _Screen.values;
     // Nothing happened but steps: a short note, not the screen (spec 0004
     // amendment 2).
     if (c.quietReport != null) {

@@ -579,6 +579,12 @@ class GameData {
       'gearSlots: ids must be unique',
     );
     check(queueSlots >= 1, 'queueSlots must be >= 1');
+    // The two-hand rule names these slots (spec 0008 §2.1).
+    check(
+      slotsOfKind('mainHand').contains('mainHand') &&
+          slotsOfKind('offHand').contains('offHand'),
+      'gearSlots must have mainHand and offHand',
+    );
     check(lossesToGiveUp >= 1, 'lossesToGiveUp must be >= 1');
     check(journalEntries >= 1, 'journalEntries must be >= 1');
     check(

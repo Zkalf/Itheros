@@ -205,6 +205,32 @@ void main() {
       expect(game.enemiesAt(s, 'grey_moor'), isEmpty);
     });
 
+    test('level-up news leaves out monsters in the fog', () {
+      final s = stateAt(game, level: 30);
+      final news = game.levelNews(30, s);
+      expect(
+        news,
+        isNot(contains(const LevelNews(NewsKind.yourLevel, 'young_dragon'))),
+      );
+      expect(
+        game.levelNews(30),
+        contains(const LevelNews(NewsKind.yourLevel, 'young_dragon')),
+      );
+    });
+
+    test('refusing a walk into the fog names no fogged place', () {
+      expect(
+        () => game.startActivity(stateAt(game), const Activity.fight('wolf')),
+        throwsA(
+          isA<ActivityError>().having(
+            (e) => e.message,
+            'message',
+            'The way there is in the fog',
+          ),
+        ),
+      );
+    });
+
     test('a visible but unexplored area can be walked to', () {
       final s = game.startActivity(
         game.newGame(seed: 1),
@@ -274,6 +300,13 @@ void main() {
       final d = g.compare(s, 'big_axe', 'mainHand');
       expect(d.attack, 10 - 3);
       expect(d.defense, -3);
+    });
+
+    test('a shield next to a two-hander is no upgrade if it costs more', () {
+      var s = stateAt(g, inventory: {'big_axe': 1, 'bone_shield': 1});
+      s = g.equip(s, 'big_axe');
+      expect(g.gearGain(s, 'bone_shield'), lessThan(0));
+      expect(g.nextGoal(s), isNot(isA<EquipGoal>()));
     });
 
     test('twoHanded is only allowed on main-hand items', () {

@@ -91,9 +91,11 @@ class Game {
 
   /// What reaching [level] brings, for its level-up card (spec 0002 §9.1).
   /// Only gathering spots and recipes open by level (spec 0008 amendments 1
-  /// and 2).
-  List<LevelNews> levelNews(int level) {
-    final enemies = data.enemies.values;
+  /// and 2). With [s], monsters in the fog are left out (decision 5).
+  List<LevelNews> levelNews(int level, [GameState? s]) {
+    final enemies = data.enemies.values.where(
+      (e) => s == null || !enemyFogged(s, e.id),
+    );
     return [
       for (final r in data.ranks)
         if (r.level == level && level > 1) LevelNews(NewsKind.rank, r.name),
@@ -159,8 +161,9 @@ class Game {
     return best == null ? null : FightGoal(best.id);
   }
 
-  /// How much better [key] is than the weakest item worn where it fits
-  /// (an empty slot counts 0; a two-hander also replaces the off hand).
+  /// How much better [key] is than what it takes off in its weakest slot
+  /// (an empty slot counts 0; a two-hander also takes off the off hand, an
+  /// off-hand item a two-hander).
   int gearGain(GameState s, String key) {
     final slots = slotsFor(key);
     if (slots.isEmpty) return 0;
@@ -168,8 +171,11 @@ class Game {
       final k? => data.scoreOf(k),
       null => 0,
     };
-    var worn = slots.map(score).reduce(math.min);
-    if (data.itemOf(key)!.twoHanded) worn += score('offHand');
+    final into = slots.reduce((a, b) => score(a) <= score(b) ? a : b);
+    var worn = 0;
+    for (final id in _displaced(s, key, into)) {
+      worn += score(id);
+    }
     return data.scoreOf(key) - worn;
   }
 
@@ -222,8 +228,9 @@ class Game {
     return n;
   }
 
-  /// Each worn item goes to the first free slot of its kind (weapon to main
-  /// hand, body to chest or cloak, ...), or to the bag if none is free.
+  /// Each worn item goes to the first free slot of its item's kind in
+  /// `items.json` (a sword to Main hand, the Bear-pelt cloak to Cloak), or
+  /// to the bag if none is free.
   GameState _migrateLayout(GameState s) {
     final old = Map.of(s.equipment);
     s.equipment.clear();
@@ -570,7 +577,7 @@ class Game {
           '$name needs level ${data.recipes[a.target]!.level}',
         _ => '$name is locked',
       },
-      SkipReason.noRoute => 'No open route to $name',
+      SkipReason.noRoute => 'The way there is in the fog',
       SkipReason.noMaterials => 'Not enough materials for $name',
       SkipReason.alreadyDone => switch (stop.kind) {
         _ when a.kind == ActivityKind.travel => 'You are already at $name',
@@ -827,6 +834,10 @@ class _Run {
       if (act.leg case final leg?) {
         _arrive(leg);
         act.leg = game._nextLeg(s, act.activity);
+        if (act.leg == null && game._placeFor(s, act.activity) != s.location) {
+          _end(act, EndReason.noRoute);
+          continue;
+        }
         if (act.activity.kind == ActivityKind.travel && act.leg == null) {
           _end(act, EndReason.arrived);
         }

@@ -61,11 +61,11 @@ class _RecipeTile extends StatelessWidget {
     final out = game.data.items[r.output]!;
     final short = Theme.of(context).colorScheme.error;
     final active = s.activity?.activity == Activity.craft(recipe);
-    // From 2 slots a craft can be queued before its materials are
-    // gathered (spec 0003 §4).
+    // With 3 queue slots a craft can always be queued before its materials
+    // are gathered (spec 0003 §4, spec 0008 decision 7); only its level
+    // holds it back (amendment 2).
     final levelMet = game.recipeLevelMet(s, recipe);
-    final enabled =
-        levelMet && (game.hasMaterials(s, recipe) || game.queueSlots(s) > 1);
+    final enabled = levelMet;
     return ListTile(
       key: ValueKey('option-craft-$recipe'),
       leading: const Icon(Icons.handyman),

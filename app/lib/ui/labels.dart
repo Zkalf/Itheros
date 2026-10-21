@@ -81,6 +81,7 @@ class Labels {
     EndReason.grey => 'Stopped: the ${enemy(a.target)} turned grey',
     EndReason.enough => 'Stopped: goal reached',
     EndReason.noMaterials => 'Stopped: out of materials',
+    EndReason.noRoute => 'Stopped: the way on is in the fog',
   };
 
   /// A stop condition, with progress toward it (spec 0003 §3).
