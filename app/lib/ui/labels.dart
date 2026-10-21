@@ -172,7 +172,11 @@ class Labels {
     ActivityKind.fight => 'Fighting ${enemy(a.target)}s',
     ActivityKind.gather => 'Mining ${node(a.target)}',
     ActivityKind.craft => 'Crafting ${recipe(a.target)}',
+    ActivityKind.reroll => 'Rerolling ${rerolled(a)}',
   };
+
+  /// The item a reroll works on (spec 0010 §7.2).
+  String rerolled(Activity a) => data.itemOf(a.rerollKey)?.name ?? a.rerollKey;
 
   /// Why an action ended, as a sentence without the full stop.
   String endReason(Activity a, EndReason r) => switch (r) {
@@ -233,6 +237,7 @@ class Labels {
     ActivityKind.fight => enemy(a.target),
     ActivityKind.gather => node(a.target),
     ActivityKind.craft => recipe(a.target),
+    ActivityKind.reroll => 'reroll of the ${rerolled(a)}',
   };
 
   /// The report lines for one action (spec 0003 §7), ending with the action
@@ -254,6 +259,7 @@ class Labels {
         '${switch (a.kind) {
               ActivityKind.fight => 'Fought the ${enemy(a.target)}',
               ActivityKind.gather => 'Mined the ${node(a.target)}',
+              ActivityKind.reroll => 'Rerolled the ${rerolled(a)}',
               _ => 'Crafted the ${recipe(a.target)}',
             }}${gains.isEmpty ? '' : ': ${gains.join(', ')}'}.'
             '${ended == null ? '' : ' ${endReason(a, ended)}.'}$then'

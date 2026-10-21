@@ -69,6 +69,20 @@ class LevelUp extends GameEvent {
   final int level;
 }
 
+/// A gathering action found its spot's rare find (spec 0010 §5.1).
+class RareFound extends GameEvent {
+  const RareFound(this.item);
+  final String item;
+}
+
+/// A reroll ended: [before] became [after] (the same key when the quality
+/// stayed; a Legendary's waiting roll, spec 0010 §7.3, is in [after]).
+class Rerolled extends GameEvent {
+  const Rerolled(this.before, this.after);
+  final String before;
+  final String after;
+}
+
 /// A profession reached [level] (spec 0010 §2.2).
 class ProfessionLevelUp extends GameEvent {
   const ProfessionLevelUp(this.profession, this.level);

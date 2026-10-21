@@ -5,7 +5,15 @@
       "tiers": [{ "level": 1, "name": "Copper" }, { "level": 10, "name": "Iron" }, { "level": 20, "name": "Mithril" }],
       "teacher": {
         "name": "Hilde", "title": "the miner", "location": "camp", "starterTool": "old_pick",
-        "learnLine": "Take my old pick. Bring me copper and we'll talk."
+        "learnLine": "Take my old pick. Bring me copper and we'll talk.",
+        "tips": [
+        { "id": "hilde_1", "level": 1, "enemy": "skeleton", "title": "Bones under the hills",
+          "text": "\"Dug up a skeleton once. Still had its mail on. Blades just skate off that stuff. Bring a hammer, or a mace.\"" },
+        { "id": "hilde_10", "level": 10, "enemy": "troll", "title": "Troll skin",
+          "text": "\"Trolls are all hide and no iron. A good edge opens them up like a sack of grain.\"" },
+        { "id": "hilde_20", "level": 20, "enemy": "stone_golem", "title": "Living rock",
+          "text": "\"A golem is just a vein that walks. You don't cut rock, and you don't poke it. You break it.\"" }
+        ]
       }
     },
     {
@@ -13,7 +21,15 @@
       "tiers": [{ "level": 1, "name": "Oak" }, { "level": 10, "name": "Ash" }, { "level": 20, "name": "Pine" }],
       "teacher": {
         "name": "Bram", "title": "the woodcutter", "location": "camp", "starterTool": "old_hatchet",
-        "learnLine": "Here, my old hatchet. Mind the goblins when you're in the oaks."
+        "learnLine": "Here, my old hatchet. Mind the goblins when you're in the oaks.",
+        "tips": [
+        { "id": "bram_1", "level": 1, "enemy": "old_bear", "title": "The old one",
+          "text": "\"That bear's coat turns an axe like oak bark. A spear finds the gap between the ribs.\"" },
+        { "id": "bram_10", "level": 10, "enemy": "giant_spider", "title": "Webs in the arches",
+          "text": "\"Spiders wear their bones outside, hard as boiled leather. Point first, lad. Never the edge.\"" },
+        { "id": "bram_20", "level": 20, "enemy": "harpy", "title": "Feathers on the pass",
+          "text": "\"Harpies are feathers and spite, nothing to stop a blade. Swing wide and they come apart.\"" }
+        ]
       }
     },
     {
@@ -21,7 +37,15 @@
       "tiers": [{ "level": 1, "name": "Copper" }, { "level": 10, "name": "Iron" }, { "level": 20, "name": "Mithril" }],
       "teacher": {
         "name": "Garrow", "title": "the smith", "location": "camp", "starterTool": "old_hammer",
-        "learnLine": "My old hammer still rings true. Any forge will do: strike while it's hot."
+        "learnLine": "My old hammer still rings true. Any forge will do: strike while it's hot.",
+        "tips": [
+        { "id": "garrow_1", "level": 1, "enemy": "zombie", "title": "Soft as wet clay",
+          "text": "\"Zombies wear nothing but rot. Any blade I make you will go clean through.\"" },
+        { "id": "garrow_10", "level": 10, "enemy": "bandit", "title": "Stolen leather",
+          "text": "\"Bandits wear studded leather they didn't pay for. The rivets stop a blade; a spear point slips past them.\"" },
+        { "id": "garrow_20", "level": 20, "enemy": "wraith", "title": "Cold mail",
+          "text": "\"The wraiths still wear the mail they died in. Blades skid off the rings; a spear point goes between them.\"" }
+        ]
       }
     }
   ]

@@ -1,4 +1,5 @@
-enum ActivityKind { travel, fight, gather, craft }
+/// [reroll] is a forge action on one item (spec 0010 §7.2-7.3).
+enum ActivityKind { travel, fight, gather, craft, reroll }
 
 /// What the player asked the character to do. Every activity costs steps.
 class Activity {
@@ -6,6 +7,14 @@ class Activity {
   const Activity.fight(String enemy) : this._(ActivityKind.fight, enemy);
   const Activity.gather(String node) : this._(ActivityKind.gather, node);
   const Activity.craft(String recipe) : this._(ActivityKind.craft, recipe);
+
+  /// Rerolls the quality of the item with [key] (spec 0010 §7.2).
+  const Activity.reroll(String key) : this._(ActivityKind.reroll, key);
+
+  /// Rerolls bonus stat [index] (in key order) of the Legendary with [key]
+  /// (spec 0010 §7.3).
+  Activity.rerollStat(String key, int index)
+    : this._(ActivityKind.reroll, '$key$statMark$index');
   const Activity._(this.kind, this.target);
 
   factory Activity.fromJson(Map<String, Object?> json) => Activity._(
@@ -15,8 +24,21 @@ class Activity {
 
   final ActivityKind kind;
 
-  /// Destination, enemy, node or recipe id, depending on [kind].
+  /// Destination, enemy, node or recipe id, or a reroll's item key (with
+  /// [statMark] and an index for a stat reroll), depending on [kind].
   final String target;
+
+  /// Separates a stat reroll's item key from the stat's index.
+  static const statMark = '#';
+
+  /// A reroll's item key.
+  String get rerollKey => target.split(statMark).first;
+
+  /// A stat reroll's index, or null for a quality reroll.
+  int? get rerollStatIndex => switch (target.split(statMark)) {
+    [_, final i] => int.tryParse(i),
+    _ => null,
+  };
 
   Map<String, Object?> toJson() => {'kind': kind.name, 'target': target};
 
@@ -63,9 +85,12 @@ class StopCondition {
   );
 
   /// The default for [a] (spec 0003 decision 4).
-  factory StopCondition.defaultFor(Activity a) => a.kind == ActivityKind.fight
-      ? const StopCondition.untilGrey()
-      : const StopCondition.never();
+  factory StopCondition.defaultFor(Activity a) => switch (a.kind) {
+    ActivityKind.fight => const StopCondition.untilGrey(),
+    // A reroll is one roll (spec 0010 §7.2).
+    ActivityKind.reroll => const StopCondition.untilCrafted(1),
+    _ => const StopCondition.never(),
+  };
 
   final StopKind kind;
   final String? item;

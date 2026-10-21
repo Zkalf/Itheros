@@ -822,11 +822,13 @@ void main() {
           ..xp = game.data.xpForLevel(30)
           ..inventory[key] = 1;
         s = game.equip(s, key);
-        expect(s.equipment[item.slot], key);
+        // Rings and trinkets fill their first slot (ring1, trinket1).
+        final slot = game.slotsFor(key).first;
+        expect(s.equipment[slot], key);
         expect(game.owned(s, item.id), 1);
         expect(game.stats(s).hp, greaterThan(0));
         final back = GameState.fromJson(s.toJson());
-        expect(back.equipment[item.slot], key);
+        expect(back.equipment[slot], key);
         expect(labels.item(key), startsWith(item.name));
         expect(labels.item(key), isNot(contains('@')));
       }

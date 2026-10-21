@@ -223,6 +223,7 @@ class NodeDef {
       steps = _int(j, 'steps'),
       item = _str(j, 'item'),
       profession = _str(j, 'profession'),
+      rareFind = j['rareFind'] as String?,
       xp = _int(j, 'xp');
 
   final String id;
@@ -230,6 +231,9 @@ class NodeDef {
 
   /// The profession that works it (spec 0010 §2.1).
   final String profession;
+
+  /// The rare item each action may find (spec 0010 §5.1).
+  final String? rareFind;
 
   /// The profession level it can be worked from, also its level for the
   /// profession fade (spec 0010 §2.2).
@@ -398,6 +402,7 @@ class ItemDef {
       twoHanded = j['twoHanded'] as bool? ?? false,
       damageType = j['damageType'] as String?,
       armourType = j['armourType'] as String?,
+      rare = j['rare'] as bool? ?? false,
       tool = switch (j['tool']) {
         final Map<String, Object?> t => ToolDef._(t),
         _ => null,
@@ -422,6 +427,10 @@ class ItemDef {
 
   /// Set for a profession's tool (spec 0010 §3).
   final ToolDef? tool;
+
+  /// A rare find or a boss shard (spec 0010 §5, §7.1): recipes using one
+  /// roll on the profession stream and aren't the reference player's gear.
+  final bool rare;
   final Stats bonus;
 
   /// How it ranks against other gear for the same slot.
@@ -451,13 +460,34 @@ class TeacherDef {
       title = _str(j, 'title'),
       location = _str(j, 'location'),
       starterTool = _str(j, 'starterTool'),
-      learnLine = _str(j, 'learnLine');
+      learnLine = _str(j, 'learnLine'),
+      tips = List.unmodifiable(_maps(j, 'tips').map(TipDef._));
 
   final String name;
   final String title;
   final String location;
   final String starterTool;
   final String learnLine;
+
+  /// Lowest level first (spec 0010 §6.2).
+  final List<TipDef> tips;
+}
+
+/// A teacher's tip about [enemy], told from profession [level]: it reveals
+/// the monster's armour and weakness (spec 0010 §6.2).
+class TipDef {
+  TipDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      level = _int(j, 'level'),
+      enemy = _str(j, 'enemy'),
+      title = _str(j, 'title'),
+      text = _str(j, 'text');
+
+  final String id;
+  final int level;
+  final String enemy;
+  final String title;
+  final String text;
 }
 
 /// A material tier of a profession, open from [level] (spec 0010 §2.1).
@@ -489,6 +519,8 @@ class ProfessionDef {
   /// Lowest first.
   final List<TierDef> tiers;
   final TeacherDef teacher;
+
+  List<TipDef> get tips => teacher.tips;
 
   /// The tier held at profession [level].
   TierDef tierAt(int level) => tiers.lastWhere((t) => t.level <= level);
@@ -585,6 +617,22 @@ class GameData {
          _maps(economy, 'professionBands').map(LevelBand._),
        ),
        professionShare = (economy['professionShare'] as num).toDouble(),
+       toolQualityStep = (economy['toolQualityStep'] as num).toDouble(),
+       rareBase = _num(_map(economy, 'rareFind'), 'base'),
+       rarePerToolQualityStep = _num(
+         _map(economy, 'rareFind'),
+         'perToolQualityStep',
+       ),
+       rarePerLevelAbove = _num(_map(economy, 'rareFind'), 'perLevelAbove'),
+       rareMaxLevelBonus = _num(_map(economy, 'rareFind'), 'maxLevelBonus'),
+       shardBase = _num(_map(economy, 'salvage'), 'shardBase'),
+       shardPerQualityStep = _num(
+         _map(economy, 'salvage'),
+         'shardPerQualityStep',
+       ),
+       shards = _strList(_map(economy, 'salvage'), 'shards'),
+       rerollSteps = _int(_map(economy, 'reroll'), 'steps'),
+       rerollDust = _int(_map(economy, 'reroll'), 'dust'),
        fightXpPerStepList = List.unmodifiable([
          for (final v in economy['fightXpPerStep'] as List<Object?>)
            (v! as num).toDouble(),
@@ -694,6 +742,61 @@ class GameData {
   /// A profession step's share of a fight step's character XP (spec 0010
   /// §2.4).
   final double professionShare;
+
+  /// The share of an action's steps each tool quality step takes off
+  /// (spec 0010 §3.2).
+  final double toolQualityStep;
+
+  /// The rare-find chance per gathering action and its nudges: per tool
+  /// quality step, per profession level above the spot, and the cap of the
+  /// level nudge (spec 0010 §5.1).
+  final double rareBase;
+  final double rarePerToolQualityStep;
+  final double rarePerLevelAbove;
+  final double rareMaxLevelBonus;
+
+  /// Salvage's boss shard chance and its rise per quality step; [shards]
+  /// holds the shard of each bonus stat tier's boss (spec 0010 §7.1).
+  final double shardBase;
+  final double shardPerQualityStep;
+  final List<String> shards;
+
+  /// A reroll's forge steps and the dust it takes (spec 0010 §7.2).
+  final int rerollSteps;
+  final int rerollDust;
+
+  /// The profession the tool with [key] serves, or null for anything else.
+  String? toolProfession(String key) => itemOf(key)?.tool?.profession;
+
+  /// The dust salvage gives for [quality] (an id): `rare_dust`.
+  static String dustOf(String quality) => '${quality}_dust';
+
+  /// Comes before a Legendary's waiting stat roll in its key:
+  /// `+~1.hit4` replaces roll 1 with Hit 4 once kept (spec 0010 §7.3).
+  static const pendingMark = '~';
+
+  static final _pending = RegExp(r'^~(\d+)\.([a-z]+)(\d+)$');
+
+  /// A key's waiting stat roll, or null.
+  ({int index, BonusRoll roll})? pendingRoll(String key) {
+    for (final part in key.split(bonusMark).skip(1)) {
+      if (_pending.firstMatch(part) case final m?) {
+        return (
+          index: int.parse(m[1]!),
+          roll: (stat: m[2]!, value: int.parse(m[3]!)),
+        );
+      }
+    }
+    return null;
+  }
+
+  /// [key] with the waiting [roll] for stat [index].
+  String withPending(String key, int index, BonusRoll roll) =>
+      '$key$bonusMark$pendingMark$index.${roll.stat}${roll.value}';
+
+  /// The bonus stat tier of [itemLevel], 0 first.
+  int bonusTierIndex(int itemLevel) =>
+      bonusTiers.indexOf(bonusTierFor(itemLevel));
 
   /// Character XP per step against even-level monsters, by character
   /// level from 1 (spec 0010 §2.4); see [fightXpPerStep].
@@ -1157,6 +1260,25 @@ class GameData {
       fightXpPerStepList.isNotEmpty && fightXpPerStepList.every((v) => v > 0),
       'fightXpPerStep must list positive numbers',
     );
+    for (final n in nodes.values) {
+      check(
+        n.rareFind == null || items.containsKey(n.rareFind),
+        'node ${n.id}: unknown rare find',
+      );
+    }
+    check(
+      shards.length == bonusTiers.length && shards.every(items.containsKey),
+      'salvage: one known shard per bonus stat tier',
+    );
+    for (final q in qualities) {
+      check(items.containsKey(dustOf(q.id)), 'no dust item for ${q.id}');
+    }
+    for (final p in professions.values) {
+      for (final t in p.tips) {
+        check(enemies.containsKey(t.enemy), 'tip ${t.id}: unknown monster');
+      }
+    }
+    check(rerollSteps > 0 && rerollDust > 0, 'reroll: steps and dust > 0');
     for (final row in combat.typeFactors.values) {
       check(
         row.keys.toSet().containsAll(combat.damageTypes),
@@ -1207,6 +1329,8 @@ List<String> _strList(Map<String, Object?> j, String key) =>
 String _str(Map<String, Object?> j, String key) => j[key] as String;
 
 int _int(Map<String, Object?> j, String key) => j[key] as int;
+
+double _num(Map<String, Object?> j, String key) => (j[key] as num).toDouble();
 
 int _intOr(Map<String, Object?> j, String key, [int fallback = 0]) =>
     j[key] as int? ?? fallback;
