@@ -1,6 +1,9 @@
 // Monster twists and boss first-kill drops: spec 0002 §5, acceptance
-// criteria 5 and 7. Arena fights have no damage variance. A level 1 player
-// has 30 HP, 5 Attack and 2 Defense.
+// criteria 5 and 7. Arena fights have no damage variance, and every swing
+// lands without crits (spec 0009 §2.1 overrides spec 0001 §4: see
+// support.dart's sureHits). A level 1 player has 30 HP, 5 Attack and 2
+// Defense. Arena monsters wear light armour; bare hands are neutral (spec
+// 0009 decision 8).
 import 'package:game_core/game_core.dart';
 import 'package:test/test.dart';
 

@@ -553,7 +553,9 @@ void main() {
       final (c, source) = await pumpGame(t, level: 5, location: 'goblin_woods');
       await c.addAction(
         const Activity.fight('goblin'),
-        stop: StopCondition.untilHave('goblin_hide', 2),
+        // One hide: with misses (spec 0009 §2.1) this seed's 400 steps
+        // bring only one.
+        stop: StopCondition.untilHave('goblin_hide', 1),
       );
       await c.addAction(const Activity.gather('copper_vein'));
       // Enough for the hides, not enough to reach Copper Hills and mine.
@@ -1023,9 +1025,10 @@ void moreScreens() {
       );
       await openTab(t, 'professions');
       expect(find.text('Nearest forge: Camp · 200 steps away'), findsOneWidget);
+      // The copper sword, spear and mace (spec 0009 §4.1).
       expect(
         find.textContaining('Copper ore 2/5', findRichText: true),
-        findsOneWidget,
+        findsNWidgets(3),
       );
     });
   });
@@ -1223,9 +1226,10 @@ void playtest2() {
       );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
       expect(find.textContaining('Old Graveyard is your level'), findsNothing);
+      // Skeletons, not the King: monsters got new HP (spec 0009 §9.3).
       expect(
         find.text(
-          'The Graveyard King in Old Graveyard gives the most XP for your steps.',
+          'The Skeleton in Old Graveyard gives the most XP for your steps.',
         ),
         findsOneWidget,
       );
@@ -1552,6 +1556,8 @@ void characterScreen() {
             'id': 'big_axe',
             'name': 'Big axe',
             'slot': 'mainHand',
+            // Every weapon has a damage type (spec 0009 §4.1).
+            'damageType': 'slash',
             'twoHanded': true,
             'attack': 10,
           },

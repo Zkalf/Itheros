@@ -1,4 +1,5 @@
-// Auto-resolved combat: spec 0001 §4 and acceptance criterion 2.
+// Auto-resolved combat: spec 0001 §4 and acceptance criterion 2. Spec 0009
+// §2.1 adds misses, dodges, crits and blocks (fights_test.dart).
 import 'package:game_core/game_core.dart';
 import 'package:test/test.dart';
 
@@ -44,14 +45,18 @@ void main() {
   });
 
   test('3 defeats end the activity and later steps go to the bank', () {
+    // Spec 0009 §2.1: swings can miss, so the champion's are made sure (one
+    // round per loss), and it wears armour (§3).
     final g = newTestGame(
       overrides: {
+        'economy': {...dataJson('economy'), 'combat': sureHits},
         'enemies': {
           'enemies': [
             {
               'id': 'goblin',
               'name': 'Goblin champion',
               'level': 1,
+              'armour': 'medium',
               'hp': 500,
               'attack': 100,
               'defense': 50,

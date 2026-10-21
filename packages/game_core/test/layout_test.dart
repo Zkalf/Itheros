@@ -247,8 +247,11 @@ void main() {
       'id': 'big_axe',
       'name': 'Big axe',
       'slot': 'mainHand',
+      // Every weapon has a damage type (spec 0009 §4.1).
+      'damageType': 'slash',
       'twoHanded': true,
-      'attack': 10,
+      // Above the bone shield's score, which counts its Block (spec 0009 §4.2).
+      'attack': 20,
     });
     final g = newTestGame(overrides: {'items': items});
 
@@ -298,7 +301,7 @@ void main() {
       s = g.equip(s, 'copper_sword');
       s = g.equip(s, 'bone_shield');
       final d = g.compare(s, 'big_axe', 'mainHand');
-      expect(d.attack, 10 - 3);
+      expect(d.attack, 20 - 3);
       expect(d.defense, -3);
     });
 
