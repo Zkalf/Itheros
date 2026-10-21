@@ -3,7 +3,6 @@ import 'package:game_core/game_core.dart';
 
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
-import '../version.dart';
 import 'labels.dart';
 
 /// Stats, equipped gear and inventory. Equipping costs no steps.
@@ -137,19 +136,6 @@ class CharacterTab extends StatelessWidget {
                 ),
               ),
         ],
-        const SizedBox(height: 16),
-        Text('Settings', style: text.titleMedium),
-        SwitchListTile(
-          key: const ValueKey('show-next-goal'),
-          title: const Text('Show "Next goal"'),
-          value: !c.nextGoalHidden,
-          onChanged: (show) => c.setNextGoalHidden(!show),
-        ),
-        // Friends quote it when they report something (spec 0007 §7).
-        ListTile(
-          key: const ValueKey('version'),
-          title: Text('Version $appVersion', style: text.bodySmall),
-        ),
       ],
     );
   }

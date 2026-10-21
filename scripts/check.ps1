@@ -29,6 +29,9 @@ function Step([string]$name, [string]$dir, [scriptblock]$block) {
   Write-Host "==> $name" -ForegroundColor Cyan
   Push-Location $dir
   try {
+    # A tool's exit code decides, not its warnings: PowerShell 5.1 turns any stderr line of a native command into
+    # an error (flutter build prints a Kotlin plugin warning there).
+    $ErrorActionPreference = 'Continue'
     & $block
     if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
   } catch {

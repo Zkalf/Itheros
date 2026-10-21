@@ -6,10 +6,11 @@ import 'actions.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 
-/// Every unlocked recipe with what it gives and needs, and where the forge
-/// is (spec 0006 §2.3).
-class CraftTab extends StatelessWidget {
-  const CraftTab({super.key});
+/// Professions (spec 0008 §3.4): for now crafting, every recipe with what it
+/// gives and needs and the level it needs, and where the forge is (spec 0006
+/// §2.3). Profession levels and tools come with spec 0010.
+class ProfessionsTab extends StatelessWidget {
+  const ProfessionsTab({super.key});
 
   @override
   Widget build(BuildContext context) {

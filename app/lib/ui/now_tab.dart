@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'actions.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 
-/// What the character is doing right now, the queue and the step bank
-/// (spec 0006 §2.1).
+/// What am I doing, and what can I do here (spec 0008 §3.2): the running
+/// action, the queue, the step bank, then what the player's place offers.
 class NowTab extends StatelessWidget {
-  const NowTab({super.key, this.onOpenMap, this.onOpenCraft});
+  const NowTab({super.key, this.onOpenWorld, this.onOpenProfessions});
 
-  /// Shows the Map, from the resting card.
-  final VoidCallback? onOpenMap;
+  /// Shows the World map, from the resting card.
+  final VoidCallback? onOpenWorld;
 
-  /// Shows Craft, from the resting card; null while it is hidden (spec 0006
-  /// amendment 3).
-  final VoidCallback? onOpenCraft;
+  /// Shows Professions, from the Forge row.
+  final VoidCallback? onOpenProfessions;
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +39,11 @@ class NowTab extends StatelessWidget {
           if (c.testWalkOn) _TestWalkCard(controller: c),
           _NextGoal(controller: c, labels: labels),
           _Discoveries(controller: c, labels: labels),
-          _QueueCard(
+          _QueueCard(controller: c, labels: labels, onOpenWorld: onOpenWorld),
+          _Here(
             controller: c,
             labels: labels,
-            onOpenMap: onOpenMap,
-            onOpenCraft: onOpenCraft,
+            onOpenProfessions: onOpenProfessions,
           ),
           const SizedBox(height: 16),
           Text(
@@ -58,8 +58,8 @@ class NowTab extends StatelessWidget {
   }
 }
 
-/// "Next goal" (spec 0002 §9.3). Always shown before level 10; from then
-/// on it can be hidden, and turned back on in the Character tab.
+/// "Next goal" (spec 0002 §9.3). It can be hidden from level 1 (spec 0008
+/// decision 9), and turned back on in Settings.
 class _NextGoal extends StatelessWidget {
   const _NextGoal({required this.controller, required this.labels});
 
@@ -252,14 +252,12 @@ class _QueueCard extends StatelessWidget {
   const _QueueCard({
     required this.controller,
     required this.labels,
-    this.onOpenMap,
-    this.onOpenCraft,
+    this.onOpenWorld,
   });
 
   final GameController controller;
   final Labels labels;
-  final VoidCallback? onOpenMap;
-  final VoidCallback? onOpenCraft;
+  final VoidCallback? onOpenWorld;
 
   @override
   Widget build(BuildContext context) {
@@ -271,38 +269,23 @@ class _QueueCard extends StatelessWidget {
 
     final List<Widget> body;
     if (run == null) {
-      final where = onOpenCraft != null ? 'the Map or Craft screen' : 'the Map';
+      // Spec 0008 §3.2 (replaces spec 0006 amendment 3).
       body = [
         Text('Resting', style: text.titleMedium),
         const SizedBox(height: 4),
         Text(
-          slots == 1
-              ? 'Your steps go to the step bank. Pick something to do on '
-                    '$where.'
-              : 'Your steps go to the step bank. Plan up to $slots actions '
-                    'on $where; each starts when the one before it stops.',
+          'Your steps go to the step bank. Pick something to do below, or on '
+          'the World map. Plan up to $slots actions; each starts when the one '
+          'before it stops.',
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (onOpenMap != null)
-              FilledButton.tonalIcon(
-                key: const ValueKey('open-map'),
-                onPressed: onOpenMap,
-                icon: const Icon(Icons.map),
-                label: const Text('Open Map'),
-              ),
-            if (onOpenCraft != null)
-              FilledButton.tonalIcon(
-                key: const ValueKey('open-craft'),
-                onPressed: onOpenCraft,
-                icon: const Icon(Icons.handyman),
-                label: const Text('Open Craft'),
-              ),
-          ],
-        ),
+        if (onOpenWorld != null)
+          FilledButton.tonalIcon(
+            key: const ValueKey('open-world'),
+            onPressed: onOpenWorld,
+            icon: const Icon(Icons.map),
+            label: const Text('Open the World map'),
+          ),
       ];
     } else {
       final cost = game.unitCost(s)!;
@@ -470,6 +453,50 @@ class _QueueCard extends StatelessWidget {
               .join('\n'),
         ),
       ),
+    );
+  }
+}
+
+/// Everything the player's place offers (spec 0008 §3.2): its monsters and
+/// gathering spots, and a Forge row where there is one. No Camp screen.
+class _Here extends StatelessWidget {
+  const _Here({
+    required this.controller,
+    required this.labels,
+    this.onOpenProfessions,
+  });
+
+  final GameController controller;
+  final Labels labels;
+  final VoidCallback? onOpenProfessions;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller;
+    final game = c.game;
+    final s = c.state;
+    final place = game.data.locations[s.location]!;
+    final enemies = game.availableEnemies(s);
+    final nodes = game.availableNodes(s);
+    return Column(
+      key: const ValueKey('here'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Heading('Here: ${labels.location(s.location)}'),
+        for (final id in enemies)
+          enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
+        for (final id in nodes) nodeTile(c, id),
+        if (place.crafting)
+          ListTile(
+            key: const ValueKey('here-forge'),
+            leading: const Icon(Icons.local_fire_department),
+            title: const Text('Forge'),
+            subtitle: const Text('Craft gear in Professions'),
+            onTap: onOpenProfessions,
+          ),
+        if (enemies.isEmpty && nodes.isEmpty && !place.crafting)
+          const ListTile(title: Text('Nothing to do here. Try the World map.')),
+      ],
     );
   }
 }

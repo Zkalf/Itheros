@@ -4,11 +4,12 @@ import 'achievements_screen.dart';
 import 'away_summary_card.dart';
 import 'character_tab.dart';
 import 'controller_scope.dart';
-import 'craft_tab.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
-import 'map_tab.dart';
 import 'now_tab.dart';
+import 'professions_tab.dart';
+import 'settings_screen.dart';
+import 'world_tab.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -17,12 +18,12 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-/// The bottom bar's screens (spec 0006 decision 1; achievements moved to
-/// the top bar by amendment 2).
+/// The bottom bar: four screens, each answering one question (spec 0008
+/// §3.1).
 enum _Screen {
   now('Now', Icons.directions_walk),
-  map('Map', Icons.map),
-  craft('Craft', Icons.handyman),
+  world('World', Icons.map),
+  professions('Professions', Icons.handyman),
   character('Character', Icons.person);
 
   const _Screen(this.title, this.icon);
@@ -38,7 +39,6 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
-    // Every recipe shows from level 1 (spec 0008 decision 1).
     const screens = _Screen.values;
     // Nothing happened but steps: a short note, not the screen (spec 0004
     // amendment 2).
@@ -83,15 +83,24 @@ class _HomeShellState extends State<HomeShell> {
               MaterialPageRoute<void>(builder: (_) => const JournalScreen()),
             ),
           ),
+          IconButton(
+            key: const ValueKey('settings-button'),
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            ),
+          ),
         ],
       ),
       body: switch (_screen) {
         _Screen.now => NowTab(
-          onOpenMap: () => setState(() => _screen = _Screen.map),
-          onOpenCraft: () => setState(() => _screen = _Screen.craft),
+          onOpenWorld: () => setState(() => _screen = _Screen.world),
+          onOpenProfessions: () =>
+              setState(() => _screen = _Screen.professions),
         ),
-        _Screen.map => const MapTab(),
-        _Screen.craft => const CraftTab(),
+        _Screen.world => const WorldTab(),
+        _Screen.professions => const ProfessionsTab(),
         _Screen.character => const CharacterTab(),
       },
       bottomNavigationBar: NavigationBar(

@@ -9,9 +9,9 @@ import 'controller_scope.dart';
 import 'labels.dart';
 
 /// The world drawn as places joined by paths; tap a place to act there
-/// (spec 0006 §2.2). Areas above the player's level are fog.
-class MapTab extends StatelessWidget {
-  const MapTab({super.key});
+/// (spec 0006 §2.2, spec 0008 §3.3). Areas away from explored ones are fog.
+class WorldTab extends StatelessWidget {
+  const WorldTab({super.key});
 
   /// Room around each place for its marker and name.
   static const _label = 104.0;
@@ -151,7 +151,7 @@ class _Place extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           CircleAvatar(
-            radius: MapTab._marker,
+            radius: WorldTab._marker,
             backgroundColor: here
                 ? scheme.primary
                 : fogged
@@ -342,7 +342,7 @@ class _AreaSheet extends StatelessWidget {
               enemyTile(
                 c,
                 id,
-                drops: _drops(game, s, labels, id),
+                drops: dropsLine(game, s, labels, id),
                 startFrom: host,
               ),
             for (final id in nodes) nodeTile(c, id, startFrom: host),
@@ -364,16 +364,5 @@ class _AreaSheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// "Drops: Goblin hide, ??? · 1 of 2 found": only what the player has
-  /// found, no chances (spec 0006 §2.2).
-  static String _drops(Game game, GameState s, Labels labels, String enemy) {
-    final all = game.dropItems(enemy);
-    final found = game.foundDrops(s, enemy);
-    final names = [
-      for (final item in all) found.contains(item) ? labels.item(item) : '???',
-    ];
-    return 'Drops: ${names.join(', ')} · ${found.length} of ${all.length} found';
   }
 }
