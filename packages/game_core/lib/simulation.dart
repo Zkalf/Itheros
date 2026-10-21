@@ -675,7 +675,7 @@ class SensiblePlayer {
     final worn = s.equipment.values.toList()
       ..sort((a, b) => data.scoreOf(b).compareTo(data.scoreOf(a)));
     for (final key in worn) {
-      // Common gear is soon replaced: its dust isn't worth the steps.
+      // Common gear is soon replaced (spec 0010 amendment 2).
       if (data.qualityOf(key) == data.qualities.first) continue;
       final Activity a;
       if (data.qualityOf(key) == data.qualities.last) {
@@ -713,7 +713,7 @@ class SensiblePlayer {
             for (final r in data.recipes.values)
               if (data.items[r.output]!.tool?.profession == p &&
                   game.recipeLevelMet(s, r.id) &&
-                  // Earlier, a tool costs more steps than it saves.
+                  // Earlier, it costs more steps than it saves (amendment 2).
                   r.level + 2 <= game.level(s) &&
                   _have(s, r.output) == 0 &&
                   data.items[r.output]!.tool!.stepFactor < worn)
