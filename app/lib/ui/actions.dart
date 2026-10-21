@@ -8,10 +8,6 @@ import 'action_sheet.dart';
 import 'level_badge.dart';
 import 'labels.dart';
 
-/// [xp] for something at [level], as the player would get it now.
-int fadedXp(int xp, int level, Game game, GameState s) =>
-    math.max(1, xp * game.data.bandFor(level, game.level(s)).xpPercent ~/ 100);
-
 /// "Drops: Goblin hide, ??? · 1 of 2 found": only what the player has found,
 /// no chances (spec 0006 §2.2).
 String dropsLine(Game game, GameState s, Labels labels, String enemy) {
