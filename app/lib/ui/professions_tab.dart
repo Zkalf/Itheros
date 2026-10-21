@@ -92,8 +92,9 @@ class _RecipeTile extends StatelessWidget {
             TextSpan(
               text: levelMet
                   ? ' · ${r.steps} steps · '
-                        '${fadedXp(r.xp, r.level, game, s)} XP'
-                  : ' · Needs level ${r.level}',
+                        '${game.professionXpFor(s, r.profession, r.level, r.xp)} '
+                        'Crafting XP'
+                  : ' · ${game.lockedReason(s, Activity.craft(recipe))}',
             ),
           ],
         ),

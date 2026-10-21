@@ -92,23 +92,8 @@ void main() {
       expect(won.xp, 15);
     });
 
-    test('gathering fades by the spot level', () {
-      // Copper vein is level 2: full at level 4, grey at level 9.
-      for (final (level, xp) in [(4, 20), (9, 1)]) {
-        var s = stateAt(game, level: level, location: 'copper_hills');
-        s = game.startActivity(s, const Activity.gather('copper_vein'));
-        final r = game.applySteps(s, 100);
-        expect(r.events.whereType<Gathered>().single.xp, xp, reason: '$level');
-      }
-    });
-
-    test('crafting fades by the recipe level', () {
-      // Hide vest is level 3; at level 9 it is 6 below: 20% of 30.
-      var s = stateAt(game, level: 9, inventory: {'goblin_hide': 4});
-      s = game.startActivity(s, const Activity.craft('hide_vest'));
-      final r = game.applySteps(s, 150);
-      expect(r.events.whereType<Crafted>().single.xp, 6);
-    });
+    // Gathering and crafting fade by the profession level now (spec 0010
+    // §2.3): professions_test.dart, criteria 2 and 3.
 
     test('enemyBand compares the monster with the player', () {
       final s = stateAt(game, level: 9, location: 'goblin_woods');

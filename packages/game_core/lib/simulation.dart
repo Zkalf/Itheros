@@ -8,13 +8,23 @@ import 'dart:math' as math;
 import 'game_core.dart';
 
 class DayResult {
-  DayResult(this.day, this.level, this.xp, this.bank, this.equipment);
+  DayResult(
+    this.day,
+    this.level,
+    this.xp,
+    this.bank,
+    this.equipment, [
+    this.professions = const {},
+  ]);
 
   final int day;
   final int level;
   final int xp;
   final int bank;
   final Map<String, String> equipment;
+
+  /// Profession levels at the end of the day (spec 0010 §9.3).
+  final Map<String, int> professions;
 }
 
 class SimulationResult {
@@ -29,6 +39,12 @@ class SimulationResult {
   /// First day that ended at [level] or higher, or null.
   int? dayReached(int level) =>
       days.where((d) => d.level >= level).map((d) => d.day).firstOrNull;
+
+  /// First day that ended with [profession] at [level] or higher, or null.
+  int? professionDay(String profession, int level) => days
+      .where((d) => (d.professions[profession] ?? 1) >= level)
+      .map((d) => d.day)
+      .firstOrNull;
 }
 
 /// The expected outcome of one fight, with every swing at its average.
@@ -438,10 +454,23 @@ List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
 /// crafts each upgrade it can (farming its materials, even from grey
 /// monsters), otherwise fights the monster with the most XP per step that it
 /// safely beats. Travels leg by leg along the shortest route.
+/// How a simulated walker spends its steps (spec 0010 §9.2).
+enum Walker {
+  /// Fights, and gathers and crafts its own gear: the pacing walker.
+  mixed,
+
+  /// Never learns a profession; wears only drops.
+  fighter,
+
+  /// Never fights; gathers and crafts.
+  gatherer,
+}
+
 class SensiblePlayer {
-  SensiblePlayer(this.game);
+  SensiblePlayer(this.game, {this.walker = Walker.mixed});
 
   final Game game;
+  final Walker walker;
   final _lostAtLevel = <String, int>{};
 
   /// This decision's best arms per monster (see [bestArms]).
@@ -498,30 +527,148 @@ class SensiblePlayer {
     return _score(key) - best;
   }
 
+  /// The best upgrade it can work toward: craft it, gather or fight for a
+  /// missing input, or practise the profession whose level it lacks (as
+  /// Next goal says, spec 0010 §8.4). It aims only at gear up to its own
+  /// character level, "the gear of its stretch".
   Activity _goal(GameState s) {
+    if (walker == Walker.fighter) return _bestFight(s);
     int gain(RecipeDef r) => _gain(s, r.output);
+    final level = game.level(s);
     final upgrades = data.recipes.values.where((r) {
       return data.items[r.output]!.slot != null &&
-          game.recipeLevelMet(s, r.id) &&
+          // The gatherer's character level says little about its crafts,
+          // and it can't get monster drops.
+          (r.level <= level ||
+              (walker == Walker.gatherer &&
+                  r.inputs.keys.every(
+                    (i) =>
+                        data.nodes.values.any((n) => n.item == i) &&
+                            _stepsPer(s, i).isFinite ||
+                        _lockedSpot(s, i) != null,
+                  ))) &&
           _have(s, r.output) == 0 &&
           gain(r) > 0;
     }).toList()..sort((a, b) => gain(b).compareTo(gain(a)));
 
     for (final r in upgrades) {
+      if (!game.recipeLevelMet(s, r.id)) {
+        if (_practise(s, r.profession) case final a?) return a;
+        continue;
+      }
       if (game.hasMaterials(s, r.id)) return Activity.craft(r.id);
       final missing = r.inputs.entries.firstWhere(
         (e) => (s.inventory[e.key] ?? 0) < e.value,
       );
       final source = _sourceOf(s, missing.key);
       if (source != null) return source;
+      if (_lockedSpot(s, missing.key) case final n?) {
+        if (_practise(s, n.profession) case final a?) return a;
+      }
     }
+    if (walker == Walker.gatherer) return _gatherersDay(s);
     return _bestFight(s);
   }
 
+  /// With no upgrade to work toward, the gatherer explores the nearest open
+  /// area it hasn't stood in (the fog hides the higher spots), then
+  /// practises its lowest profession that has something to do.
+  Activity _gatherersDay(GameState s) {
+    final dist = _distances(s);
+    final unexplored = dist.keys.where((l) => !s.explored.contains(l));
+    if (unexplored.isNotEmpty) {
+      return Activity.travel(
+        unexplored.reduce((a, b) => dist[a]! <= dist[b]! ? a : b),
+      );
+    }
+    final byLevel = data.professions.keys.toList()
+      ..sort(
+        (a, b) =>
+            game.professionLevel(s, a).compareTo(game.professionLevel(s, b)),
+      );
+    for (final p in byLevel) {
+      if (_practise(s, p) case final a?) return a;
+    }
+    return Activity.gather(data.nodes.values.first.id);
+  }
+
+  /// A spot giving [item] that is open but above its profession level.
+  NodeDef? _lockedSpot(GameState s, String item) => data.nodes.values
+      .where(
+        (n) =>
+            n.item == item &&
+            !game.nodeFogged(s, n.id) &&
+            !game.nodeLevelMet(s, n.id),
+      )
+      .firstOrNull;
+
+  /// The best action to raise [profession]: its highest spot it can work,
+  /// or for Crafting the recipe with the most Crafting XP per step (getting
+  /// its inputs included), crafted or gathered for. Null if nothing raises
+  /// it.
+  Activity? _practise(GameState s, String profession) {
+    if (profession != 'crafting') {
+      final spots = data.nodes.values.where(
+        (n) =>
+            n.profession == profession &&
+            game.nodeLevelMet(s, n.id) &&
+            !game.nodeFogged(s, n.id),
+      );
+      if (spots.isEmpty) return null;
+      return Activity.gather(
+        spots.reduce((a, b) => b.level > a.level ? b : a).id,
+      );
+    }
+    final grey = data.professionBands.last.xpPercent;
+    RecipeDef? best;
+    var bestRate = 0.0;
+    for (final r in data.recipes.values) {
+      if (!game.recipeLevelMet(s, r.id)) continue;
+      final fade = game.professionFade(s, profession, r.level);
+      if (fade <= grey) continue;
+      var steps = r.steps.toDouble();
+      for (final MapEntry(key: item, value: n) in r.inputs.entries) {
+        steps += n * _stepsPer(s, item);
+      }
+      final rate = r.xp * fade / steps;
+      if (rate > bestRate) (best, bestRate) = (r, rate);
+    }
+    if (best == null) return null;
+    if (game.hasMaterials(s, best.id)) return Activity.craft(best.id);
+    final missing = best.inputs.entries.firstWhere(
+      (e) => (s.inventory[e.key] ?? 0) < e.value,
+    );
+    return _sourceOf(s, missing.key);
+  }
+
   bool _canFight(GameState s, EnemyDef e) =>
+      walker != Walker.gatherer &&
       !game.enemyFogged(s, e.id) &&
       _lostAtLevel[e.id] != game.level(s) &&
       _armed(s, e).$3.safe;
+
+  /// Steps the fastest safe way to get one [item] takes; infinite if none.
+  double _stepsPer(GameState s, String item) {
+    var best = double.infinity;
+    for (final n in data.nodes.values) {
+      if (n.item == item &&
+          game.nodeLevelMet(s, n.id) &&
+          !game.nodeFogged(s, n.id)) {
+        best = math.min(best, n.steps.toDouble());
+      }
+    }
+    for (final e in data.enemies.values) {
+      final per = e.drops
+          .where((d) => d.item == item)
+          .fold(0.0, (sum, d) => sum + d.chance * d.count);
+      if (per == 0 || !_canFight(s, e)) continue;
+      best = math.min(
+        best,
+        _armed(s, e).$3.rounds * data.combatRoundSteps / per,
+      );
+    }
+    return best;
+  }
 
   /// The fastest safe way to get [item], or null.
   Activity? _sourceOf(GameState s, String item) {
@@ -632,9 +779,16 @@ SimulationResult simulate(
   required int days,
   int seed = 1,
   int checkEvery = 100,
+  Walker walker = Walker.mixed,
 }) {
-  final player = SensiblePlayer(game);
+  final player = SensiblePlayer(game, walker: walker);
   var s = game.newGame(seed: seed);
+  // The teachers are in camp, where a new game starts (spec 0010 §9.2).
+  if (walker != Walker.fighter) {
+    for (final p in game.data.professions.keys) {
+      s = game.learn(s, p);
+    }
+  }
   final results = <DayResult>[];
   var walked = 0;
   int? toLevel2;
@@ -654,7 +808,10 @@ SimulationResult simulate(
       left -= n;
     }
     results.add(
-      DayResult(day, game.level(s), s.xp, s.bank, Map.of(s.equipment)),
+      DayResult(day, game.level(s), s.xp, s.bank, Map.of(s.equipment), {
+        for (final p in game.data.professions.keys)
+          p: game.professionLevel(s, p),
+      }),
     );
   }
   return SimulationResult(results, toLevel2, s);

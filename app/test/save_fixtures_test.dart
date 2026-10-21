@@ -86,6 +86,29 @@ void main() {
       };
       expect(s.fought, killed);
     });
+
+    // Spec 0010 criterion 13: Mining and Crafting learned, at the XP the
+    // counters earn; the character's XP kept.
+    test('$name learns Mining and Crafting from its counters', () {
+      final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+      final raw = json['game'] as Map<String, Object?>;
+      final counters = (raw['counters'] as Map).cast<String, int>();
+      final game = loadTestGame();
+      final data = game.data;
+      final s = game.migrate(SaveData.fromJson(json).game);
+      var mining = 0, crafting = 0;
+      for (final n in data.nodes.values) {
+        mining += (counters['gathered.${n.item}'] ?? 0) * n.xp;
+      }
+      for (final r in data.recipes.values) {
+        crafting += (counters['crafted.${r.output}'] ?? 0) * r.xp;
+      }
+      expect(s.learned, {'mining', 'crafting'});
+      expect(s.tools, {'mining': 'old_pick', 'crafting': 'old_hammer'});
+      expect(s.professions['mining'] ?? 0, mining);
+      expect(s.professions['crafting'] ?? 0, crafting);
+      expect(s.xp, raw['xp']);
+    });
   }
 
   test('the version shown in the game matches pubspec.yaml', () {

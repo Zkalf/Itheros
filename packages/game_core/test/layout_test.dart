@@ -94,32 +94,44 @@ void main() {
       expect(s.activity!.activity.target, 'graveyard_king');
     });
 
-    test('a gathering spot needs its level, but shows before it', () {
-      final s = stateAt(game, location: 'copper_hills');
-      expect(game.nodeLevelMet(s, 'copper_vein'), isFalse);
+    // Spec 0010 §2.2: the level is the profession's, not the character's.
+    test('a gathering spot needs its Mining level, but shows before it', () {
+      final s = stateAt(
+        game,
+        level: 30,
+        professionLevel: 9,
+        location: 'iron_ridge',
+      );
+      expect(game.nodeLevelMet(s, 'iron_vein'), isFalse);
       expect(
-        () => game.startActivity(s, const Activity.gather('copper_vein')),
+        () => game.startActivity(s, const Activity.gather('iron_vein')),
         throwsA(isA<ActivityError>()),
       );
       final running = game.startActivity(
-        stateAt(game, location: 'goblin_woods'),
+        stateAt(game, location: 'goblin_woods', professionLevel: 9),
         const Activity.fight('goblin'),
       );
       expect(
         () => game.addAction(
           running,
-          const Activity.gather('copper_vein'),
-          stop: const StopCondition.untilHave('copper_ore', 1),
+          const Activity.gather('iron_vein'),
+          stop: const StopCondition.untilHave('iron_ore', 1),
         ),
         throwsA(isA<ActivityError>()),
       );
-      final l2 = stateAt(game, level: 2, location: 'copper_hills');
-      expect(game.nodeLevelMet(l2, 'copper_vein'), isTrue);
-      game.startActivity(l2, const Activity.gather('copper_vein'));
+      final m10 = stateAt(game, professionLevel: 10, location: 'iron_ridge');
+      expect(game.nodeLevelMet(m10, 'iron_vein'), isTrue);
+      game.startActivity(m10, const Activity.gather('iron_vein'));
     });
 
-    test('a recipe needs its level, but shows before it (amendment 2)', () {
-      final s = stateAt(game, level: 21, inventory: {'mithril_ore': 8});
+    // Spec 0010 §2.2: the level is Crafting's.
+    test('a recipe needs its Crafting level, but shows before it', () {
+      final s = stateAt(
+        game,
+        level: 30,
+        professionLevel: 21,
+        inventory: {'mithril_ore': 8},
+      );
       expect(game.allRecipes(), contains('mithril_sword'));
       expect(game.recipeLevelMet(s, 'mithril_sword'), isFalse);
       expect(
@@ -128,27 +140,26 @@ void main() {
           isA<ActivityError>().having(
             (e) => e.message,
             'message',
-            'Mithril sword needs level 22',
+            'Mithril sword needs Crafting 22',
           ),
         ),
       );
-      final l22 = stateAt(game, level: 22, inventory: {'mithril_ore': 8});
-      game.startActivity(l22, const Activity.craft('mithril_sword'));
+      final c22 = stateAt(
+        game,
+        professionLevel: 22,
+        inventory: {'mithril_ore': 8},
+      );
+      game.startActivity(c22, const Activity.craft('mithril_sword'));
     });
 
-    test('a spot reaching its level is level news; nothing else unlocks', () {
-      expect(
-        game.levelNews(12),
-        contains(const LevelNews(NewsKind.gatheringSpot, 'iron_vein')),
-      );
+    // Spots and recipes are profession news now (spec 0010 §2.2).
+    test('a character level unlocks nothing', () {
       for (var l = 2; l <= 30; l++) {
         expect(
           game.levelNews(l).map((n) => n.kind),
           everyElement(
             isIn([
               NewsKind.rank,
-              NewsKind.gatheringSpot,
-              NewsKind.recipe,
               NewsKind.talentPoint,
               NewsKind.yourLevel,
               NewsKind.turnedGrey,

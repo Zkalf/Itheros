@@ -129,10 +129,13 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     leading: const Icon(Icons.landscape),
     title: labels.node(node),
     enabled: game.nodeLevelMet(c.state, node),
-    subtitle: game.nodeLevelMet(c.state, node)
-        ? '${n.steps} steps per ${labels.item(n.item)} · '
-              '${fadedXp(n.xp, n.level, game, c.state)} XP'
-        : 'Needs level ${n.level}',
+    // Spots pay profession XP (spec 0010 §2.2); M3 adds colours.
+    subtitle:
+        game.lockedReason(c.state, Activity.gather(node)) ??
+        '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
+            '${labels.item(n.item)} · '
+            '${game.professionXpFor(c.state, n.profession, n.level, n.xp)} '
+            '${game.data.professions[n.profession]!.name} XP',
     startFrom: startFrom,
   );
 }

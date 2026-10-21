@@ -1,0 +1,28 @@
+{
+  "professions": [
+    {
+      "id": "mining", "name": "Mining", "icon": "pickaxe", "tool": "Pickaxe",
+      "tiers": [{ "level": 1, "name": "Copper" }, { "level": 10, "name": "Iron" }, { "level": 20, "name": "Mithril" }],
+      "teacher": {
+        "name": "Hilde", "title": "the miner", "location": "camp", "starterTool": "old_pick",
+        "learnLine": "Take my old pick. Bring me copper and we'll talk."
+      }
+    },
+    {
+      "id": "woodcutting", "name": "Woodcutting", "icon": "axe", "tool": "Hatchet",
+      "tiers": [{ "level": 1, "name": "Oak" }, { "level": 10, "name": "Ash" }, { "level": 20, "name": "Pine" }],
+      "teacher": {
+        "name": "Bram", "title": "the woodcutter", "location": "camp", "starterTool": "old_hatchet",
+        "learnLine": "Here, my old hatchet. Mind the goblins when you're in the oaks."
+      }
+    },
+    {
+      "id": "crafting", "name": "Crafting", "icon": "anvil", "tool": "Smith's hammer",
+      "tiers": [{ "level": 1, "name": "Copper" }, { "level": 10, "name": "Iron" }, { "level": 20, "name": "Mithril" }],
+      "teacher": {
+        "name": "Garrow", "title": "the smith", "location": "camp", "starterTool": "old_hammer",
+        "learnLine": "My old hammer still rings true. Any forge will do: strike while it's hot."
+      }
+    }
+  ]
+}

@@ -5,19 +5,19 @@
   "locations": [
     { "id": "camp", "map": { "x": 0.5, "y": 0.92 }, "name": "Camp", "crafting": true, "enemies": [], "nodes": [],
       "flavour": "The Guild camp: a fire, a forge, and a notice board." },
-    { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": [],
+    { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": ["oak_tree"],
       "flavour": "Goblin Woods: small thieves, big brothers, and something that growls in the deep." },
     { "id": "copper_hills", "map": { "x": 0.8, "y": 0.8 }, "name": "Copper Hills", "enemies": [], "nodes": ["copper_vein"],
       "flavour": "Copper Hills: red-brown rock that rings when you hit it." },
     { "id": "old_graveyard", "map": { "x": 0.14, "y": 0.68 }, "name": "Old Graveyard", "enemies": ["skeleton", "zombie", "graveyard_king"], "nodes": [],
       "flavour": "Old Graveyard: the dead here don't rest, and one of them wears a crown." },
-    { "id": "grey_moor", "map": { "x": 0.32, "y": 0.45 }, "name": "Grey Moor", "crafting": true, "enemies": ["wolf", "ghost", "bandit"], "nodes": [],
+    { "id": "grey_moor", "map": { "x": 0.32, "y": 0.45 }, "name": "Grey Moor", "crafting": true, "enemies": ["wolf", "ghost", "bandit"], "nodes": ["ash_tree"],
       "flavour": "Grey Moor: fog, wolves, and something that doesn't leave footprints. The Guild keeps an outpost here." },
     { "id": "iron_ridge", "map": { "x": 0.8, "y": 0.47 }, "name": "Iron Ridge", "enemies": [], "nodes": ["iron_vein"],
       "flavour": "Iron Ridge: dark stone, heavy ore." },
     { "id": "troll_bridge", "map": { "x": 0.22, "y": 0.3 }, "name": "Troll Bridge", "enemies": ["giant_spider", "troll", "ogre_chieftain"], "nodes": [],
       "flavour": "Troll Bridge: webs under the arches and a toll nobody pays twice." },
-    { "id": "mountain_pass", "map": { "x": 0.55, "y": 0.19 }, "name": "Mountain Pass", "crafting": true, "enemies": ["stone_golem", "harpy", "wraith"], "nodes": [],
+    { "id": "mountain_pass", "map": { "x": 0.55, "y": 0.19 }, "name": "Mountain Pass", "crafting": true, "enemies": ["stone_golem", "harpy", "wraith"], "nodes": ["pine_tree"],
       "flavour": "Mountain Pass: thin air, falling stones, and a Guild lodge with a warm forge." },
     { "id": "mithril_deep", "map": { "x": 0.85, "y": 0.27 }, "name": "Mithril Deep", "enemies": [], "nodes": ["mithril_vein"],
       "flavour": "Mithril Deep: silver light in the dark, and a long way down." },
@@ -38,8 +38,11 @@
     { "from": "mountain_pass", "to": "dragons_peak", "steps": 1200 }
   ],
   "nodes": [
-    { "id": "copper_vein", "name": "Copper vein", "level": 2, "steps": 100, "item": "copper_ore", "xp": 20 },
-    { "id": "iron_vein", "name": "Iron vein", "level": 12, "steps": 120, "item": "iron_ore", "xp": 55 },
-    { "id": "mithril_vein", "name": "Mithril vein", "level": 22, "steps": 150, "item": "mithril_ore", "xp": 175 }
+    { "id": "copper_vein", "name": "Copper vein", "profession": "mining", "level": 1, "steps": 100, "item": "copper_ore", "xp": 20 },
+    { "id": "iron_vein", "name": "Iron vein", "profession": "mining", "level": 10, "steps": 120, "item": "iron_ore", "xp": 55 },
+    { "id": "mithril_vein", "name": "Mithril vein", "profession": "mining", "level": 20, "steps": 150, "item": "mithril_ore", "xp": 175 },
+    { "id": "oak_tree", "name": "Oak tree", "profession": "woodcutting", "level": 1, "steps": 100, "item": "oak_log", "xp": 20 },
+    { "id": "ash_tree", "name": "Ash tree", "profession": "woodcutting", "level": 10, "steps": 120, "item": "ash_log", "xp": 55 },
+    { "id": "pine_tree", "name": "Pine tree", "profession": "woodcutting", "level": 20, "steps": 150, "item": "pine_log", "xp": 175 }
   ]
 }

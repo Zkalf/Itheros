@@ -41,6 +41,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
   Map<String, String> equipment = const {},
   bool granted = true,
   bool testWalkAllowed = true,
+  bool learned = true,
+  int? professionLevel,
   Game? withGame,
 }) async {
   final game = withGame ?? _game;
@@ -57,6 +59,18 @@ Future<(GameController, FakeStepSource)> pumpGame(
     ..inventory.addAll(inventory)
     ..counters.addAll(counters)
     ..equipment.addAll(equipment);
+  // Every profession learned at the character's level (spec 0010), unless
+  // the test says otherwise.
+  if (learned) {
+    for (final p in game.data.professions.values) {
+      state
+        ..learned.add(p.id)
+        ..tools[p.id] = p.teacher.starterTool
+        ..professions[p.id] = game.data.professionXpForLevel(
+          professionLevel ?? level,
+        );
+    }
+  }
   final store = MemorySaveStore(
     granted
         ? SaveData(
@@ -154,11 +168,14 @@ void main() {
       expect(find.textContaining('Thick fog'), findsOneWidget);
       await closeSheet(t);
       await openTab(t, 'professions');
+      // Spec 0010: the first recipes need Crafting 1, the rest more.
       final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
-      expect(sword.enabled, isFalse, reason: 'needs level 3');
+      expect(sword.enabled, isTrue);
+      final iron = t.widget<ListTile>(option('craft', 'iron_sword'));
+      expect(iron.enabled, isFalse, reason: 'needs Crafting 14');
       expect(
-        find.textContaining('Needs level 3', findRichText: true),
-        findsWidgets,
+        find.textContaining('Iron sword needs Crafting 14', findRichText: true),
+        findsOneWidget,
       );
     });
 
@@ -170,12 +187,15 @@ void main() {
       expect(find.text('Gather'), findsNothing);
     });
 
-    testWidgets('level 1 at Copper Hills: the vein needs level 2', (t) async {
-      await pumpGame(t, location: 'copper_hills');
+    // Spec 0010 decision 9: a profession is learned from its teacher first.
+    testWidgets('at Copper Hills before learning Mining: whom to learn from', (
+      t,
+    ) async {
+      await pumpGame(t, location: 'copper_hills', learned: false);
       await openArea(t, 'copper_hills');
       final vein = t.widget<ListTile>(option('gather', 'copper_vein'));
       expect(vein.enabled, isFalse);
-      expect(find.text('Needs level 2'), findsOneWidget);
+      expect(find.text('Learn Mining from Hilde in Camp'), findsOneWidget);
     });
 
     testWidgets('level 2 shows Copper Hills and mining there', (t) async {
@@ -343,7 +363,8 @@ void main() {
         find.text('Levels ${levels.first}–${levels[levels.length - 2]}'),
         findsOneWidget,
       );
-      expect(find.text('New recipe: Copper sword'), findsOneWidget);
+      // Recipes are Crafting news now (spec 0010 §2.2).
+      expect(find.text('The Goblin brute is now your level'), findsOneWidget);
 
       await t.tap(find.text('Next'));
       await t.pumpAndSettle();
@@ -409,8 +430,14 @@ void main() {
       expect(c.state.activity!.activity, const Activity.fight('goblin'));
     });
 
+    // With Crafting 1 the copper gear comes first (spec 0010 amendment 1),
+    // so this player wears it already.
     testWidgets('"Next goal" shows at level 1', (t) async {
-      await pumpGame(t, location: 'goblin_woods');
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        equipment: {'mainHand': 'copper_sword', 'chest': 'hide_vest'},
+      );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
       expect(
         find.text('The Goblin in Goblin Woods is your level.'),
@@ -1258,10 +1285,11 @@ void layoutScreens() {
       expect(c.state.activity!.activity, const Activity.fight('goblin'));
     });
 
+    // Spec 0010 §2.2: the Mining level, not the character's.
     testWidgets('a vein here shows the level it needs', (t) async {
-      await pumpGame(t, location: 'copper_hills');
-      expect(here(option('gather', 'copper_vein')), findsOneWidget);
-      expect(here(find.text('Needs level 2')), findsOneWidget);
+      await pumpGame(t, level: 30, professionLevel: 9, location: 'iron_ridge');
+      expect(here(option('gather', 'iron_vein')), findsOneWidget);
+      expect(here(find.text('Iron vein needs Mining 10')), findsOneWidget);
     });
 
     testWidgets('at a forge a Forge row opens Professions', (t) async {

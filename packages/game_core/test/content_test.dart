@@ -46,6 +46,8 @@ void main() {
     final obtainable = {
       for (final n in data.nodes.values) n.item,
       for (final r in data.recipes.values) r.output,
+      // Teachers give the starter tools (spec 0010 §3.1).
+      for (final p in data.professions.values) p.teacher.starterTool,
       for (final e in data.enemies.values) ...[
         for (final d in e.drops) d.item,
         for (final d in e.firstKillDrops) d.item,
@@ -166,6 +168,12 @@ void main() {
       }, weapons);
     });
 
+    // Spec 0010 §4 adds logs to hafts; they are left out here.
+    Map<String, int> noLogs(String recipe) => {
+      for (final MapEntry(:key, :value) in data.recipes[recipe]!.inputs.entries)
+        if (!key.endsWith('_log')) key: value,
+    };
+
     test('the two-handers\' recipes and costs (§4.1)', () {
       const inputs = {
         'bone_greataxe': {'bones': 10, 'copper_ore': 3},
@@ -174,7 +182,7 @@ void main() {
         'drake_fang_halberd': {'drake_fang': 6, 'mithril_ore': 10},
       };
       for (final MapEntry(key: id, value: wanted) in inputs.entries) {
-        expect(data.recipes[id]!.inputs, wanted, reason: id);
+        expect(noLogs(id), wanted, reason: id);
       }
     });
 
@@ -193,7 +201,7 @@ void main() {
             data.items[sword]!.bonus.attack,
             reason: id,
           );
-          expect(data.recipes[id]!.inputs, data.recipes[sword]!.inputs);
+          expect(noLogs(id), data.recipes[sword]!.inputs);
           expect(data.recipes[id]!.steps, data.recipes[sword]!.steps);
         }
       }

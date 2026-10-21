@@ -222,16 +222,22 @@ class NodeDef {
       level = _int(j, 'level'),
       steps = _int(j, 'steps'),
       item = _str(j, 'item'),
+      profession = _str(j, 'profession'),
       xp = _int(j, 'xp');
 
   final String id;
   final String name;
 
-  /// The player level it can be worked from (spec 0008 amendment 1), also
-  /// its level for the XP fade.
+  /// The profession that works it (spec 0010 §2.1).
+  final String profession;
+
+  /// The profession level it can be worked from, also its level for the
+  /// profession fade (spec 0010 §2.2).
   final int level;
   final int steps;
   final String item;
+
+  /// Profession XP per action (spec 0010 §2.2).
   final int xp;
 }
 
@@ -392,6 +398,10 @@ class ItemDef {
       twoHanded = j['twoHanded'] as bool? ?? false,
       damageType = j['damageType'] as String?,
       armourType = j['armourType'] as String?,
+      tool = switch (j['tool']) {
+        final Map<String, Object?> t => ToolDef._(t),
+        _ => null,
+      },
       bonus = Stats.fromJson(j);
 
   final String id;
@@ -409,16 +419,86 @@ class ItemDef {
 
   /// An armour piece's light, medium or heavy (spec 0009 §6).
   final String? armourType;
+
+  /// Set for a profession's tool (spec 0010 §3).
+  final ToolDef? tool;
   final Stats bonus;
 
   /// How it ranks against other gear for the same slot.
   int get score => GameData.scoreStats(bonus);
 }
 
+/// What makes an item a tool (spec 0010 §3).
+class ToolDef {
+  ToolDef._(Map<String, Object?> j)
+    : profession = _str(j, 'profession'),
+      stepFactor = (j['stepFactor'] as num).toDouble(),
+      starter = j['starter'] as bool? ?? false;
+
+  final String profession;
+
+  /// The share of an action's steps it costs at Common quality.
+  final double stepFactor;
+
+  /// A teacher's gift: it can't be salvaged (spec 0010 §3.1).
+  final bool starter;
+}
+
+/// A profession's teacher in camp (spec 0010 §6).
+class TeacherDef {
+  TeacherDef._(Map<String, Object?> j)
+    : name = _str(j, 'name'),
+      title = _str(j, 'title'),
+      location = _str(j, 'location'),
+      starterTool = _str(j, 'starterTool'),
+      learnLine = _str(j, 'learnLine');
+
+  final String name;
+  final String title;
+  final String location;
+  final String starterTool;
+  final String learnLine;
+}
+
+/// A material tier of a profession, open from [level] (spec 0010 §2.1).
+class TierDef {
+  TierDef._(Map<String, Object?> j)
+    : level = _int(j, 'level'),
+      name = _str(j, 'name');
+
+  final int level;
+  final String name;
+}
+
+class ProfessionDef {
+  ProfessionDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      name = _str(j, 'name'),
+      icon = _str(j, 'icon'),
+      toolName = _str(j, 'tool'),
+      tiers = List.unmodifiable(_maps(j, 'tiers').map(TierDef._)),
+      teacher = TeacherDef._(_map(j, 'teacher'));
+
+  final String id;
+  final String name;
+  final String icon;
+
+  /// What its tool slot is called: Pickaxe.
+  final String toolName;
+
+  /// Lowest first.
+  final List<TierDef> tiers;
+  final TeacherDef teacher;
+
+  /// The tier held at profession [level].
+  TierDef tierAt(int level) => tiers.lastWhere((t) => t.level <= level);
+}
+
 class RecipeDef {
   RecipeDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       level = _int(j, 'level'),
+      craftingLevel = _intOr(j, 'crafting', _int(j, 'level')),
       steps = _int(j, 'steps'),
       xp = _int(j, 'xp'),
       inputs = (j['inputs'] as Map<String, Object?>).map(
@@ -428,10 +508,20 @@ class RecipeDef {
 
   final String id;
 
-  /// Sets its XP fade and the item level of its quality roll; not a gate
-  /// (spec 0008 amendment 1).
+  /// Its level for the profession fade and the item level of its quality
+  /// roll; the Crafting level it needs unless [craftingLevel] says less
+  /// (spec 0010 §2.2).
   final int level;
+
+  /// The Crafting level it needs: `crafting` in data, else [level]. The
+  /// first recipes need Crafting 1 (spec 0010 amendment 1).
+  final int craftingLevel;
+
+  /// Every recipe is Crafting's (spec 0010 §2.1).
+  String get profession => 'crafting';
   final int steps;
+
+  /// Crafting XP per craft (spec 0010 §2.2).
   final int xp;
   final Map<String, int> inputs;
   final String output;
@@ -475,6 +565,7 @@ class GameData {
     required Map<String, Object?> enemies,
     required Map<String, Object?> items,
     required Map<String, Object?> achievements,
+    required Map<String, Object?> professions,
   }) : bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
        bankCapPerLevel = _int(_map(economy, 'bankCap'), 'perLevel'),
        combatRoundSteps = _int(economy, 'combatRoundSteps'),
@@ -485,6 +576,19 @@ class GameData {
          (economy['xpToReachLevel'] as List<Object?>).cast<int>(),
        ),
        xpGrowthAfterList = (economy['xpGrowthAfterList'] as num).toDouble(),
+       professionXpToReachLevel = List.unmodifiable(
+         (economy['professionXpToReachLevel'] as List<Object?>).cast<int>(),
+       ),
+       professionXpGrowthAfterList =
+           (economy['professionXpGrowthAfterList'] as num).toDouble(),
+       professionBands = List.unmodifiable(
+         _maps(economy, 'professionBands').map(LevelBand._),
+       ),
+       professionShare = (economy['professionShare'] as num).toDouble(),
+       fightXpPerStepList = List.unmodifiable([
+         for (final v in economy['fightXpPerStep'] as List<Object?>)
+           (v! as num).toDouble(),
+       ]),
        levelBands = List.unmodifiable(
          _maps(economy, 'levelBands').map(LevelBand._),
        ),
@@ -524,12 +628,16 @@ class GameData {
        achievements = _byId(
          _maps(achievements, 'achievements').map(AchievementDef._),
          (d) => d.id,
+       ),
+       professions = _byId(
+         _maps(professions, 'professions').map(ProfessionDef._),
+         (d) => d.id,
        ) {
     _validate();
   }
 
   /// [files] maps a data file name without extension (`economy`, `world`,
-  /// `enemies`, `items`, `achievements`) to its JSON text.
+  /// `enemies`, `items`, `achievements`, `professions`) to its JSON text.
   factory GameData.fromJsonStrings(Map<String, String> files) {
     Map<String, Object?> file(String name) {
       final text = files[name];
@@ -550,6 +658,7 @@ class GameData {
       enemies: file('enemies'),
       items: file('items'),
       achievements: file('achievements'),
+      professions: file('professions'),
     );
   }
 
@@ -572,6 +681,32 @@ class GameData {
   /// Colour table, highest difference first; the last row applies to the
   /// rest.
   final List<LevelBand> levelBands;
+
+  /// Total profession XP needed to reach level `i + 1`, and the growth of
+  /// each level's cost past the list (spec 0010 §2.2).
+  final List<int> professionXpToReachLevel;
+  final double professionXpGrowthAfterList;
+
+  /// The profession fade by action level against profession level, like
+  /// [levelBands] (spec 0010 §2.3).
+  final List<LevelBand> professionBands;
+
+  /// A profession step's share of a fight step's character XP (spec 0010
+  /// §2.4).
+  final double professionShare;
+
+  /// Character XP per step against even-level monsters, by character
+  /// level from 1 (spec 0010 §2.4); see [fightXpPerStep].
+  final List<double> fightXpPerStepList;
+
+  /// [fightXpPerStepList] at [level], growing by [xpGrowthAfterList] past
+  /// its end.
+  double fightXpPerStep(int level) {
+    final n = fightXpPerStepList.length;
+    if (level <= n) return fightXpPerStepList[level - 1];
+    return fightXpPerStepList[n - 1] *
+        math.pow(xpGrowthAfterList, level - n).toDouble();
+  }
 
   /// The paper doll's slots, in display order.
   final List<GearSlotDef> gearSlots;
@@ -762,16 +897,46 @@ class GameData {
   final Map<String, RecipeDef> recipes;
   final Map<String, AchievementDef> achievements;
 
+  /// Mining, Woodcutting, Crafting, in screen order (spec 0010 §8.1).
+  final Map<String, ProfessionDef> professions;
+
+  /// [professionXpToReachLevel], extended on demand past its end.
+  late final List<int> _professionThresholds = List.of(
+    professionXpToReachLevel,
+  );
+
+  int professionXpForLevel(int level) =>
+      _extend(_professionThresholds, level, professionXpGrowthAfterList);
+
+  int professionLevelForXp(int xp) {
+    var level = 1;
+    while (xp >= professionXpForLevel(level + 1)) {
+      level++;
+    }
+    return level;
+  }
+
+  /// The fade row for an action at [level], worked at profession level
+  /// [professionLevel].
+  LevelBand professionBandFor(int level, int professionLevel) {
+    final diff = level - professionLevel;
+    return professionBands.firstWhere(
+      (b) => b.atLeast == null || diff >= b.atLeast!,
+    );
+  }
+
   /// [xpToReachLevel], extended on demand past its end.
   late final List<int> _thresholds = List.of(xpToReachLevel);
 
-  int xpForLevel(int level) {
-    while (_thresholds.length < level) {
-      final n = _thresholds.length;
-      final cost = _thresholds[n - 1] - _thresholds[n - 2];
-      _thresholds.add(_thresholds[n - 1] + (cost * xpGrowthAfterList).round());
+  int xpForLevel(int level) => _extend(_thresholds, level, xpGrowthAfterList);
+
+  static int _extend(List<int> thresholds, int level, double growth) {
+    while (thresholds.length < level) {
+      final n = thresholds.length;
+      final cost = thresholds[n - 1] - thresholds[n - 2];
+      thresholds.add(thresholds[n - 1] + (cost * growth).round());
     }
-    return _thresholds[level - 1];
+    return thresholds[level - 1];
   }
 
   int levelForXp(int xp) {
@@ -910,6 +1075,10 @@ class GameData {
     }
     for (final n in nodes.values) {
       check(items.containsKey(n.item), 'node ${n.id}: unknown item ${n.item}');
+      check(
+        professions.containsKey(n.profession),
+        'node ${n.id}: unknown profession ${n.profession}',
+      );
       check(n.steps > 0, 'node ${n.id}: steps must be > 0');
     }
     for (final e in enemies.values) {
@@ -943,6 +1112,51 @@ class GameData {
       }
     }
     check(combatRoundSteps > 0, 'combatRoundSteps must be > 0');
+    check(
+      professions.containsKey('crafting'),
+      'professions: recipes need crafting',
+    );
+    for (final p in professions.values) {
+      check(
+        p.tiers.isNotEmpty && p.tiers.first.level == 1,
+        'profession ${p.id}: tiers must start at level 1',
+      );
+      check(
+        locations.containsKey(p.teacher.location),
+        'profession ${p.id}: unknown teacher location',
+      );
+      check(
+        items[p.teacher.starterTool]?.tool?.profession == p.id,
+        'profession ${p.id}: the starter tool must be its tool',
+      );
+    }
+    for (final i in items.values) {
+      if (i.tool case final t?) {
+        check(
+          professions.containsKey(t.profession) && i.slot == null,
+          'item ${i.id}: a tool needs a known profession and no gear slot',
+        );
+      }
+    }
+    check(
+      professionXpToReachLevel.length >= 2 &&
+          professionXpToReachLevel.first == 0,
+      'professionXpToReachLevel must start with 0 and list at least 2 levels',
+    );
+    for (var i = 1; i < professionXpToReachLevel.length; i++) {
+      check(
+        professionXpToReachLevel[i] > professionXpToReachLevel[i - 1],
+        'professionXpToReachLevel must increase',
+      );
+    }
+    check(
+      professionBands.isNotEmpty && professionBands.last.atLeast == null,
+      'professionBands must end with a row without atLeast',
+    );
+    check(
+      fightXpPerStepList.isNotEmpty && fightXpPerStepList.every((v) => v > 0),
+      'fightXpPerStep must list positive numbers',
+    );
     for (final row in combat.typeFactors.values) {
       check(
         row.keys.toSet().containsAll(combat.damageTypes),

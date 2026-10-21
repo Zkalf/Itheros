@@ -63,23 +63,29 @@ void main() {
       );
     });
 
-    test('learning in camp gives the starter tool; elsewhere it is refused',
-        () {
-      final s = game.learn(game.newGame(seed: 1), 'mining');
-      expect(s.learned, {'mining'});
-      expect(s.tools, {'mining': 'old_pick'});
-      expect(
-        () => game.learn(
-          game.newGame(seed: 1)..location = 'goblin_woods',
-          'woodcutting',
-        ),
-        throwsA(isA<ActivityError>()),
-      );
-      expect(() => game.learn(s, 'mining'), throwsA(isA<ActivityError>()));
-    });
+    test(
+      'learning in camp gives the starter tool; elsewhere it is refused',
+      () {
+        final s = game.learn(game.newGame(seed: 1), 'mining');
+        expect(s.learned, {'mining'});
+        expect(s.tools, {'mining': 'old_pick'});
+        expect(
+          () => game.learn(
+            game.newGame(seed: 1)..location = 'goblin_woods',
+            'woodcutting',
+          ),
+          throwsA(isA<ActivityError>()),
+        );
+        expect(() => game.learn(s, 'mining'), throwsA(isA<ActivityError>()));
+      },
+    );
 
     test('the Iron vein needs Mining 10, not a character level', () {
-      final low = worker(location: 'iron_ridge', level: 30, prof: {'mining': 9});
+      final low = worker(
+        location: 'iron_ridge',
+        level: 30,
+        prof: {'mining': 9},
+      );
       expect(game.nodeLevelMet(low, 'iron_vein'), isFalse);
       expect(
         () => game.startActivity(low, const Activity.gather('iron_vein')),
@@ -93,20 +99,26 @@ void main() {
       );
       final ok = worker(location: 'iron_ridge', prof: {'mining': 10});
       expect(game.nodeLevelMet(ok, 'iron_vein'), isTrue);
-      expect(work(ok, const Activity.gather('iron_vein'), 120).state.inventory,
-          {'iron_ore': 1});
+      expect(
+        work(ok, const Activity.gather('iron_vein'), 120).state.inventory,
+        {'iron_ore': 1},
+      );
     });
 
     test('the Copper vein opens at Mining 1 and character level 1', () {
       final s = worker(location: 'copper_hills');
-      expect(work(s, const Activity.gather('copper_vein'), 100).state.inventory,
-          {'copper_ore': 1});
+      expect(
+        work(s, const Activity.gather('copper_vein'), 100).state.inventory,
+        {'copper_ore': 1},
+      );
     });
 
     test('the Iron sword needs Crafting 14, not a character level', () {
-      final low = worker(level: 30, prof: {'crafting': 13}, inventory: {
-        'iron_ore': 8,
-      });
+      final low = worker(
+        level: 30,
+        prof: {'crafting': 13},
+        inventory: {'iron_ore': 8},
+      );
       expect(game.recipeLevelMet(low, 'iron_sword'), isFalse);
       expect(
         () => game.startActivity(low, const Activity.craft('iron_sword')),
@@ -126,8 +138,9 @@ void main() {
       for (var l = 2; l <= 30; l++) {
         expect(
           game.levelNews(l).map((n) => n.kind),
-          isNot(anyOf(contains(NewsKind.gatheringSpot),
-              contains(NewsKind.recipe))),
+          isNot(
+            anyOf(contains(NewsKind.gatheringSpot), contains(NewsKind.recipe)),
+          ),
         );
       }
     });
@@ -142,10 +155,9 @@ void main() {
             .having((e) => e.profession, 'profession', 'mining')
             .having((e) => e.level, 'level', 10),
       );
-      expect(
-        game.professionNews('mining', 10),
-        [const LevelNews(NewsKind.gatheringSpot, 'iron_vein')],
-      );
+      expect(game.professionNews('mining', 10), [
+        const LevelNews(NewsKind.gatheringSpot, 'iron_vein'),
+      ]);
       expect(
         game.professionNews('crafting', 14).map((n) => n.id),
         containsAll(['iron_sword', 'iron_spear', 'iron_mace', 'iron_shield']),
@@ -160,7 +172,11 @@ void main() {
         (1, 100), (6, 100), (7, 50), (10, 50), (11, 10), (40, 10), //
       ]) {
         s.professions['mining'] = data.professionXpForLevel(prof);
-        expect(game.professionFade(s, 'mining', 1), pct, reason: 'Mining $prof');
+        expect(
+          game.professionFade(s, 'mining', 1),
+          pct,
+          reason: 'Mining $prof',
+        );
       }
     });
 
@@ -169,30 +185,31 @@ void main() {
         final s = worker(location: 'copper_hills', prof: {'mining': prof});
         final before = s.professions['mining']!;
         final r = work(s, const Activity.gather('copper_vein'), 100);
-        expect(r.state.professions['mining']! - before, gained,
-            reason: 'Mining $prof');
+        expect(
+          r.state.professions['mining']! - before,
+          gained,
+          reason: 'Mining $prof',
+        );
       }
     });
 
     test('a craft pays Crafting XP', () {
       final s = worker(prof: {'crafting': 3}, inventory: {'copper_ore': 5});
       final r = work(s, const Activity.craft('copper_sword'), 150);
-      expect(
-        r.state.professions['crafting']! - s.professions['crafting']!,
-        30,
-      );
+      expect(r.state.professions['crafting']! - s.professions['crafting']!, 30);
       expect(r.state.professions['mining'] ?? 0, 0);
     });
   });
 
   group('criterion 3: a quarter of a fight per step', () {
     int expected(int level, int steps, int fade) {
-      final v = (steps *
-              data.professionShare *
-              data.fightXpPerStep(level) *
-              fade /
-              100)
-          .floor();
+      final v =
+          (steps *
+                  data.professionShare *
+                  data.fightXpPerStep(level) *
+                  fade /
+                  100)
+              .floor();
       return fade > data.professionBands.last.xpPercent ? math.max(1, v) : v;
     }
 
@@ -208,18 +225,21 @@ void main() {
     });
 
     test('the fade applies to the character XP too', () {
-      final s = worker(location: 'copper_hills', level: 20, prof: {
-        'mining': 8,
-      });
+      final s = worker(
+        location: 'copper_hills',
+        level: 20,
+        prof: {'mining': 8},
+      );
       final r = work(s, const Activity.gather('copper_vein'), 100);
       expect(r.events.whereType<Gathered>().single.xp, expected(20, 100, 50));
     });
 
     test('crafting pays by steps, not by the recipe\'s xp', () {
-      final s = worker(level: 10, prof: {'crafting': 30}, inventory: {
-        'dragon_scale': 4,
-        'mithril_ore': 4,
-      });
+      final s = worker(
+        level: 10,
+        prof: {'crafting': 30},
+        inventory: {'dragon_scale': 4, 'mithril_ore': 4},
+      );
       final r = work(s, const Activity.craft('dragon_helm'), 500);
       expect(r.events.whereType<Crafted>().single.xp, expected(10, 500, 100));
     });
@@ -248,19 +268,30 @@ void main() {
       for (final v in ['copper_vein', 'iron_vein', 'mithril_vein']) {
         expect(data.nodes[v]!.profession, 'mining');
       }
-      expect([for (final v in ['copper_vein', 'iron_vein', 'mithril_vein'])
-        data.nodes[v]!.level], [1, 10, 20]);
+      expect(
+        [
+          for (final v in ['copper_vein', 'iron_vein', 'mithril_vein'])
+            data.nodes[v]!.level,
+        ],
+        [1, 10, 20],
+      );
     });
 
     test('logs go into hafts and shields; swords keep their recipes', () {
       final logs = {
-        'copper_spear': {'oak_log': 1}, 'copper_mace': {'oak_log': 1},
-        'bone_spear': {'oak_log': 1}, 'bone_club': {'oak_log': 1},
-        'bone_greataxe': {'oak_log': 2}, 'bone_shield': {'oak_log': 2},
-        'iron_spear': {'ash_log': 1}, 'iron_mace': {'ash_log': 1},
-        'iron_pike': {'ash_log': 3}, 'troll_bone_maul': {'ash_log': 3},
+        'copper_spear': {'oak_log': 1},
+        'copper_mace': {'oak_log': 1},
+        'bone_spear': {'oak_log': 1},
+        'bone_club': {'oak_log': 1},
+        'bone_greataxe': {'oak_log': 2},
+        'bone_shield': {'oak_log': 2},
+        'iron_spear': {'ash_log': 1},
+        'iron_mace': {'ash_log': 1},
+        'iron_pike': {'ash_log': 3},
+        'troll_bone_maul': {'ash_log': 3},
         'iron_shield': {'ash_log': 2},
-        'mithril_spear': {'pine_log': 1}, 'mithril_mace': {'pine_log': 1},
+        'mithril_spear': {'pine_log': 1},
+        'mithril_mace': {'pine_log': 1},
         'drake_fang_spear': {'pine_log': 1},
         'drake_fang_hammer': {'pine_log': 1},
         'mithril_greatsword': {'pine_log': 2},

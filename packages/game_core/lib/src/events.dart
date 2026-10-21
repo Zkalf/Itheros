@@ -69,6 +69,13 @@ class LevelUp extends GameEvent {
   final int level;
 }
 
+/// A profession reached [level] (spec 0010 §2.2).
+class ProfessionLevelUp extends GameEvent {
+  const ProfessionLevelUp(this.profession, this.level);
+  final String profession;
+  final int level;
+}
+
 /// A lore note was found (spec 0009 §7.2).
 class LoreFound extends GameEvent {
   const LoreFound(this.note);

@@ -22,11 +22,12 @@ void main() {
   test('level 1 in Goblin Woods: every monster there', () {
     final s = stateAt(game, location: 'goblin_woods');
     expect(game.availableEnemies(s), ['goblin', 'goblin_brute', 'old_bear']);
-    expect(game.availableNodes(s), isEmpty);
+    // The Oak tree (spec 0010 §4).
+    expect(game.availableNodes(s), ['oak_tree']);
   });
 
-  test('level 2 opens mining (spec 0008 amendment 1)', () {
-    final atHills = stateAt(game, level: 2, location: 'copper_hills');
+  test('Mining 1 works the Copper vein (spec 0010 §2.1)', () {
+    final atHills = stateAt(game, location: 'copper_hills');
     expect(game.availableNodes(atHills), ['copper_vein']);
     expect(game.nodeLevelMet(atHills, 'copper_vein'), isTrue);
   });
@@ -38,9 +39,14 @@ void main() {
     test('an enemy in the fog (spec 0008 decision 6)', () {
       rejects(stateAt(game), const Activity.fight('wolf'));
     });
-    test('a node above the player level', () {
+    // Spec 0010 §2.2: above the Mining level, or not learned.
+    test('a node above the profession level', () {
       rejects(
-        stateAt(game, location: 'copper_hills'),
+        stateAt(game, level: 30, professionLevel: 9, location: 'iron_ridge'),
+        const Activity.gather('iron_vein'),
+      );
+      rejects(
+        game.newGame(seed: 1)..location = 'copper_hills',
         const Activity.gather('copper_vein'),
       );
     });
