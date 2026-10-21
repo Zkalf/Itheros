@@ -1433,8 +1433,9 @@ void characterScreen() {
 
       await t.tap(find.byKey(const ValueKey('tab-gear')));
       await t.pumpAndSettle();
+      // A doll slot opens its slot sheet (spec 0008 amendment 3).
       await openCard(t, 'slot-chest');
-      await t.tap(card(find.byKey(const ValueKey('card-unequip'))));
+      await t.tap(find.byKey(const ValueKey('sheet-unequip')));
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.equipment, isEmpty);
@@ -1495,6 +1496,52 @@ void characterScreen() {
       expect(card(find.textContaining('Used in: Iron')), findsOneWidget);
     });
 
+    testWidgets('amendment 3: the hands alone in the bottom row', (t) async {
+      await pumpGame(t);
+      await openTab(t, 'character');
+      Offset at(String id) => t.getTopLeft(find.byKey(ValueKey('slot-$id')));
+      expect(at('mainHand').dy, at('offHand').dy);
+      expect(at('mainHand').dy, greaterThan(at('trinket1').dy));
+      expect(at('trinket1').dx, at('head').dx, reason: 'left column');
+      expect(at('trinket2').dx, at('gloves').dx, reason: 'right column');
+    });
+
+    testWidgets('amendment 3: an empty slot lists what fits, and fills it', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {'iron_helm': 1, 'mithril_helm': 1, 'hide_vest': 1},
+      );
+      await openTab(t, 'character');
+      await openCard(t, 'slot-head');
+      expect(find.byKey(const ValueKey('sheet-unequip')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('sheet-equip-mithril_helm')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('sheet-equip-hide_vest')),
+        findsNothing,
+        reason: 'only what fits the Head slot',
+      );
+      await t.tap(find.byKey(const ValueKey('sheet-equip-iron_helm')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.equipment['head'], 'iron_helm');
+    });
+
+    testWidgets('amendment 3: nothing in the bag fits', (t) async {
+      await pumpGame(t, inventory: {'goblin_hide': 1});
+      await openTab(t, 'character');
+      await openCard(t, 'slot-neck');
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+        'Neck',
+      );
+      expect(find.text('Nothing in your bag fits here yet.'), findsOneWidget);
+    });
+
     group('test-only gear', () {
       final withGear = loadTestGame(
         items: [
@@ -1524,6 +1571,56 @@ void characterScreen() {
         await openCard(t, 'bag-bone_shield');
         expect(card(find.text('Instead of your Big axe')), findsOneWidget);
         expect(cardText(t, 'compare-offHand'), '−10 Attack · +3 Defense');
+      });
+
+      testWidgets('amendment 3: a shield under a two-hander says Swap', (
+        t,
+      ) async {
+        await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'bone_shield': 1},
+          equipment: {'mainHand': 'big_axe'},
+        );
+        await openTab(t, 'character');
+        await openCard(t, 'slot-offHand');
+        expect(
+          t
+              .widget<Text>(find.byKey(const ValueKey('sheet-off-bone_shield')))
+              .data,
+          'Takes off your Big axe',
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('sheet-equip-bone_shield')),
+            matching: find.text('Swap'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('amendment 3: Ring 2 fills Ring 2, even with Ring 1 empty', (
+        t,
+      ) async {
+        final (c, _) = await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'ring_a': 1},
+        );
+        await openTab(t, 'character');
+        await openCard(t, 'slot-ring2');
+        expect(
+          t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+          'Ring 2 · rings fit here',
+        );
+        expect(
+          t.widget<Text>(find.byKey(const ValueKey('sheet-delta-ring_a'))).data,
+          '+5 HP',
+        );
+        await t.tap(find.byKey(const ValueKey('sheet-equip-ring_a')));
+        await settle(t, c);
+        await t.pumpAndSettle();
+        expect(c.state.equipment, {'ring2': 'ring_a'});
       });
 
       testWidgets('criterion 7: both rings worn, swap with either', (t) async {

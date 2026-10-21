@@ -52,8 +52,7 @@ class ItemCard extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final def = data.itemOf(item)!;
     final gear = def.slot != null;
-    final q = data.qualityOf(item);
-    final colour = gear && q != data.qualities.first ? qualityColour(q) : null;
+    final colour = itemColour(data, item);
 
     final rows = <Widget>[
       Text(
@@ -169,17 +168,36 @@ class ItemCard extends StatelessWidget {
     Key key,
     String label,
     Future<void> Function() action,
-  ) => FilledButton.tonal(
-    key: key,
-    onPressed: () async {
-      final messenger = ScaffoldMessenger.of(host);
-      Navigator.of(context).pop();
-      try {
-        await action();
-      } on ActivityError catch (e) {
-        messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    },
-    child: Text(label),
-  );
+  ) => sheetButton(context, host, key, label, action);
 }
+
+/// The colour an item's name is drawn in: its quality's, or null (the normal
+/// text colour) for common gear and materials.
+Color? itemColour(GameData data, String key) {
+  final q = data.qualityOf(key);
+  return data.itemOf(key)?.slot != null && q != data.qualities.first
+      ? qualityColour(q)
+      : null;
+}
+
+/// A button in a bottom sheet that closes it, then runs [action]; a refusal
+/// shows on [host], the screen behind the sheet.
+Widget sheetButton(
+  BuildContext sheet,
+  BuildContext host,
+  Key key,
+  String label,
+  Future<void> Function() action,
+) => FilledButton.tonal(
+  key: key,
+  onPressed: () async {
+    final messenger = ScaffoldMessenger.of(host);
+    Navigator.of(sheet).pop();
+    try {
+      await action();
+    } on ActivityError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  },
+  child: Text(label),
+);
