@@ -387,6 +387,38 @@ void main() {
       expect(s.explored, {'camp', 'old_graveyard', 'goblin_woods'});
     });
 
+    test(
+      'a walk whose goal is now in the fog stops, never fights elsewhere',
+      () {
+        // An old save at Grey Moor walking to the wyverns: Dragon's Peak is
+        // fogged once loaded (Mountain Pass was never visited).
+        final json =
+            v5(
+                equipment: const {},
+                counters: {'visited.old_graveyard': 1, 'visited.grey_moor': 1},
+                location: 'grey_moor',
+              )
+              ..['xp'] = game.data.xpForLevel(30)
+              ..['activity'] = {
+                'kind': 'fight',
+                'target': 'wyvern',
+                'stop': const StopCondition.never().toJson(),
+                'progress': 0,
+                'leg': 'troll_bridge',
+              };
+        final r = game.applySteps(load(json), 900);
+        expect(r.state.location, 'troll_bridge');
+        expect(r.state.activity, isNull);
+        expect(
+          r.events.whereType<ActivityEnded>().single.reason,
+          EndReason.noRoute,
+        );
+        expect(r.state.counters['kills.wyvern'], isNull);
+        expect(r.events.whereType<FightWon>(), isEmpty);
+        expect(r.events.whereType<FightLost>(), isEmpty);
+      },
+    );
+
     test('a new save keeps its explored areas', () {
       final s = game.newGame(seed: 1)..explored.add('goblin_woods');
       final back = GameState.fromJson(
