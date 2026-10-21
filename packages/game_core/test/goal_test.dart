@@ -16,9 +16,20 @@ void main() {
     expect(game.nextGoal(s), isNot(isA<EquipGoal>()));
   });
 
-  test('items for a closed slot are not suggested', () {
-    final s = stateAt(game, level: 6, inventory: {'bone_shield': 1});
-    expect(game.nextGoal(s), isNot(isA<EquipGoal>()));
+  test('every slot is open: a shield is suggested at level 1 (spec 0008)', () {
+    final s = stateAt(game, inventory: {'bone_shield': 1});
+    expect((game.nextGoal(s)! as EquipGoal).item, 'bone_shield');
+  });
+
+  test('monsters in the fog are never suggested (spec 0008 decision 5)', () {
+    final s = stateAt(game, level: 11)
+      ..equipment.addAll({
+        'mainHand': 'kings_blade',
+        'chest': 'stitched_armour',
+        'offHand': 'bone_shield',
+      });
+    final goal = game.nextGoal(s);
+    expect(goal, isNot(isA<CollectGoal>()));
   });
 
   test('2: a recipe that improves a slot and can be crafted now', () {
@@ -40,10 +51,11 @@ void main() {
   test('materials from a monster of your level', () {
     // Wolf pelts come only from level 11 wolves.
     final s = stateAt(game, level: 11)
+      ..explored.add('old_graveyard')
       ..equipment.addAll({
-        'weapon': 'kings_blade',
-        'body': 'stitched_armour',
-        'shield': 'bone_shield',
+        'mainHand': 'kings_blade',
+        'chest': 'stitched_armour',
+        'offHand': 'bone_shield',
       });
     expect(game.nextGoal(s), isA<CollectGoal>());
     expect(
@@ -54,7 +66,7 @@ void main() {
 
   test('materials from a gathering spot', () {
     final s = stateAt(game, level: 3, inventory: {'goblin_hide': 4})
-      ..equipment['body'] = 'hide_vest'
+      ..equipment['chest'] = 'hide_vest'
       ..inventory.remove('goblin_hide');
     final goal = game.nextGoal(s);
     expect(goal, isA<CollectGoal>());

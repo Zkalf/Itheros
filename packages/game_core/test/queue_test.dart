@@ -13,21 +13,20 @@ void main() {
 
   List<T> all<T>(StepReport r) => r.events.whereType<T>().toList();
 
-  group('criterion 1: queue size by level', () {
-    test('one slot before level 5: a new action replaces the running one', () {
-      var s = game.addAction(stateAt(game, level: 4), goblins);
-      s = game.addAction(s, brutes);
-      expect(s.activity!.activity, brutes);
-      expect(s.queue, isEmpty);
-    });
-
-    test('two slots from level 5', () {
-      var s = game.addAction(stateAt(game, level: 5), goblins);
-      s = game.addAction(s, brutes);
-      expect(s.activity!.activity, goblins);
-      expect(s.queue.map((p) => p.activity), [brutes]);
+  // Spec 0008 decision 7: three slots from level 1.
+  group('criterion 1: queue size', () {
+    test('three slots at level 1', () {
+      var s = stateAt(game, location: 'goblin_woods');
+      for (final a in [goblins, brutes, goblins]) {
+        s = game.addAction(
+          s,
+          a,
+          stop: const StopCondition.untilHave('goblin_hide', 99),
+        );
+      }
+      expect(s.queue, hasLength(2));
       expect(
-        () => game.addAction(s, mining),
+        () => game.addAction(s, goblins),
         throwsA(
           isA<ActivityError>().having(
             (e) => e.message,
@@ -36,19 +35,6 @@ void main() {
           ),
         ),
       );
-    });
-
-    test('three slots from level 8', () {
-      var s = stateAt(game, level: 8);
-      for (final (a, item) in [
-        (goblins, 'goblin_hide'),
-        (brutes, 'goblin_hide'),
-        (mining, 'copper_ore'),
-      ]) {
-        s = game.addAction(s, a, stop: StopCondition.untilHave(item, 99));
-      }
-      expect(s.queue, hasLength(2));
-      expect(() => game.addAction(s, goblins), throwsA(isA<ActivityError>()));
     });
   });
 
@@ -259,18 +245,6 @@ void main() {
         );
       }
     });
-
-    test('"until I have N" opens at level 5', () {
-      final s = stateAt(game, level: 4);
-      expect(
-        () => game.addAction(
-          s,
-          goblins,
-          stop: StopCondition.untilHave('goblin_hide', 2),
-        ),
-        throwsA(isA<ActivityError>()),
-      );
-    });
   });
 
   group('criterion 5: stop and remove', () {
@@ -394,18 +368,6 @@ void main() {
   test('criterion 8: bank cap 10,000 at level 1, +500 per level', () {
     expect(game.bankCap(stateAt(game)), 10000);
     expect(game.bankCap(stateAt(game, level: 10)), 14500);
-  });
-
-  test('levels 5 and 8 announce the queue', () {
-    expect(
-      game.levelNews(5),
-      contains(const LevelNews(NewsKind.queueSlots, '2')),
-    );
-    expect(game.levelNews(5), contains(const LevelNews(NewsKind.untilN, '')));
-    expect(
-      game.levelNews(8),
-      contains(const LevelNews(NewsKind.queueSlots, '3')),
-    );
   });
 
   test('criterion 10: a version 2 save becomes a 1-action queue', () {

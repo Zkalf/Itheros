@@ -9,23 +9,12 @@ void main() {
   final game = newTestGame();
   final data = game.data;
 
-  test('every level from 2 to 30 brings a named unlock (spec 0002 §8)', () {
-    for (var level = 2; level <= 30; level++) {
-      final named = game
-          .levelNews(level)
-          .where((n) => n.kind != NewsKind.talentPoint);
-      expect(named, isNotEmpty, reason: 'level $level');
-    }
-  });
-
-  test('level 10 is the Adventurer rank with the whole map', () {
+  // Spec 0008 decision 1: levels no longer open areas, monsters or recipes,
+  // so a level may bring only stats (concern 3).
+  test('level 10 is the Adventurer rank', () {
     final news = game.levelNews(10);
     expect(news, contains(const LevelNews(NewsKind.rank, 'Adventurer')));
     expect(news, contains(const LevelNews(NewsKind.talentPoint, '')));
-    expect(
-      news.where((n) => n.kind == NewsKind.area).map((n) => n.id),
-      containsAll(['grey_moor', 'troll_bridge', 'dragons_peak']),
-    );
     expect(
       news,
       contains(const LevelNews(NewsKind.yourLevel, 'graveyard_king')),

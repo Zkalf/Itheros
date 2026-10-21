@@ -857,7 +857,7 @@ void main() {
 
       await t.tap(find.byKey(const ValueKey('equip-hide_vest@rare')));
       await settle(t, c);
-      expect(c.state.equipment['body'], 'hide_vest@rare');
+      expect(c.state.equipment['chest'], 'hide_vest@rare');
       expect(
         find.text('Hide vest (Rare)'),
         findsNWidgets(2),
@@ -1356,9 +1356,9 @@ void playtest2() {
         level: 8,
         location: 'old_graveyard',
         equipment: {
-          'weapon': 'kings_blade',
-          'body': 'stitched_armour',
-          'shield': 'bone_shield',
+          'mainHand': 'kings_blade',
+          'chest': 'stitched_armour',
+          'offHand': 'bone_shield',
         },
       );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);

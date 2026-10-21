@@ -56,7 +56,7 @@ void main() {
     test('equipping moves an item from inventory and adds its stats', () {
       var s = stateAt(game, inventory: {'copper_sword': 1});
       s = game.equip(s, 'copper_sword');
-      expect(s.equipment['weapon'], 'copper_sword');
+      expect(s.equipment['mainHand'], 'copper_sword');
       expect(s.inventory['copper_sword'] ?? 0, 0);
       expect(game.stats(s).attack, 5 + 3);
     });
@@ -65,7 +65,7 @@ void main() {
       var s = stateAt(game, inventory: {'copper_sword': 1, 'rusty_dagger': 1});
       s = game.equip(s, 'rusty_dagger');
       s = game.equip(s, 'copper_sword');
-      expect(s.equipment['weapon'], 'copper_sword');
+      expect(s.equipment['mainHand'], 'copper_sword');
       expect(s.inventory['rusty_dagger'], 1);
     });
 
@@ -73,38 +73,13 @@ void main() {
       var s = stateAt(game, inventory: {'hide_vest': 1});
       s = game.equip(s, 'hide_vest');
       expect(game.stats(s).hp, 30 + 10);
-      s = game.unequip(s, 'body');
+      s = game.unequip(s, 'chest');
       expect(s.equipment, isEmpty);
       expect(s.inventory['hide_vest'], 1);
     });
 
-    group('criterion 8: gear slots open by level (spec 0002 §4)', () {
-      final g = newTestGame(
-        overrides: {
-          'items': {
-            ...dataJson('items'),
-            'items': [
-              ...dataJson('items')['items']! as List<Object?>,
-              {'id': 'plank', 'name': 'Plank', 'slot': 'shield', 'defense': 3},
-            ],
-          },
-        },
-      );
-      final opensAt = g.data.gearSlots['shield']!;
-
-      test('an item for a closed slot cannot be equipped', () {
-        final s = stateAt(g, level: opensAt - 1, inventory: {'plank': 1});
-        expect(() => g.equip(s, 'plank'), throwsA(isA<ActivityError>()));
-        expect(g.openSlots(s), isNot(contains('shield')));
-      });
-
-      test('it can once the slot opens', () {
-        var s = stateAt(g, level: opensAt, inventory: {'plank': 1});
-        s = g.equip(s, 'plank');
-        expect(s.equipment['shield'], 'plank');
-        expect(g.openSlots(s), containsAll(['weapon', 'body', 'shield']));
-      });
-
+    // Spec 0008 decision 1: every slot is open from level 1.
+    group('criterion 8: gear slots', () {
       test('an item for an unknown slot is rejected when data loads', () {
         expect(
           () => newTestGame(

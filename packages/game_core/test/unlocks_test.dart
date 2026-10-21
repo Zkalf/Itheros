@@ -1,4 +1,5 @@
-// Unlock gating and activity validation: spec 0001 §5 and acceptance criterion 8.
+// Unlock gating and activity validation: spec 0001 §5 and acceptance criterion 8,
+// as spec 0008 (no level gates, fog) changed them.
 import 'package:game_core/game_core.dart';
 import 'package:test/test.dart';
 
@@ -7,53 +8,44 @@ import 'support.dart';
 void main() {
   final game = newTestGame();
 
-  test('level 1 at camp: only Goblin Woods is reachable, no crafting', () {
+  // Spec 0008 decision 1 replaced the level gates below level 10.
+  test('level 1 at camp: every neighbour is reachable, every recipe shows', () {
     final s = stateAt(game);
-    expect(game.travelDestinations(s), ['goblin_woods']);
-    expect(game.availableRecipes(s), isEmpty);
+    expect(game.travelDestinations(s), [
+      'goblin_woods',
+      'copper_hills',
+      'old_graveyard',
+    ]);
+    expect(game.availableRecipes(s), game.data.recipes.keys.toList());
   });
 
-  test('level 1 in Goblin Woods: goblins and the Old Bear, no brute', () {
+  test('level 1 in Goblin Woods: every monster there', () {
     final s = stateAt(game, location: 'goblin_woods');
-    expect(game.availableEnemies(s), ['goblin', 'old_bear']);
+    expect(game.availableEnemies(s), ['goblin', 'goblin_brute', 'old_bear']);
     expect(game.availableNodes(s), isEmpty);
   });
 
-  test('level 2 unlocks Copper Hills and mining', () {
-    final s = stateAt(game, level: 2, location: 'goblin_woods');
-    expect(game.travelDestinations(s), contains('copper_hills'));
+  test('level 2 opens mining (spec 0008 amendment 1)', () {
     final atHills = stateAt(game, level: 2, location: 'copper_hills');
     expect(game.availableNodes(atHills), ['copper_vein']);
-  });
-
-  test('level 3 unlocks crafting at camp', () {
-    final s = stateAt(game, level: 3);
-    expect(game.availableRecipes(s), ['copper_sword', 'hide_vest']);
-  });
-
-  test('level 4 unlocks the goblin brute', () {
-    final s = stateAt(game, level: 4, location: 'goblin_woods');
-    expect(game.availableEnemies(s), ['goblin', 'goblin_brute', 'old_bear']);
+    expect(game.nodeLevelMet(atHills, 'copper_vein'), isTrue);
   });
 
   group('startActivity rejects', () {
     void rejects(GameState s, Activity a) =>
         expect(() => game.startActivity(s, a), throwsA(isA<ActivityError>()));
 
-    test('a locked enemy', () {
-      rejects(
-        stateAt(game, location: 'goblin_woods'),
-        const Activity.fight('goblin_brute'),
-      );
+    test('an enemy in the fog (spec 0008 decision 6)', () {
+      rejects(stateAt(game), const Activity.fight('wolf'));
     });
-    test('a locked node', () {
+    test('a node above the player's level', () {
       rejects(
         stateAt(game, location: 'copper_hills'),
         const Activity.gather('copper_vein'),
       );
     });
-    test('a locked destination', () {
-      rejects(stateAt(game), const Activity.travel('copper_hills'));
+    test('a destination in the fog', () {
+      rejects(stateAt(game), const Activity.travel('grey_moor'));
     });
     test('travel without a route, or to where you are', () {
       rejects(stateAt(game), const Activity.travel('camp'));

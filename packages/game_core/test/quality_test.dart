@@ -140,7 +140,7 @@ void main() {
       );
       final base = game.stats(s).attack;
       s = game.equip(s, 'bone_sword@rare');
-      expect(s.equipment['weapon'], 'bone_sword@rare');
+      expect(s.equipment['mainHand'], 'bone_sword@rare');
       expect(s.inventory['bone_sword@rare'], isNull);
       expect(s.inventory['bone_sword'], 2);
       expect(game.stats(s).attack, base + 7);
@@ -150,7 +150,7 @@ void main() {
       expect(s.inventory['bone_sword'], 1);
       expect(game.stats(s).attack, base + 5);
 
-      s = game.unequip(s, 'weapon');
+      s = game.unequip(s, 'mainHand');
       expect(s.inventory['bone_sword'], 2);
     });
   });
@@ -247,11 +247,11 @@ void main() {
 
   test('criterion 8: an existing save loads with its gear common', () {
     final s = stateAt(game, level: 3, inventory: {'hide_vest': 1})
-      ..equipment['weapon'] = 'copper_sword';
+      ..equipment['mainHand'] = 'copper_sword';
     final json = s.toJson()..['version'] = 4;
     final loaded = game.migrate(GameState.fromJson(json));
-    expect(loaded.equipment['weapon'], 'copper_sword');
-    expect(data.qualityOf(loaded.equipment['weapon']!).id, 'common');
+    expect(loaded.equipment['mainHand'], 'copper_sword');
+    expect(data.qualityOf(loaded.equipment['mainHand']!).id, 'common');
     expect(loaded.inventory, {'hide_vest': 1});
     expect(game.stats(loaded).attack, game.stats(s).attack);
   });
@@ -307,7 +307,7 @@ void main() {
     expect(data.qualityOf('bone_sword@shiny').id, 'common');
     expect(data.bonusOf('bone_sword@shiny').attack, 5);
     expect(data.bonusOf('gone_item@rare').attack, 0);
-    final s = stateAt(game, level: 6)..equipment['weapon'] = 'bone_sword@shiny';
+    final s = stateAt(game, level: 6)..equipment['mainHand'] = 'bone_sword@shiny';
     expect(() => game.stats(s), returnsNormally);
   });
 }

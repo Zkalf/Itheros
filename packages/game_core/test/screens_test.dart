@@ -174,7 +174,7 @@ void main() {
           (stateAt(game, location: 'old_graveyard', level: 7)
                 ..counters['kills.skeleton'] = 3
                 ..inventory['bones'] = 2
-                ..equipment['weapon'] = 'kings_blade@rare')
+                ..equipment['mainHand'] = 'kings_blade@rare')
               .toJson()
             ..['version'] = 4;
       final s = game.migrate(GameState.fromJson(json));
@@ -187,20 +187,10 @@ void main() {
   group('criterion 8: craft until a quality', () {
     final game = newTestGame();
 
-    test('offered for crafts from level 5, not before, not for fights', () {
+    test('offered for crafts from level 1 (spec 0008), not for fights', () {
       expect(
-        game.stopKindsFor(
-          stateAt(game, level: 5),
-          const Activity.craft('copper_sword'),
-        ),
+        game.stopKindsFor(stateAt(game), const Activity.craft('copper_sword')),
         contains(StopKind.untilQuality),
-      );
-      expect(
-        game.stopKindsFor(
-          stateAt(game, level: 4),
-          const Activity.craft('copper_sword'),
-        ),
-        isNot(contains(StopKind.untilQuality)),
       );
       expect(
         game.stopKindsFor(
@@ -290,11 +280,11 @@ void main() {
 
   group('map queries', () {
     final game = newTestGame();
-    test('areas above the player level are fogged', () {
-      final s = stateAt(game, level: 2);
-      expect(game.isFogged(s, 'copper_hills'), isFalse);
-      expect(game.isFogged(s, 'old_graveyard'), isTrue);
-      expect(game.isFogged(stateAt(game, level: 10), 'dragons_peak'), isFalse);
+    // Spec 0008 decision 5 replaced fog by level.
+    test('areas away from explored ones are fogged, at any level', () {
+      final s = stateAt(game, level: 30);
+      expect(game.isFogged(s, 'old_graveyard'), isFalse);
+      expect(game.isFogged(s, 'dragons_peak'), isTrue);
     });
     test('the nearest forge and its distance', () {
       expect(game.nearestForge(stateAt(game)), ('camp', 0));
