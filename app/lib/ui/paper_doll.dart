@@ -1,20 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
-import 'item_card.dart';
 import 'item_square.dart';
+import 'slot_sheet.dart';
 
 /// The classic equipment view (spec 0008 §3.5): a plain figure outline with
-/// slots around it. Left: Head to Bracer; right: Gloves to Ring 2; bottom:
-/// the trinkets and both hands. Empty slots show a faint outline.
+/// slots around it. Left: Head to Trinket 1; right: Gloves to Trinket 2;
+/// bottom: both hands (amendment 3). Empty slots show a faint outline.
 class PaperDoll extends StatelessWidget {
   const PaperDoll({super.key, required this.controller});
 
   final GameController controller;
 
-  static const _left = ['head', 'neck', 'shoulder', 'cloak', 'chest', 'bracer'];
-  static const _right = ['gloves', 'belt', 'legs', 'boots', 'ring1', 'ring2'];
-  static const _bottom = ['trinket1', 'trinket2', 'mainHand', 'offHand'];
+  // Spec 0008 amendment 3: the hands alone in the bottom row, the trinkets at
+  // the foot of the columns.
+  static const _left = [
+    'head',
+    'neck',
+    'shoulder',
+    'cloak',
+    'chest',
+    'bracer',
+    'trinket1',
+  ];
+  static const _right = [
+    'gloves',
+    'belt',
+    'legs',
+    'boots',
+    'ring1',
+    'ring2',
+    'trinket2',
+  ];
+  static const _bottom = ['mainHand', 'offHand'];
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +52,8 @@ class PaperDoll extends StatelessWidget {
           item: worn,
           emptySlot: id,
           dimmed: id == 'offHand' && twoHanded && worn == null,
-          onTap: worn == null
-              ? null
-              : () => showItemCard(context, c, worn, wornIn: id),
+          // Any slot, empty or not, opens its sheet (amendment 3).
+          onTap: () => showSlotSheet(context, c, id),
         ),
       );
     }
