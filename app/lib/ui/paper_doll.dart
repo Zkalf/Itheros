@@ -44,6 +44,15 @@ class PaperDoll extends StatelessWidget {
     Widget column(List<String> ids) =>
         Column(children: [for (final id in ids) slot(id)]);
 
+    // Slots added in data later (a data-only change) join the bottom row,
+    // so worn gear always shows.
+    final placed = {..._left, ..._right, ..._bottom};
+    final bottom = [
+      ..._bottom,
+      for (final g in data.gearSlots)
+        if (!placed.contains(g.id)) g.id,
+    ];
+
     return LayoutBuilder(
       builder: (context, box) {
         // Two slot columns and the figure share the width; squares stay
@@ -66,11 +75,10 @@ class PaperDoll extends StatelessWidget {
                 SizedBox(width: side, child: column(_right)),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
               children: [
-                for (final id in _bottom)
-                  SizedBox(width: side, child: slot(id)),
+                for (final id in bottom) SizedBox(width: side, child: slot(id)),
               ],
             ),
           ],

@@ -25,23 +25,40 @@ class BagGrid extends StatelessWidget {
         child: Text('Nothing yet. Fight and gather to find things.'),
       );
     }
-    final order = [for (final g in data.gearSlots) g.kind];
-    int slotRank(String key) => order.indexOf(data.itemOf(key)!.slot!);
+    // Ties fall back to data order, then quality order, so squares never
+    // move when something is equipped (spec 0005 §5).
+    final slotRank = <String, int>{};
+    for (final g in data.gearSlots) {
+      slotRank.putIfAbsent(g.kind, () => slotRank.length);
+    }
+    final itemRank = {for (final (i, id) in data.items.keys.indexed) id: i};
+    final qualityRank = {for (final (i, q) in data.qualities.indexed) q.id: i};
+    int stable(String a, String b) {
+      final byItem = (itemRank[data.itemOf(a)?.id] ?? 1 << 20).compareTo(
+        itemRank[data.itemOf(b)?.id] ?? 1 << 20,
+      );
+      if (byItem != 0) return byItem;
+      return qualityRank[data.qualityOf(a).id]!.compareTo(
+        qualityRank[data.qualityOf(b).id]!,
+      );
+    }
+
     final gear =
         [
           for (final k in s.inventory.keys)
             if (data.itemOf(k)?.slot != null) k,
         ]..sort((a, b) {
-          final bySlot = slotRank(a).compareTo(slotRank(b));
-          return bySlot != 0
-              ? bySlot
-              : data.scoreOf(b).compareTo(data.scoreOf(a));
+          final bySlot = slotRank[data.itemOf(a)!.slot]!.compareTo(
+            slotRank[data.itemOf(b)!.slot]!,
+          );
+          if (bySlot != 0) return bySlot;
+          final byScore = data.scoreOf(b).compareTo(data.scoreOf(a));
+          return byScore != 0 ? byScore : stable(a, b);
         });
-    final ids = data.items.keys.toList();
     final materials = [
       for (final k in s.inventory.keys)
         if (data.itemOf(k)?.slot == null) k,
-    ]..sort((a, b) => ids.indexOf(a).compareTo(ids.indexOf(b)));
+    ]..sort(stable);
 
     return GridView.count(
       key: const ValueKey('bag'),

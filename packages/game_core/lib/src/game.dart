@@ -173,7 +173,7 @@ class Game {
     };
     final into = slots.reduce((a, b) => score(a) <= score(b) ? a : b);
     var worn = 0;
-    for (final id in _displaced(s, key, into)) {
+    for (final id in displaced(s, key, into)) {
       worn += score(id);
     }
     return data.scoreOf(key) - worn;
@@ -384,7 +384,7 @@ class Game {
     ],
     [
       for (final n in data.nodes.values)
-        if (n.item == item) n.id,
+        if (n.item == item && !nodeFogged(s, n.id)) n.id,
     ],
   );
 
@@ -746,7 +746,7 @@ class Game {
     }
     if (!slots.contains(to)) throw ActivityError('$item does not fit $to');
     final n = s.copy()..addItem(item, -1);
-    for (final id in _displaced(n, item, to)) {
+    for (final id in displaced(n, item, to)) {
       n.addItem(n.equipment.remove(id)!);
     }
     n.equipment[to] = item;
@@ -757,14 +757,14 @@ class Game {
   /// takes off.
   Stats compare(GameState s, String item, String slot) {
     var off = const Stats();
-    for (final id in _displaced(s, item, slot)) {
+    for (final id in displaced(s, item, slot)) {
       off += data.bonusOf(s.equipment[id]!);
     }
     return data.bonusOf(item) - off;
   }
 
   /// Worn slots that wearing [item] in [slot] empties.
-  List<String> _displaced(GameState s, String item, String slot) {
+  List<String> displaced(GameState s, String item, String slot) {
     bool twoHanded(String? key) =>
         key != null && (data.itemOf(key)?.twoHanded ?? false);
     return {

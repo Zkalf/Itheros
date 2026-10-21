@@ -1457,6 +1457,44 @@ void characterScreen() {
       expect(card(find.byKey(const ValueKey('card-equip'))), findsNothing);
     });
 
+    testWidgets('bag squares keep their place through equip and unequip', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {
+          'copper_sword': 1,
+          'copper_sword@rare': 1,
+          'hide_vest': 1,
+          'goblin_hide': 2,
+          'bones': 1,
+        },
+      );
+      List<String?> order() => [
+        for (final w in t.widgetList<ItemSquare>(
+          find.descendant(
+            of: find.byKey(const ValueKey('bag')),
+            matching: find.byType(ItemSquare),
+          ),
+        ))
+          w.item,
+      ];
+      await openBag(t);
+      final before = order();
+      await c.equip('hide_vest');
+      await c.unequip('chest');
+      await t.pumpAndSettle();
+      expect(order(), before);
+    });
+
+    testWidgets('a material card names no vein in the fog', (t) async {
+      await pumpGame(t, inventory: {'iron_ore': 1});
+      await openBag(t);
+      await openCard(t, 'bag-iron_ore');
+      expect(card(find.textContaining('Mined at')), findsNothing);
+      expect(card(find.textContaining('Used in: Iron')), findsOneWidget);
+    });
+
     group('test-only gear', () {
       final withGear = loadTestGame(
         items: [
@@ -1472,6 +1510,21 @@ void characterScreen() {
           },
         ],
       );
+
+      testWidgets('an off-hand item next to a two-hander names what goes', (
+        t,
+      ) async {
+        await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'bone_shield': 1},
+          equipment: {'mainHand': 'big_axe'},
+        );
+        await openBag(t);
+        await openCard(t, 'bag-bone_shield');
+        expect(card(find.text('Instead of your Big axe')), findsOneWidget);
+        expect(cardText(t, 'compare-offHand'), '−10 Attack · +3 Defense');
+      });
 
       testWidgets('criterion 7: both rings worn, swap with either', (t) async {
         final (c, _) = await pumpGame(
@@ -1504,7 +1557,9 @@ void characterScreen() {
         await openCard(t, 'bag-big_axe');
         expect(cardText(t, 'card-kind'), 'Common two-hand weapon · Main hand');
         expect(
-          card(find.text('Uses both hands: your shield goes to the bag.')),
+          card(
+            find.text('Uses both hands: your off-hand item goes to the bag.'),
+          ),
           findsOneWidget,
         );
         expect(cardText(t, 'compare-mainHand'), '+7 Attack · −3 Defense');

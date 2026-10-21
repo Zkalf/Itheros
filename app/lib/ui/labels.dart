@@ -87,7 +87,7 @@ class Labels {
     if (item == null || slot == null) return 'Material';
     final word = switch (slot) {
       'mainHand' => item.twoHanded ? 'two-hand weapon' : 'one-hand weapon',
-      'offHand' => 'shield',
+      'offHand' => 'off-hand item',
       'head' => 'helm',
       'neck' => 'amulet',
       'chest' => 'chest armour',

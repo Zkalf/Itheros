@@ -6,18 +6,22 @@ import 'away_summary_card.dart';
 import 'labels.dart';
 
 /// Opens the card for [item] (spec 0008 §3.5). [wornIn] is set when it was
-/// tapped on the doll.
+/// tapped on the doll. An item the data no longer has (an old save) has no
+/// card.
 Future<void> showItemCard(
   BuildContext context,
   GameController c,
   String item, {
   String? wornIn,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  builder: (_) =>
-      ItemCard(controller: c, item: item, wornIn: wornIn, host: context),
-);
+}) async {
+  if (c.game.data.itemOf(item) == null) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) =>
+        ItemCard(controller: c, item: item, wornIn: wornIn, host: context),
+  );
+}
 
 /// The item's name in its quality colour, the quality and kind in words, its
 /// stats, how it compares with what is worn, and Equip / Swap / Unequip. A
@@ -43,6 +47,7 @@ class ItemCard extends StatelessWidget {
     final c = controller;
     final game = c.game;
     final data = game.data;
+    final s = c.state;
     final labels = Labels(data);
     final text = Theme.of(context).textTheme;
     final def = data.itemOf(item)!;
@@ -62,9 +67,13 @@ class ItemCard extends StatelessWidget {
       if (gear) ...[
         Text(labels.bonus(data.bonusOf(item)).join(' · ')),
         if (def.twoHanded)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text('Uses both hands: your shield goes to the bag.'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              wornIn == null && s.equipment['offHand'] != null
+                  ? 'Uses both hands: your off-hand item goes to the bag.'
+                  : 'Uses both hands.',
+            ),
           ),
         const SizedBox(height: 12),
         ..._gearActions(context, labels),
@@ -105,9 +114,14 @@ class ItemCard extends StatelessWidget {
     final targets = free.isNotEmpty ? [free.first] : slots;
     return [
       for (final slot in targets) ...[
-        Text(switch (s.equipment[slot]) {
-          final worn? => 'Instead of your ${labels.plain(worn)}',
-          null => '${labels.slot(slot)} is empty',
+        // Everything it takes off: the worn item, a two-hander's off hand,
+        // or the two-hander an off-hand item replaces.
+        Text(switch ([
+          for (final id in game.displaced(s, item, slot))
+            labels.plain(s.equipment[id]!),
+        ]) {
+          [] => '${labels.slot(slot)} is empty',
+          final off => 'Instead of your ${off.join(' and ')}',
         }, style: Theme.of(context).textTheme.bodySmall),
         // The change counts everything it takes off (a two-hander's shield).
         Text(
