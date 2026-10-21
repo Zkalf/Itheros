@@ -1535,7 +1535,10 @@ void characterScreen() {
       await pumpGame(t, inventory: {'goblin_hide': 1});
       await openTab(t, 'character');
       await openCard(t, 'slot-neck');
-      expect(find.text('Neck'), findsWidgets);
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+        'Neck',
+      );
       expect(find.text('Nothing in your bag fits here yet.'), findsOneWidget);
     });
 
@@ -1570,6 +1573,32 @@ void characterScreen() {
         expect(cardText(t, 'compare-offHand'), '−10 Attack · +3 Defense');
       });
 
+      testWidgets('amendment 3: a shield under a two-hander says Swap', (
+        t,
+      ) async {
+        await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'bone_shield': 1},
+          equipment: {'mainHand': 'big_axe'},
+        );
+        await openTab(t, 'character');
+        await openCard(t, 'slot-offHand');
+        expect(
+          t
+              .widget<Text>(find.byKey(const ValueKey('sheet-off-bone_shield')))
+              .data,
+          'Takes off your Big axe',
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('sheet-equip-bone_shield')),
+            matching: find.text('Swap'),
+          ),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('amendment 3: Ring 2 fills Ring 2, even with Ring 1 empty', (
         t,
       ) async {
@@ -1580,8 +1609,10 @@ void characterScreen() {
         );
         await openTab(t, 'character');
         await openCard(t, 'slot-ring2');
-        expect(find.text('Ring 2'), findsOneWidget);
-        expect(find.text('Rings fit here'), findsOneWidget);
+        expect(
+          t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+          'Ring 2 · rings fit here',
+        );
         expect(
           t.widget<Text>(find.byKey(const ValueKey('sheet-delta-ring_a'))).data,
           '+5 HP',

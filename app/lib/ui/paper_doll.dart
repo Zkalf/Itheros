@@ -58,8 +58,14 @@ class PaperDoll extends StatelessWidget {
       );
     }
 
-    Widget column(List<String> ids) =>
-        Column(children: [for (final id in ids) slot(id)]);
+    // Only slots the data has (a renamed slot must not crash its sheet).
+    final known = {for (final g in data.gearSlots) g.id};
+    Widget column(List<String> ids) => Column(
+      children: [
+        for (final id in ids)
+          if (known.contains(id)) slot(id),
+      ],
+    );
 
     // Slots added in data later (a data-only change) join the bottom row,
     // so worn gear always shows.
@@ -95,7 +101,9 @@ class PaperDoll extends StatelessWidget {
             Wrap(
               alignment: WrapAlignment.center,
               children: [
-                for (final id in bottom) SizedBox(width: side, child: slot(id)),
+                for (final id in bottom)
+                  if (known.contains(id))
+                    SizedBox(width: side, child: slot(id)),
               ],
             ),
           ],

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
-import 'away_summary_card.dart';
 import 'item_card.dart';
 import 'labels.dart';
 
@@ -14,7 +12,11 @@ Future<void> showSlotSheet(
 ) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
-  builder: (_) => SlotSheet(controller: c, slot: slot, host: context),
+  builder: (_) => ListenableBuilder(
+    // Stays current if steps sync while it is open.
+    listenable: c,
+    builder: (sheet, _) => SlotSheet(controller: c, slot: slot, host: context),
+  ),
 );
 
 /// One slot, empty or not: what's worn there with Unequip, and every bag item
@@ -43,7 +45,6 @@ class SlotSheet extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final worn = s.equipment[slot];
     final kind = data.gearSlots.firstWhere((g) => g.id == slot).kind;
-    final shared = data.slotsOfKind(kind).length > 1;
     final fits =
         [
           for (final key in s.inventory.keys)
@@ -53,15 +54,8 @@ class SlotSheet extends StatelessWidget {
           return byScore != 0 ? byScore : a.compareTo(b);
         });
 
-    Text name(String key) {
-      final q = data.qualityOf(key);
-      return Text(
-        labels.plain(key),
-        style: TextStyle(
-          color: q == data.qualities.first ? null : qualityColour(q),
-        ),
-      );
-    }
+    Text name(String key) =>
+        Text(labels.plain(key), style: TextStyle(color: itemColour(data, key)));
 
     return SafeArea(
       child: ConstrainedBox(
@@ -74,15 +68,11 @@ class SlotSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
           children: [
             ListTile(
-              // "Ring 1" where a kind has several slots, else "Head".
               title: Text(
-                shared
-                    ? '${labels.slot(slot)} ${slot.replaceAll(RegExp(r'\D'), '')}'
-                    : labels.slot(slot),
+                _heading(labels, kind),
                 key: const ValueKey('sheet-title'),
                 style: text.titleLarge,
               ),
-              subtitle: shared ? Text('${labels.slot(kind)}s fit here') : null,
             ),
             if (worn != null)
               ListTile(
@@ -92,8 +82,9 @@ class SlotSheet extends StatelessWidget {
                   Navigator.of(context).pop();
                   showItemCard(host, c, worn, wornIn: slot);
                 },
-                trailing: _button(
+                trailing: sheetButton(
                   context,
+                  host,
                   const ValueKey('sheet-unequip'),
                   'Unequip',
                   () => c.unequip(slot),
@@ -108,46 +99,62 @@ class SlotSheet extends StatelessWidget {
                 key: ValueKey('sheet-none'),
                 title: Text('Nothing in your bag fits here yet.'),
               ),
-            for (final key in fits)
-              ListTile(
-                title: name(key),
-                subtitle: Text(
-                  labels.delta(game.compare(s, key, slot)),
-                  key: ValueKey('sheet-delta-$key'),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showItemCard(host, c, key);
-                },
-                trailing: _button(
-                  context,
-                  ValueKey('sheet-equip-$key'),
-                  worn == null ? 'Equip' : 'Swap',
-                  () => c.equip(key, slot: slot),
-                ),
-              ),
+            for (final key in fits) _option(context, labels, key, name(key)),
           ],
         ),
       ),
     );
   }
 
-  Widget _button(
-    BuildContext context,
-    Key key,
-    String label,
-    Future<void> Function() action,
-  ) => FilledButton.tonal(
-    key: key,
-    onPressed: () async {
-      final messenger = ScaffoldMessenger.of(host);
-      Navigator.of(context).pop();
-      try {
-        await action();
-      } on ActivityError catch (e) {
-        messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    },
-    child: Text(label),
-  );
+  /// "Head"; where several slots share a kind, "Ring 1 · rings fit here".
+  String _heading(Labels labels, String kind) {
+    final shared = controller.game.data.slotsOfKind(kind).length > 1;
+    final number = slot.replaceAll(RegExp(r'\D'), '');
+    final name = number.isEmpty
+        ? labels.slot(slot)
+        : '${labels.slot(slot)} $number';
+    return shared
+        ? '$name · ${labels.slot(kind).toLowerCase()}s fit here'
+        : name;
+  }
+
+  /// A bag item that fits: its change in stats, what else it takes off (a
+  /// two-hander, a shield), and Equip or Swap into this slot.
+  Widget _option(BuildContext context, Labels labels, String key, Text name) {
+    final c = controller;
+    final game = c.game;
+    final s = c.state;
+    final off = [
+      for (final id in game.displaced(s, key, slot))
+        labels.plain(s.equipment[id]!),
+    ];
+    return ListTile(
+      title: name,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            labels.delta(game.compare(s, key, slot)),
+            key: ValueKey('sheet-delta-$key'),
+          ),
+          if (off.isNotEmpty)
+            Text(
+              'Takes off your ${off.join(' and ')}',
+              key: ValueKey('sheet-off-$key'),
+            ),
+        ],
+      ),
+      onTap: () {
+        Navigator.of(context).pop();
+        showItemCard(host, c, key);
+      },
+      trailing: sheetButton(
+        context,
+        host,
+        ValueKey('sheet-equip-$key'),
+        off.isEmpty ? 'Equip' : 'Swap',
+        () => c.equip(key, slot: slot),
+      ),
+    );
+  }
 }
