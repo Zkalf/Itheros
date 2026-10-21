@@ -1215,9 +1215,11 @@ void playtest2() {
     });
 
     testWidgets('"Next goal" only says "your level" when it is', (t) async {
+      // Level 9: with misses and types counted (spec 0009 §2–§3), the
+      // level 8 Zombie gives the most XP, one level below.
       await pumpGame(
         t,
-        level: 8,
+        level: 9,
         location: 'old_graveyard',
         equipment: {
           'mainHand': 'kings_blade',
@@ -1227,10 +1229,9 @@ void playtest2() {
       );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
       expect(find.textContaining('Old Graveyard is your level'), findsNothing);
-      // Skeletons, not the King: monsters got new HP (spec 0009 §9.3).
       expect(
         find.text(
-          'The Skeleton in Old Graveyard gives the most XP for your steps.',
+          'The Zombie in Old Graveyard gives the most XP for your steps.',
         ),
         findsOneWidget,
       );
@@ -1407,9 +1408,13 @@ void characterScreen() {
       expect(name.style?.color, const Color(0xff42a5f5));
       expect(cardText(t, 'card-kind'), 'Rare chest armour · Chest');
       // Its stats, and the same again as the change to an empty slot.
-      expect(card(find.text('+4 Defense · +14 HP')), findsNWidgets(2));
+      // Light armour carries base Dodge (spec 0009 §6).
+      expect(
+        card(find.text('+4 Defense · +14 HP · +2% Dodge')),
+        findsNWidgets(2),
+      );
       expect(card(find.text('Chest is empty')), findsOneWidget);
-      expect(cardText(t, 'compare-chest'), '+4 Defense · +14 HP');
+      expect(cardText(t, 'compare-chest'), '+4 Defense · +14 HP · +2% Dodge');
 
       await t.tap(card(find.byKey(const ValueKey('card-equip'))));
       await settle(t, c);
@@ -1577,7 +1582,11 @@ void characterScreen() {
         await openBag(t);
         await openCard(t, 'bag-bone_shield');
         expect(card(find.text('Instead of your Big axe')), findsOneWidget);
-        expect(cardText(t, 'compare-offHand'), '−10 Attack · +3 Defense');
+        // The comparison covers every stat (spec 0009 §8.2).
+        expect(
+          cardText(t, 'compare-offHand'),
+          '−10 Attack · +3 Defense · +25% Block',
+        );
       });
 
       testWidgets('amendment 3: a shield under a two-hander says Swap', (
@@ -1666,7 +1675,11 @@ void characterScreen() {
           ),
           findsOneWidget,
         );
-        expect(cardText(t, 'compare-mainHand'), '+7 Attack · −3 Defense');
+        // The comparison covers every stat (spec 0009 §8.2).
+        expect(
+          cardText(t, 'compare-mainHand'),
+          '+7 Attack · −3 Defense · −25% Block',
+        );
         await t.tap(card(find.byKey(const ValueKey('card-swap'))));
         await settle(t, c);
         await t.pumpAndSettle();
@@ -1773,7 +1786,8 @@ void fightsWithDepth() {
       await t.tap(find.byKey(const ValueKey('bag-hide_vest')));
       await t.pumpAndSettle();
       expect(find.text('Light armour · Chest'), findsOneWidget);
-      expect(find.textContaining('+2% Dodge'), findsOneWidget);
+      // On the base line and in the comparison with the empty slot.
+      expect(find.textContaining('+2% Dodge'), findsWidgets);
       await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('tab-gear')));
       await t.pumpAndSettle();
