@@ -2,8 +2,8 @@
 // spec 0001 acceptance criterion 5 and spec 0002 criterion 3 (which replaces
 // spec 0001 criterion 6), as spec 0009 criterion 16 sets them: seeds 1-8,
 // level 5 on day 1-2; level 30 as spec 0009 amendment 1 sets it. Spec 0010
-// §9.3: the walker's professions (target 2) and the fighter (target 3, seed
-// 1 here; all seeds in tool/seeds.dart).
+// §9.3: the walker's professions (target 2), the fighter (target 3) and the
+// gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart.
 import 'package:game_core/simulation.dart';
 import 'package:test/test.dart';
 
@@ -82,5 +82,16 @@ void main() {
     if (fighter != null) {
       expect(fighter, greaterThanOrEqualTo(median(level30) * 1.15));
     }
+  });
+
+  test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 6-10 '
+      'on day 90 (seed 1)', () {
+    final gatherer = simulate(
+      game,
+      stepsPerDay: 5000,
+      days: 90,
+      walker: Walker.gatherer,
+    );
+    expect(gatherer.days.last.level, inInclusiveRange(6, 10));
   });
 }

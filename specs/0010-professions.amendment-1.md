@@ -1,9 +1,9 @@
 # Spec 0010 amendment 1: profession pace, starter recipes, the walker
 
 Status: accepted
-Amends: [spec 0010](0010-professions.md) §9.2 (the simulated walker) and §9.3 targets 1 and 2 (and so spec 0002
+Amends: [spec 0010](0010-professions.md) §9.2 (the simulated walker) and §9.3 targets 1, 2 and 4 (and so spec 0002
 criterion 3's level 10 target)
-Product owner: Zkalf (chose both targets during plan 0012 M1, 2026-10-21; the other two changes are found in M1 and
+Product owner: Zkalf (chose the targets during plan 0012 M1, 2026-10-21/22; the other two changes are found in M1 and
 shown in its PR)
 Date: 2026-10-21
 
@@ -30,8 +30,10 @@ Plan 0012 M1 found three things:
    spots.
 3. §9.3 target 1: level 10 on day **11–16** (was 12–16); the rest of spec 0009 amendment 1 holds.
 4. §9.3 target 2 becomes: Mining and Crafting reach 10 by day **8–22** and 20 by day 45–65 (medians of seeds 1–8).
+5. §9.3 target 4: the gatherer-crafter is **level 6–10 on day 90** (seed 1 in the pacing test; level 7 on every seed
+   at M1). The owner: fighting is the game's main way to grow, the professions add to it.
 
 ## Numbers at the end of M1 (5,000 steps a day, seeds 1–8)
 Character level 10 on day 11–14 (median 13), level 30 on day 81–96 (median 91); Mining 10 median day 20, Mining 20
 54.5; Crafting 10 median day 11, Crafting 20 48; the fighter doesn't reach level 30 by day 120 on any seed; the
-gatherer-crafter is level 7 on day 90 on every seed (target 4, for the owner to set).
+gatherer-crafter is level 7 on day 90 on every seed.
