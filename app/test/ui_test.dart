@@ -132,6 +132,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  fightsWithDepth();
   characterScreen();
   layoutScreens();
   playtest2();
@@ -1679,6 +1680,226 @@ void characterScreen() {
         );
         expect(off.dimmed, isTrue, reason: 'greyed out under a two-hander');
       });
+    });
+  });
+}
+
+/// Spec 0009 §7–§8 (plan 0011 M3): the fight log, the item card, the
+/// bestiary card on the monster sheet, the Journal's tabs and the stats.
+void fightsWithDepth() {
+  group('fights with depth (spec 0009)', () {
+    Finder bestiary(Finder f) => find.descendant(
+      of: find.byKey(const ValueKey('bestiary-card')),
+      matching: f,
+    );
+
+    test('criterion 13: the fight log names each swing (§8.1)', () {
+      final labels = Labels(game.data);
+      List<String> lines(Swing? mine, Swing? theirs, {int d = 9, int t = 7}) =>
+          labels.roundLines(
+            RoundLog(
+              round: 3,
+              mine: mine,
+              theirs: theirs,
+              dealt: mine == null ? null : d,
+              taken: theirs == null ? null : t,
+            ),
+            'skeleton',
+          );
+      expect(lines(Swing.hit, Swing.hit), [
+        'Round 3: You hit for 9',
+        'Skeleton hits you for 7',
+      ]);
+      expect(lines(Swing.crit, Swing.miss, d: 18), [
+        'Round 3: Critical hit for 18',
+        'Skeleton misses',
+      ]);
+      expect(lines(Swing.miss, Swing.dodge, d: 0, t: 0), [
+        'Round 3: You miss',
+        'You dodge',
+      ]);
+      expect(lines(Swing.dodge, Swing.block, d: 0, t: 2), [
+        'Round 3: Skeleton dodges',
+        'You block: 2 damage',
+      ]);
+      // Quick monsters swing first; a slow one may not swing at all.
+      expect(
+        labels.roundLines(
+          const RoundLog(
+            round: 1,
+            mine: Swing.hit,
+            dealt: 5,
+            theirs: Swing.hit,
+            taken: 4,
+          ),
+          'wolf',
+        ),
+        ['Round 1: Wolf hits you for 4', 'You hit for 5'],
+      );
+      expect(
+        labels.roundLines(
+          const RoundLog(
+            round: 2,
+            mine: Swing.hit,
+            dealt: 5,
+            outcome: FightOutcome.won,
+          ),
+          'zombie',
+        ),
+        ['Round 2: You hit for 5', 'Zombie is beaten'],
+      );
+    });
+
+    testWidgets('criterion 13: the item card shows type, hands and bonus '
+        'stats; list rows show none', (t) async {
+      const spear = 'iron_spear@rare+crit3+hp12';
+      await pumpGame(
+        t,
+        level: 14,
+        inventory: {spear: 1, 'hide_vest': 1},
+        equipment: {'mainHand': spear},
+      );
+      await openTab(t, 'character');
+      await t.tap(find.byKey(const ValueKey('slot-mainHand')));
+      await t.pumpAndSettle();
+      final sheet = find.byKey(const ValueKey('slot-sheet'));
+      expect(
+        find.descendant(of: sheet, matching: find.textContaining('Crit')),
+        findsNothing,
+      );
+      await closeSheet(t);
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('bag-hide_vest')));
+      await t.pumpAndSettle();
+      expect(find.text('Light armour · Chest'), findsOneWidget);
+      expect(find.textContaining('+2% Dodge'), findsOneWidget);
+      await closeSheet(t);
+      await t.tap(find.byKey(const ValueKey('tab-gear')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('slot-mainHand')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Iron spear').last);
+      await t.pumpAndSettle();
+      final card = find.byKey(const ValueKey('item-card'));
+      Finder inCard(String text) =>
+          find.descendant(of: card, matching: find.text(text));
+      expect(inCard('Pierce · One hand'), findsOneWidget);
+      expect(inCard('+3% Crit'), findsOneWidget);
+      expect(inCard('+12 Health'), findsOneWidget);
+    });
+
+    testWidgets('criterion 11: the card fills in by fighting, never shows '
+        'drop chances', (t) async {
+      await pumpGame(
+        t,
+        location: 'old_graveyard',
+        level: 8,
+        counters: {'kills.skeleton': 12},
+      );
+      await t.tap(option('fight', 'zombie'));
+      await t.pumpAndSettle();
+      expect(bestiary(find.text('Zombie')), findsOneWidget);
+      expect(bestiary(find.textContaining('Armour: ???')), findsOneWidget);
+      expect(
+        bestiary(find.textContaining('10 more kills to learn its weakness')),
+        findsOneWidget,
+      );
+      expect(bestiary(find.textContaining('HP ')), findsNothing);
+      await closeSheet(t);
+      await t.tap(option('fight', 'skeleton'));
+      await t.pumpAndSettle();
+      expect(bestiary(find.textContaining('Heavy armour')), findsOneWidget);
+      expect(bestiary(find.textContaining('Weak to crush')), findsOneWidget);
+      expect(bestiary(find.textContaining('HP 48')), findsOneWidget);
+      expect(bestiary(find.textContaining('12 kills')), findsOneWidget);
+      expect(bestiary(find.textContaining('38 more kills')), findsOneWidget);
+      expect(bestiary(find.textContaining('chance')), findsNothing);
+      expect(bestiary(find.textContaining('Drops:')), findsOneWidget);
+    });
+
+    testWidgets('criterion 14: tapping a monster in Now or World opens its '
+        'card with the fight choices', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('bestiary-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('stop-untilGrey')), findsOneWidget);
+      await closeSheet(t);
+      await openArea(t, 'goblin_woods');
+      await t.tap(option('fight', 'goblin'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('bestiary-card')), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('start-now')));
+      await settle(t, c);
+      expect(c.state.activity?.activity, const Activity.fight('goblin'));
+    });
+
+    testWidgets('criterion 14: the Journal has Log, Bestiary and Lore tabs', (
+      t,
+    ) async {
+      final note = game.data.enemies['goblin']!.lore!;
+      final (c, _) = await pumpGame(t, counters: {'kills.goblin': 60});
+      // Found lore shows in the Lore tab.
+      c.state.lore.add(note.id);
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      expect(find.text('Log'), findsOneWidget);
+      await t.tap(find.text('Bestiary'));
+      await t.pumpAndSettle();
+      final goblin = find.byKey(const ValueKey('bestiary-goblin'));
+      expect(goblin, findsOneWidget);
+      expect(
+        find.descendant(of: goblin, matching: find.textContaining('Slayer')),
+        findsOneWidget,
+      );
+      // The brute: known from the note (armour, weakness), never fought.
+      expect(
+        find.byKey(const ValueKey('bestiary-goblin_brute')),
+        findsOneWidget,
+      );
+      // Beyond the fog: no card yet (decision 10).
+      expect(find.byKey(const ValueKey('bestiary-young_dragon')), findsNothing);
+      await t.tap(goblin);
+      await t.pumpAndSettle();
+      expect(bestiary(find.textContaining('Slayer')), findsOneWidget);
+      await closeSheet(t);
+      await t.tap(find.text('Lore'));
+      await t.pumpAndSettle();
+      expect(find.text('1 of 16 found'), findsOneWidget);
+      expect(find.text(note.title), findsOneWidget);
+      expect(c.state.lore, {note.id});
+    });
+
+    testWidgets('the Character stats show Crit, Hit, Dodge and Block', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        level: 7,
+        equipment: {'offHand': 'bone_shield', 'chest': 'hide_vest'},
+      );
+      await openTab(t, 'character');
+      for (final (label, value) in [
+        ('Crit', '5%'),
+        ('Hit', '0%'),
+        ('Dodge', '2%'),
+        ('Block', '25%'),
+      ]) {
+        expect(
+          find.byKey(ValueKey('stat-$label')),
+          findsOneWidget,
+          reason: label,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey('stat-$label')),
+            matching: find.text(value),
+          ),
+          findsOneWidget,
+          reason: label,
+        );
+      }
     });
   });
 }
