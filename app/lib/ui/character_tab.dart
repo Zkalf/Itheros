@@ -46,6 +46,17 @@ class _CharacterTabState extends State<CharacterTab> {
                     _Stat('Defense', '${stats.defense}'),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // Spec 0009 §2.2: with base Crit, each within its cap.
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _Stat('Crit', '${game.critChance(s)}%'),
+                    _Stat('Hit', '${stats.hit}%'),
+                    _Stat('Dodge', '${game.dodgeChance(s)}%'),
+                    _Stat('Block', '${game.blockChance(s)}%'),
+                  ],
+                ),
                 if (points > 0) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -134,6 +145,7 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Column(
+      key: ValueKey('stat-$label'),
       children: [
         Text(value, style: text.headlineSmall),
         Text(label, style: text.bodySmall),

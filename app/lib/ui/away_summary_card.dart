@@ -41,7 +41,8 @@ Widget reportLine(String line, Labels labels) =>
     Text.rich(TextSpan(children: reportSpans(line, labels.data)));
 
 /// The big moments of a report, shown as banners above its lines (spec 0004
-/// amendment 3): levels reached, then achievements.
+/// amendment 3): levels reached, achievements, then what was learned about
+/// monsters (spec 0009 §7).
 List<Widget> reportBanners(AwaySummary s, Labels labels) => [
   for (final l in s.levelsReached)
     ReportBanner(icon: Icons.military_tech, text: 'Reached level $l!'),
@@ -50,6 +51,12 @@ List<Widget> reportBanners(AwaySummary s, Labels labels) => [
       icon: Icons.emoji_events,
       text: 'Achievement unlocked: ${labels.achievement(a)}',
     ),
+  for (final n in s.lore)
+    ReportBanner(icon: Icons.menu_book, text: labels.loreFound(n)),
+  for (final e in s.learned)
+    ReportBanner(icon: Icons.visibility, text: labels.weaknessLearned(e)),
+  for (final e in s.slayers)
+    ReportBanner(icon: Icons.gps_fixed, text: labels.slayerEarned(e)),
 ];
 
 /// A highlighted line with an icon, in the theme's highlight colour.

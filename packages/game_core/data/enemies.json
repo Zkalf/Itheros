@@ -7,6 +7,7 @@
         { "item": "goblin_hide", "chance": 0.5, "count": 1 },
         { "item": "rusty_dagger", "chance": 0.05, "count": 1 }
       ],
+      "lore": {"id": "lore_goblin_brute", "about": "goblin_brute", "title": "Brute's hide", "text": "Scrawled on a scrap of hide: \"Brute wears only his own skin. Cut him and he bleeds like the rest of us. Keep your edge sharp.\""},
       "flavour": "Goblin: quick fingers, rusty knives.",
       "lossHint": "Goblins are weak alone. Try again: a better weapon helps."
     },
@@ -16,6 +17,7 @@
       "drops": [
         { "item": "goblin_hide", "chance": 1.0, "count": 2 }
       ],
+      "lore": {"id": "lore_old_bear", "about": "old_bear", "title": "Bear sign", "text": "A hunter's tally stick, notched: \"The old one's coat is thick as a quilted jerkin. Blades slide off. A spear point goes through.\""},
       "flavour": "Goblin brute: twice the size, half the patience.",
       "lossHint": "Brutes hit hard. A hide vest and a copper sword make the difference."
     },
@@ -35,6 +37,7 @@
       "drops": [
         { "item": "bones", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_zombie", "about": "zombie", "title": "Gravedigger's note", "text": "\"They rot soft under the shroud. No armour, just meat. A clean cut ends them; a club only makes them angry.\" The rest is mud."},
       "flavour": "Skeleton: nothing to hurt but bone, and bone is hard.",
       "lossHint": "Skeletons shrug off weak blows. A stronger weapon helps."
     },
@@ -45,6 +48,7 @@
       "drops": [
         { "item": "grave_cloth", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_graveyard_king", "about": "graveyard_king", "title": "The King's armour", "text": "Torn from a sexton's ledger: \"His Majesty was buried in full plate. Swords ring off it. The old smith says only a hammer cracks a king.\""},
       "flavour": "Zombie: slow, but it never stops coming.",
       "lossHint": "Zombies are slow but hit hard, and fights are long. Defence helps: try a shield."
     },
@@ -58,6 +62,7 @@
       "firstKillDrops": [
         { "item": "kings_blade", "count": 1, "repeatChance": 0.01 }
       ],
+      "lore": {"id": "lore_wolf", "about": "wolf", "title": "Wolf pelts", "text": "A royal decree, half eaten: \"...bounty on the grey wolves of the moor. Their pelts turn nothing. Any blade will do...\""},
       "flavour": "Graveyard King: he ruled once. He still thinks he does.",
       "lossHint": "The Graveyard King's armour is heavy: a stronger weapon helps. Bring a shield and body armour too."
     },
@@ -68,6 +73,7 @@
       "drops": [
         { "item": "wolf_pelt", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_ghost", "about": "ghost", "title": "Mist on the moor", "text": "A shepherd's charm with a note tied on: \"The pale ones wear nothing at all. Swing wide, swing true; a blade parts them like fog.\""},
       "flavour": "Wolf: it bites before you've drawn your sword.",
       "lossHint": "Wolves strike first. More defence and HP help."
     },
@@ -78,6 +84,7 @@
       "drops": [
         { "item": "ectoplasm", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_bandit", "about": "bandit", "title": "Wanted poster", "text": "A faded poster: \"Bandits of the ridge, armed and in leather coats. Reward for each. Pikemen preferred: the leather won't stop a thrust.\""},
       "flavour": "Ghost: your armour means nothing to it.",
       "lossHint": "Ghosts pass through armour. More HP and a faster kill help."
     },
@@ -88,6 +95,7 @@
         { "item": "leather", "chance": 0.6, "count": 1 },
         { "item": "iron_ore", "chance": 0.4, "count": 1 }
       ],
+      "lore": {"id": "lore_giant_spider", "about": "giant_spider", "title": "Stolen map", "text": "A bandit's map, the pass circled: \"Spiders there. Hard shells like boiled leather. Stab between the plates, don't hack.\""},
       "flavour": "Bandit: all knife, no armour.",
       "lossHint": "Bandits hit very hard but go down fast. Defence helps."
     },
@@ -98,6 +106,7 @@
       "drops": [
         { "item": "silk", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_troll", "about": "troll", "title": "Silk-wrapped letter", "text": "Found in a cocoon: \"Trolls wear no armour, only their own grey hide. Cut deep and fast, before it closes.\" The writer did not finish."},
       "flavour": "Giant spider: you see the legs before the rest.",
       "lossHint": "Spiders strike first and hard. Defence helps."
     },
@@ -108,6 +117,7 @@
       "drops": [
         { "item": "troll_hide", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_ogre_chieftain", "about": "ogre_chieftain", "title": "Toll receipt", "text": "A greasy receipt: \"Paid the Chieftain. Saw his coat up close: layered leather and hide. Arrows and spears are what he fears.\""},
       "flavour": "Troll: cut it and it closes. Cut it faster.",
       "lossHint": "Trolls heal every round. A big weapon beats the healing."
     },
@@ -121,6 +131,7 @@
       "firstKillDrops": [
         { "item": "chieftains_amulet", "count": 1, "repeatChance": 0.01 }
       ],
+      "lore": {"id": "lore_stone_golem", "about": "stone_golem", "title": "Chieftain's boast", "text": "Carved in the bridge stones: \"Ogres fear no stone man. We break them with mauls. Swords? Ha. Swords break.\""},
       "flavour": "Ogre Chieftain: the bridge is his. So is the toll.",
       "lossHint": "The Ogre Chieftain is slow, but every blow crushes. Bring iron and troll gear."
     },
@@ -131,6 +142,7 @@
       "drops": [
         { "item": "stone_core", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_harpy", "about": "harpy", "title": "Mason's warning", "text": "Chiselled inside a golem's core: \"The bird-women wear feathers, nothing more. A sweeping blade brings them down.\""},
       "flavour": "Stone golem: a mountain that learned to walk.",
       "lossHint": "Golems are almost unbreakable. Bring your best weapon."
     },
@@ -141,6 +153,7 @@
       "drops": [
         { "item": "feathers", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_wraith", "about": "wraith", "title": "Feather quill note", "text": "Written with a harpy quill: \"The wraiths wrap themselves in grave-leather and old cloth. Pierce it. Cutting only tears rags.\""},
       "flavour": "Harpy: it dives from the sun, claws first.",
       "lossHint": "Harpies strike first, and their claws ignore armour. More HP helps."
     },
@@ -151,6 +164,7 @@
       "drops": [
         { "item": "soul_dust", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_wyvern", "about": "wyvern", "title": "Cold letter", "text": "Frost on the paper: \"The wyvern's scales overlap like a brigandine. A lance finds the gaps; a sword glances off.\""},
       "flavour": "Wraith: cold hands, and it mends as it fights.",
       "lossHint": "Wraiths ignore armour and heal. A big weapon and lots of HP help."
     },
@@ -161,6 +175,7 @@
       "drops": [
         { "item": "wyvern_scale", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_fire_drake", "about": "fire_drake", "title": "Scorched page", "text": "A scorched page from a dragon-hunter's book: \"Drakes are plated like knights. Bring a hammer. Spears snap on them.\""},
       "flavour": "Wyvern: a dragon's little cousin, and just as rude.",
       "lossHint": "Wyverns strike first and hard. Defence helps."
     },
@@ -171,6 +186,7 @@
       "drops": [
         { "item": "drake_fang", "chance": 0.6, "count": 1 }
       ],
+      "lore": {"id": "lore_young_dragon", "about": "young_dragon", "title": "The dragon-hunter's last page", "text": "\"The young one's scales are thicker still, heavy as a cathedral door. Only crushing blows carry through. I did not bring one.\""},
       "flavour": "Fire drake: armoured, burning, and healing in its own fire.",
       "lossHint": "Drakes are armoured and heal. Bring your biggest weapon."
     },

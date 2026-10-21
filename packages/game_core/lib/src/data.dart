@@ -70,6 +70,8 @@ class CombatRules {
       dodgeCap = _int(j, 'dodgeCap'),
       slayerKills = _int(j, 'slayerKills'),
       slayerHit = _int(j, 'slayerHit'),
+      studyKills = _int(j, 'studyKills'),
+      loreChance = (j['loreChance'] as num).toDouble(),
       typeFactors = Map.unmodifiable(
         _map(j, 'typeFactors').map(
           (armour, row) => MapEntry(
@@ -102,6 +104,12 @@ class CombatRules {
   /// monster (spec 0009 §7.1).
   final int slayerKills;
   final int slayerHit;
+
+  /// Kills of a monster that show its weakness and stats (spec 0009 §7.1).
+  final int studyKills;
+
+  /// The chance a kill drops its monster's lore note, until found (§7.2).
+  final double loreChance;
 
   /// Armour type -> damage type -> damage factor.
   final Map<String, Map<String, double>> typeFactors;
@@ -276,6 +284,21 @@ enum Trait {
   regenerates,
 }
 
+/// A lore note (spec 0009 §7.2): dropped by one monster, it tells the armour
+/// and weakness of the monster it is [about].
+class LoreDef {
+  LoreDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      about = _str(j, 'about'),
+      title = _str(j, 'title'),
+      text = _str(j, 'text');
+
+  final String id;
+  final String about;
+  final String title;
+  final String text;
+}
+
 class EnemyDef {
   /// One `enemies.json` entry; for tuning tools trying variants.
   factory EnemyDef.fromJson(Map<String, Object?> j) = EnemyDef._;
@@ -293,6 +316,10 @@ class EnemyDef {
       firstKillDrops = _maps(j, 'firstKillDrops').map(DropDef._).toList(),
       lurker = j['lurker'] as bool? ?? false,
       lossHint = j['lossHint'] as String?,
+      lore = switch (j['lore']) {
+        final Map<String, Object?> m => LoreDef._(m),
+        _ => null,
+      },
       flavour = j['flavour'] as String?;
 
   final String id;
@@ -322,6 +349,9 @@ class EnemyDef {
 
   /// Added to the report after a loss (spec 0002 §9.4).
   final String? lossHint;
+
+  /// The note it may drop (spec 0009 §7.2).
+  final LoreDef? lore;
 
   /// One line shown the first time it appears (spec 0002 §9.5).
   final String? flavour;
@@ -591,6 +621,11 @@ class GameData {
   /// The bonus stats, in the order a key lists them.
   static const bonusStats = ['crit', 'hp', 'hit', 'dodge', 'block'];
 
+  /// Every lore note, in data order.
+  late final List<LoreDef> loreNotes = [
+    for (final e in enemies.values) ?e.lore,
+  ];
+
   /// The pool of gear of [itemLevel].
   BonusTier bonusTierFor(int itemLevel) => bonusTiers.firstWhere(
     (t) => t.upToLevel == null || itemLevel <= t.upToLevel!,
@@ -677,10 +712,12 @@ class GameData {
     for (final r in bonusRolls(key)) {
       rolled += Stats.fromJson({r.stat: r.value});
     }
-    return _qualityStats(key) + rolled;
+    return baseStatsOf(key) + rolled;
   }
 
-  Stats _qualityStats(String key) {
+  /// An item's stats with its quality, without its bonus stats: what list
+  /// rows and the card's first line show (spec 0009 §8.2).
+  Stats baseStatsOf(String key) {
     final base = itemOf(key)?.bonus ?? const Stats();
     final q = qualityOf(key);
     final tier = qualities.indexOf(q);
@@ -885,6 +922,12 @@ class GameData {
         e.has(Trait.regenerates) == (e.regen > 0),
         'enemy ${e.id}: regen is set exactly when it regenerates',
       );
+      if (e.lore case final note?) {
+        check(
+          enemies.containsKey(note.about) && note.about != e.id,
+          'enemy ${e.id}: its lore note is about an unknown monster',
+        );
+      }
       for (final d in [...e.drops, ...e.firstKillDrops]) {
         check(
           items.containsKey(d.item),

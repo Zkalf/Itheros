@@ -55,6 +55,33 @@ class Game {
     null => null,
   };
 
+  /// What the player knows about [enemy] (spec 0009 §7.1): its armour from
+  /// the first fight, its weakness and stats from enough kills; a lore note
+  /// about it tells armour and weakness (§7.2).
+  Knowledge knowledge(GameState s, String enemy) {
+    final kills = s.counters['kills.$enemy'] ?? 0;
+    final c = data.combat;
+    final note = data.loreNotes.any(
+      (n) => n.about == enemy && s.lore.contains(n.id),
+    );
+    return Knowledge(
+      kills: kills,
+      armour: note || s.fought.contains(enemy) || kills > 0,
+      weakness: note || kills >= c.studyKills,
+      stats: kills >= c.studyKills,
+      slayer: kills >= c.slayerKills,
+      killsToNext: kills < c.studyKills
+          ? c.studyKills - kills
+          : kills < c.slayerKills
+          ? c.slayerKills - kills
+          : null,
+    );
+  }
+
+  /// The damage type [enemy] is weak to: the one strong against its armour.
+  String weakness(String enemy) =>
+      data.combat.strongAgainst(data.enemies[enemy]!.armour);
+
   /// Whether the player has earned Slayer against [enemy] (spec 0009 §7.1).
   bool slayer(GameState s, String enemy) =>
       (s.counters['kills.$enemy'] ?? 0) >= data.combat.slayerKills;
@@ -181,7 +208,20 @@ class Game {
 
   /// What to do next, or null when nothing applies (spec 0002 §9.3).
   Goal? nextGoal(GameState s) {
-    int gain(String key) => gearGain(s, key);
+    // A weapon only competes with the worn one of its damage type and hands
+    // (spec 0009 §5.3).
+    final worn = s.equipment['mainHand'];
+    final wornWeapon = worn == null ? null : data.itemOf(worn);
+    int gain(String key) {
+      final item = data.itemOf(key);
+      if (item?.damageType != null &&
+          wornWeapon != null &&
+          (item!.damageType != wornWeapon.damageType ||
+              item.twoHanded != wornWeapon.twoHanded)) {
+        return 0;
+      }
+      return gearGain(s, key);
+    }
 
     final better = [
       for (final key in s.inventory.keys)
@@ -218,7 +258,14 @@ class Game {
           enemyBand(s, e.id).colour != LevelColour.yellow) {
         continue;
       }
-      final hit = math.max(1, me.attack - e.stats.defense / 2);
+      // An average swing: the hit and dodge rolls and the type factor
+      // (spec 0009 §2–§3).
+      final hit =
+          math.max(1, me.attack - e.stats.defense / 2) *
+          data.combat.typeFactor(damageType(s), e.armour) *
+          playerHitChance(s, e.id) /
+          100 *
+          (1 - enemyDodge(e.id) / 100);
       final rate = e.xp / (e.stats.hp / hit).ceil();
       if (rate > bestRate) (best, bestRate) = (e, rate);
     }
@@ -916,6 +963,28 @@ class Game {
   LocationDef _here(GameState s) => data.locations[s.location]!;
 }
 
+/// What the player knows about a monster (spec 0009 §7.1).
+class Knowledge {
+  const Knowledge({
+    required this.kills,
+    required this.armour,
+    required this.weakness,
+    required this.stats,
+    required this.slayer,
+    required this.killsToNext,
+  });
+
+  final int kills;
+  final bool armour;
+  final bool weakness;
+  final bool stats;
+  final bool slayer;
+
+  /// Kills until the next thing is learned (weakness and stats, then
+  /// Slayer); null once Slayer is earned.
+  final int? killsToNext;
+}
+
 /// Mutable bookkeeping for one [Game.applySteps] call.
 class _Run {
   _Run(this.game, this.s) : rng = Rng.fromState(s.rngState);
@@ -1178,10 +1247,25 @@ class _Run {
     for (final d in enemy.firstKillDrops) {
       if (firstKill || rng.nextDouble() < d.repeatChance) drop(d);
     }
+    // A lore note, once (spec 0009 §7.2). Its roll comes from a generator
+    // derived from this kill, so it never shifts the fights and loot after.
+    if (enemy.lore case final note? when !s.lore.contains(note.id)) {
+      final kill = (s.counters['kills.${enemy.id}'] ?? 0) + 1;
+      final roll = Rng.fromState(rng.state ^ (kill * 0x9E3779B1)).nextDouble();
+      if (roll < data.combat.loreChance) {
+        s.lore.add(note.id);
+        events.add(LoreFound(note.id));
+      }
+    }
     final xp = _faded(enemy.xp, enemy.level);
     s.count('kills.${enemy.id}');
     events.add(FightWon(enemy.id, xp, drops));
     _gainXp(xp);
+    final kills = s.counters['kills.${enemy.id}']!;
+    if (kills == data.combat.studyKills) {
+      events.add(WeaknessLearned(enemy.id));
+    }
+    if (kills == data.combat.slayerKills) events.add(SlayerEarned(enemy.id));
     return null;
   }
 

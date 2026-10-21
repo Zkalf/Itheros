@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'bestiary_card.dart';
 import 'labels.dart';
 
 /// Picks a stop condition for [activity] and whether to start it now or add
-/// it to the queue (spec 0003 §8). Pops `(StopCondition, bool now)`.
+/// it to the queue (spec 0003 §8). Pops `(StopCondition, bool now)`. For a
+/// fight, the monster's bestiary card sits on top (spec 0009 decision 11).
 class ActionSheet extends StatefulWidget {
   const ActionSheet({
     super.key,
@@ -99,7 +101,7 @@ class _ActionSheetState extends State<ActionSheet> {
     };
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           16,
           16,
@@ -110,8 +112,13 @@ class _ActionSheetState extends State<ActionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(labels.short(a), style: text.titleLarge),
-            const SizedBox(height: 12),
+            if (a.kind == ActivityKind.fight) ...[
+              BestiaryCard(controller: c, enemy: a.target),
+              const Divider(height: 24),
+            ] else ...[
+              Text(labels.short(a), style: text.titleLarge),
+              const SizedBox(height: 12),
+            ],
             Text('Stop when', style: text.titleSmall),
             Wrap(
               spacing: 8,

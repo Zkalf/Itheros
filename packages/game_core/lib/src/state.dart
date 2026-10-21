@@ -300,7 +300,8 @@ class GameState {
     'achievements': achievements.toList()..sort(),
     'explored': explored.toList()..sort(),
     'fought': fought.toList()..sort(),
-    'lore': lore.toList()..sort(),
+    // In the order found: the Lore tab lists the newest first.
+    'lore': lore.toList(),
   };
 
   void addItem(String item, [int count = 1]) {

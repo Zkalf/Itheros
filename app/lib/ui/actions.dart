@@ -75,8 +75,9 @@ class ActionTile extends StatelessWidget {
   }
 }
 
-/// A row for fighting [enemy]: level badge, stats, XP, and for red or skull
-/// monsters a warning first (spec 0002 §9.2).
+/// A row for fighting [enemy]: level badge, stats once learned (spec 0009
+/// §7.1), XP, and for red or skull monsters a warning first (spec 0002
+/// §9.2).
 Widget enemyTile(
   GameController c,
   String enemy, {
@@ -86,6 +87,7 @@ Widget enemyTile(
   final game = c.game;
   final e = game.data.enemies[enemy]!;
   final band = game.enemyBand(c.state, enemy);
+  final known = game.knowledge(c.state, enemy).stats;
   return ActionTile(
     controller: c,
     activity: Activity.fight(enemy),
@@ -94,9 +96,12 @@ Widget enemyTile(
     subtitle:
         [
           if (band.colour == LevelColour.orange) 'Risky',
-          'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
-          if (e.traits.isNotEmpty)
-            e.traits.map((t) => _traitName[t]).join(', '),
+          if (known) ...[
+            'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
+            if (e.traits.isNotEmpty)
+              e.traits.map((t) => _traitName[t]).join(', '),
+          ] else
+            'Stats unknown',
           '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
           '${game.data.combatRoundSteps} steps per round',
         ].join(' · ') +

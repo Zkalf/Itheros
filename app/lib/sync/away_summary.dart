@@ -114,6 +114,9 @@ class AwaySummary {
     this.actions = const [],
     this.levelsReached = const [],
     this.achievements = const [],
+    this.lore = const [],
+    this.learned = const [],
+    this.slayers = const [],
   });
 
   factory AwaySummary.fromReports(Iterable<StepReport> reports) =>
@@ -125,6 +128,7 @@ class AwaySummary {
     final logs = <ActionLog>[];
     final levels = <int>[];
     final achievements = <String>[];
+    final lore = <String>[], learned = <String>[], slayers = <String>[];
     var wins = 0, xp = 0;
     var items = <String, int>{};
     var losses = <FightLost>[];
@@ -172,6 +176,12 @@ class AwaySummary {
           levels.add(level);
         case AchievementUnlocked(:final id):
           achievements.add(id);
+        case LoreFound(:final note):
+          lore.add(note);
+        case WeaknessLearned(:final enemy):
+          learned.add(enemy);
+        case SlayerEarned(:final enemy):
+          slayers.add(enemy);
         case ActivityEnded(:final activity, :final reason):
           close(activity, reason);
           started = null;
@@ -199,6 +209,9 @@ class AwaySummary {
       actions: logs,
       levelsReached: levels,
       achievements: achievements,
+      lore: lore,
+      learned: learned,
+      slayers: slayers,
     );
   }
 
@@ -213,12 +226,23 @@ class AwaySummary {
   final List<int> levelsReached;
   final List<String> achievements;
 
+  /// Lore notes found, monsters whose weakness was learned, Slayer marks
+  /// earned (spec 0009 §7).
+  final List<String> lore;
+  final List<String> learned;
+  final List<String> slayers;
+
   bool get isEmpty => walked == 0;
 
   /// Something happened beyond steps going to the bank or toward an
   /// unfinished unit: worth its own screen (spec 0004 amendment 2).
   bool get isEventful =>
-      actions.isNotEmpty || levelsReached.isNotEmpty || achievements.isNotEmpty;
+      actions.isNotEmpty ||
+      levelsReached.isNotEmpty ||
+      achievements.isNotEmpty ||
+      lore.isNotEmpty ||
+      learned.isNotEmpty ||
+      slayers.isNotEmpty;
 
   factory AwaySummary.fromJson(Map<String, Object?> j) => AwaySummary(
     walked: j['walked']! as int,
@@ -232,6 +256,10 @@ class AwaySummary {
     ],
     levelsReached: (j['levelsReached']! as List<Object?>).cast<int>(),
     achievements: (j['achievements']! as List<Object?>).cast<String>(),
+    // Entries from before spec 0009 have none.
+    lore: _strings(j['lore']),
+    learned: _strings(j['learned']),
+    slayers: _strings(j['slayers']),
   );
 
   Map<String, Object?> toJson() => {
@@ -243,6 +271,9 @@ class AwaySummary {
     'actions': [for (final a in actions) a.toJson()],
     'levelsReached': levelsReached,
     'achievements': achievements,
+    'lore': lore,
+    'learned': learned,
+    'slayers': slayers,
   };
 
   AwaySummary operator +(AwaySummary o) {
@@ -265,6 +296,9 @@ class AwaySummary {
       actions: [...merged, ...rest],
       levelsReached: [...levelsReached, ...o.levelsReached],
       achievements: [...achievements, ...o.achievements],
+      lore: [...lore, ...o.lore],
+      learned: [...learned, ...o.learned],
+      slayers: [...slayers, ...o.slayers],
     );
   }
 
@@ -273,6 +307,9 @@ class AwaySummary {
     for (final e in b.entries) e.key: (a[e.key] ?? 0) + e.value,
   };
 }
+
+List<String> _strings(Object? json) =>
+    (json as List<Object?>? ?? const []).cast<String>();
 
 Map<String, int> _ints(Object? json) =>
     (json as Map<String, Object?>? ?? const {}).map(

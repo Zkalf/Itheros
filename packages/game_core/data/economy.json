@@ -24,7 +24,7 @@
     "hitBase": 85, "hitPerLevel": 5, "hitMin": 50, "hitMax": 95,
     "critBase": 5, "critDamage": 2, "blockShare": 0.3,
     "critCap": 50, "blockCap": 50, "dodgeCap": 30,
-    "slayerKills": 50, "slayerHit": 5,
+    "slayerKills": 50, "slayerHit": 5, "studyKills": 10, "loreChance": 0.01,
     "typeFactors": {
       "light": { "slash": 1.3, "pierce": 1.0, "crush": 0.8 },
       "medium": { "pierce": 1.3, "crush": 1.0, "slash": 0.8 },

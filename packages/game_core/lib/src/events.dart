@@ -69,6 +69,24 @@ class LevelUp extends GameEvent {
   final int level;
 }
 
+/// A lore note was found (spec 0009 §7.2).
+class LoreFound extends GameEvent {
+  const LoreFound(this.note);
+  final String note;
+}
+
+/// Enough kills to know [enemy]'s weakness and stats (spec 0009 §7.1).
+class WeaknessLearned extends GameEvent {
+  const WeaknessLearned(this.enemy);
+  final String enemy;
+}
+
+/// Enough kills for the Slayer mark against [enemy] (spec 0009 §7.1).
+class SlayerEarned extends GameEvent {
+  const SlayerEarned(this.enemy);
+  final String enemy;
+}
+
 class AchievementUnlocked extends GameEvent {
   const AchievementUnlocked(this.id);
   final String id;

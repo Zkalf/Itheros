@@ -47,33 +47,100 @@ class Labels {
   String qualityName(String id) =>
       data.qualities.where((q) => q.id == id).firstOrNull?.name ?? id;
 
-  /// A fight log line (spec 0006 decision 8): "Round 3 · You hit for 6 ·
-  /// Skeleton hits for 3", ending with who was beaten.
-  String round(RoundLog r, String enemyId) => [
-    'Round ${r.round}',
-    if (r.dealt case final d?) 'You hit for $d',
-    if (r.taken case final t?) '${enemy(enemyId)} hits for $t',
-    if (r.outcome == FightOutcome.won) '${enemy(enemyId)} is beaten',
-    if (r.outcome == FightOutcome.lost) 'You are beaten',
-  ].join(' · ');
+  /// A round of the fight log, one line per swing (spec 0009 §8.1):
+  /// "Round 3: You hit for 9", "Skeleton misses", in the order they swung,
+  /// then who was beaten.
+  List<String> roundLines(RoundLog r, String enemyId) {
+    final name = enemy(enemyId);
+    final mine = switch (r.mine) {
+      Swing.hit => 'You hit for ${r.dealt}',
+      Swing.crit => 'Critical hit for ${r.dealt}',
+      Swing.miss => 'You miss',
+      Swing.dodge => '$name dodges',
+      Swing.block || null => null,
+    };
+    final theirs = switch (r.theirs) {
+      Swing.hit || Swing.crit => '$name hits you for ${r.taken}',
+      Swing.miss => '$name misses',
+      Swing.dodge => 'You dodge',
+      Swing.block => 'You block: ${r.taken} damage',
+      null => null,
+    };
+    final quick = data.enemies[enemyId]?.has(Trait.quick) ?? false;
+    final lines = [
+      ...quick ? [?theirs, ?mine] : [?mine, ?theirs],
+      if (r.outcome == FightOutcome.won) '$name is beaten',
+      if (r.outcome == FightOutcome.lost) 'You are beaten',
+    ];
+    if (lines.isEmpty) return ['Round ${r.round}'];
+    return ['Round ${r.round}: ${lines.first}', ...lines.skip(1)];
+  }
 
-  /// "+4 Defense", "+14 HP": the stats a piece of gear adds.
+  /// "+4 Defense", "+14 HP", "+25% Block": the stats a piece of gear adds.
   List<String> bonus(Stats b) => [
     if (b.attack != 0) '+${b.attack} Attack',
     if (b.defense != 0) '+${b.defense} Defense',
     if (b.hp != 0) '+${b.hp} HP',
+    if (b.block != 0) '+${b.block}% Block',
+    if (b.dodge != 0) '+${b.dodge}% Dodge',
+    if (b.crit != 0) '+${b.crit}% Crit',
+    if (b.hit != 0) '+${b.hit}% Hit',
   ];
+
+  /// One bonus stat roll: "+3% Crit", "+12 Health" (spec 0009 §8.2).
+  String bonusRoll(BonusRoll r) => switch (r.stat) {
+    'hp' => '+${r.value} Health',
+    final stat => '+${r.value}% ${stat[0].toUpperCase()}${stat.substring(1)}',
+  };
 
   /// A change in stats, signed: "+2 Attack · −10 HP"; "No change" if none.
   String delta(Stats d) {
     String part(int v, String name) => '${v > 0 ? '+' : '−'}${v.abs()} $name';
+    String pct(int v, String name) => '${v > 0 ? '+' : '−'}${v.abs()}% $name';
     final parts = [
       if (d.attack != 0) part(d.attack, 'Attack'),
       if (d.defense != 0) part(d.defense, 'Defense'),
       if (d.hp != 0) part(d.hp, 'HP'),
+      if (d.block != 0) pct(d.block, 'Block'),
+      if (d.dodge != 0) pct(d.dodge, 'Dodge'),
+      if (d.crit != 0) pct(d.crit, 'Crit'),
+      if (d.hit != 0) pct(d.hit, 'Hit'),
     ];
     return parts.isEmpty ? 'No change' : parts.join(' · ');
   }
+
+  /// A weapon's damage type and hands, "Pierce · One hand", or an armour
+  /// piece's type and slot, "Light armour · Chest"; null otherwise (spec
+  /// 0009 §8.2).
+  String? typeLine(String key) {
+    final item = data.itemOf(key);
+    if (item?.damageType case final type?) {
+      return '${capital(type)} · ${item!.twoHanded ? 'Two hands' : 'One hand'}';
+    }
+    if (item?.armourType case final type?) {
+      return '${armour(type)} · ${slot(item!.slot!)}';
+    }
+    return null;
+  }
+
+  /// `heavy` -> "Heavy armour".
+  String armour(String type) => '${capital(type)} armour';
+
+  String capital(String word) => word[0].toUpperCase() + word.substring(1);
+
+  /// A monster twist in words: "Quick: strikes first" (spec 0009 §7.1).
+  String trait(Trait t) => switch (t) {
+    Trait.quick => 'Quick: strikes first',
+    Trait.slow => 'Slow: strikes every second round',
+    Trait.ghostly => 'Ghostly: ignores your defence',
+    Trait.regenerates => 'Regenerates: heals every round',
+  };
+
+  /// The bestiary and lore news of a report (spec 0009 §7).
+  String loreFound(String note) =>
+      'Found a lore note: ${data.loreNotes.where((n) => n.id == note).firstOrNull?.title ?? note}';
+  String weaknessLearned(String id) => '${enemy(id)}: weakness learned';
+  String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
 
   /// An item drawn as an object (bag, doll, card title): its name only, the
   /// quality shows as colour and on the card's kind line (spec 0008

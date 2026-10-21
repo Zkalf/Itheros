@@ -362,10 +362,8 @@ class _QueueCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final r in run.log)
-                Text(
-                  labels.round(r, run.activity.target),
-                  style: text.bodySmall,
-                ),
+                for (final line in labels.roundLines(r, run.activity.target))
+                  Text(line, style: text.bodySmall),
             ],
           ),
         ],
