@@ -48,6 +48,10 @@ void main() {
       for (final r in data.recipes.values) r.output,
       // Teachers give the starter tools (spec 0010 §3.1).
       for (final p in data.professions.values) p.teacher.starterTool,
+      // Rare finds, salvage's dust and shards (spec 0010 §5, §7.1).
+      for (final n in data.nodes.values) ?n.rareFind,
+      for (final q in data.qualities) GameData.dustOf(q.id),
+      ...data.shards,
       for (final e in data.enemies.values) ...[
         for (final d in e.drops) d.item,
         for (final d in e.firstKillDrops) d.item,
@@ -146,7 +150,8 @@ void main() {
         'bone_spear': ('pierce', false, 6),
         'bone_club': ('crush', false, 6),
         'bone_greataxe': ('slash', true, 8),
-        'kings_blade': ('slash', false, null),
+        // Also made from ten shards (spec 0010 §7.4).
+        'kings_blade': ('slash', false, 10),
         'iron_sword': ('slash', false, 14),
         'iron_spear': ('pierce', false, 14),
         'iron_mace': ('crush', false, 14),

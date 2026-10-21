@@ -174,8 +174,11 @@ class AwaySummary {
           gain(item, 1);
         case LevelUp(:final level):
           levels.add(level);
-        // Profession news comes with the screens (plan 0012 M3).
-        case ProfessionLevelUp():
+        // Gems and heartwood join the action's items (spec 0010 §5.1).
+        case RareFound(:final item):
+          gain(item, 1);
+        // Profession and reroll news come with the screens (plan 0012 M3).
+        case ProfessionLevelUp() || Rerolled():
           break;
         case AchievementUnlocked(:final id):
           achievements.add(id);

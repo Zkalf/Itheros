@@ -85,13 +85,137 @@ class Game {
 
   /// Steps one action of [profession] costs, [base] times the worn tool's
   /// share, rounded up (spec 0010 §3.2).
-  int professionSteps(GameState s, String profession, int base) {
-    final tool = s.tools[profession];
-    final factor = tool == null
-        ? 1.0
-        : data.itemOf(tool)?.tool?.stepFactor ?? 1.0;
-    return (base * factor - 1e-9).ceil();
+  int professionSteps(GameState s, String profession, int base) =>
+      (base * toolFactor(s.tools[profession]) - 1e-9).ceil();
+
+  /// The share of an action's steps the tool with [key] costs: its tier's,
+  /// less [GameData.toolQualityStep] per quality step (spec 0010 §3.2).
+  double toolFactor(String? key) {
+    final tool = key == null ? null : data.itemOf(key)?.tool;
+    if (tool == null) return 1;
+    return tool.stepFactor - data.toolQualityStep * _qualitySteps(key!);
   }
+
+  int _qualitySteps(String key) => data.qualities.indexOf(data.qualityOf(key));
+
+  /// Wears the tool with [key] from the bag in its profession's slot; the
+  /// tool there goes to the bag (spec 0010 §3.2).
+  GameState equipTool(GameState s, String key) {
+    final profession = data.toolProfession(key);
+    if (profession == null) throw ActivityError('$key is not a tool');
+    if ((s.inventory[key] ?? 0) < 1) throw ActivityError('No $key to use');
+    final n = s.copy()..addItem(key, -1);
+    if (n.tools[profession] case final old?) n.addItem(old);
+    n.tools[profession] = key;
+    return n;
+  }
+
+  /// The tips [profession]'s teacher has for the player now, untold (spec
+  /// 0010 §6.2).
+  List<TipDef> tipsWaiting(GameState s, String profession) {
+    if (!s.learned.contains(profession)) return const [];
+    final level = professionLevel(s, profession);
+    return [
+      for (final t in data.professions[profession]!.tips)
+        if (t.level <= level && !s.tips.contains(t.id)) t,
+    ];
+  }
+
+  /// Talks to [profession]'s teacher, who must be here: every waiting tip
+  /// is told.
+  GameState talk(GameState s, String profession) {
+    final p = data.professions[profession]!;
+    if (!s.learned.contains(profession) || s.location != p.teacher.location) {
+      throw ActivityError('${p.teacher.name} is not here');
+    }
+    return s.copy()..tips.addAll(tipsWaiting(s, profession).map((t) => t.id));
+  }
+
+  /// The chance a gathering action at [node] finds its rare find (spec 0010
+  /// §5.1).
+  double rareFindChance(GameState s, String node) {
+    final n = data.nodes[node]!;
+    final tool = s.tools[n.profession];
+    final steps = tool == null ? 0 : _qualitySteps(tool);
+    final above = math.max(0, professionLevel(s, n.profession) - n.level);
+    final levelBonus = math.min(
+      data.rareMaxLevelBonus,
+      data.rarePerLevelAbove * above,
+    );
+    return data.rareBase *
+        (1 + data.rarePerToolQualityStep * steps) *
+        (1 + levelBonus);
+  }
+
+  /// The chance salvaging [key] gives a boss shard (spec 0010 §7.1).
+  double shardChance(String key) =>
+      data.shardBase + data.shardPerQualityStep * _qualitySteps(key);
+
+  /// The shard salvaging [key] may give: its tier boss's.
+  String shardFor(String key) =>
+      data.shards[data.bonusTierIndex(data.itemLevel(data.itemOf(key)!.id))];
+
+  /// Whether the player can salvage and reroll here.
+  bool atForge(GameState s) =>
+      _here(s).crafting && _canPractise(s, 'crafting', 1);
+
+  /// Breaks the bag item [key] down at a forge into one dust of its quality,
+  /// with a roll for a boss shard on the profession stream (spec 0010
+  /// §7.1). Throws [ActivityError] if it can't.
+  SalvageResult salvage(GameState s, String key) {
+    final item = data.itemOf(key);
+    if (!atForge(s)) throw ActivityError('Salvage at a forge');
+    if (item == null || (item.slot == null && item.tool == null)) {
+      throw ActivityError('Only gear and tools can be salvaged');
+    }
+    if (item.tool?.starter ?? false) {
+      throw ActivityError('A teacher\'s gift can\'t be salvaged');
+    }
+    if ((s.inventory[key] ?? 0) < 1) {
+      throw ActivityError('Only items in the bag can be salvaged');
+    }
+    final n = s.copy()..addItem(key, -1);
+    final dust = GameData.dustOf(data.qualityOf(key).id);
+    n.addItem(dust);
+    final rng = Rng.fromState(n.professionRng);
+    final shard = rng.nextDouble() < shardChance(key) ? shardFor(key) : null;
+    n.professionRng = rng.state;
+    if (shard != null) n.addItem(shard);
+    return SalvageResult(n, dust, shard);
+  }
+
+  /// Settles the Legendary [key]'s waiting stat roll: the new roll takes
+  /// its stat's place, or the old one stays (spec 0010 §7.3).
+  GameState keepRoll(GameState s, String key, {required bool keepNew}) {
+    final pending = data.pendingRoll(key);
+    if (pending == null) throw ActivityError('No roll waits on $key');
+    final rolls = data.bonusRolls(key);
+    if (keepNew) rolls[pending.index] = pending.roll;
+    final settled = data.keyFor(
+      data.itemOf(key)!.id,
+      data.qualityOf(key).id,
+      rolls,
+    );
+    return _replaceItem(s.copy(), key, settled);
+  }
+
+  /// Puts [to] where one [from] is, worn or in the bag. Mutates [s].
+  GameState _replaceItem(GameState s, String from, String to) {
+    for (final MapEntry(:key, :value) in s.equipment.entries) {
+      if (value == from) {
+        s.equipment[key] = to;
+        return s;
+      }
+    }
+    if ((s.inventory[from] ?? 0) < 1) throw ActivityError('No $from');
+    return s
+      ..addItem(from, -1)
+      ..addItem(to);
+  }
+
+  /// Whether the player holds one [key], worn or in the bag.
+  bool holds(GameState s, String key) =>
+      (s.inventory[key] ?? 0) > 0 || s.equipment.containsValue(key);
 
   /// Character XP for [steps] of [profession] work at [fade] percent: a
   /// share of an even-level fight's XP per step (spec 0010 §2.4).
@@ -136,9 +260,12 @@ class Game {
   Knowledge knowledge(GameState s, String enemy) {
     final kills = s.counters['kills.$enemy'] ?? 0;
     final c = data.combat;
-    final note = data.loreNotes.any(
-      (n) => n.about == enemy && s.lore.contains(n.id),
-    );
+    // A lore note or a teacher's tip about it (spec 0010 §6.2).
+    final note =
+        data.loreNotes.any((n) => n.about == enemy && s.lore.contains(n.id)) ||
+        data.professions.values.any(
+          (p) => p.tips.any((t) => t.enemy == enemy && s.tips.contains(t.id)),
+        );
     return Knowledge(
       kills: kills,
       armour: note || s.fought.contains(enemy) || kills > 0,
@@ -220,6 +347,18 @@ class Game {
     int itemLevel,
   ) {
     final steps = data.qualities.indexWhere((q) => q.id == quality);
+    return rollBonusStats(rng, item, steps, itemLevel);
+  }
+
+  /// [count] bonus stat rolls for gear [item] of [itemLevel] (spec 0009
+  /// §5.1).
+  List<BonusRoll> rollBonusStats(
+    Rng rng,
+    String item,
+    int count,
+    int itemLevel,
+  ) {
+    final steps = count;
     final offHand = data.items[item]!.slot == 'offHand';
     final pool = [
       for (final MapEntry(key: stat, value: range)
@@ -566,6 +705,7 @@ class Game {
       ActivityKind.craft => switch (data.recipes[a.target]!) {
         final r => professionSteps(s, r.profession, r.steps),
       },
+      ActivityKind.reroll => data.rerollSteps,
     };
   }
 
@@ -602,7 +742,9 @@ class Game {
   }
 
   bool _canPractise(GameState s, String profession, int level) =>
-      s.learned.contains(profession) && level <= professionLevel(s, profession);
+      s.learned.contains(profession) &&
+      s.tools.containsKey(profession) &&
+      level <= professionLevel(s, profession);
 
   /// Open locations, nearest first, with their walking distance from here
   /// (spec 0003 §8: plan a day from anywhere).
@@ -716,7 +858,11 @@ class Game {
       StopKind.untilCrafted,
       StopKind.untilQuality,
     ],
-    StopKind.never,
+    // A reroll is one roll (spec 0010 §7.2).
+    if (a.kind != ActivityKind.reroll)
+      StopKind.never
+    else
+      StopKind.untilCrafted,
   ];
 
   /// Items "until I have N" can count for [a]: a monster's drops or a
@@ -774,11 +920,11 @@ class Game {
   /// the running action; the rest of the queue stays. If [a] happens
   /// elsewhere, the character walks there first. Throws [ActivityError] if
   /// it can't start.
-  GameState startActivity(
-    GameState s,
-    Activity a, {
-    StopCondition stop = const StopCondition.never(),
-  }) {
+  GameState startActivity(GameState s, Activity a, {StopCondition? stop}) {
+    // A reroll is one roll; everything else runs until stopped.
+    stop ??= a.kind == ActivityKind.reroll
+        ? StopCondition.defaultFor(a)
+        : const StopCondition.never();
     _checkStop(s, a, stop);
     if (s.queue.isNotEmpty &&
         stop.kind == StopKind.never &&
@@ -840,8 +986,12 @@ class Game {
       ActivityKind.fight => data.enemies.containsKey(a.target),
       ActivityKind.gather => data.nodes.containsKey(a.target),
       ActivityKind.craft => data.recipes.containsKey(a.target),
+      ActivityKind.reroll => data.itemOf(a.rerollKey) != null,
     };
     if (!known) return SkipReason.locked;
+    if (a.kind == ActivityKind.reroll) {
+      if (_rerollRefused(s, a) case final why?) return why;
+    }
     if ((a.kind == ActivityKind.gather && !nodeLevelMet(s, a.target)) ||
         (a.kind == ActivityKind.craft && !recipeLevelMet(s, a.target))) {
       return SkipReason.locked;
@@ -867,9 +1017,11 @@ class Game {
           ActivityKind.gather => data.nodes[a.target]?.name,
           ActivityKind.craft =>
             data.items[data.recipes[a.target]?.output]?.name,
+          ActivityKind.reroll => data.itemOf(a.rerollKey)?.name,
         } ??
         a.target;
     return switch (r) {
+      SkipReason.locked when a.kind == ActivityKind.reroll => _rerollLock(s, a),
       SkipReason.locked => switch (a.kind) {
         ActivityKind.gather when data.nodes[a.target] != null => _needs(
           s,
@@ -886,6 +1038,8 @@ class Game {
         _ => '$name is locked',
       },
       SkipReason.noRoute => 'The way there is in the fog',
+      SkipReason.noMaterials when a.kind == ActivityKind.reroll =>
+        'Not enough ${data.items[_rerollDust(a)]?.name ?? 'dust'} for $name',
       SkipReason.noMaterials => 'Not enough materials for $name',
       SkipReason.alreadyDone => switch (stop.kind) {
         _ when a.kind == ActivityKind.travel => 'You are already at $name',
@@ -913,12 +1067,49 @@ class Game {
   int professionXpFor(GameState s, String profession, int level, int xp) =>
       xp * professionFade(s, profession, level) ~/ 100;
 
+  /// The dust a reroll takes: of the item's quality (spec 0010 §7.2).
+  String _rerollDust(Activity a) =>
+      GameData.dustOf(data.qualityOf(a.rerollKey).id);
+
+  /// Why reroll [a] can't start: the item or the dust is missing, or the
+  /// kind of reroll doesn't fit the item; null if it can.
+  SkipReason? _rerollRefused(GameState s, Activity a) {
+    if (_rerollLock(s, a).isNotEmpty) return SkipReason.locked;
+    if ((s.inventory[_rerollDust(a)] ?? 0) < data.rerollDust) {
+      return SkipReason.noMaterials;
+    }
+    return null;
+  }
+
+  /// What keeps reroll [a] closed, in words; empty if nothing does.
+  String _rerollLock(GameState s, Activity a) {
+    final key = a.rerollKey;
+    final item = data.itemOf(key)!;
+    final legendary = data.qualityOf(key) == data.qualities.last;
+    final index = a.rerollStatIndex;
+    if (!_canPractise(s, 'crafting', 1)) return 'Rerolls need Crafting';
+    if (item.slot == null) return 'Only gear can be rerolled';
+    if (!holds(s, key)) return 'You have no ${item.name} like that';
+    if (data.pendingRoll(key) != null) {
+      return 'Keep the new roll or the old one first';
+    }
+    if (index == null && legendary) return '${item.name} is Legendary already';
+    if (index != null &&
+        (!legendary || index < 0 || index >= data.bonusRolls(key).length)) {
+      return 'Only a Legendary\'s bonus stats can be rerolled';
+    }
+    return '';
+  }
+
   /// What [name] lacks: its profession learned, or its level.
   String _needs(GameState s, String name, String profession, int level) {
     final p = data.professions[profession]!;
     if (!s.learned.contains(profession)) {
       return 'Learn ${p.name} from ${p.teacher.name} in '
           '${data.locations[p.teacher.location]!.name}';
+    }
+    if (!s.tools.containsKey(profession)) {
+      return 'You need a ${p.toolName.toLowerCase()}';
     }
     return '$name needs ${p.name} $level';
   }
@@ -964,7 +1155,7 @@ class Game {
         for (final l in data.locations.values)
           if (l.nodes.contains(a.target)) l.id,
       ],
-      ActivityKind.craft => [
+      ActivityKind.craft || ActivityKind.reroll => [
         for (final l in data.locations.values)
           if (l.crafting) l.id,
       ],
@@ -1111,6 +1302,16 @@ class Game {
   LocationDef _here(GameState s) => data.locations[s.location]!;
 }
 
+/// What [Game.salvage] made: the new state, the dust and a boss shard, if
+/// one came (spec 0010 §7.1).
+class SalvageResult {
+  const SalvageResult(this.state, this.dust, this.shard);
+
+  final GameState state;
+  final String dust;
+  final String? shard;
+}
+
 /// What the player knows about a monster (spec 0009 §7.1).
 class Knowledge {
   const Knowledge({
@@ -1135,11 +1336,16 @@ class Knowledge {
 
 /// Mutable bookkeeping for one [Game.applySteps] call.
 class _Run {
-  _Run(this.game, this.s) : rng = Rng.fromState(s.rngState);
+  _Run(this.game, this.s)
+    : rng = Rng.fromState(s.rngState),
+      stream = Rng.fromState(s.professionRng);
 
   final Game game;
   final GameState s;
   final Rng rng;
+
+  /// The profession stream: every roll spec 0010 adds (spec 0010 §9.1).
+  final Rng stream;
   final events = <GameEvent>[];
   var activitySteps = 0;
   var boostUsed = 0;
@@ -1169,6 +1375,7 @@ class _Run {
 
   StepReport report(int walked) {
     s.rngState = rng.state;
+    s.professionRng = stream.state;
     return StepReport(
       state: s,
       walked: walked,
@@ -1244,6 +1451,13 @@ class _Run {
       case ActivityKind.gather:
         final node = data.nodes[a.target]!;
         final xp = _practise(node.profession, node.level, node.xp, node.steps);
+        // The rare-find roll is drawn every action (spec 0010 §5.1).
+        final chance = game.rareFindChance(s, node.id);
+        if (stream.nextDouble() < chance && node.rareFind != null) {
+          s.addItem(node.rareFind!);
+          _gain(act, node.rareFind!);
+          events.add(RareFound(node.rareFind!));
+        }
         s.addItem(node.item);
         _gain(act, node.item);
         s.count('gathered.${node.item}');
@@ -1259,12 +1473,7 @@ class _Run {
           recipe.steps,
         );
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
-        final made = _withQuality(
-          recipe.output,
-          recipe.level,
-          // The overlevel bonus counts Crafting levels (spec 0010).
-          playerLevel: game.professionLevel(s, recipe.profession),
-        );
+        final made = _crafted(recipe);
         s.addItem(made);
         _gain(act, made);
         act.crafted++;
@@ -1273,7 +1482,67 @@ class _Run {
         events.add(Crafted(made, xp));
         _gainXp(xp);
         return null;
+      case ActivityKind.reroll:
+        return _reroll(act);
     }
+  }
+
+  /// [recipe]'s output with its quality. The overlevel bonus counts
+  /// Crafting levels (spec 0010). Tools and recipes from rare inputs roll on
+  /// the profession stream, tools without bonus stats (spec 0010 §9.1).
+  String _crafted(RecipeDef recipe) {
+    final out = data.items[recipe.output]!;
+    final crafting = game.professionLevel(s, recipe.profession);
+    if (out.tool != null) {
+      final q = game.rollQuality(
+        stream,
+        playerLevel: crafting,
+        itemLevel: recipe.level,
+      );
+      return data.keyFor(out.id, q);
+    }
+    final rare = recipe.inputs.keys.any((i) => data.items[i]!.rare);
+    return _withQuality(
+      out.id,
+      recipe.level,
+      playerLevel: crafting,
+      with_: rare ? stream : rng,
+    );
+  }
+
+  /// One reroll at the forge: the dust goes, the quality rolls (never
+  /// lower) or a Legendary's chosen stat rolls and waits (spec 0010 §7.2,
+  /// §7.3).
+  EndReason? _reroll(RunningActivity act) {
+    final a = act.activity;
+    if (game._rerollRefused(s, a) != null) return EndReason.noMaterials;
+    final key = a.rerollKey;
+    final item = data.itemOf(key)!;
+    final itemLevel = data.itemLevel(item.id);
+    s.addItem(game._rerollDust(a), -data.rerollDust);
+    final String after;
+    if (a.rerollStatIndex case final index?) {
+      final roll = game.rollBonusStats(stream, item.id, 1, itemLevel).single;
+      after = data.withPending(key, index, roll);
+    } else {
+      final was = data.qualities.indexOf(data.qualityOf(key));
+      final rolled = game.rollQuality(
+        stream,
+        playerLevel: game.professionLevel(s, 'crafting'),
+        itemLevel: itemLevel,
+      );
+      final now = data.qualities.indexWhere((q) => q.id == rolled);
+      after = now <= was
+          ? key
+          : data.keyFor(item.id, rolled, [
+              ...data.bonusRolls(key),
+              ...game.rollBonusStats(stream, item.id, now - was, itemLevel),
+            ]);
+    }
+    game._replaceItem(s, key, after);
+    act.crafted++;
+    events.add(Rerolled(key, after));
+    return null;
   }
 
   /// One auto-resolved round. The player strikes first unless the monster is
@@ -1452,14 +1721,20 @@ class _Run {
   /// [item]'s key: gear rolls a quality, then its bonus stats (spec 0009
   /// §5.1); materials stay plain. The bonus stats come from a generator
   /// seeded by one draw, so how many there are never shifts later rolls.
-  String _withQuality(String item, int itemLevel, {int? playerLevel}) {
+  String _withQuality(
+    String item,
+    int itemLevel, {
+    int? playerLevel,
+    Rng? with_,
+  }) {
     if (data.items[item]!.slot == null) return item;
+    final from = with_ ?? rng;
     final q = game.rollQuality(
-      rng,
+      from,
       playerLevel: playerLevel ?? game.level(s),
       itemLevel: itemLevel,
     );
-    final own = Rng.fromState(rng.nextUint32());
+    final own = Rng.fromState(from.nextUint32());
     return data.keyFor(item, q, game.rollBonus(own, item, q, itemLevel));
   }
 

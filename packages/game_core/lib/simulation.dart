@@ -210,7 +210,12 @@ GameState referencePlayer(
       : data.combat.strongAgainst(data.enemies[vs]!.armour);
   final weapons = <ItemDef>[];
   for (final r in data.recipes.values) {
-    if (r.level > level || r.inputs.keys.any(without.contains)) continue;
+    // Rings, trinkets and shard uniques need a rare find (spec 0010 §5):
+    // they aren't the gear of a stretch.
+    if (r.level > level ||
+        r.inputs.keys.any((i) => without.contains(i) || data.items[i]!.rare)) {
+      continue;
+    }
     final item = data.items[r.output]!;
     if (item.slot == null || item.twoHanded) continue;
     if (item.damageType != null) {
@@ -380,7 +385,10 @@ List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
   final data = game.data;
   final weaponRecipes = [
     for (final r in data.recipes.values)
-      if (data.items[r.output]!.damageType != null) r,
+      // Not a shard unique (spec 0010 §7.4): no tier's weapon.
+      if (data.items[r.output]!.damageType != null &&
+          !r.inputs.keys.any((i) => data.items[i]!.rare))
+        r,
   ];
   final checks = <HandsCheck>[];
   var previous = 0;
@@ -485,7 +493,10 @@ class SensiblePlayer {
   }
 
   GameState decide(GameState s) {
+    s = _settleRolls(s);
     s = _equipBest(s);
+    s = _equipTools(s);
+    if (walker != Walker.fighter && game.atForge(s)) s = _salvageSpares(s);
     _arms.clear();
     final goal = _goal(s);
     if (goal.kind == ActivityKind.fight) {
@@ -533,6 +544,7 @@ class SensiblePlayer {
   /// character level, "the gear of its stretch".
   Activity _goal(GameState s) {
     if (walker == Walker.fighter) return _bestFight(s);
+    if (_rerollGoal(s) case final a?) return a;
     int gain(RecipeDef r) => _gain(s, r.output);
     final level = game.level(s);
     final upgrades = data.recipes.values.where((r) {
@@ -566,6 +578,9 @@ class SensiblePlayer {
         if (_practise(s, n.profession) case final a?) return a;
       }
     }
+    // Tools come when no gear upgrade waits: a pickaxe on day 1 would cost
+    // more steps than it saves.
+    if (_toolGoal(s) case final a?) return a;
     if (walker == Walker.gatherer) return _gatherersDay(s);
     return _bestFight(s);
   }
@@ -590,6 +605,133 @@ class SensiblePlayer {
       if (_practise(s, p) case final a?) return a;
     }
     return Activity.gather(data.nodes.values.first.id);
+  }
+
+  /// A Legendary's waiting stat roll is kept when it scores higher (spec
+  /// 0010 §9.2).
+  GameState _settleRolls(GameState s) {
+    for (final key in {...s.inventory.keys, ...s.equipment.values}) {
+      final pending = data.pendingRoll(key);
+      if (pending == null) continue;
+      final rolls = data.bonusRolls(key);
+      final old = data.scoreOf(_settled(key, rolls));
+      rolls[pending.index] = pending.roll;
+      final better = data.scoreOf(_settled(key, rolls)) > old;
+      s = game.keepRoll(s, key, keepNew: better);
+    }
+    return s;
+  }
+
+  String _settled(String key, List<BonusRoll> rolls) =>
+      data.keyFor(data.itemOf(key)!.id, data.qualityOf(key).id, rolls);
+
+  /// Wears the bag's tools that cost fewer steps than the worn ones.
+  GameState _equipTools(GameState s) {
+    for (final key in s.inventory.keys.toList()) {
+      final p = data.toolProfession(key);
+      if (p == null || !s.learned.contains(p)) continue;
+      if (game.toolFactor(key) < game.toolFactor(s.tools[p])) {
+        s = game.equipTool(s, key);
+      }
+    }
+    return s;
+  }
+
+  /// At a forge: salvages every bag tool but a starter, and gear that is
+  /// neither worn nor the best of its weapon group or off hand (spec 0010
+  /// §9.2).
+  GameState _salvageSpares(GameState s) {
+    final keep = <String>{};
+    final best = <Object, String>{};
+    for (final key in {...s.inventory.keys, ...s.equipment.values}) {
+      final item = data.itemOf(key);
+      final group = item?.slot == 'offHand'
+          ? 'offHand'
+          : weaponGroup(data, key);
+      if (group == null) continue;
+      final held = best[group];
+      if (held == null || data.scoreOf(key) > data.scoreOf(held)) {
+        best[group] = key;
+      }
+    }
+    keep.addAll(best.values);
+    for (final key in s.inventory.keys.toList()) {
+      final item = data.itemOf(key);
+      if (item == null || keep.contains(key)) continue;
+      if (item.slot == null && (item.tool == null || item.tool!.starter)) {
+        continue;
+      }
+      for (var n = s.inventory[key] ?? 0; n > 0; n--) {
+        s = game.salvage(s, key).state;
+      }
+    }
+    return s;
+  }
+
+  /// At a forge, a reroll of the best worn gear above Common it has the dust
+  /// for: its quality, or a Legendary's weakest bonus stat.
+  Activity? _rerollGoal(GameState s) {
+    if (!game.atForge(s)) return null;
+    final worn = s.equipment.values.toList()
+      ..sort((a, b) => data.scoreOf(b).compareTo(data.scoreOf(a)));
+    for (final key in worn) {
+      // Common gear is soon replaced: its dust isn't worth the steps.
+      if (data.qualityOf(key) == data.qualities.first) continue;
+      final Activity a;
+      if (data.qualityOf(key) == data.qualities.last) {
+        final rolls = data.bonusRolls(key);
+        if (rolls.isEmpty) continue;
+        var weakest = 0;
+        for (var i = 1; i < rolls.length; i++) {
+          if (_rollScore(rolls[i]) < _rollScore(rolls[weakest])) weakest = i;
+        }
+        a = Activity.rerollStat(key, weakest);
+      } else {
+        a = Activity.reroll(key);
+      }
+      try {
+        game.startActivity(s, a);
+        return a;
+      } on ActivityError {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  int _rollScore(BonusRoll r) =>
+      GameData.scoreStats(Stats.fromJson({r.stat: r.value}));
+
+  /// The best tool it can craft that beats the worn one, crafted or
+  /// gathered for (spec 0010 §9.2).
+  Activity? _toolGoal(GameState s) {
+    for (final p in data.professions.keys) {
+      if (!s.learned.contains(p)) continue;
+      final worn = game.toolFactor(s.tools[p]);
+      final better =
+          [
+            for (final r in data.recipes.values)
+              if (data.items[r.output]!.tool?.profession == p &&
+                  game.recipeLevelMet(s, r.id) &&
+                  // Earlier, a tool costs more steps than it saves.
+                  r.level + 2 <= game.level(s) &&
+                  _have(s, r.output) == 0 &&
+                  data.items[r.output]!.tool!.stepFactor < worn)
+                r,
+          ]..sort(
+            (a, b) => data.items[a.output]!.tool!.stepFactor.compareTo(
+              data.items[b.output]!.tool!.stepFactor,
+            ),
+          );
+      if (better.isEmpty) continue;
+      final r = better.first;
+      if (game.hasMaterials(s, r.id)) return Activity.craft(r.id);
+      final missing = r.inputs.entries.firstWhere(
+        (e) => (s.inventory[e.key] ?? 0) < e.value,
+      );
+      if (_sourceOf(s, missing.key) case final a?) return a;
+    }
+    return null;
   }
 
   /// A spot giving [item] that is open but above its profession level.
@@ -709,7 +851,7 @@ class SensiblePlayer {
   }
 
   String _locationFor(GameState s, Activity a) {
-    if (a.kind == ActivityKind.craft) {
+    if (a.kind == ActivityKind.craft || a.kind == ActivityKind.reroll) {
       final dist = _distances(s);
       return data.locations.values
           .where((l) => l.crafting && dist.containsKey(l.id))

@@ -145,7 +145,8 @@ void main() {
         ('pine_idol', 25, {'pine_heartwood': 1, 'feathers': 2}, 'trinket'),
       ]) {
         final r = data.recipes[id]!;
-        expect((r.craftingLevel, r.inputs), (crafting, inputs), reason: id);
+        expect(r.craftingLevel, crafting, reason: id);
+        expect(r.inputs, inputs, reason: id);
         expect(data.items[id]!.slot, slot);
       }
       expect(game.slotsFor('garnet_ring'), ['ring1', 'ring2']);
@@ -281,7 +282,7 @@ void main() {
   });
 
   group('criterion 10: Legendary stat rerolls', () {
-    const key = 'iron_sword@legendary+crit1+crit2+hp10+hp11';
+    const key = 'iron_sword@legendary+crit2+crit1+hp11+hp10';
 
     test('one chosen stat rolls; keep new or old', () {
       var s = stateAt(
@@ -289,7 +290,7 @@ void main() {
         level: 20,
         inventory: {key: 1, 'legendary_dust': 3},
       );
-      // The second roll in key order: crit2.
+      // The second roll in key order: crit1.
       s = work(s, Activity.rerollStat(key, 1), data.rerollSteps).state;
       expect(s.inventory['legendary_dust'] ?? 0, 0);
       final waiting = s.inventory.keys.firstWhere((k) => k.startsWith('iron'));
@@ -308,7 +309,7 @@ void main() {
       expect(
         rolls,
         containsAll([
-          (stat: 'crit', value: 1),
+          (stat: 'crit', value: 2),
           (stat: 'hp', value: 10),
           (stat: 'hp', value: 11),
           pending.roll,

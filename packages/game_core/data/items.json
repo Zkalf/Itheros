@@ -21,6 +21,31 @@
     { "id": "ash_log", "name": "Ash log" },
     { "id": "pine_log", "name": "Pine log" },
 
+    { "id": "garnet", "name": "Garnet", "rare": true },
+    { "id": "sapphire", "name": "Sapphire", "rare": true },
+    { "id": "star_diamond", "name": "Star diamond", "rare": true },
+    { "id": "oak_heartwood", "name": "Oak heartwood", "rare": true },
+    { "id": "ash_heartwood", "name": "Ash heartwood", "rare": true },
+    { "id": "pine_heartwood", "name": "Pine heartwood", "rare": true },
+    { "id": "kings_shard", "name": "Shard of the Graveyard King", "rare": true },
+    { "id": "chieftains_shard", "name": "Shard of the Ogre Chieftain", "rare": true },
+    { "id": "dragons_shard", "name": "Shard of the Young Dragon", "rare": true },
+    { "id": "common_dust", "name": "Common dust" },
+    { "id": "uncommon_dust", "name": "Uncommon dust" },
+    { "id": "rare_dust", "name": "Rare dust" },
+    { "id": "epic_dust", "name": "Epic dust" },
+    { "id": "legendary_dust", "name": "Legendary dust" },
+
+    { "id": "copper_pickaxe", "name": "Copper pickaxe", "tool": { "profession": "mining", "stepFactor": 0.9 } },
+    { "id": "copper_hatchet", "name": "Copper hatchet", "tool": { "profession": "woodcutting", "stepFactor": 0.9 } },
+    { "id": "copper_hammer", "name": "Copper hammer", "tool": { "profession": "crafting", "stepFactor": 0.9 } },
+    { "id": "iron_pickaxe", "name": "Iron pickaxe", "tool": { "profession": "mining", "stepFactor": 0.8 } },
+    { "id": "iron_hatchet", "name": "Iron hatchet", "tool": { "profession": "woodcutting", "stepFactor": 0.8 } },
+    { "id": "iron_hammer", "name": "Iron hammer", "tool": { "profession": "crafting", "stepFactor": 0.8 } },
+    { "id": "mithril_pickaxe", "name": "Mithril pickaxe", "tool": { "profession": "mining", "stepFactor": 0.7 } },
+    { "id": "mithril_hatchet", "name": "Mithril hatchet", "tool": { "profession": "woodcutting", "stepFactor": 0.7 } },
+    { "id": "mithril_hammer", "name": "Mithril hammer", "tool": { "profession": "crafting", "stepFactor": 0.7 } },
+
     { "id": "old_pick", "name": "Hilde's old pick", "tool": { "profession": "mining", "stepFactor": 1.0, "starter": true } },
     { "id": "old_hatchet", "name": "Bram's old hatchet", "tool": { "profession": "woodcutting", "stepFactor": 1.0, "starter": true } },
     { "id": "old_hammer", "name": "Garrow's old hammer", "tool": { "profession": "crafting", "stepFactor": 1.0, "starter": true } },
@@ -74,7 +99,14 @@
     { "id": "chieftains_amulet", "name": "Chieftain's amulet", "slot": "neck", "attack": 3, "hp": 40 },
     { "id": "soul_dust_amulet", "name": "Soul-dust amulet", "slot": "neck", "attack": 3, "hp": 50 },
     { "id": "fire_ward_amulet", "name": "Fire-ward amulet", "slot": "neck", "defense": 3, "hp": 60 },
-    { "id": "dragons_heart", "name": "Dragon's heart", "slot": "neck", "attack": 5, "hp": 80 }
+    { "id": "dragons_heart", "name": "Dragon's heart", "slot": "neck", "attack": 5, "hp": 80 },
+
+    { "id": "garnet_ring", "name": "Garnet ring", "slot": "ring", "attack": 1, "hp": 10 },
+    { "id": "sapphire_ring", "name": "Sapphire ring", "slot": "ring", "attack": 2, "hp": 25 },
+    { "id": "star_diamond_ring", "name": "Star-diamond ring", "slot": "ring", "attack": 3, "hp": 45 },
+    { "id": "oak_charm", "name": "Oak charm", "slot": "trinket", "defense": 1, "hp": 15 },
+    { "id": "ash_totem", "name": "Ash totem", "slot": "trinket", "defense": 2, "hp": 30 },
+    { "id": "pine_idol", "name": "Pine idol", "slot": "trinket", "defense": 3, "hp": 50 }
   ],
   "recipes": [
     { "id": "copper_sword", "level": 3, "crafting": 1, "steps": 150, "xp": 30, "inputs": { "copper_ore": 5 }, "output": "copper_sword" },
@@ -116,6 +148,24 @@
     { "id": "fire_ward_amulet", "level": 29, "steps": 500, "xp": 1150, "inputs": { "drake_fang": 3, "feathers": 6 }, "output": "fire_ward_amulet" },
     { "id": "drake_fang_halberd", "level": 29, "steps": 550, "xp": 1150, "inputs": { "drake_fang": 6, "mithril_ore": 10, "pine_log": 3 }, "output": "drake_fang_halberd" },
     { "id": "dragon_scale_armour", "level": 30, "steps": 500, "xp": 1270, "inputs": { "dragon_scale": 6, "wyvern_scale": 6 }, "output": "dragon_scale_armour" },
-    { "id": "dragon_helm", "level": 30, "steps": 500, "xp": 1270, "inputs": { "dragon_scale": 4, "mithril_ore": 4 }, "output": "dragon_helm" }
+    { "id": "dragon_helm", "level": 30, "steps": 500, "xp": 1270, "inputs": { "dragon_scale": 4, "mithril_ore": 4 }, "output": "dragon_helm" },
+    { "id": "copper_pickaxe", "level": 3, "steps": 150, "xp": 30, "inputs": { "copper_ore": 4, "oak_log": 2 }, "output": "copper_pickaxe" },
+    { "id": "copper_hatchet", "level": 3, "steps": 150, "xp": 30, "inputs": { "copper_ore": 4, "oak_log": 2 }, "output": "copper_hatchet" },
+    { "id": "copper_hammer", "level": 3, "steps": 150, "xp": 30, "inputs": { "copper_ore": 4, "oak_log": 2 }, "output": "copper_hammer" },
+    { "id": "iron_pickaxe", "level": 12, "steps": 300, "xp": 135, "inputs": { "iron_ore": 6, "ash_log": 2 }, "output": "iron_pickaxe" },
+    { "id": "iron_hatchet", "level": 12, "steps": 300, "xp": 135, "inputs": { "iron_ore": 6, "ash_log": 2 }, "output": "iron_hatchet" },
+    { "id": "iron_hammer", "level": 12, "steps": 300, "xp": 135, "inputs": { "iron_ore": 6, "ash_log": 2 }, "output": "iron_hammer" },
+    { "id": "mithril_pickaxe", "level": 22, "steps": 400, "xp": 475, "inputs": { "mithril_ore": 6, "pine_log": 2 }, "output": "mithril_pickaxe" },
+    { "id": "mithril_hatchet", "level": 22, "steps": 400, "xp": 475, "inputs": { "mithril_ore": 6, "pine_log": 2 }, "output": "mithril_hatchet" },
+    { "id": "mithril_hammer", "level": 22, "steps": 400, "xp": 475, "inputs": { "mithril_ore": 6, "pine_log": 2 }, "output": "mithril_hammer" },
+    { "id": "garnet_ring", "level": 5, "steps": 200, "xp": 50, "inputs": { "garnet": 1, "copper_ore": 3 }, "output": "garnet_ring" },
+    { "id": "oak_charm", "level": 5, "steps": 200, "xp": 50, "inputs": { "oak_heartwood": 1, "goblin_hide": 2 }, "output": "oak_charm" },
+    { "id": "sapphire_ring", "level": 15, "steps": 300, "xp": 230, "inputs": { "sapphire": 1, "iron_ore": 4 }, "output": "sapphire_ring" },
+    { "id": "ash_totem", "level": 15, "steps": 300, "xp": 230, "inputs": { "ash_heartwood": 1, "ectoplasm": 2 }, "output": "ash_totem" },
+    { "id": "star_diamond_ring", "level": 25, "steps": 400, "xp": 630, "inputs": { "star_diamond": 1, "mithril_ore": 4 }, "output": "star_diamond_ring" },
+    { "id": "pine_idol", "level": 25, "steps": 400, "xp": 630, "inputs": { "pine_heartwood": 1, "feathers": 2 }, "output": "pine_idol" },
+    { "id": "kings_blade", "level": 10, "steps": 300, "xp": 135, "inputs": { "kings_shard": 10 }, "output": "kings_blade" },
+    { "id": "chieftains_amulet", "level": 20, "steps": 400, "xp": 390, "inputs": { "chieftains_shard": 10 }, "output": "chieftains_amulet" },
+    { "id": "dragons_heart", "level": 30, "steps": 500, "xp": 1270, "inputs": { "dragons_shard": 10 }, "output": "dragons_heart" }
   ]
 }

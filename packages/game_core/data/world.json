@@ -38,11 +38,11 @@
     { "from": "mountain_pass", "to": "dragons_peak", "steps": 1200 }
   ],
   "nodes": [
-    { "id": "copper_vein", "name": "Copper vein", "profession": "mining", "level": 1, "steps": 100, "item": "copper_ore", "xp": 20 },
-    { "id": "iron_vein", "name": "Iron vein", "profession": "mining", "level": 10, "steps": 120, "item": "iron_ore", "xp": 55 },
-    { "id": "mithril_vein", "name": "Mithril vein", "profession": "mining", "level": 20, "steps": 150, "item": "mithril_ore", "xp": 175 },
-    { "id": "oak_tree", "name": "Oak tree", "profession": "woodcutting", "level": 1, "steps": 100, "item": "oak_log", "xp": 20 },
-    { "id": "ash_tree", "name": "Ash tree", "profession": "woodcutting", "level": 10, "steps": 120, "item": "ash_log", "xp": 55 },
-    { "id": "pine_tree", "name": "Pine tree", "profession": "woodcutting", "level": 20, "steps": 150, "item": "pine_log", "xp": 175 }
+    { "id": "copper_vein", "name": "Copper vein", "profession": "mining", "level": 1, "steps": 100, "item": "copper_ore", "rareFind": "garnet", "xp": 20 },
+    { "id": "iron_vein", "name": "Iron vein", "profession": "mining", "level": 10, "steps": 120, "item": "iron_ore", "rareFind": "sapphire", "xp": 55 },
+    { "id": "mithril_vein", "name": "Mithril vein", "profession": "mining", "level": 20, "steps": 150, "item": "mithril_ore", "rareFind": "star_diamond", "xp": 175 },
+    { "id": "oak_tree", "name": "Oak tree", "profession": "woodcutting", "level": 1, "steps": 100, "item": "oak_log", "rareFind": "oak_heartwood", "xp": 20 },
+    { "id": "ash_tree", "name": "Ash tree", "profession": "woodcutting", "level": 10, "steps": 120, "item": "ash_log", "rareFind": "ash_heartwood", "xp": 55 },
+    { "id": "pine_tree", "name": "Pine tree", "profession": "woodcutting", "level": 20, "steps": 150, "item": "pine_log", "rareFind": "pine_heartwood", "xp": 175 }
   ]
 }
