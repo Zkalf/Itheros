@@ -64,7 +64,12 @@ class ItemCard extends StatelessWidget {
       Text(labels.kind(item), key: const ValueKey('card-kind')),
       const SizedBox(height: 8),
       if (gear) ...[
-        Text(labels.bonus(data.bonusOf(item)).join(' · ')),
+        // Base stats, then type and hands (or armour), then each bonus stat
+        // on its own line (spec 0009 §8.2).
+        Text(labels.bonus(data.baseStatsOf(item)).join(' · ')),
+        if (labels.typeLine(item) case final type?) Text(type),
+        for (final r in data.bonusRolls(item))
+          Text(labels.bonusRoll(r), style: TextStyle(color: colour)),
         if (def.twoHanded)
           Padding(
             padding: const EdgeInsets.only(top: 8),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'actions.dart';
 import 'away_summary_card.dart';
+import 'bestiary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'level_badge.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
@@ -34,55 +37,167 @@ String journalTime(DateTime t, DateTime now) {
   return '${_days[t.weekday - 1]} ${t.day} ${_months[t.month - 1]} $time';
 }
 
-/// The newest reports, newest first (spec 0004 §2).
+/// The Journal (spec 0009 §8.4): the newest reports (Log, spec 0004 §2),
+/// the Bestiary and found Lore notes.
 class JournalScreen extends StatelessWidget {
   const JournalScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+    length: 3,
+    child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Journal'),
+        bottom: const TabBar(
+          tabs: [
+            Tab(text: 'Log'),
+            Tab(text: 'Bestiary'),
+            Tab(text: 'Lore'),
+          ],
+        ),
+      ),
+      body: const SafeArea(
+        child: TabBarView(children: [_Log(), _Bestiary(), _Lore()]),
+      ),
+    ),
+  );
+}
+
+class _Log extends StatelessWidget {
+  const _Log();
 
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final labels = Labels(c.game.data);
     final text = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Journal')),
-      body: SafeArea(
-        child: c.journal.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No reports yet. Pick something to do, go for a walk, and '
-                  'what happened shows up here.',
-                ),
-              )
-            : ListView(
-                padding: const EdgeInsets.all(16),
+    if (c.journal.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'No reports yet. Pick something to do, go for a walk, and '
+          'what happened shows up here.',
+        ),
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (final e in c.journal)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final e in c.journal)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${journalTime(e.started, c.now)}'
-                              '${e.testWalk ? ' (test walk)' : ''}',
-                              style: text.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            ...reportBanners(e.summary, labels),
-                            for (final l in reportLines(e.summary, labels))
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: reportLine(l, labels),
-                              ),
-                          ],
-                        ),
-                      ),
+                  Text(
+                    '${journalTime(e.started, c.now)}'
+                    '${e.testWalk ? ' (test walk)' : ''}',
+                    style: text.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  ...reportBanners(e.summary, labels),
+                  for (final l in reportLines(e.summary, labels))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: reportLine(l, labels),
                     ),
                 ],
               ),
-      ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Every monster in an area out of the fog (decision 10), by area in map
+/// order: level badge, its armour once known, "?" while its weakness isn't,
+/// and the Slayer mark. Tapping one opens its card.
+class _Bestiary extends StatelessWidget {
+  const _Bestiary();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    final game = c.game;
+    final s = c.state;
+    final labels = Labels(game.data);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (final l in game.data.locations.values)
+          if (l.enemies.isNotEmpty && !game.isFogged(s, l.id)) ...[
+            Heading(l.name),
+            for (final id in l.enemies)
+              Builder(
+                builder: (context) {
+                  final e = game.data.enemies[id]!;
+                  final k = game.knowledge(s, id);
+                  return ListTile(
+                    key: ValueKey('bestiary-$id'),
+                    leading: LevelBadge(
+                      level: e.level,
+                      colour: game.enemyBand(s, id).colour,
+                    ),
+                    title: Text(labels.enemy(id)),
+                    subtitle: Text(
+                      [
+                        k.armour ? labels.armour(e.armour) : 'Armour ???',
+                        k.weakness ? 'weak to ${game.weakness(id)}' : '?',
+                        if (k.slayer) 'Slayer',
+                      ].join(' · '),
+                    ),
+                    trailing: k.slayer ? const Icon(Icons.gps_fixed) : null,
+                    onTap: () => showBestiaryCard(context, c, id),
+                  );
+                },
+              ),
+          ],
+      ],
+    );
+  }
+}
+
+/// Found lore notes, newest first, and how many there are (spec 0009 §8.4).
+class _Lore extends StatelessWidget {
+  const _Lore();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    final data = c.game.data;
+    final labels = Labels(data);
+    final text = Theme.of(context).textTheme;
+    final byId = {for (final n in data.loreNotes) n.id: n};
+    final found = [for (final id in c.state.lore.toList().reversed) ?byId[id]];
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          '${found.length} of ${data.loreNotes.length} found',
+          style: text.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        for (final n in found)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(n.title, style: text.titleMedium),
+                  Text(
+                    'About the ${labels.enemy(n.about)}',
+                    style: text.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(n.text),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

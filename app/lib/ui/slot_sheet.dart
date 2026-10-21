@@ -77,7 +77,10 @@ class SlotSheet extends StatelessWidget {
             if (worn != null)
               ListTile(
                 title: name(worn),
-                subtitle: Text(labels.bonus(data.bonusOf(worn)).join(' · ')),
+                // Rows show no bonus stats (spec 0009 §8.2).
+                subtitle: Text(
+                  labels.bonus(data.baseStatsOf(worn)).join(' · '),
+                ),
                 onTap: () {
                   Navigator.of(context).pop();
                   showItemCard(host, c, worn, wornIn: slot);
