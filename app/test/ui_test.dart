@@ -1853,9 +1853,10 @@ void fightsWithDepth() {
       t,
     ) async {
       final note = game.data.enemies['goblin']!.lore!;
+      final later = game.data.enemies['wolf']!.lore!;
       final (c, _) = await pumpGame(t, counters: {'kills.goblin': 60});
       // Found lore shows in the Lore tab.
-      c.state.lore.add(note.id);
+      c.state.lore.addAll([note.id, later.id]);
       await t.tap(find.byKey(const ValueKey('journal-button')));
       await t.pumpAndSettle();
       expect(find.text('Log'), findsOneWidget);
@@ -1880,9 +1881,32 @@ void fightsWithDepth() {
       await closeSheet(t);
       await t.tap(find.text('Lore'));
       await t.pumpAndSettle();
-      expect(find.text('1 of 16 found'), findsOneWidget);
-      expect(find.text(note.title), findsOneWidget);
-      expect(c.state.lore, {note.id});
+      expect(find.text('2 of 16 found'), findsOneWidget);
+      // Newest first.
+      expect(
+        t.getTopLeft(find.text(later.title)).dy,
+        lessThan(t.getTopLeft(find.text(note.title)).dy),
+      );
+    });
+
+    testWidgets('repeated bonus stats are separate card lines (§8.2)', (
+      t,
+    ) async {
+      const sword = 'iron_sword@epic+crit3+crit2+hp12';
+      await pumpGame(t, level: 14, inventory: {sword: 1});
+      await openTab(t, 'character');
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('bag-$sword')));
+      await t.pumpAndSettle();
+      final card = find.byKey(const ValueKey('item-card'));
+      for (final line in ['+3% Crit', '+2% Crit', '+12 Health']) {
+        expect(
+          find.descendant(of: card, matching: find.text(line)),
+          findsOneWidget,
+          reason: line,
+        );
+      }
     });
 
     testWidgets('the Character stats show Crit, Hit, Dodge and Block', (
