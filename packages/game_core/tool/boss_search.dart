@@ -36,7 +36,6 @@ void main(List<String> args) {
           final e = EnemyDef.fromJson({
             'id': boss.id,
             'name': boss.name,
-            'unlockLevel': 1,
             'level': lvl,
             'hp': hp,
             'attack': atk,

@@ -14,6 +14,7 @@ import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
+import 'package:walkingrpg/ui/item_square.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/world_tab.dart';
@@ -21,7 +22,10 @@ import 'package:walkingrpg/version.dart';
 
 import 'support.dart';
 
-final game = loadTestGame();
+final _game = loadTestGame();
+
+/// The real game data; tests that need other items pass `withGame`.
+Game get game => _game;
 late DateTime now;
 
 Finder option(String kind, String target) =>
@@ -37,7 +41,9 @@ Future<(GameController, FakeStepSource)> pumpGame(
   Map<String, String> equipment = const {},
   bool granted = true,
   bool testWalkAllowed = true,
+  Game? withGame,
 }) async {
+  final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -126,6 +132,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  characterScreen();
   layoutScreens();
   playtest2();
   moreScreens();
@@ -604,80 +611,6 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 
-  group('inventory', () {
-    Future<void> openCharacter(WidgetTester t) => openTab(t, 'character');
-
-    List<String> names(WidgetTester t) => t
-        .widgetList<ListTile>(find.byKey(const ValueKey('inventory-item')))
-        .map((tile) => (tile.title! as Text).data!)
-        .toList();
-
-    testWidgets('keeps its order when an item is equipped', (t) async {
-      final (c, _) = await pumpGame(
-        t,
-        level: 3,
-        inventory: {'copper_sword': 1, 'hide_vest': 2, 'goblin_hide': 3},
-      );
-      await openCharacter(t);
-      final before = names(t);
-      expect(before, [
-        'Copper sword (Common)',
-        'Hide vest (Common)',
-        'Goblin hide',
-      ], reason: 'gear first, then materials');
-
-      await t.tap(find.byKey(const ValueKey('equip-hide_vest')));
-      await settle(t, c);
-      expect(names(t), before, reason: 'one Hide vest is left');
-
-      await t.tap(find.byKey(const ValueKey('equip-copper_sword')));
-      await settle(t, c);
-      // Worn gear is listed in doll order: Chest, then Main hand.
-      await t.tap(find.text('Remove').last);
-      await settle(t, c);
-      expect(names(t), before, reason: 'the sword is back in its place');
-    });
-
-    testWidgets('shows how many apart from the Equip button', (t) async {
-      await pumpGame(t, level: 3, inventory: {'hide_vest': 2});
-      await openCharacter(t);
-      final equip = find.byKey(const ValueKey('equip-hide_vest'));
-      expect(
-        find.descendant(of: equip, matching: find.text('Equip')),
-        findsOneWidget,
-      );
-      expect(find.text('×2'), findsOneWidget);
-    });
-    testWidgets('counts and buttons line up in columns', (t) async {
-      final (c, _) = await pumpGame(
-        t,
-        level: 3,
-        inventory: {'goblin_hide': 3, 'copper_sword': 1, 'hide_vest': 2},
-      );
-      await c.equip('copper_sword');
-      await openCharacter(t);
-      await t.pumpAndSettle();
-      expect(
-        t.getTopRight(find.text('×3')).dx,
-        t.getTopRight(find.text('×2')).dx,
-        reason: 'a material count sits in the same column as a gear count',
-      );
-      Finder button(Finder label) => find
-          .ancestor(of: label, matching: find.bySubtype<ButtonStyleButton>())
-          .first;
-      expect(
-        t.getTopRight(button(find.text('Remove'))).dx,
-        t.getTopRight(find.byKey(const ValueKey('equip-hide_vest'))).dx,
-        reason: 'Remove and Equip end at the same edge',
-      );
-      expect(
-        t.getSize(button(find.text('Remove'))).width,
-        t.getSize(find.byKey(const ValueKey('equip-hide_vest'))).width,
-        reason: 'Remove and Equip are the same size',
-      );
-    });
-  });
-
   group('journal (spec 0004)', () {
     test('times read as today, yesterday, or a date', () {
       final now = DateTime(2026, 10, 18, 20);
@@ -848,36 +781,6 @@ void main() {
         contains('Hide vest (Common) ×1, Hide vest (Rare) ×1'),
       );
     });
-
-    testWidgets('each quality is its own row, in colour, with its stats', (
-      t,
-    ) async {
-      final (c, _) = await pumpGame(
-        t,
-        level: 3,
-        inventory: {'hide_vest@rare': 2, 'hide_vest': 1},
-      );
-      await openTab(t, 'character');
-      final rows = t
-          .widgetList<ListTile>(find.byKey(const ValueKey('inventory-item')))
-          .map((tile) => (tile.title! as Text).data!)
-          .toList();
-      expect(rows, ['Hide vest (Common)', 'Hide vest (Rare)']);
-
-      final rare = t.widget<Text>(find.text('Hide vest (Rare)'));
-      expect(rare.style?.color, const Color(0xff42a5f5));
-      expect(find.text('+4 Defense · +14 HP'), findsOneWidget);
-      expect(find.text('+2 Defense · +10 HP'), findsOneWidget);
-
-      await t.tap(find.byKey(const ValueKey('equip-hide_vest@rare')));
-      await settle(t, c);
-      expect(c.state.equipment['chest'], 'hide_vest@rare');
-      expect(
-        find.text('Hide vest (Rare)'),
-        findsNWidgets(2),
-        reason: 'equipped, and one left in the inventory',
-      );
-    });
   });
 
   test('every gear item in every quality equips, saves and has a name', () {
@@ -898,21 +801,6 @@ void main() {
         expect(labels.item(key), isNot(contains('@')));
       }
     }
-  });
-
-  testWidgets('common gear and materials have different colours', (t) async {
-    await pumpGame(t, level: 3, inventory: {'hide_vest': 1, 'goblin_hide': 3});
-    await openTab(t, 'character');
-    final scheme = Theme.of(t.element(find.text('Hide vest (Common)')))
-        .colorScheme;
-    Color? colour(String text) => t.widget<Text>(find.text(text)).style?.color;
-    expect(
-      colour('Hide vest (Common)'),
-      scheme.onSurface,
-      reason: 'common gear',
-    );
-    expect(colour('Goblin hide'), scheme.onSurfaceVariant, reason: 'material');
-    expect(colour('Hide vest (Common)'), isNot(colour('Goblin hide')));
   });
 
   group('quality colour in reports', () {
@@ -1014,19 +902,6 @@ void main() {
       expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
       expect(banner('Reached level 2!'), findsOneWidget);
     });
-  });
-
-  testWidgets('equipped gear shows its stats, like the inventory', (t) async {
-    final (c, _) = await pumpGame(
-      t,
-      level: 3,
-      inventory: {'hide_vest@rare': 1, 'copper_sword': 1},
-    );
-    await c.equip('hide_vest@rare');
-    await c.equip('copper_sword');
-    await openTab(t, 'character');
-    expect(find.text('Chest · +4 Defense · +14 HP'), findsOneWidget);
-    expect(find.text('Main hand · +3 Attack'), findsOneWidget);
   });
 }
 
@@ -1152,25 +1027,6 @@ void moreScreens() {
         find.textContaining('Copper ore 2/5', findRichText: true),
         findsOneWidget,
       );
-    });
-
-    testWidgets('criterion 10: Gear, then Materials', (t) async {
-      await pumpGame(
-        t,
-        level: 3,
-        inventory: {'goblin_hide': 3, 'hide_vest': 1},
-      );
-      await openTab(t, 'character');
-      final gear = find.byKey(const ValueKey('heading-gear'));
-      final materials = find.byKey(const ValueKey('heading-materials'));
-      expect(t.getTopLeft(gear).dy, lessThan(t.getTopLeft(materials).dy));
-    });
-
-    testWidgets('no Gear heading without gear', (t) async {
-      await pumpGame(t, inventory: {'goblin_hide': 3});
-      await openTab(t, 'character');
-      expect(find.byKey(const ValueKey('heading-gear')), findsNothing);
-      expect(find.byKey(const ValueKey('heading-materials')), findsOneWidget);
     });
   });
 }
@@ -1436,6 +1292,290 @@ void layoutScreens() {
       await openTab(t, 'character');
       expect(find.byKey(const ValueKey('show-next-goal')), findsNothing);
       expect(find.byKey(const ValueKey('version')), findsNothing);
+    });
+  });
+}
+
+/// Spec 0008 §3.5 (plan 0010 M3): the paper doll, the bag grid and the item
+/// card; criteria 6-10 on screen.
+void characterScreen() {
+  group('character screen (spec 0008 §3.5)', () {
+    Future<void> openBag(WidgetTester t) async {
+      await openTab(t, 'character');
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+    }
+
+    Future<void> openCard(WidgetTester t, String key) async {
+      await t.tap(find.byKey(ValueKey(key)));
+      await t.pumpAndSettle();
+    }
+
+    Finder card(Finder f) => find.descendant(
+      of: find.byKey(const ValueKey('item-card')),
+      matching: f,
+    );
+
+    String cardText(WidgetTester t, String key) =>
+        t.widget<Text>(card(find.byKey(ValueKey(key)))).data!;
+
+    testWidgets('the doll has 16 slots; worn gear sits in its slot', (t) async {
+      await pumpGame(t, equipment: {'chest': 'hide_vest'});
+      await openTab(t, 'character');
+      for (final g in game.data.gearSlots) {
+        expect(find.byKey(ValueKey('slot-${g.id}')), findsOneWidget);
+      }
+      final chest = t.widget<ItemSquare>(
+        find.byKey(const ValueKey('slot-chest')),
+      );
+      expect(chest.item, 'hide_vest');
+      final head = t.widget<ItemSquare>(
+        find.byKey(const ValueKey('slot-head')),
+      );
+      expect(head.item, isNull, reason: 'a faint outline');
+    });
+
+    testWidgets('criterion 8: the bag stacks, gear first, icons differ', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        inventory: {'goblin_hide': 3, 'hide_vest@rare': 2, 'copper_sword': 1},
+      );
+      await openBag(t);
+      final keys = [
+        for (final w in t.widgetList<ItemSquare>(
+          find.descendant(
+            of: find.byKey(const ValueKey('bag')),
+            matching: find.byType(ItemSquare),
+          ),
+        ))
+          w.item,
+      ];
+      // Gear in doll order (Chest before Main hand), then materials.
+      expect(keys, ['hide_vest@rare', 'copper_sword', 'goblin_hide']);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('bag-goblin_hide')),
+          matching: find.text('3'),
+        ),
+        findsOneWidget,
+      );
+      Iterable<IconData?> icons(String key) => t
+          .widgetList<Icon>(
+            find.descendant(
+              of: find.byKey(ValueKey('bag-$key')),
+              matching: find.byType(Icon),
+            ),
+          )
+          .map((i) => i.icon);
+      expect(icons('goblin_hide'), [materialIcon]);
+      expect(icons('copper_sword'), isNot(contains(materialIcon)));
+      Color border(String key) =>
+          ((t
+                          .widget<Material>(
+                            find
+                                .descendant(
+                                  of: find.byKey(ValueKey('bag-$key')),
+                                  matching: find.byType(Material),
+                                )
+                                .first,
+                          )
+                          .shape!
+                      as RoundedRectangleBorder)
+                  .side)
+              .color;
+      expect(border('hide_vest@rare'), const Color(0xff42a5f5));
+      expect(border('goblin_hide'), Colors.transparent, reason: 'no border');
+    });
+
+    testWidgets('criteria 9 and 10: the card for bag gear, then Equip', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, inventory: {'hide_vest@rare': 1});
+      await openBag(t);
+      await openCard(t, 'bag-hide_vest@rare');
+      expect(cardText(t, 'card-name'), 'Hide vest', reason: 'no bracket');
+      final name = t.widget<Text>(
+        card(find.byKey(const ValueKey('card-name'))),
+      );
+      expect(name.style?.color, const Color(0xff42a5f5));
+      expect(cardText(t, 'card-kind'), 'Rare chest armour · Chest');
+      // Its stats, and the same again as the change to an empty slot.
+      expect(card(find.text('+4 Defense · +14 HP')), findsNWidgets(2));
+      expect(card(find.text('Chest is empty')), findsOneWidget);
+      expect(cardText(t, 'compare-chest'), '+4 Defense · +14 HP');
+
+      await t.tap(card(find.byKey(const ValueKey('card-equip'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.equipment['chest'], 'hide_vest@rare');
+      expect(find.byKey(const ValueKey('item-card')), findsNothing);
+    });
+
+    testWidgets('Swap compares with what is worn; Unequip from the doll', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {'stitched_armour': 1},
+        equipment: {'chest': 'hide_vest'},
+      );
+      await openBag(t);
+      await openCard(t, 'bag-stitched_armour');
+      expect(card(find.text('Instead of your Hide vest')), findsOneWidget);
+      expect(cardText(t, 'compare-chest'), '+2 Defense · +10 HP');
+      await t.tap(card(find.byKey(const ValueKey('card-swap'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.equipment['chest'], 'stitched_armour');
+      expect(c.state.inventory['hide_vest'], 1);
+
+      await t.tap(find.byKey(const ValueKey('tab-gear')));
+      await t.pumpAndSettle();
+      await openCard(t, 'slot-chest');
+      await t.tap(card(find.byKey(const ValueKey('card-unequip'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.equipment, isEmpty);
+      expect(c.state.inventory['stitched_armour'], 1);
+    });
+
+    testWidgets('a material card: where it comes from, what uses it', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        inventory: {'goblin_hide': 2},
+        counters: {'found.goblin.goblin_hide': 1},
+      );
+      await openBag(t);
+      await openCard(t, 'bag-goblin_hide');
+      expect(cardText(t, 'card-kind'), 'Material');
+      expect(card(find.text('Drops from: Goblin')), findsOneWidget);
+      expect(card(find.textContaining('Used in: Hide vest')), findsOneWidget);
+      expect(card(find.byKey(const ValueKey('card-equip'))), findsNothing);
+    });
+
+    testWidgets('bag squares keep their place through equip and unequip', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {
+          'copper_sword': 1,
+          'copper_sword@rare': 1,
+          'hide_vest': 1,
+          'goblin_hide': 2,
+          'bones': 1,
+        },
+      );
+      List<String?> order() => [
+        for (final w in t.widgetList<ItemSquare>(
+          find.descendant(
+            of: find.byKey(const ValueKey('bag')),
+            matching: find.byType(ItemSquare),
+          ),
+        ))
+          w.item,
+      ];
+      await openBag(t);
+      final before = order();
+      await c.equip('hide_vest');
+      await c.unequip('chest');
+      await t.pumpAndSettle();
+      expect(order(), before);
+    });
+
+    testWidgets('a material card names no vein in the fog', (t) async {
+      await pumpGame(t, inventory: {'iron_ore': 1});
+      await openBag(t);
+      await openCard(t, 'bag-iron_ore');
+      expect(card(find.textContaining('Mined at')), findsNothing);
+      expect(card(find.textContaining('Used in: Iron')), findsOneWidget);
+    });
+
+    group('test-only gear', () {
+      final withGear = loadTestGame(
+        items: [
+          {'id': 'ring_a', 'name': 'Ring A', 'slot': 'ring', 'hp': 5},
+          {'id': 'ring_b', 'name': 'Ring B', 'slot': 'ring', 'hp': 6},
+          {'id': 'ring_c', 'name': 'Ring C', 'slot': 'ring', 'hp': 9},
+          {
+            'id': 'big_axe',
+            'name': 'Big axe',
+            'slot': 'mainHand',
+            'twoHanded': true,
+            'attack': 10,
+          },
+        ],
+      );
+
+      testWidgets('an off-hand item next to a two-hander names what goes', (
+        t,
+      ) async {
+        await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'bone_shield': 1},
+          equipment: {'mainHand': 'big_axe'},
+        );
+        await openBag(t);
+        await openCard(t, 'bag-bone_shield');
+        expect(card(find.text('Instead of your Big axe')), findsOneWidget);
+        expect(cardText(t, 'compare-offHand'), '−10 Attack · +3 Defense');
+      });
+
+      testWidgets('criterion 7: both rings worn, swap with either', (t) async {
+        final (c, _) = await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'ring_c': 1},
+          equipment: {'ring1': 'ring_a', 'ring2': 'ring_b'},
+        );
+        await openBag(t);
+        await openCard(t, 'bag-ring_c');
+        expect(card(find.text('Swap with Ring A')), findsOneWidget);
+        expect(card(find.text('Swap with Ring B')), findsOneWidget);
+        await t.tap(card(find.byKey(const ValueKey('card-swap-ring2'))));
+        await settle(t, c);
+        await t.pumpAndSettle();
+        expect(c.state.equipment['ring2'], 'ring_c');
+        expect(c.state.inventory['ring_b'], 1);
+      });
+
+      testWidgets('criterion 6: a two-hander says the shield goes to the bag', (
+        t,
+      ) async {
+        final (c, _) = await pumpGame(
+          t,
+          withGame: withGear,
+          inventory: {'big_axe': 1},
+          equipment: {'mainHand': 'copper_sword', 'offHand': 'bone_shield'},
+        );
+        await openBag(t);
+        await openCard(t, 'bag-big_axe');
+        expect(cardText(t, 'card-kind'), 'Common two-hand weapon · Main hand');
+        expect(
+          card(
+            find.text('Uses both hands: your off-hand item goes to the bag.'),
+          ),
+          findsOneWidget,
+        );
+        expect(cardText(t, 'compare-mainHand'), '+7 Attack · −3 Defense');
+        await t.tap(card(find.byKey(const ValueKey('card-swap'))));
+        await settle(t, c);
+        await t.pumpAndSettle();
+        expect(c.state.equipment, {'mainHand': 'big_axe'});
+        expect(c.state.inventory, {'copper_sword': 1, 'bone_shield': 1});
+
+        await t.tap(find.byKey(const ValueKey('tab-gear')));
+        await t.pumpAndSettle();
+        final off = t.widget<ItemSquare>(
+          find.byKey(const ValueKey('slot-offHand')),
+        );
+        expect(off.dimmed, isTrue, reason: 'greyed out under a two-hander');
+      });
     });
   });
 }

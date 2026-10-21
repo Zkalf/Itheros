@@ -173,7 +173,7 @@ class Game {
     };
     final into = slots.reduce((a, b) => score(a) <= score(b) ? a : b);
     var worn = 0;
-    for (final id in _displaced(s, key, into)) {
+    for (final id in displaced(s, key, into)) {
       worn += score(id);
     }
     return data.scoreOf(key) - worn;
@@ -373,6 +373,26 @@ class Game {
   /// The counter set when [item] first drops from [enemy] (spec 0006
   /// decision 5).
   static String foundCounter(String enemy, String item) => 'found.$enemy.$item';
+
+  /// Monsters [item] has dropped from for this player, and the gathering
+  /// spots that give it, for the item card (spec 0008 §3.5). Monsters it
+  /// hasn't dropped from yet stay hidden (spec 0006 §2.2).
+  (List<String>, List<String>) itemSources(GameState s, String item) => (
+    [
+      for (final e in data.enemies.keys)
+        if ((s.counters[foundCounter(e, item)] ?? 0) > 0) e,
+    ],
+    [
+      for (final n in data.nodes.values)
+        if (n.item == item && !nodeFogged(s, n.id)) n.id,
+    ],
+  );
+
+  /// Recipes that use [item], in data order.
+  List<String> itemUses(String item) => [
+    for (final r in data.recipes.values)
+      if (r.inputs.containsKey(item)) r.id,
+  ];
 
   /// [enemy]'s drops the player has found, in [dropItems] order.
   List<String> foundDrops(GameState s, String enemy) => [
@@ -726,7 +746,7 @@ class Game {
     }
     if (!slots.contains(to)) throw ActivityError('$item does not fit $to');
     final n = s.copy()..addItem(item, -1);
-    for (final id in _displaced(n, item, to)) {
+    for (final id in displaced(n, item, to)) {
       n.addItem(n.equipment.remove(id)!);
     }
     n.equipment[to] = item;
@@ -737,14 +757,14 @@ class Game {
   /// takes off.
   Stats compare(GameState s, String item, String slot) {
     var off = const Stats();
-    for (final id in _displaced(s, item, slot)) {
+    for (final id in displaced(s, item, slot)) {
       off += data.bonusOf(s.equipment[id]!);
     }
     return data.bonusOf(item) - off;
   }
 
   /// Worn slots that wearing [item] in [slot] empties.
-  List<String> _displaced(GameState s, String item, String slot) {
+  List<String> displaced(GameState s, String item, String slot) {
     bool twoHanded(String? key) =>
         key != null && (data.itemOf(key)?.twoHanded ?? false);
     return {
