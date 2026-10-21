@@ -12,6 +12,17 @@ import 'labels.dart';
 int fadedXp(int xp, int level, Game game, GameState s) =>
     math.max(1, xp * game.data.bandFor(level, game.level(s)).xpPercent ~/ 100);
 
+/// "Drops: Goblin hide, ??? · 1 of 2 found": only what the player has found,
+/// no chances (spec 0006 §2.2).
+String dropsLine(Game game, GameState s, Labels labels, String enemy) {
+  final all = game.dropItems(enemy);
+  final found = game.foundDrops(s, enemy);
+  final names = [
+    for (final item in all) found.contains(item) ? labels.item(item) : '???',
+  ];
+  return 'Drops: ${names.join(', ')} · ${found.length} of ${all.length} found';
+}
+
 /// A tappable row for one action; the running one is marked Active.
 class ActionTile extends StatelessWidget {
   const ActionTile({

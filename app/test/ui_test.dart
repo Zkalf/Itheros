@@ -16,7 +16,7 @@ import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
-import 'package:walkingrpg/ui/map_tab.dart';
+import 'package:walkingrpg/ui/world_tab.dart';
 import 'package:walkingrpg/version.dart';
 
 import 'support.dart';
@@ -78,16 +78,16 @@ Future<(GameController, FakeStepSource)> pumpGame(
   return (c, source);
 }
 
-/// Opens a bottom bar screen: now, map, craft, character.
+/// Opens a bottom bar screen: now, world, professions, character.
 Future<void> openTab(WidgetTester tester, String screen) async {
   await tester.tap(find.byKey(ValueKey('tab-$screen')));
   await tester.pumpAndSettle();
 }
 
-/// Opens the Map and taps [area] on it.
+/// Opens the World map and taps [area] on it.
 Future<void> openArea(WidgetTester tester, String area) async {
   if (find.byKey(ValueKey('area-$area')).evaluate().isEmpty) {
-    await openTab(tester, 'map');
+    await openTab(tester, 'world');
   }
   await tester.tap(find.byKey(ValueKey('area-$area')));
   await tester.pumpAndSettle();
@@ -96,6 +96,12 @@ Future<void> openArea(WidgetTester tester, String area) async {
 /// Opens Achievements from the trophy button (spec 0006 amendment 2).
 Future<void> openAchievements(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('achievements-button')));
+  await tester.pumpAndSettle();
+}
+
+/// Opens Settings from the top bar (spec 0008 decision 12).
+Future<void> openSettings(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('settings-button')));
   await tester.pumpAndSettle();
 }
 
@@ -120,6 +126,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  layoutScreens();
   playtest2();
   moreScreens();
   theMap();
@@ -138,7 +145,7 @@ void main() {
       expect(option('travel', 'grey_moor'), findsNothing);
       expect(find.textContaining('Thick fog'), findsOneWidget);
       await closeSheet(t);
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(sword.enabled, isFalse, reason: 'needs level 3');
       expect(
@@ -174,7 +181,7 @@ void main() {
 
     testWidgets('level 3 can craft at camp', (t) async {
       await pumpGame(t, level: 3, inventory: {'copper_ore': 5});
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(sword.enabled, isTrue);
       final vest = t.widget<ListTile>(option('craft', 'hide_vest'));
@@ -410,10 +417,11 @@ void main() {
       await settle(t, c);
       expect(find.byKey(const ValueKey('next-goal')), findsNothing);
 
-      await openTab(t, 'character');
+      await openSettings(t);
       await t.tap(find.byKey(const ValueKey('show-next-goal')));
       await settle(t, c);
-      await openTab(t, 'now');
+      await t.pageBack();
+      await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
     });
   });
@@ -581,7 +589,7 @@ void main() {
       t,
     ) async {
       await pumpGame(t, level: 5);
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       final tile = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(tile.enabled, isTrue);
     });
@@ -790,7 +798,7 @@ void main() {
     t,
   ) async {
     await pumpGame(t);
-    await openTab(t, 'character');
+    await openSettings(t);
     expect(find.text('Version $appVersion'), findsOneWidget);
   });
 
@@ -1024,25 +1032,26 @@ void main() {
 
 void moreScreens() {
   group('more screens (spec 0006)', () {
-    testWidgets('criterion 1: the bottom bar; it opens on Now', (t) async {
+    // Spec 0008 criterion 1 replaces spec 0006 criterion 1.
+    testWidgets('spec 0008 criterion 1: four buttons, the top bar, Now first', (
+      t,
+    ) async {
       await pumpGame(t);
-      for (final s in ['now', 'map', 'character']) {
-        expect(find.byKey(ValueKey('tab-$s')), findsOneWidget, reason: s);
-      }
-      expect(find.byKey(const ValueKey('tab-achievements')), findsNothing);
+      final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
       expect(
-        find.byKey(const ValueKey('tab-craft')),
-        findsOneWidget,
-        reason: 'recipes show from level 1 (spec 0008)',
+        [for (final d in bar.destinations) (d as NavigationDestination).label],
+        ['Now', 'World', 'Professions', 'Character'],
       );
       expect(find.byKey(const ValueKey('walked-today')), findsOneWidget);
-      for (final s in ['map', 'character', 'now']) {
+      for (final s in ['world', 'professions', 'character', 'now']) {
         await openTab(t, s);
-        expect(find.byKey(const ValueKey('journal-button')), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('achievements-button')),
-          findsOneWidget,
-        );
+        for (final b in ['journal', 'achievements', 'settings']) {
+          expect(
+            find.byKey(ValueKey('$b-button')),
+            findsOneWidget,
+            reason: '$b on $s',
+          );
+        }
       }
     });
 
@@ -1078,26 +1087,18 @@ void moreScreens() {
       expect(dot(), isFalse);
     });
 
-    testWidgets('craft opens with the first recipe', (t) async {
+    testWidgets('Professions holds crafting and the forge', (t) async {
       await pumpGame(t, level: 3);
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       expect(find.text('At the forge (Camp)'), findsOneWidget);
     });
 
-    testWidgets('resting: a button opens the map', (t) async {
+    testWidgets('resting: a button opens the World map', (t) async {
       await pumpGame(t);
-      await t.tap(find.byKey(const ValueKey('open-map')));
+      expect(find.textContaining('or on the World map'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('open-world')));
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('area-goblin_woods')), findsOneWidget);
-    });
-
-    testWidgets('amendment 3: from level 1 a button opens Craft', (t) async {
-      await pumpGame(t);
-      expect(find.byKey(const ValueKey('open-map')), findsOneWidget);
-      expect(find.textContaining('Map or Craft screen'), findsOneWidget);
-      await t.tap(find.byKey(const ValueKey('open-craft')));
-      await t.pumpAndSettle();
-      expect(find.text('At the forge (Camp)'), findsOneWidget);
     });
 
     testWidgets('criteria 3 and 4: the fight log and the tally', (t) async {
@@ -1123,7 +1124,7 @@ void moreScreens() {
 
     testWidgets('criterion 8: craft until a quality from the sheet', (t) async {
       final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 50});
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       await t.tap(option('craft', 'copper_sword'));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('stop-untilQuality')));
@@ -1145,7 +1146,7 @@ void moreScreens() {
         location: 'goblin_woods',
         inventory: {'copper_ore': 2},
       );
-      await openTab(t, 'craft');
+      await openTab(t, 'professions');
       expect(find.text('Nearest forge: Camp · 200 steps away'), findsOneWidget);
       expect(
         find.textContaining('Copper ore 2/5', findRichText: true),
@@ -1186,7 +1187,7 @@ void theMap() {
       t,
     ) async {
       await pumpGame(t, level: 30);
-      await openTab(t, 'map');
+      await openTab(t, 'world');
       expect(inArea('old_graveyard', 'Old Graveyard'), findsOneWidget);
       for (final a in ['grey_moor', 'iron_ridge', 'dragons_peak']) {
         expect(inArea(a, '???'), findsOneWidget, reason: a);
@@ -1204,7 +1205,7 @@ void theMap() {
 
     testWidgets('exploring lifts the fog next door', (t) async {
       await pumpGame(t, location: 'old_graveyard');
-      await openTab(t, 'map');
+      await openTab(t, 'world');
       expect(inArea('grey_moor', 'Grey Moor'), findsOneWidget);
       expect(inArea('iron_ridge', '???'), findsOneWidget);
     });
@@ -1263,7 +1264,7 @@ void mapGaps() {
     t,
   ) async {
     await pumpGame(t);
-    await openTab(t, 'map');
+    await openTab(t, 'world');
     final painter = t
         .widgetList<CustomPaint>(find.byType(CustomPaint))
         .map((p) => p.painter)
@@ -1373,6 +1374,68 @@ void playtest2() {
         findsOneWidget,
       );
       expect(find.textContaining('is your level'), findsNothing);
+    });
+  });
+}
+
+/// Spec 0008 §3 (plan 0010 M2): Now's "Here" section and Settings.
+void layoutScreens() {
+  group('layout screens (spec 0008 §3)', () {
+    Finder here(Finder f) =>
+        find.descendant(of: find.byKey(const ValueKey('here')), matching: f);
+
+    testWidgets('Now lists what this place offers, and starts it', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      expect(find.text('Here: Goblin Woods'), findsOneWidget);
+      for (final e in ['goblin', 'goblin_brute', 'old_bear']) {
+        expect(here(option('fight', e)), findsOneWidget, reason: e);
+      }
+      expect(here(find.textContaining('Drops: ')), findsNWidgets(3));
+      await tapAndStart(t, here(option('fight', 'goblin')));
+      await settle(t, c);
+      expect(c.state.activity!.activity, const Activity.fight('goblin'));
+    });
+
+    testWidgets('a vein here shows the level it needs', (t) async {
+      await pumpGame(t, location: 'copper_hills');
+      expect(here(option('gather', 'copper_vein')), findsOneWidget);
+      expect(here(find.text('Needs level 2')), findsOneWidget);
+    });
+
+    testWidgets('at a forge a Forge row opens Professions', (t) async {
+      await pumpGame(t);
+      expect(find.text('Here: Camp'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('here-forge')));
+      await t.pumpAndSettle();
+      expect(find.text('At the forge (Camp)'), findsOneWidget);
+    });
+
+    testWidgets('no Forge row away from a forge', (t) async {
+      await pumpGame(t, location: 'goblin_woods');
+      expect(find.byKey(const ValueKey('here-forge')), findsNothing);
+    });
+
+    testWidgets('Settings: Next goal, the test walk, the version', (t) async {
+      final (c, _) = await pumpGame(t);
+      await openSettings(t);
+      expect(find.byKey(const ValueKey('show-next-goal')), findsOneWidget);
+      expect(find.text('Version $appVersion'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('test-walk-switch')));
+      await settle(t, c);
+      expect(c.testWalkOn, isTrue);
+    });
+
+    testWidgets('a friend build has no test walk switch', (t) async {
+      await pumpGame(t, testWalkAllowed: false);
+      await openSettings(t);
+      expect(find.byKey(const ValueKey('test-walk-switch')), findsNothing);
+    });
+
+    testWidgets('Character no longer holds settings', (t) async {
+      await pumpGame(t);
+      await openTab(t, 'character');
+      expect(find.byKey(const ValueKey('show-next-goal')), findsNothing);
+      expect(find.byKey(const ValueKey('version')), findsNothing);
     });
   });
 }

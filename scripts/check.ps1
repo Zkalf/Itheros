@@ -60,7 +60,14 @@ if (Test-Path "$app\test") { Step 'app: test' $app { flutter test } }
 
 if ($Release) {
   # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.
-  Step 'app: build release APK' $app { flutter build apk --release --dart-define=TEST_WALK=true }
+  # Only this step: flutter build prints a Kotlin plugin warning on stderr, which PowerShell 5.1 turns into an
+  # error. Its exit code decides; a missing flutter still fails (no exit code, so it throws below).
+  Step 'app: build release APK' $app {
+    $ErrorActionPreference = 'Continue'
+    $global:LASTEXITCODE = $null
+    flutter build apk --release --dart-define=TEST_WALK=true
+    if ($null -eq $LASTEXITCODE) { throw 'flutter did not run' }
+  }
   Step 'app: APK check (no INTERNET, no cloud backup)' $app {
     & "$PSScriptRoot\apk-check.ps1" "$app\build\app\outputs\flutter-apk\app-release.apk"
   }
