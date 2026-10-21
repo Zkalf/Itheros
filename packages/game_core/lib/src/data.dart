@@ -128,6 +128,23 @@ class CombatRules {
       .key;
 }
 
+/// One bonus stat roll on a piece of gear (spec 0009 §5): `crit` 3.
+typedef BonusRoll = ({String stat, int value});
+
+/// The bonus stats gear of an item level up to [upToLevel] (null: any) can
+/// roll, each with its value range (spec 0009 §5.1).
+class BonusTier {
+  BonusTier._(Map<String, Object?> j)
+    : upToLevel = j['upToLevel'] as int?,
+      ranges = Map.unmodifiable({
+        for (final stat in GameData.bonusStats)
+          if (j[stat] case [final int lo, final int hi]) stat: (lo, hi),
+      });
+
+  final int? upToLevel;
+  final Map<String, (int, int)> ranges;
+}
+
 class LocationDef {
   LocationDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
@@ -457,6 +474,9 @@ class GameData {
        qualityMaxLevels = _int(economy, 'qualityMaxLevels'),
        fightLogRounds = _int(economy, 'fightLogRounds'),
        combat = CombatRules._(_map(economy, 'combat')),
+       bonusTiers = List.unmodifiable(
+         _maps(economy, 'bonusStats').map(BonusTier._),
+       ),
        startLocation = _str(world, 'startLocation'),
        mapAspect = (world['mapAspect'] as num? ?? 1).toDouble(),
        mapRiver = List.unmodifiable(
@@ -565,17 +585,50 @@ class GameData {
   /// Hit, crit, block and the type table (spec 0009 §2–§3).
   final CombatRules combat;
 
+  /// Bonus stat pools by item level, lowest first (spec 0009 §5.1).
+  final List<BonusTier> bonusTiers;
+
+  /// The bonus stats, in the order a key lists them.
+  static const bonusStats = ['crit', 'hp', 'hit', 'dodge', 'block'];
+
+  /// The pool of gear of [itemLevel].
+  BonusTier bonusTierFor(int itemLevel) => bonusTiers.firstWhere(
+    (t) => t.upToLevel == null || itemLevel <= t.upToLevel!,
+  );
+
+  /// The level [item] is made or found at: its recipe's, else the lowest
+  /// monster dropping it, else 1 (spec 0005 decision 2).
+  int itemLevel(String item) {
+    if (recipes.values.where((r) => r.output == item).firstOrNull
+        case final r?) {
+      return r.level;
+    }
+    final droppers = [
+      for (final e in enemies.values)
+        if ([...e.drops, ...e.firstKillDrops].any((d) => d.item == item))
+          e.level,
+    ];
+    return droppers.isEmpty ? 1 : droppers.reduce(math.min);
+  }
+
   /// Separates an item id from its quality in inventory and equipment keys:
   /// `bone_sword@rare`. Common gear and materials use the plain id.
   static const qualityMark = '@';
 
+  /// Comes before each bonus stat roll in a key, in [bonusStats] order and
+  /// highest value first: `bone_sword@rare+crit3+hp12` (spec 0009 §5.3).
+  static const bonusMark = '+';
+
+  /// A key without its bonus stats: `bone_sword@rare`.
+  String plainKey(String key) => key.split(bonusMark).first;
+
   /// The item a key stands for.
-  ItemDef? itemOf(String key) => items[key.split(qualityMark).first];
+  ItemDef? itemOf(String key) => items[plainKey(key).split(qualityMark).first];
 
   /// The quality of a key; common when it names none, or one the data no
   /// longer has (an old save must still load).
   QualityDef qualityOf(String key) {
-    final parts = key.split(qualityMark);
+    final parts = plainKey(key).split(qualityMark);
     if (parts.length < 2) return qualities.first;
     return qualities.firstWhere(
       (q) => q.id == parts[1],
@@ -583,13 +636,51 @@ class GameData {
     );
   }
 
-  /// The key for [item] of [quality] (a quality id).
-  String keyFor(String item, String quality) =>
-      quality == qualities.first.id ? item : '$item$qualityMark$quality';
+  /// A key's bonus stat rolls, in key order; unknown ones are skipped.
+  List<BonusRoll> bonusRolls(String key) => [
+    for (final part in key.split(bonusMark).skip(1))
+      if (_roll.firstMatch(part) case final m? when bonusStats.contains(m[1]))
+        (stat: m[1]!, value: int.parse(m[2]!)),
+  ];
 
-  /// An item's stats with its quality: each stat it has becomes
-  /// `max(round(stat × (1 + bonus)), stat + tier)` (spec 0005 decision 7).
-  Stats bonusOf(String key) {
+  static final _roll = RegExp(r'^([a-z]+)(\d+)$');
+
+  /// The key for [item] of [quality] (a quality id) with [bonus] rolls, in
+  /// any order: the same rolls always make the same key.
+  String keyFor(
+    String item,
+    String quality, [
+    List<BonusRoll> bonus = const [],
+  ]) {
+    final sorted = [...bonus]
+      ..sort((a, b) {
+        final byStat = bonusStats
+            .indexOf(a.stat)
+            .compareTo(bonusStats.indexOf(b.stat));
+        return byStat != 0 ? byStat : b.value.compareTo(a.value);
+      });
+    return [
+      quality == qualities.first.id ? item : '$item$qualityMark$quality',
+      for (final r in sorted) '${r.stat}${r.value}',
+    ].join(bonusMark);
+  }
+
+  /// An item's stats with its quality and bonus stats. Quality raises each
+  /// base HP, Attack and Defense to `max(round(stat × (1 + bonus)), stat +
+  /// tier)` (spec 0005 decision 7); the rolls add on top (spec 0009 §5.2).
+  Stats bonusOf(String key) => _bonusCache[key] ??= _bonusOf(key);
+
+  final _bonusCache = <String, Stats>{};
+
+  Stats _bonusOf(String key) {
+    var rolled = const Stats();
+    for (final r in bonusRolls(key)) {
+      rolled += Stats.fromJson({r.stat: r.value});
+    }
+    return _qualityStats(key) + rolled;
+  }
+
+  Stats _qualityStats(String key) {
     final base = itemOf(key)?.bonus ?? const Stats();
     final q = qualityOf(key);
     final tier = qualities.indexOf(q);
@@ -816,6 +907,24 @@ class GameData {
       );
     }
     check(combat.hitMin <= combat.hitMax, 'combat: hitMin must be <= hitMax');
+    check(
+      bonusTiers.isNotEmpty && bonusTiers.last.upToLevel == null,
+      'bonusStats must end with a tier without upToLevel',
+    );
+    for (var i = 0; i < bonusTiers.length; i++) {
+      final t = bonusTiers[i];
+      check(t.ranges.isNotEmpty, 'bonusStats: every tier needs a stat');
+      check(
+        t.ranges.values.every((r) => 0 < r.$1 && r.$1 <= r.$2),
+        'bonusStats: ranges must be 0 < low <= high',
+      );
+      check(
+        i == 0 ||
+            t.upToLevel == null ||
+            t.upToLevel! > bonusTiers[i - 1].upToLevel!,
+        'bonusStats: tiers must go up in level',
+      );
+    }
     check(fightLogRounds > 0, 'fightLogRounds must be > 0');
     for (final p in [...mapRiver, for (final l in locations.values) ?l.map]) {
       check(

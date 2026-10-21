@@ -22,4 +22,7 @@ class Rng {
 
   /// Uniform in [0, 1).
   double nextDouble() => nextUint32() / 4294967296.0;
+
+  /// Uniform in [0, n).
+  int nextInt(int n) => (nextDouble() * n).floor();
 }

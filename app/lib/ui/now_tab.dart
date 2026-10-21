@@ -430,12 +430,19 @@ class _QueueCard extends StatelessWidget {
   }
 
   /// [gained] in item data order, then quality order, like the inventory.
+  /// Items of the same quality count together, whatever their bonus stats
+  /// (rows show none: spec 0009 §8.2).
   Map<String, int> _ordered(Map<String, int> gained) {
     final data = controller.game.data;
+    final byPlain = <String, int>{};
+    gained.forEach((key, n) {
+      final plain = data.plainKey(key);
+      byPlain[plain] = (byPlain[plain] ?? 0) + n;
+    });
     return {
       for (final id in data.items.keys)
         for (final q in data.qualities)
-          data.keyFor(id, q.id): ?gained[data.keyFor(id, q.id)],
+          data.keyFor(id, q.id): ?byPlain[data.keyFor(id, q.id)],
     };
   }
 
