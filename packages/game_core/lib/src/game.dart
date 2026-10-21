@@ -20,8 +20,10 @@ class Game {
     data.startLocation,
   );
 
-  /// Counts [area] as visited, once (spec 0004 §4). Mutates and returns [s].
+  /// Counts [area] as visited, once (spec 0004 §4), and explored (spec
+  /// 0008 decision 5). Mutates and returns [s].
   GameState _visit(GameState s, String area) {
+    s.explored.add(area);
     if ((s.counters['visited.$area'] ?? 0) == 0) {
       s.counters['visited.$area'] = 1;
       s.count('areas.visited');
@@ -41,10 +43,9 @@ class Game {
 
   Stats stats(GameState s) {
     var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
-    final open = openSlots(s);
-    s.equipment.forEach((slot, item) {
-      if (open.contains(slot)) total += data.bonusOf(item);
-    });
+    for (final item in s.equipment.values) {
+      total += data.bonusOf(item);
+    }
     return total;
   }
 
@@ -72,11 +73,11 @@ class Game {
   /// Total XP needed for the next level. There is no level cap.
   int xpForNextLevel(GameState s) => data.xpForLevel(level(s) + 1);
 
-  /// Gear slots open at the player's level, in display order.
-  List<String> openSlots(GameState s) => [
-    for (final e in data.gearSlots.entries)
-      if (e.value <= level(s)) e.key,
-  ];
+  /// The slots [key] can be worn in, in display order; empty for materials.
+  List<String> slotsFor(String key) => switch (data.itemOf(key)?.slot) {
+    final kind? => data.slotsOfKind(kind),
+    null => const [],
+  };
 
   /// Colour and XP share of [enemy] for this player (spec 0002 §3).
   LevelBand enemyBand(GameState s, String enemy) =>
@@ -89,25 +90,20 @@ class Game {
   int talentPoints(int level) => math.max(0, level - data.talentPointsFrom + 1);
 
   /// What reaching [level] brings, for its level-up card (spec 0002 §9.1).
-  List<LevelNews> levelNews(int level) {
-    final enemies = data.enemies.values.where((e) => e.unlockLevel <= level);
+  /// Only gathering spots and recipes open by level (spec 0008 amendments 1
+  /// and 2). With [s], monsters in the fog are left out (decision 5).
+  List<LevelNews> levelNews(int level, [GameState? s]) {
+    final enemies = data.enemies.values.where(
+      (e) => s == null || !enemyFogged(s, e.id),
+    );
     return [
       for (final r in data.ranks)
         if (r.level == level && level > 1) LevelNews(NewsKind.rank, r.name),
-      for (final l in data.locations.values)
-        if (l.unlockLevel == level) LevelNews(NewsKind.area, l.id),
-      for (final e in data.enemies.values)
-        if (e.unlockLevel == level) LevelNews(NewsKind.monster, e.id),
       for (final n in data.nodes.values)
-        if (n.unlockLevel == level) LevelNews(NewsKind.gatheringSpot, n.id),
+        if (n.level == level && level > 1)
+          LevelNews(NewsKind.gatheringSpot, n.id),
       for (final r in data.recipes.values)
-        if (r.unlockLevel == level) LevelNews(NewsKind.recipe, r.id),
-      for (final e in data.gearSlots.entries)
-        if (e.value == level && level > 1) LevelNews(NewsKind.gearSlot, e.key),
-      for (final e in data.queueSlots.entries)
-        if (e.key == level && level > 1)
-          LevelNews(NewsKind.queueSlots, '${e.value}'),
-      if (level == data.untilFromLevel) const LevelNews(NewsKind.untilN, ''),
+        if (r.level == level && level > 1) LevelNews(NewsKind.recipe, r.id),
       if (level >= data.talentPointsFrom)
         const LevelNews(NewsKind.talentPoint, ''),
       for (final e in enemies)
@@ -121,29 +117,21 @@ class Game {
 
   /// What to do next, or null when nothing applies (spec 0002 §9.3).
   Goal? nextGoal(GameState s) {
-    final lvl = level(s);
-    final open = openSlots(s);
-    int worn(String slot) => switch (s.equipment[slot]) {
-      final key? => data.scoreOf(key),
-      null => 0,
-    };
-    int gain(String key) => data.scoreOf(key) - worn(data.itemOf(key)!.slot!);
+    int gain(String key) => gearGain(s, key);
 
     final better = [
       for (final key in s.inventory.keys)
-        if (data.itemOf(key)?.slot case final slot?)
-          if (open.contains(slot) && gain(key) > 0) key,
+        if (data.itemOf(key)?.slot != null && gain(key) > 0) key,
     ]..sort((a, b) => gain(b).compareTo(gain(a)));
     if (better.isNotEmpty) return EquipGoal(better.first);
 
     final upgrades = [
       for (final r in data.recipes.values)
-        if (r.unlockLevel <= lvl)
-          if (data.items[r.output]!.slot case final slot?)
-            if (open.contains(slot) &&
-                owned(s, r.output) == 0 &&
-                gain(r.output) > 0)
-              r,
+        if (data.items[r.output]!.slot != null &&
+            recipeLevelMet(s, r.id) &&
+            owned(s, r.output) == 0 &&
+            gain(r.output) > 0)
+          r,
     ]..sort((a, b) => gain(b.output).compareTo(gain(a.output)));
     for (final r in upgrades) {
       if (hasMaterials(s, r.id)) return CraftGoal(r.id);
@@ -162,7 +150,7 @@ class Game {
     var bestRate = 0.0;
     final me = stats(s);
     for (final e in data.enemies.values) {
-      if (e.unlockLevel > lvl ||
+      if (enemyFogged(s, e.id) ||
           enemyBand(s, e.id).colour != LevelColour.yellow) {
         continue;
       }
@@ -173,17 +161,47 @@ class Game {
     return best == null ? null : FightGoal(best.id);
   }
 
+  /// How much better [key] is than what it takes off in its weakest slot
+  /// (an empty slot counts 0; a two-hander also takes off the off hand, an
+  /// off-hand item a two-hander).
+  int gearGain(GameState s, String key) {
+    final slots = slotsFor(key);
+    if (slots.isEmpty) return 0;
+    int score(String slot) => switch (s.equipment[slot]) {
+      final k? => data.scoreOf(k),
+      null => 0,
+    };
+    final into = slots.reduce((a, b) => score(a) <= score(b) ? a : b);
+    var worn = 0;
+    for (final id in _displaced(s, key, into)) {
+      worn += score(id);
+    }
+    return data.scoreOf(key) - worn;
+  }
+
+  /// Whether every area holding [enemy] is in the fog.
+  bool enemyFogged(GameState s, String enemy) => data.locations.values
+      .where((l) => l.enemies.contains(enemy))
+      .every((l) => isFogged(s, l.id));
+
+  /// Whether every area holding gathering spot [node] is in the fog.
+  bool nodeFogged(GameState s, String node) => data.locations.values
+      .where((l) => l.nodes.contains(node))
+      .every((l) => isFogged(s, l.id));
+
   /// A gathering spot for [item], or the most generous monster dropping it
-  /// that is at most yellow.
+  /// that is at most yellow; never one in the fog.
   Activity? _safeSource(GameState s, String item) {
     final lvl = level(s);
     for (final n in data.nodes.values) {
-      if (n.item == item && n.unlockLevel <= lvl) return Activity.gather(n.id);
+      if (n.item == item && nodeLevelMet(s, n.id) && !nodeFogged(s, n.id)) {
+        return Activity.gather(n.id);
+      }
     }
     EnemyDef? best;
     var bestChance = 0.0;
     for (final e in data.enemies.values) {
-      if (e.unlockLevel > lvl || e.level > lvl + 2) continue;
+      if (enemyFogged(s, e.id) || e.level > lvl + 2) continue;
       for (final d in e.drops) {
         if (d.item == item && d.chance * d.count > bestChance) {
           (best, bestChance) = (e, d.chance * d.count);
@@ -200,11 +218,38 @@ class Game {
   /// 0004 decision 9).
   /// Saves before version 5 count a drop as found if the monster was killed
   /// and the item is owned or worn (spec 0006 decision 6).
+  /// Saves before version 6 move their gear onto the paper doll and count
+  /// visited areas as explored (spec 0008 §2.4).
   GameState migrate(GameState s) {
     var n = _migrateXp(s);
     if (s.loadedVersion < 4) n = _visit(n.copy(), n.location);
     if (s.loadedVersion < 5) n = _findOwnedDrops(n.copy());
+    if (s.loadedVersion < 6) n = _migrateLayout(n.copy());
     return n;
+  }
+
+  /// Each worn item goes to the first free slot of its item's kind in
+  /// `items.json` (a sword to Main hand, the Bear-pelt cloak to Cloak), or
+  /// to the bag if none is free.
+  GameState _migrateLayout(GameState s) {
+    final old = Map.of(s.equipment);
+    s.equipment.clear();
+    for (final key in old.values) {
+      final free = slotsFor(key).where((id) => !s.equipment.containsKey(id));
+      if (free.isEmpty) {
+        s.addItem(key);
+      } else {
+        s.equipment[free.first] = key;
+      }
+    }
+    s.explored
+      ..clear()
+      ..add(s.location)
+      ..addAll([
+        for (final id in data.locations.keys)
+          if ((s.counters['visited.$id'] ?? 0) > 0) id,
+      ]);
+    return s;
   }
 
   GameState _findOwnedDrops(GameState s) {
@@ -253,28 +298,31 @@ class Game {
     };
   }
 
-  // Queries for the UI. Locked content is left out, not greyed out (spec §5).
+  // Queries for the UI. Nothing is locked by level but gathering spots and
+  // recipes (spec 0008 amendments 1 and 2), which still show; fogged areas
+  // show nothing.
 
   List<String> travelDestinations(GameState s) => [
     for (final to in data.destinationsFrom(s.location))
-      if (data.locations[to]!.unlockLevel <= level(s)) to,
+      if (!isFogged(s, to)) to,
   ];
 
-  List<String> availableEnemies(GameState s) => [
-    for (final e in _here(s).enemies)
-      if (data.enemies[e]!.unlockLevel <= level(s)) e,
-  ];
+  List<String> availableEnemies(GameState s) => _here(s).enemies;
 
-  List<String> availableNodes(GameState s) => [
-    for (final n in _here(s).nodes)
-      if (data.nodes[n]!.unlockLevel <= level(s)) n,
-  ];
+  /// Spots here, those above the player's level included (see
+  /// [nodeLevelMet]).
+  List<String> availableNodes(GameState s) => _here(s).nodes;
 
-  List<String> availableRecipes(GameState s) => [
-    if (_here(s).crafting)
-      for (final r in data.recipes.values)
-        if (r.unlockLevel <= level(s)) r.id,
-  ];
+  List<String> availableRecipes(GameState s) =>
+      _here(s).crafting ? allRecipes() : const [];
+
+  /// Whether the player's level is high enough to work [node].
+  bool nodeLevelMet(GameState s, String node) =>
+      data.nodes[node]!.level <= level(s);
+
+  /// Whether the player's level is high enough to craft [recipe].
+  bool recipeLevelMet(GameState s, String recipe) =>
+      data.recipes[recipe]!.level <= level(s);
 
   /// Open locations, nearest first, with their walking distance from here
   /// (spec 0003 §8: plan a day from anywhere).
@@ -285,30 +333,22 @@ class Game {
     );
   }
 
-  /// Unlocked monsters at [location], if it is open.
-  List<String> enemiesAt(GameState s, String location) => [
-    if (data.locations[location]!.unlockLevel <= level(s))
-      for (final e in data.locations[location]!.enemies)
-        if (data.enemies[e]!.unlockLevel <= level(s)) e,
-  ];
+  /// Monsters at [location], unless it is fogged.
+  List<String> enemiesAt(GameState s, String location) =>
+      isFogged(s, location) ? const [] : data.locations[location]!.enemies;
 
-  /// Unlocked gathering spots at [location], if it is open.
-  List<String> nodesAt(GameState s, String location) => [
-    if (data.locations[location]!.unlockLevel <= level(s))
-      for (final n in data.locations[location]!.nodes)
-        if (data.nodes[n]!.unlockLevel <= level(s)) n,
-  ];
+  /// Gathering spots at [location], unless it is fogged.
+  List<String> nodesAt(GameState s, String location) =>
+      isFogged(s, location) ? const [] : data.locations[location]!.nodes;
 
-  /// Unlocked recipes (they can be crafted at any crafting place).
-  List<String> unlockedRecipes(GameState s) => [
-    for (final r in data.recipes.values)
-      if (r.unlockLevel <= level(s)) r.id,
-  ];
+  /// Every recipe (they can be crafted at any crafting place).
+  List<String> allRecipes() => data.recipes.keys.toList();
 
-  /// Whether [area] is still in the fog: above the player's level (spec
-  /// 0006 decision 2).
+  /// Whether [area] is in the fog: neither explored nor joined by a route to
+  /// an explored area (spec 0008 decision 5).
   bool isFogged(GameState s, String area) =>
-      data.locations[area]!.unlockLevel > level(s);
+      !s.explored.contains(area) &&
+      !data.destinationsFrom(area).any(s.explored.contains);
 
   /// The nearest open crafting place and its distance, or null if none is
   /// reachable.
@@ -364,23 +404,18 @@ class Game {
 
   /// How many actions the queue holds at the player's level, the running
   /// one included (spec 0003 §2).
-  int queueSlots(GameState s) =>
-      data.queueSlots.entries.lastWhere((e) => e.key <= level(s)).value;
-
-  /// Whether "until I have N" and "until N crafted" are open.
-  bool countConditionsOpen(GameState s) => level(s) >= data.untilFromLevel;
+  int queueSlots(GameState s) => data.queueSlots;
 
   /// The conditions [a] may stop on; "never" may still be refused by its
   /// place in the queue.
   List<StopKind> stopKindsFor(GameState s, Activity a) => [
     if (a.kind == ActivityKind.fight) StopKind.untilGrey,
-    if (countConditionsOpen(s))
-      if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
-        StopKind.untilHave
-      else if (a.kind == ActivityKind.craft) ...[
-        StopKind.untilCrafted,
-        StopKind.untilQuality,
-      ],
+    if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
+      StopKind.untilHave
+    else if (a.kind == ActivityKind.craft) ...[
+      StopKind.untilCrafted,
+      StopKind.untilQuality,
+    ],
     StopKind.never,
   ];
 
@@ -500,14 +535,17 @@ class Game {
 
   /// Why [a] can't start now, or null if it can (spec 0003 §4).
   SkipReason? _cannotStart(GameState s, Activity a, StopCondition stop) {
-    final lvl = level(s);
-    final opensAt = switch (a.kind) {
-      ActivityKind.travel => data.locations[a.target]?.unlockLevel,
-      ActivityKind.fight => data.enemies[a.target]?.unlockLevel,
-      ActivityKind.gather => data.nodes[a.target]?.unlockLevel,
-      ActivityKind.craft => data.recipes[a.target]?.unlockLevel,
+    final known = switch (a.kind) {
+      ActivityKind.travel => data.locations.containsKey(a.target),
+      ActivityKind.fight => data.enemies.containsKey(a.target),
+      ActivityKind.gather => data.nodes.containsKey(a.target),
+      ActivityKind.craft => data.recipes.containsKey(a.target),
     };
-    if (opensAt == null || opensAt > lvl) return SkipReason.locked;
+    if (!known) return SkipReason.locked;
+    if ((a.kind == ActivityKind.gather && !nodeLevelMet(s, a.target)) ||
+        (a.kind == ActivityKind.craft && !recipeLevelMet(s, a.target))) {
+      return SkipReason.locked;
+    }
     if (a.kind == ActivityKind.travel && a.target == s.location) {
       return SkipReason.alreadyDone;
     }
@@ -532,8 +570,14 @@ class Game {
         } ??
         a.target;
     return switch (r) {
-      SkipReason.locked => '$name is locked',
-      SkipReason.noRoute => 'No open route to $name',
+      SkipReason.locked => switch (a.kind) {
+        ActivityKind.gather when data.nodes[a.target] != null =>
+          '$name needs level ${data.nodes[a.target]!.level}',
+        ActivityKind.craft when data.recipes[a.target] != null =>
+          '$name needs level ${data.recipes[a.target]!.level}',
+        _ => '$name is locked',
+      },
+      SkipReason.noRoute => 'The way there is in the fog',
       SkipReason.noMaterials => 'Not enough materials for $name',
       SkipReason.alreadyDone => switch (stop.kind) {
         _ when a.kind == ActivityKind.travel => 'You are already at $name',
@@ -608,7 +652,6 @@ class Game {
   /// Shortest walking distances from here to every open location, and the
   /// previous stop on each shortest route.
   (Map<String, int>, Map<String, String>) _paths(GameState s) {
-    final lvl = level(s);
     final dist = {s.location: 0};
     final previous = <String, String>{};
     final todo = {s.location};
@@ -616,7 +659,7 @@ class Game {
       final at = todo.reduce((a, b) => dist[a]! <= dist[b]! ? a : b);
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
-        if (data.locations[to]!.unlockLevel > lvl) continue;
+        if (isFogged(s, to)) continue;
         final d = dist[at]! + data.route(at, to)!.steps;
         if (d < (dist[to] ?? 1 << 30)) {
           dist[to] = d;
@@ -662,16 +705,53 @@ class Game {
     return s;
   }
 
-  GameState equip(GameState s, String item) {
-    final slot = data.itemOf(item)?.slot;
-    if (slot == null) throw ActivityError('$item cannot be equipped');
-    if (!openSlots(s).contains(slot)) throw ActivityError('$slot is locked');
+  /// Wears [item] from the bag in [slot], or in the first free slot it fits
+  /// (spec 0008 decision 11). Whatever it replaces goes to the bag: the
+  /// worn item, the off hand for a two-hander, a two-hander for an off-hand
+  /// item (spec 0008 §2.1).
+  GameState equip(GameState s, String item, {String? slot}) {
+    final slots = slotsFor(item);
+    if (slots.isEmpty) throw ActivityError('$item cannot be equipped');
     if ((s.inventory[item] ?? 0) < 1) throw ActivityError('No $item to equip');
+    final free = slots.where((id) => !s.equipment.containsKey(id));
+    final String to;
+    if (slot != null) {
+      to = slot;
+    } else if (free.isNotEmpty) {
+      to = free.first;
+    } else if (slots.length == 1) {
+      to = slots.first;
+    } else {
+      throw ActivityError('Pick the slot to swap with');
+    }
+    if (!slots.contains(to)) throw ActivityError('$item does not fit $to');
     final n = s.copy()..addItem(item, -1);
-    final old = n.equipment[slot];
-    if (old != null) n.addItem(old);
-    n.equipment[slot] = item;
+    for (final id in _displaced(n, item, to)) {
+      n.addItem(n.equipment.remove(id)!);
+    }
+    n.equipment[to] = item;
     return n;
+  }
+
+  /// The change in stats from wearing [item] in [slot] instead of what it
+  /// takes off.
+  Stats compare(GameState s, String item, String slot) {
+    var off = const Stats();
+    for (final id in _displaced(s, item, slot)) {
+      off += data.bonusOf(s.equipment[id]!);
+    }
+    return data.bonusOf(item) - off;
+  }
+
+  /// Worn slots that wearing [item] in [slot] empties.
+  List<String> _displaced(GameState s, String item, String slot) {
+    bool twoHanded(String? key) =>
+        key != null && (data.itemOf(key)?.twoHanded ?? false);
+    return {
+      slot,
+      if (twoHanded(item)) 'offHand',
+      if (slot == 'offHand' && twoHanded(s.equipment['mainHand'])) 'mainHand',
+    }.where(s.equipment.containsKey).toList();
   }
 
   GameState unequip(GameState s, String slot) {
@@ -754,6 +834,10 @@ class _Run {
       if (act.leg case final leg?) {
         _arrive(leg);
         act.leg = game._nextLeg(s, act.activity);
+        if (act.leg == null && game._placeFor(s, act.activity) != s.location) {
+          _end(act, EndReason.noRoute);
+          continue;
+        }
         if (act.activity.kind == ActivityKind.travel && act.leg == null) {
           _end(act, EndReason.arrived);
         }
@@ -801,7 +885,7 @@ class _Run {
         return _combatRound(act);
       case ActivityKind.gather:
         final node = data.nodes[a.target]!;
-        final xp = _faded(node.xp, node.unlockLevel);
+        final xp = _faded(node.xp, node.level);
         s.addItem(node.item);
         _gain(act, node.item);
         s.count('gathered.${node.item}');
@@ -810,9 +894,9 @@ class _Run {
         return null;
       case ActivityKind.craft:
         final recipe = data.recipes[a.target]!;
-        final xp = _faded(recipe.xp, recipe.unlockLevel);
+        final xp = _faded(recipe.xp, recipe.level);
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
-        final made = _withQuality(recipe.output, recipe.unlockLevel);
+        final made = _withQuality(recipe.output, recipe.level);
         s.addItem(made);
         _gain(act, made);
         act.crafted++;

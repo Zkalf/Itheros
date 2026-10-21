@@ -34,7 +34,8 @@ void main() {
   });
 
   test('passing through on a longer walk counts', () {
-    var s = stateAt(game, level: 10);
+    // Grey Moor shows once the Old Graveyard is explored (spec 0008).
+    var s = stateAt(game)..explored.add('old_graveyard');
     s = game.startActivity(s, const Activity.travel('grey_moor'));
     s = game.applySteps(s, 1300).state;
     expect(s.location, 'grey_moor');

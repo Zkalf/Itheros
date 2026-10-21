@@ -13,7 +13,7 @@ void main() {
   test('round trip mid-fight continues identically', () {
     var s = stateAt(game, location: 'goblin_woods', bank: 40, seed: 99)
       ..inventory['copper_ore'] = 2
-      ..equipment['weapon'] = 'rusty_dagger';
+      ..equipment['mainHand'] = 'rusty_dagger';
     s = game.startActivity(s, const Activity.fight('goblin'));
     s = game.applySteps(s, 137).state;
     while (s.activity!.fight == null) {

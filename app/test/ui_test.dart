@@ -47,6 +47,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   final state = game.newGame(seed: 1)
     ..xp = xp ?? game.data.xpForLevel(level)
     ..location = location
+    ..explored.add(location)
     ..inventory.addAll(inventory)
     ..counters.addAll(counters)
     ..equipment.addAll(equipment);
@@ -104,6 +105,15 @@ Future<void> closeSheet(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Taps [action], then Start now on the stop condition sheet, which opens
+/// from level 1 now that the queue has 3 slots (spec 0008 decision 7).
+Future<void> tapAndStart(WidgetTester tester, Finder action) async {
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('start-now')));
+  await tester.pumpAndSettle();
+}
+
 Future<void> settle(WidgetTester tester, GameController c) async {
   await c.idle();
   await tester.pump();
@@ -114,28 +124,43 @@ void main() {
   moreScreens();
   theMap();
   mapGaps();
-  group('criterion 8: locked systems are hidden', () {
-    testWidgets('level 1 at camp: no crafting, no Copper Hills', (t) async {
-      await pumpGame(t);
-      await openArea(t, 'goblin_woods');
-      expect(option('travel', 'goblin_woods'), findsOneWidget);
-      await closeSheet(t);
-      await openArea(t, 'copper_hills');
-      expect(option('travel', 'copper_hills'), findsNothing);
-      expect(find.textContaining('Thick fog'), findsOneWidget);
-      await closeSheet(t);
-      expect(find.byKey(const ValueKey('tab-craft')), findsNothing);
-      expect(option('craft', 'copper_sword'), findsNothing);
-    });
-
-    testWidgets('level 1 in Goblin Woods: goblins, no brute, no mining', (
+  // Spec 0008 replaced the level gates: areas open by exploring, recipes and
+  // veins show with the level they need (amendments 1 and 2).
+  group('criterion 8: what shows at a level (spec 0008)', () {
+    testWidgets('level 1 at camp: neighbours open, fog beyond, recipes shown', (
       t,
     ) async {
+      await pumpGame(t);
+      await openArea(t, 'copper_hills');
+      expect(option('travel', 'copper_hills'), findsOneWidget);
+      await closeSheet(t);
+      await openArea(t, 'grey_moor');
+      expect(option('travel', 'grey_moor'), findsNothing);
+      expect(find.textContaining('Thick fog'), findsOneWidget);
+      await closeSheet(t);
+      await openTab(t, 'craft');
+      final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
+      expect(sword.enabled, isFalse, reason: 'needs level 3');
+      expect(
+        find.textContaining('Needs level 3', findRichText: true),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('level 1 in Goblin Woods: every monster there', (t) async {
       await pumpGame(t, location: 'goblin_woods');
       await openArea(t, 'goblin_woods');
       expect(option('fight', 'goblin'), findsOneWidget);
-      expect(option('fight', 'goblin_brute'), findsNothing);
+      expect(option('fight', 'goblin_brute'), findsOneWidget);
       expect(find.text('Gather'), findsNothing);
+    });
+
+    testWidgets('level 1 at Copper Hills: the vein needs level 2', (t) async {
+      await pumpGame(t, location: 'copper_hills');
+      await openArea(t, 'copper_hills');
+      final vein = t.widget<ListTile>(option('gather', 'copper_vein'));
+      expect(vein.enabled, isFalse);
+      expect(find.text('Needs level 2'), findsOneWidget);
     });
 
     testWidgets('level 2 shows Copper Hills and mining there', (t) async {
@@ -147,26 +172,20 @@ void main() {
       expect(option('travel', 'camp'), findsOneWidget);
     });
 
-    testWidgets('level 3 shows crafting at camp', (t) async {
+    testWidgets('level 3 can craft at camp', (t) async {
       await pumpGame(t, level: 3, inventory: {'copper_ore': 5});
       await openTab(t, 'craft');
-      expect(option('craft', 'copper_sword'), findsOneWidget);
-      expect(option('craft', 'hide_vest'), findsOneWidget);
+      final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
+      expect(sword.enabled, isTrue);
       final vest = t.widget<ListTile>(option('craft', 'hide_vest'));
-      expect(vest.enabled, isFalse, reason: 'no hides yet');
-    });
-
-    testWidgets('level 4 shows the goblin brute', (t) async {
-      await pumpGame(t, level: 4, location: 'goblin_woods');
-      await openArea(t, 'goblin_woods');
-      expect(option('fight', 'goblin_brute'), findsOneWidget);
+      expect(vest.enabled, isTrue, reason: 'queueable before its hides');
     });
   });
 
   testWidgets('tapping a destination starts walking there', (t) async {
     final (c, _) = await pumpGame(t);
     await openArea(t, 'goblin_woods');
-    await t.tap(option('travel', 'goblin_woods'));
+    await tapAndStart(t, option('travel', 'goblin_woods'));
     await settle(t, c);
     await openTab(t, 'now');
     expect(find.text('Walking to Goblin Woods'), findsOneWidget);
@@ -181,7 +200,7 @@ void main() {
     expect(stop, findsNothing, reason: 'resting');
 
     await openArea(t, 'goblin_woods');
-    await t.tap(option('travel', 'goblin_woods'));
+    await tapAndStart(t, option('travel', 'goblin_woods'));
     await settle(t, c);
     await openTab(t, 'now');
     expect(stop, findsOneWidget);
@@ -213,7 +232,7 @@ void main() {
   ) async {
     final (c, source) = await pumpGame(t);
     await openArea(t, 'goblin_woods');
-    await t.tap(option('travel', 'goblin_woods'));
+    await tapAndStart(t, option('travel', 'goblin_woods'));
     await settle(t, c);
 
     source.walk(DateTime(2026, 10, 18, 10), 300);
@@ -265,7 +284,7 @@ void main() {
   testWidgets('a single step reads as "1 step"', (t) async {
     final (c, source) = await pumpGame(t);
     await openArea(t, 'goblin_woods');
-    await t.tap(option('travel', 'goblin_woods'));
+    await tapAndStart(t, option('travel', 'goblin_woods'));
     await settle(t, c);
 
     source.walk(DateTime(2026, 10, 18, 10), 1);
@@ -309,10 +328,7 @@ void main() {
         find.text('Levels ${levels.first}–${levels[levels.length - 2]}'),
         findsOneWidget,
       );
-      expect(
-        find.text('New monster: Goblin brute (Goblin Woods)'),
-        findsOneWidget,
-      );
+      expect(find.text('New recipe: Copper sword'), findsOneWidget);
 
       await t.tap(find.text('Next'));
       await t.pumpAndSettle();
@@ -364,7 +380,7 @@ void main() {
       await openArea(t, 'goblin_woods');
       await t.tap(option('fight', 'old_bear'));
       await t.pumpAndSettle();
-      await t.tap(find.text('Fight anyway'));
+      await tapAndStart(t, find.text('Fight anyway'));
       await settle(t, c);
       expect(c.state.activity!.activity, const Activity.fight('old_bear'));
     });
@@ -372,24 +388,23 @@ void main() {
     testWidgets('a yellow fight starts without asking', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
       await openArea(t, 'goblin_woods');
-      await t.tap(option('fight', 'goblin'));
+      await tapAndStart(t, option('fight', 'goblin'));
       await settle(t, c);
       expect(find.text('Deadly'), findsNothing);
       expect(c.state.activity!.activity, const Activity.fight('goblin'));
     });
 
-    testWidgets('"Next goal" has no Hide before level 10', (t) async {
+    testWidgets('"Next goal" shows at level 1', (t) async {
       await pumpGame(t, location: 'goblin_woods');
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
       expect(
         find.text('The Goblin in Goblin Woods is your level.'),
         findsOneWidget,
       );
-      expect(find.text('Hide'), findsNothing);
     });
 
-    testWidgets('from level 10 it can be hidden and turned back on', (t) async {
-      final (c, _) = await pumpGame(t, level: 10, location: 'old_graveyard');
+    testWidgets('from level 1 it can be hidden and turned back on', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
       await t.tap(find.text('Hide'));
       await settle(t, c);
@@ -441,21 +456,11 @@ void main() {
       expect(option('fight', 'goblin'), findsOneWidget);
     });
 
-    testWidgets('below level 5 a tap starts at once', (t) async {
-      final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      await openArea(t, 'goblin_woods');
-      await t.tap(option('fight', 'goblin'));
-      await settle(t, c);
-      expect(find.text('Stop when'), findsNothing);
-      expect(c.state.activity!.activity, const Activity.fight('goblin'));
-    });
-
-    testWidgets('from level 5: pick a stop condition, start, then queue', (
+    testWidgets('from level 1: pick a stop condition, start, then queue', (
       t,
     ) async {
       final (c, _) = await pumpGame(
         t,
-        level: 5,
         location: 'goblin_woods',
         counters: {'found.goblin_brute.goblin_hide': 1},
       );
@@ -487,7 +492,7 @@ void main() {
       expect(c.state.queue.single.stop.kind, StopKind.untilHave);
       await openTab(t, 'now');
       expect(find.byKey(const ValueKey('queued-0')), findsOneWidget);
-      expect(find.text('2 of 2 actions planned'), findsOneWidget);
+      expect(find.text('2 of 3 actions planned'), findsOneWidget);
 
       await t.tap(find.byKey(const ValueKey('remove-1')));
       await settle(t, c);
@@ -619,7 +624,8 @@ void main() {
 
       await t.tap(find.byKey(const ValueKey('equip-copper_sword')));
       await settle(t, c);
-      await t.tap(find.text('Remove').first);
+      // Worn gear is listed in doll order: Chest, then Main hand.
+      await t.tap(find.text('Remove').last);
       await settle(t, c);
       expect(names(t), before, reason: 'the sword is back in its place');
     });
@@ -857,7 +863,7 @@ void main() {
 
       await t.tap(find.byKey(const ValueKey('equip-hide_vest@rare')));
       await settle(t, c);
-      expect(c.state.equipment['body'], 'hide_vest@rare');
+      expect(c.state.equipment['chest'], 'hide_vest@rare');
       expect(
         find.text('Hide vest (Rare)'),
         findsNWidgets(2),
@@ -1011,8 +1017,8 @@ void main() {
     await c.equip('hide_vest@rare');
     await c.equip('copper_sword');
     await openTab(t, 'character');
-    expect(find.text('Body · +4 Defense · +14 HP'), findsOneWidget);
-    expect(find.text('Weapon · +3 Attack'), findsOneWidget);
+    expect(find.text('Chest · +4 Defense · +14 HP'), findsOneWidget);
+    expect(find.text('Main hand · +3 Attack'), findsOneWidget);
   });
 }
 
@@ -1026,8 +1032,8 @@ void moreScreens() {
       expect(find.byKey(const ValueKey('tab-achievements')), findsNothing);
       expect(
         find.byKey(const ValueKey('tab-craft')),
-        findsNothing,
-        reason: 'no recipe before level 3',
+        findsOneWidget,
+        reason: 'recipes show from level 1 (spec 0008)',
       );
       expect(find.byKey(const ValueKey('walked-today')), findsOneWidget);
       for (final s in ['map', 'character', 'now']) {
@@ -1085,16 +1091,8 @@ void moreScreens() {
       expect(find.byKey(const ValueKey('area-goblin_woods')), findsOneWidget);
     });
 
-    testWidgets('amendment 3: resting opens Craft too, once it exists', (
-      t,
-    ) async {
+    testWidgets('amendment 3: from level 1 a button opens Craft', (t) async {
       await pumpGame(t);
-      expect(find.byKey(const ValueKey('open-craft')), findsNothing);
-      expect(find.textContaining('Craft screen'), findsNothing);
-    });
-
-    testWidgets('amendment 3: from level 3 a button opens Craft', (t) async {
-      await pumpGame(t, level: 3);
       expect(find.byKey(const ValueKey('open-map')), findsOneWidget);
       expect(find.textContaining('Map or Craft screen'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('open-craft')));
@@ -1183,27 +1181,32 @@ void theMap() {
       matching: find.text(text),
     );
 
-    testWidgets('criterion 5: above your level is fog, named ???', (t) async {
-      await pumpGame(t);
+    // Spec 0008 decision 5: fog lifts by exploring, not by level.
+    testWidgets('criterion 5: away from explored areas is fog, named ???', (
+      t,
+    ) async {
+      await pumpGame(t, level: 30);
       await openTab(t, 'map');
-      expect(inArea('goblin_woods', 'Goblin Woods'), findsOneWidget);
-      for (final a in ['copper_hills', 'old_graveyard', 'dragons_peak']) {
+      expect(inArea('old_graveyard', 'Old Graveyard'), findsOneWidget);
+      for (final a in ['grey_moor', 'iron_ridge', 'dragons_peak']) {
         expect(inArea(a, '???'), findsOneWidget, reason: a);
       }
-      expect(find.text('Old Graveyard'), findsNothing);
-      await openArea(t, 'old_graveyard');
+      expect(find.text('Grey Moor'), findsNothing);
+      await openArea(t, 'grey_moor');
       expect(
-        find.text('Thick fog. The Guild opens this road at level 6.'),
+        find.text(
+          "Thick fog. Walk to a neighbouring area to see what's there.",
+        ),
         findsOneWidget,
       );
-      expect(find.text('Skeleton'), findsNothing);
+      expect(find.text('Wolf'), findsNothing);
     });
 
-    testWidgets('at level 10 the fog has lifted', (t) async {
-      await pumpGame(t, level: 10);
+    testWidgets('exploring lifts the fog next door', (t) async {
+      await pumpGame(t, location: 'old_graveyard');
       await openTab(t, 'map');
-      expect(find.text('???'), findsNothing);
-      expect(inArea('dragons_peak', "Dragon's Peak"), findsOneWidget);
+      expect(inArea('grey_moor', 'Grey Moor'), findsOneWidget);
+      expect(inArea('iron_ridge', '???'), findsOneWidget);
     });
 
     testWidgets('criterion 6: only found drops, no chances', (t) async {
@@ -1223,7 +1226,7 @@ void theMap() {
     testWidgets('a fight starts from the sheet, which closes', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
       await openArea(t, 'goblin_woods');
-      await t.tap(option('fight', 'goblin'));
+      await tapAndStart(t, option('fight', 'goblin'));
       await settle(t, c);
       await t.pumpAndSettle();
       expect(find.byType(BottomSheet), findsNothing);
@@ -1251,7 +1254,7 @@ void mapGaps() {
   testWidgets('spec 0006 criterion 2: mining starts from the map', (t) async {
     final (c, _) = await pumpGame(t, level: 2, location: 'copper_hills');
     await openArea(t, 'copper_hills');
-    await t.tap(option('gather', 'copper_vein'));
+    await tapAndStart(t, option('gather', 'copper_vein'));
     await settle(t, c);
     expect(c.state.activity!.activity, const Activity.gather('copper_vein'));
   });
@@ -1267,10 +1270,10 @@ void mapGaps() {
         .whereType<MapPainter>()
         .single;
     final labels = [for (final p in painter.paths) p.$3];
+    final fresh = game.newGame(seed: 1);
     final open = [
       for (final r in game.data.routes)
-        game.data.locations[r.from]!.unlockLevel <= 1 &&
-            game.data.locations[r.to]!.unlockLevel <= 1,
+        !game.isFogged(fresh, r.from) && !game.isFogged(fresh, r.to),
     ];
     for (var i = 0; i < labels.length; i++) {
       expect(labels[i] == null, !open[i], reason: game.data.routes[i].to);
@@ -1356,9 +1359,9 @@ void playtest2() {
         level: 8,
         location: 'old_graveyard',
         equipment: {
-          'weapon': 'kings_blade',
-          'body': 'stitched_armour',
-          'shield': 'bone_shield',
+          'mainHand': 'kings_blade',
+          'chest': 'stitched_armour',
+          'offHand': 'bone_shield',
         },
       );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);

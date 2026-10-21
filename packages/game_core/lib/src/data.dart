@@ -21,6 +21,12 @@ class Stats {
     defense: defense + o.defense,
   );
 
+  Stats operator -(Stats o) => Stats(
+    hp: hp - o.hp,
+    attack: attack - o.attack,
+    defense: defense - o.defense,
+  );
+
   Stats operator *(int n) =>
       Stats(hp: hp * n, attack: attack * n, defense: defense * n);
 
@@ -32,7 +38,6 @@ class LocationDef {
   LocationDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
-      unlockLevel = _int(j, 'unlockLevel'),
       crafting = j['crafting'] as bool? ?? false,
       enemies = _strList(j, 'enemies'),
       nodes = _strList(j, 'nodes'),
@@ -44,7 +49,6 @@ class LocationDef {
 
   final String id;
   final String name;
-  final int unlockLevel;
   final bool crafting;
   final List<String> enemies;
   final List<String> nodes;
@@ -96,14 +100,17 @@ class NodeDef {
   NodeDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
-      unlockLevel = _int(j, 'unlockLevel'),
+      level = _int(j, 'level'),
       steps = _int(j, 'steps'),
       item = _str(j, 'item'),
       xp = _int(j, 'xp');
 
   final String id;
   final String name;
-  final int unlockLevel;
+
+  /// The player level it can be worked from (spec 0008 amendment 1), also
+  /// its level for the XP fade.
+  final int level;
   final int steps;
   final String item;
   final int xp;
@@ -165,8 +172,7 @@ class EnemyDef {
   EnemyDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
-      unlockLevel = _int(j, 'unlockLevel'),
-      level = j['level'] as int? ?? _int(j, 'unlockLevel'),
+      level = _int(j, 'level'),
       stats = Stats.fromJson(j),
       xp = _int(j, 'xp'),
       traits = Set.unmodifiable(_strList(j, 'traits').map(_trait)),
@@ -179,9 +185,6 @@ class EnemyDef {
 
   final String id;
   final String name;
-
-  /// The player level from which it shows.
-  final int unlockLevel;
 
   /// The monster's own level, which sets its colour (spec 0002 §3).
   final int level;
@@ -238,13 +241,18 @@ class ItemDef {
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
       slot = j['slot'] as String?,
+      twoHanded = j['twoHanded'] as bool? ?? false,
       bonus = Stats.fromJson(j);
 
   final String id;
   final String name;
 
-  /// Equipment slot, or null for materials.
+  /// The kind of slot it is worn in (a [GearSlotDef.kind]), or null for
+  /// materials.
   final String? slot;
+
+  /// A main-hand weapon that also fills the off hand (spec 0008 §2.1).
+  final bool twoHanded;
   final Stats bonus;
 
   /// How it ranks against other gear for the same slot.
@@ -254,7 +262,7 @@ class ItemDef {
 class RecipeDef {
   RecipeDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
-      unlockLevel = _int(j, 'unlockLevel'),
+      level = _int(j, 'level'),
       steps = _int(j, 'steps'),
       xp = _int(j, 'xp'),
       inputs = (j['inputs'] as Map<String, Object?>).map(
@@ -263,11 +271,24 @@ class RecipeDef {
       output = _str(j, 'output');
 
   final String id;
-  final int unlockLevel;
+
+  /// Sets its XP fade and the item level of its quality roll; not a gate
+  /// (spec 0008 amendment 1).
+  final int level;
   final int steps;
   final int xp;
   final Map<String, int> inputs;
   final String output;
+}
+
+/// A place on the paper doll (spec 0008 §2.1). Items of [kind] fit it.
+class GearSlotDef {
+  GearSlotDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      kind = j['kind'] as String? ?? _str(j, 'id');
+
+  final String id;
+  final String kind;
 }
 
 class AchievementDef {
@@ -311,16 +332,12 @@ class GameData {
        levelBands = List.unmodifiable(
          _maps(economy, 'levelBands').map(LevelBand._),
        ),
-       gearSlots = Map.unmodifiable(
-         _map(economy, 'gearSlots').map((k, v) => MapEntry(k, v as int)),
+       gearSlots = List.unmodifiable(
+         _maps(economy, 'gearSlots').map(GearSlotDef._),
        ),
        ranks = List.unmodifiable(_maps(economy, 'ranks').map(RankDef._)),
        talentPointsFrom = _int(economy, 'talentPointsFrom'),
-       queueSlots = Map.unmodifiable({
-         for (final q in _maps(economy, 'queueSlots'))
-           _int(q, 'level'): _int(q, 'slots'),
-       }),
-       untilFromLevel = _int(economy, 'untilFromLevel'),
+       queueSlots = _int(economy, 'queueSlots'),
        lossXpShare = (economy['lossXpShare'] as num).toDouble(),
        lossesToGiveUp = _int(economy, 'lossesToGiveUp'),
        journalEntries = _int(economy, 'journalEntries'),
@@ -360,6 +377,13 @@ class GameData {
       return jsonDecode(text) as Map<String, Object?>;
     }
 
+    for (final name in ['world', 'enemies', 'items']) {
+      if (files[name]?.contains('"unlockLevel"') ?? false) {
+        throw FormatException(
+          'Invalid game data: $name.json has an unlockLevel (spec 0008)',
+        );
+      }
+    }
     return GameData._(
       economy: file('economy'),
       world: file('world'),
@@ -389,8 +413,14 @@ class GameData {
   /// rest.
   final List<LevelBand> levelBands;
 
-  /// Gear slot to the level it opens at, in display order.
-  final Map<String, int> gearSlots;
+  /// The paper doll's slots, in display order.
+  final List<GearSlotDef> gearSlots;
+
+  /// The slot ids that items of [kind] fit, in display order.
+  List<String> slotsOfKind(String kind) => [
+    for (final g in gearSlots)
+      if (g.kind == kind) g.id,
+  ];
 
   /// Titles by level, lowest first; the first is held from level 1.
   final List<RankDef> ranks;
@@ -398,12 +428,9 @@ class GameData {
   /// One talent point per level from this level on.
   final int talentPointsFrom;
 
-  /// Queue size from a level on, lowest level first; the first is level 1
-  /// (spec 0003 §2).
-  final Map<int, int> queueSlots;
-
-  /// Level from which "until I have N" and "until N crafted" open.
-  final int untilFromLevel;
+  /// Actions the queue holds, the running one included (spec 0008
+  /// decision 7).
+  final int queueSlots;
 
   /// Share of a monster's XP a loss pays, times the health knocked off.
   final double lossXpShare;
@@ -547,10 +574,16 @@ class GameData {
         'levelBands must be ordered from the highest difference down',
       );
     }
-    check(gearSlots.values.every((l) => l >= 1), 'gearSlots: levels >= 1');
     check(
-      queueSlots.isNotEmpty && queueSlots.keys.first == 1,
-      'queueSlots must start at level 1',
+      gearSlots.map((g) => g.id).toSet().length == gearSlots.length,
+      'gearSlots: ids must be unique',
+    );
+    check(queueSlots >= 1, 'queueSlots must be >= 1');
+    // The two-hand rule names these slots (spec 0008 §2.1).
+    check(
+      slotsOfKind('mainHand').contains('mainHand') &&
+          slotsOfKind('offHand').contains('offHand'),
+      'gearSlots must have mainHand and offHand',
     );
     check(lossesToGiveUp >= 1, 'lossesToGiveUp must be >= 1');
     check(journalEntries >= 1, 'journalEntries must be >= 1');
@@ -577,8 +610,12 @@ class GameData {
     }
     for (final i in items.values) {
       check(
-        i.slot == null || gearSlots.containsKey(i.slot),
+        i.slot == null || slotsOfKind(i.slot!).isNotEmpty,
         'item ${i.id}: unknown slot ${i.slot}',
+      );
+      check(
+        !i.twoHanded || i.slot == 'mainHand',
+        'item ${i.id}: only main-hand items can be two-handed',
       );
     }
     for (var i = 1; i < xpToReachLevel.length; i++) {

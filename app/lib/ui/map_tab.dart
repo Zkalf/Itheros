@@ -301,9 +301,8 @@ class _AreaSheet extends StatelessWidget {
             children: [
               Text('???', style: text.titleLarge),
               const SizedBox(height: 8),
-              Text(
-                'Thick fog. The Guild opens this road at level '
-                '${l.unlockLevel}.',
+              const Text(
+                "Thick fog. Walk to a neighbouring area to see what's there.",
               ),
             ],
           ),

@@ -112,9 +112,11 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     activity: Activity.gather(node),
     leading: const Icon(Icons.landscape),
     title: labels.node(node),
-    subtitle:
-        '${n.steps} steps per ${labels.item(n.item)} · '
-        '${fadedXp(n.xp, n.unlockLevel, game, c.state)} XP',
+    enabled: game.nodeLevelMet(c.state, node),
+    subtitle: game.nodeLevelMet(c.state, node)
+        ? '${n.steps} steps per ${labels.item(n.item)} · '
+              '${fadedXp(n.xp, n.level, game, c.state)} XP'
+        : 'Needs level ${n.level}',
     startFrom: startFrom,
   );
 }

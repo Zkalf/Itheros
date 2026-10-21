@@ -36,7 +36,6 @@ Game arenaGame(
           {
             'id': 'arena',
             'name': 'Arena',
-            'unlockLevel': 1,
             'enemies': [for (final e in enemies) e['id']],
           },
         ],
@@ -58,7 +57,6 @@ Map<String, Object?> monster(
 }) => {
   'id': id,
   'name': id,
-  'unlockLevel': 1,
   'level': 1,
   'hp': hp,
   'attack': attack,

@@ -2,7 +2,9 @@ import 'activity.dart';
 import 'state.dart';
 
 /// Why an action ended (spec 0003 §4). [defeated]: too many losses in a row.
-enum EndReason { arrived, defeated, noMaterials, grey, enough }
+/// [noRoute]: the place it happens can no longer be reached, as when an old
+/// save's walk heads into the fog (spec 0008 decision 6).
+enum EndReason { arrived, defeated, noMaterials, grey, enough, noRoute }
 
 /// Why a queued action was skipped (spec 0003 §4).
 enum SkipReason { locked, alreadyDone, noMaterials, noRoute }

@@ -51,7 +51,7 @@ void main() {
             {
               'id': 'goblin',
               'name': 'Goblin champion',
-              'unlockLevel': 1,
+              'level': 1,
               'hp': 500,
               'attack': 100,
               'defense': 50,
@@ -66,7 +66,6 @@ void main() {
             {
               'id': 'goblin_woods',
               'name': 'Goblin Woods',
-              'unlockLevel': 1,
               'crafting': false,
               'enemies': ['goblin'],
               'nodes': <Object>[],
