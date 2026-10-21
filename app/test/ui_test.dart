@@ -1371,6 +1371,22 @@ void characterScreen() {
           .map((i) => i.icon);
       expect(icons('goblin_hide'), [materialIcon]);
       expect(icons('copper_sword'), isNot(contains(materialIcon)));
+      Color border(String key) =>
+          ((t
+                          .widget<Material>(
+                            find
+                                .descendant(
+                                  of: find.byKey(ValueKey('bag-$key')),
+                                  matching: find.byType(Material),
+                                )
+                                .first,
+                          )
+                          .shape!
+                      as RoundedRectangleBorder)
+                  .side)
+              .color;
+      expect(border('hide_vest@rare'), const Color(0xff42a5f5));
+      expect(border('goblin_hide'), Colors.transparent, reason: 'no border');
     });
 
     testWidgets('criteria 9 and 10: the card for bag gear, then Equip', (
