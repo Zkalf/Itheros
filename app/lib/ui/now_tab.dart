@@ -275,8 +275,8 @@ class _QueueCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Your steps go to the step bank. Pick something to do below, or on '
-          'the World map. Plan up to $slots actions; each starts when the one '
-          'before it stops.',
+          'the World map.${slots > 1 ? ' Plan up to $slots actions; each starts '
+                    'when the one before it stops.' : ''}',
         ),
         const SizedBox(height: 8),
         if (onOpenWorld != null)
@@ -486,7 +486,7 @@ class _Here extends StatelessWidget {
         for (final id in enemies)
           enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
         for (final id in nodes) nodeTile(c, id),
-        if (place.crafting)
+        if (place.crafting && onOpenProfessions != null)
           ListTile(
             key: const ValueKey('here-forge'),
             leading: const Icon(Icons.local_fire_department),
