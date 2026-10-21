@@ -30,3 +30,6 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 .claude/test-lock
+
+# Commit message scratch file (CLAUDE.md, known mistakes)
+.git-commit-msg.txt

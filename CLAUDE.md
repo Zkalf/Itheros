@@ -68,4 +68,5 @@ auto-approved by permission rules (headless and eval runs deny it).
   (it changes the session cwd); use `Push-Location`/`Pop-Location`.
 - `JAVA_HOME` ends with a backslash; `.TrimEnd('\')` before quoting it.
 - PowerShell pipes to `.bat` tools (sdkmanager) don't deliver stdin; use `cmd /c "tool < file"`.
-- PowerShell 5.1 mangles double quotes in native args: write commit messages to a file and use `git commit -F`.
+- PowerShell 5.1 mangles double quotes in native args: write commit messages to `.git-commit-msg.txt`
+  (git ignores it; overwrite it each time, never delete it) and use `git commit -F .git-commit-msg.txt`.
