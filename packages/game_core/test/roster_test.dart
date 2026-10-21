@@ -1,6 +1,9 @@
 // The monster roster with damage rolls: spec 0002 §5.2–§5.3, acceptance
-// criteria 4 and 6 (as amended by amendment 1). Each monster is fought 200
-// times by an even-level player wearing that stretch's crafted gear.
+// criteria 4 and 6 (as amended by amendment 1), held by spec 0009 criterion
+// 15. Each monster is fought 200 times by an even-level player wearing that
+// stretch's crafted gear, with the one-hander of the type strong against it
+// and a shield (spec 0009 §9.1). Then spec 0009 criterion 6: the two-hander
+// and shield targets of §4.2.
 import 'dart:math' as math;
 
 import 'package:game_core/game_core.dart';
@@ -19,7 +22,12 @@ void main() {
   // Gear made from a boss's own drops is never worn against it.
   FightRecord even(EnemyDef e) => measureFights(
     game,
-    referencePlayer(game, e.level, without: bossOnlyItems(game, e.id)),
+    referencePlayer(
+      game,
+      e.level,
+      without: bossOnlyItems(game, e.id),
+      vs: e.id,
+    ),
     e.id,
   );
 
@@ -99,4 +107,31 @@ void main() {
       });
     });
   }
+
+  test('spec 0009 §9.1: the reference player arms the strong type', () {
+    for (final e in game.data.enemies.values) {
+      if (e.level < 3) continue; // no recipe yet: bare hands
+      final p = referencePlayer(game, e.level, vs: e.id);
+      final weapon = game.data.itemOf(p.equipment['mainHand']!)!;
+      expect(
+        weapon.damageType,
+        game.data.combat.strongAgainst(e.armour),
+        reason: e.id,
+      );
+      expect(weapon.twoHanded, isFalse, reason: e.id);
+    }
+  });
+
+  group('spec 0009 criterion 6: one hand and shield, or two hands', () {
+    for (final h in handsChecks(game)) {
+      test('${h.twoHander} wins in about 25% fewer rounds (at least 15%)', () {
+        expect(h.roundsCut, inInclusiveRange(0.15, 0.35));
+      });
+
+      test('the shield takes at least 20% off the damage (${h.twoHander} '
+          'stretch)', () {
+        expect(h.shieldCut, greaterThanOrEqualTo(0.2));
+      });
+    }
+  });
 }

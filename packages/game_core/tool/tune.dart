@@ -1,7 +1,9 @@
 // Roster tuning report (plan 0003 M3): for each monster, an even-level
 // player with that stretch's gear fights it 200 times. Prints win rate,
 // rounds, XP per step against spec 0002's target, and the step up from the
-// previous normal monster; then the boss gear checks (amendment 1).
+// previous normal monster; then the boss gear checks (amendment 1) and the
+// two-hander / shield targets (spec 0009 §4.2). The player wields the
+// one-hander of the strong type with a shield (spec 0009 §9.1).
 //
 //   dart run tool/tune.dart
 import 'dart:io';
@@ -29,7 +31,13 @@ void main() {
   );
   double? previous;
   for (final e in enemies) {
-    final r = measureFights(game, referencePlayer(game, e.level), e.id);
+    final player = referencePlayer(
+      game,
+      e.level,
+      without: bossOnlyItems(game, e.id),
+      vs: e.id,
+    );
+    final r = measureFights(game, player, e.id);
     final normal = !bossIds.contains(e.id) && !e.lurker;
     final up = previous == null || !normal
         ? ''
@@ -54,6 +62,18 @@ void main() {
       '        ${pct(c.other.winRate)}'
       '${c.geared.roundsPerFight.toStringAsFixed(1).padLeft(40)}'
       '${c.passes ? '' : '  FAILS'}',
+    );
+  }
+
+  stdout.writeln(
+    '\ntwo-hander           fewer rounds (~25%, >=15%)  '
+    'shield: less damage (>=20%)  monsters',
+  );
+  for (final h in handsChecks(game)) {
+    stdout.writeln(
+      '${h.twoHander.padRight(20)} ${pct(h.roundsCut).padLeft(14)}'
+      '${pct(h.shieldCut).padLeft(29)}  ${h.monsters.join(', ')}'
+      '${h.passes ? '' : '  FAILS'}',
     );
   }
 }

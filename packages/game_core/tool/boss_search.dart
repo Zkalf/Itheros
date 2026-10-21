@@ -20,12 +20,15 @@ void main(List<String> args) {
   final lvl = boss.level;
   // The first boss keeps the out-levelling route (amendment 1).
   final first = boss.id == 'graveyard_king';
-  final bare = game.stats(referencePlayer(game, lvl, geared: false));
-  final geared = game.stats(referencePlayer(game, lvl, without: own));
+  final bare = referencePlayer(game, lvl, geared: false);
+  final geared = referencePlayer(game, lvl, without: own, vs: boss.id);
   final other = first
-      ? game.stats(referencePlayer(game, lvl + 5, geared: false))
-      : game.stats(referencePlayer(game, lvl - 3, without: own));
-  stdout.writeln('bare $bare\ngeared $geared\nother $other');
+      ? referencePlayer(game, lvl + 5, geared: false)
+      : referencePlayer(game, lvl - 3, without: own, vs: boss.id);
+  stdout.writeln(
+    'bare ${game.stats(bare)}\ngeared ${game.stats(geared)} '
+    '${geared.equipment['mainHand']}\nother ${game.stats(other)}',
+  );
 
   final found = <(int, int, int, int, int)>[];
   final regens = boss.has(Trait.regenerates) ? [2, 4, 6, 8, 10, 12, 15] : [0];
@@ -37,6 +40,8 @@ void main(List<String> args) {
             'id': boss.id,
             'name': boss.name,
             'level': lvl,
+            'armour': boss.armour,
+            'dodge': boss.stats.dodge,
             'hp': hp,
             'attack': atk,
             'defense': def,
@@ -44,13 +49,13 @@ void main(List<String> args) {
             'traits': [for (final t in boss.traits) t.name],
             'regen': regen,
           });
-          final b = estimateFight(bare, e);
+          final b = estimateFight(game, bare, e);
           if (b.win && b.hpLeft > 0.05) continue;
-          final g = estimateFight(geared, e);
+          final g = estimateFight(game, geared, e);
           if (!g.win || g.hpLeft < 0.3 || g.rounds < 27 || g.rounds > 38) {
             continue;
           }
-          final o = estimateFight(other, e);
+          final o = estimateFight(game, other, e);
           if (first
               ? (!o.win || o.hpLeft < 0.15)
               : (o.win && o.hpLeft > 0.05)) {

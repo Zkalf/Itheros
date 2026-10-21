@@ -40,9 +40,12 @@ void main() {
   });
 
   test('3: missing materials, from the most generous low monster', () {
-    // At level 9, stitched armour is the biggest upgrade. Brutes (green)
-    // always drop 2 hides; goblins (grey) half the time.
-    final s = stateAt(game, level: 9, inventory: {'goblin_hide': 2});
+    // At level 9, with a bone shield worn, stitched armour is the biggest
+    // upgrade (without it, the shield's Block ranks first: spec 0009 §5.3
+    // weighs every stat). Brutes (green) always drop 2 hides; goblins (grey)
+    // half the time.
+    final s = stateAt(game, level: 9, inventory: {'goblin_hide': 2})
+      ..equipment['offHand'] = 'bone_shield';
     final goal = game.nextGoal(s)! as CollectGoal;
     expect((goal.item, goal.count), ('goblin_hide', 4));
     expect(goal.source, const Activity.fight('goblin_brute'));
