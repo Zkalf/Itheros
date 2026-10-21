@@ -4,7 +4,7 @@ The owner's runbook (plan 0009 D3). Claude prepares; only the owner releases. Sp
 
 ## A normal release
 1. Claude drafts `releases/next.md` (a few plain lines for players) in a pull request. Read it, then merge it
-   (`.\scripts\merge.ps1 <number>`).
+   (`.\scripts\merge.ps1 <number>`, or `! scripts/merge.sh <number>` from the Claude Code prompt).
 2. In a PowerShell window in the project folder:
    ```
    git pull

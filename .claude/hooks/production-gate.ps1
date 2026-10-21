@@ -98,8 +98,11 @@ function Test-Gate([string]$Command, $State, [int]$Depth = 0) {
     }
     if ($prog -in @('bash', 'sh', 'cmd')) {
       $c = [array]::FindIndex([string[]]$a, [Predicate[string]] { param($x) $x -in @('-c', '/c') })
-      if ($c -ge 0) { $why = Test-Gate (($a | Select-Object -Skip ($c + 1)) -join ' ') $State ($Depth + 1); if ($why) { return $why } }
-      continue
+      if ($c -ge 0) { $why = Test-Gate (($a | Select-Object -Skip ($c + 1)) -join ' ') $State ($Depth + 1); if ($why) { return $why }; continue }
+      # A script file (sh scripts/merge.sh): judge the script.
+      $s = [array]::FindIndex([string[]]$a, [Predicate[string]] { param($x) $x -notlike '-*' })
+      if ($s -lt 0) { continue }
+      $prog = Get-Base $a[$s]; $a = @($a | Select-Object -Skip ($s + 1))
     }
 
     # The release key: never named by a command that runs (echo and friends only print their words).
@@ -113,7 +116,7 @@ function Test-Gate([string]$Command, $State, [int]$Depth = 0) {
 
     switch ($prog) {
       'release.ps1' { if ($a -notcontains '-DryRun') { return 'only the owner runs release.ps1; Claude may run it with -DryRun.' } }
-      'merge.ps1' { return 'only the owner merges pull requests (scripts\merge.ps1 or the GitHub app). Open a PR instead.' }
+      { $_ -in @('merge.ps1', 'merge.sh') } { return 'only the owner merges pull requests (scripts\merge.ps1 or the GitHub app). Open a PR instead.' }
       'gh' {
         for ($i = 0; $i -lt $a.Count - 1; $i++) {
           if ($a[$i] -eq 'pr' -and $a[$i + 1] -eq 'merge') { return 'only the owner merges pull requests (scripts\merge.ps1 or the GitHub app). Open a PR instead.' }
