@@ -1,7 +1,6 @@
 {
   "bankCap": { "base": 9500, "perLevel": 500 },
-  "queueSlots": [{ "level": 1, "slots": 1 }, { "level": 5, "slots": 2 }, { "level": 8, "slots": 3 }],
-  "untilFromLevel": 5,
+  "queueSlots": 3,
   "lossXpShare": 0.75,
   "lossesToGiveUp": 3,
   "journalEntries": 20,
@@ -32,11 +31,17 @@
     { "atLeast": -6, "colour": "green", "xp": 20 },
     { "colour": "grey", "xp": 5 }
   ],
-  "gearSlots": { "weapon": 1, "body": 1, "shield": 7, "head": 12, "feet": 17, "amulet": 20 },
+  "gearSlots": [
+    { "id": "head" }, { "id": "neck" }, { "id": "shoulder" }, { "id": "cloak" }, { "id": "chest" }, { "id": "bracer" },
+    { "id": "gloves" }, { "id": "belt" }, { "id": "legs" }, { "id": "boots" },
+    { "id": "ring1", "kind": "ring" }, { "id": "ring2", "kind": "ring" },
+    { "id": "trinket1", "kind": "trinket" }, { "id": "trinket2", "kind": "trinket" },
+    { "id": "mainHand" }, { "id": "offHand" }
+  ],
   "talentPointsFrom": 10,
   "ranks": [
-    { "level": 1, "name": "Recruit", "line": "The Guild takes you in. Recruits stay within the guarded lands." },
-    { "level": 10, "name": "Adventurer", "line": "The Guild names you Adventurer. You may travel beyond the river." },
+    { "level": 1, "name": "Recruit", "line": "The Guild takes you in. The roads are open; the dangers are real." },
+    { "level": 10, "name": "Adventurer", "line": "The Guild names you Adventurer. The lands beyond the river know your name." },
     { "level": 20, "name": "Veteran", "line": "The Guild names you Veteran. The mountain roads are yours." },
     { "level": 30, "name": "Champion", "line": "The Guild names you Champion. Even dragons have heard of you." }
   ]

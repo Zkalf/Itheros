@@ -17,7 +17,7 @@ class CraftTab extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final labels = Labels(game.data);
-    final recipes = game.unlockedRecipes(s);
+    final recipes = game.allRecipes();
     final forge = game.nearestForge(s);
 
     return ListView(
@@ -63,7 +63,9 @@ class _RecipeTile extends StatelessWidget {
     final active = s.activity?.activity == Activity.craft(recipe);
     // From 2 slots a craft can be queued before its materials are
     // gathered (spec 0003 §4).
-    final enabled = game.hasMaterials(s, recipe) || game.queueSlots(s) > 1;
+    final levelMet = game.recipeLevelMet(s, recipe);
+    final enabled =
+        levelMet && (game.hasMaterials(s, recipe) || game.queueSlots(s) > 1);
     return ListTile(
       key: ValueKey('option-craft-$recipe'),
       leading: const Icon(Icons.handyman),
@@ -87,9 +89,10 @@ class _RecipeTile extends StatelessWidget {
               ),
             ],
             TextSpan(
-              text:
-                  ' · ${r.steps} steps · '
-                  '${fadedXp(r.xp, r.unlockLevel, game, s)} XP',
+              text: levelMet
+                  ? ' · ${r.steps} steps · '
+                        '${fadedXp(r.xp, r.level, game, s)} XP'
+                  : ' · Needs level ${r.level}',
             ),
           ],
         ),

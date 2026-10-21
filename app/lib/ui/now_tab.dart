@@ -70,8 +70,8 @@ class _NextGoal extends StatelessWidget {
   Widget build(BuildContext context) {
     final game = controller.game;
     final s = controller.state;
-    final canHide = game.level(s) >= 10;
-    if (canHide && controller.nextGoalHidden) return const SizedBox.shrink();
+    // Hideable from level 1 (spec 0008 decision 9).
+    if (controller.nextGoalHidden) return const SizedBox.shrink();
     final goal = game.nextGoal(s);
     if (goal == null) return const SizedBox.shrink();
     final grey = switch (goal) {
@@ -96,12 +96,10 @@ class _NextGoal extends StatelessWidget {
             },
           ),
         ),
-        trailing: canHide
-            ? TextButton(
-                onPressed: () => controller.setNextGoalHidden(true),
-                child: const Text('Hide'),
-              )
-            : null,
+        trailing: TextButton(
+          onPressed: () => controller.setNextGoalHidden(true),
+          child: const Text('Hide'),
+        ),
       ),
     );
   }

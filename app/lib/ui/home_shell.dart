@@ -38,14 +38,8 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
-    // Crafting stays hidden until its first recipe opens (spec 0001
-    // criterion 8: locked systems are hidden, not greyed out).
-    final screens = [
-      for (final screen in _Screen.values)
-        if (screen != _Screen.craft ||
-            c.game.unlockedRecipes(c.state).isNotEmpty)
-          screen,
-    ];
+    // Every recipe shows from level 1 (spec 0008 decision 1).
+    final screens = _Screen.values;
     if (!screens.contains(_screen)) _screen = _Screen.now;
     // Nothing happened but steps: a short note, not the screen (spec 0004
     // amendment 2).
@@ -95,9 +89,7 @@ class _HomeShellState extends State<HomeShell> {
       body: switch (_screen) {
         _Screen.now => NowTab(
           onOpenMap: () => setState(() => _screen = _Screen.map),
-          onOpenCraft: screens.contains(_Screen.craft)
-              ? () => setState(() => _screen = _Screen.craft)
-              : null,
+          onOpenCraft: () => setState(() => _screen = _Screen.craft),
         ),
         _Screen.map => const MapTab(),
         _Screen.craft => const CraftTab(),

@@ -112,7 +112,7 @@ void main() {
     final c = controller();
     await c.start();
     await expectLater(
-      c.startActivity(const Activity.fight('skeleton')), // locked at level 1
+      c.startActivity(const Activity.fight('wolf')), // in the fog at first
       throwsA(isA<ActivityError>()),
     );
     expect(c.state.activity, isNull);

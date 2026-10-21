@@ -2,11 +2,12 @@
 enum NewsKind {
   /// A new rank and its ceremony line.
   rank,
-  area,
-  monster,
+
+  /// A gathering spot the player can now work (spec 0008 amendment 1).
   gatheringSpot,
+
+  /// A recipe the player can now craft (spec 0008 amendment 2).
   recipe,
-  gearSlot,
   talentPoint,
 
   /// A monster that is now exactly the player's level.
@@ -14,12 +15,6 @@ enum NewsKind {
 
   /// A monster that just turned grey; it still drops its loot.
   turnedGrey,
-
-  /// The queue grows to [LevelNews.id] actions (spec 0003 §2).
-  queueSlots,
-
-  /// "Until I have N" and "until N crafted" open (spec 0003 §3).
-  untilN,
 }
 
 class LevelNews {
@@ -27,8 +22,7 @@ class LevelNews {
 
   final NewsKind kind;
 
-  /// Rank name, location, enemy, node, recipe or slot id, or the queue
-  /// size; empty for a talent point or "until N".
+  /// Rank name, enemy, node or recipe id; empty for a talent point.
   final String id;
 
   @override

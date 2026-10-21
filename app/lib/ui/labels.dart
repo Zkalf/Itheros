@@ -180,24 +180,23 @@ class Labels {
         .id,
   );
 
-  String slot(String id) => id[0].toUpperCase() + id.substring(1);
+  /// A slot id or kind in words: `mainHand` → "Main hand", `ring1` → "Ring".
+  String slot(String id) {
+    final words = id
+        .replaceAll(RegExp(r'\d+$'), '')
+        .replaceAllMapped(RegExp('[A-Z]'), (m) => ' ${m[0]!.toLowerCase()}');
+    return words[0].toUpperCase() + words.substring(1);
+  }
 
   /// One "What's new" line of a level-up card (spec 0002 §9.1).
   String news(LevelNews n) => switch (n.kind) {
     NewsKind.rank => data.ranks.firstWhere((r) => r.name == n.id).line,
-    NewsKind.area => 'New area: ${location(n.id)}',
-    NewsKind.monster => 'New monster: ${enemy(n.id)} (${homeOf(n.id)})',
     NewsKind.gatheringSpot => 'You can now mine the ${node(n.id)}',
     NewsKind.recipe => 'New recipe: ${recipe(n.id)}',
-    NewsKind.gearSlot => 'New gear slot: ${slot(n.id)}',
     NewsKind.talentPoint =>
       '+1 talent point. Talents arrive in a later update; your points wait '
           'for you.',
     NewsKind.yourLevel => 'The ${enemy(n.id)} is now your level',
-    NewsKind.queueSlots =>
-      'Your queue now holds ${n.id} actions: plan ahead, and the next one starts by itself',
-    NewsKind.untilN =>
-      'New stop condition: "until I have N" (and "until N crafted")',
     NewsKind.turnedGrey =>
       'The ${enemy(n.id)} turned grey: little XP, but it still drops its loot',
   };

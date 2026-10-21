@@ -156,13 +156,10 @@ class _LevelCard extends StatelessWidget {
   }
 
   static IconData _icon(NewsKind k) => switch (k) {
-    NewsKind.area => Icons.map,
-    NewsKind.monster || NewsKind.yourLevel => Icons.sports_kabaddi,
+    NewsKind.yourLevel => Icons.sports_kabaddi,
     NewsKind.gatheringSpot => Icons.landscape,
     NewsKind.recipe => Icons.handyman,
-    NewsKind.gearSlot => Icons.shield,
     NewsKind.turnedGrey => Icons.trending_down,
-    NewsKind.queueSlots || NewsKind.untilN => Icons.playlist_add,
     NewsKind.rank || NewsKind.talentPoint => Icons.auto_awesome,
   };
 }

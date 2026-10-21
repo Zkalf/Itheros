@@ -154,12 +154,14 @@ class GameState {
     Map<String, String>? equipment,
     Map<String, int>? counters,
     Set<String>? achievements,
+    Set<String>? explored,
     this.loadedVersion = schemaVersion,
   }) : queue = queue ?? [],
        inventory = inventory ?? {},
        equipment = equipment ?? {},
        counters = counters ?? {},
-       achievements = achievements ?? {};
+       achievements = achievements ?? {},
+       explored = explored ?? {location};
 
   factory GameState.fromJson(Map<String, Object?> json) {
     final version = json['version'];
@@ -187,15 +189,21 @@ class GameState {
       achievements: (json['achievements'] as List<Object?>)
           .cast<String>()
           .toSet(),
+      // Before version 6, `Game.migrate` fills it from the visited areas.
+      explored: switch (json['explored']) {
+        final List<Object?> l => l.cast<String>().toSet(),
+        _ => null,
+      },
     );
   }
 
+  /// 6: paper-doll slot ids and explored areas (spec 0008).
   /// 5: the running action's tally and fight log, found drops (spec 0006).
   /// 4: visited areas are counted (spec 0004); same format as 3.
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 5;
+  static const schemaVersion = 6;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -213,8 +221,12 @@ class GameState {
   /// Item id to count. Items with count 0 are removed.
   final Map<String, int> inventory;
 
-  /// Slot to item id.
+  /// Slot id (spec 0008 §2.1) to item key.
   final Map<String, String> equipment;
+
+  /// Areas the player has stood in; the fog lifts around them (spec 0008
+  /// decision 5).
+  final Set<String> explored;
 
   /// State of the seeded random generator (see `Rng`).
   int rngState;
@@ -237,6 +249,7 @@ class GameState {
     'rng': rngState,
     'counters': Map.of(counters),
     'achievements': achievements.toList()..sort(),
+    'explored': explored.toList()..sort(),
   };
 
   void addItem(String item, [int count = 1]) {

@@ -87,12 +87,11 @@ GameState referencePlayer(
 }) {
   final s = game.newGame(seed: 1)..xp = game.data.xpForLevel(level);
   if (!geared) return s;
-  final open = game.openSlots(s);
   for (final r in game.data.recipes.values) {
-    if (r.unlockLevel > level || r.inputs.keys.any(without.contains)) continue;
+    if (r.level > level || r.inputs.keys.any(without.contains)) continue;
     final item = game.data.items[r.output]!;
-    final slot = item.slot;
-    if (slot == null || !open.contains(slot)) continue;
+    if (item.slot == null) continue;
+    final slot = game.slotsFor(item.id).first;
     final current = s.equipment[slot];
     if (current == null || item.score > game.data.scoreOf(current)) {
       s.equipment[slot] = item.id;
@@ -247,20 +246,13 @@ class SensiblePlayer {
   int _score(String? key) => key == null ? 0 : data.scoreOf(key);
 
   Activity _goal(GameState s) {
-    final lvl = game.level(s);
-    final open = game.openSlots(s);
-    final upgrades =
-        data.recipes.values.where((r) {
-          final slot = data.items[r.output]!.slot;
-          return r.unlockLevel <= lvl &&
-              slot != null &&
-              open.contains(slot) &&
-              _have(s, r.output) == 0 &&
-              _score(r.output) > _score(s.equipment[slot]);
-        }).toList()..sort(
-          (a, b) => (_score(b.output) - _score(s.equipment[_slot(b)]))
-              .compareTo(_score(a.output) - _score(s.equipment[_slot(a)])),
-        );
+    int gain(RecipeDef r) => game.gearGain(s, r.output);
+    final upgrades = data.recipes.values.where((r) {
+      return data.items[r.output]!.slot != null &&
+          game.recipeLevelMet(s, r.id) &&
+          _have(s, r.output) == 0 &&
+          gain(r) > 0;
+    }).toList()..sort((a, b) => gain(b).compareTo(gain(a)));
 
     for (final r in upgrades) {
       if (game.hasMaterials(s, r.id)) return Activity.craft(r.id);
@@ -273,10 +265,8 @@ class SensiblePlayer {
     return _bestFight(s);
   }
 
-  String _slot(RecipeDef r) => data.items[r.output]!.slot!;
-
   bool _canFight(GameState s, EnemyDef e) =>
-      e.unlockLevel <= game.level(s) &&
+      !game.enemyFogged(s, e.id) &&
       _lostAtLevel[e.id] != game.level(s) &&
       estimateFight(game.stats(s), e).safe;
 
@@ -285,7 +275,11 @@ class SensiblePlayer {
     Activity? best;
     var bestRate = 0.0;
     for (final n in data.nodes.values) {
-      if (n.item != item || n.unlockLevel > game.level(s)) continue;
+      if (n.item != item ||
+          !game.nodeLevelMet(s, n.id) ||
+          game.nodeFogged(s, n.id)) {
+        continue;
+      }
       final rate = 1 / n.steps;
       if (rate > bestRate) (best, bestRate) = (Activity.gather(n.id), rate);
     }
@@ -351,7 +345,7 @@ class SensiblePlayer {
       final at = todo.reduce((a, b) => dist[a]! <= dist[b]! ? a : b);
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
-        if (data.locations[to]!.unlockLevel > game.level(s)) continue;
+        if (game.isFogged(s, to)) continue;
         final d = dist[at]! + data.route(at, to)!.steps;
         if (d < (dist[to] ?? 1 << 30)) {
           dist[to] = d;
@@ -364,14 +358,13 @@ class SensiblePlayer {
   }
 
   GameState _equipBest(GameState s) {
-    final open = game.openSlots(s);
     for (final item in s.inventory.keys.toList()) {
-      final slot = data.itemOf(item)?.slot;
-      if (slot != null &&
-          open.contains(slot) &&
-          _score(item) > _score(s.equipment[slot])) {
-        s = game.equip(s, item);
-      }
+      if (game.gearGain(s, item) <= 0) continue;
+      final slots = game.slotsFor(item);
+      final weakest = slots.reduce(
+        (a, b) => _score(s.equipment[a]) <= _score(s.equipment[b]) ? a : b,
+      );
+      s = game.equip(s, item, slot: weakest);
     }
     return s;
   }

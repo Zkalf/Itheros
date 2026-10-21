@@ -307,7 +307,8 @@ void main() {
     expect(data.qualityOf('bone_sword@shiny').id, 'common');
     expect(data.bonusOf('bone_sword@shiny').attack, 5);
     expect(data.bonusOf('gone_item@rare').attack, 0);
-    final s = stateAt(game, level: 6)..equipment['mainHand'] = 'bone_sword@shiny';
+    final s = stateAt(game, level: 6)
+      ..equipment['mainHand'] = 'bone_sword@shiny';
     expect(() => game.stats(s), returnsNormally);
   });
 }

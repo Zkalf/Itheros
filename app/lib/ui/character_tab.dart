@@ -54,30 +54,32 @@ class CharacterTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text('Equipment', style: text.titleMedium),
-        for (final slot in game.openSlots(s))
-          ListTile(
-            leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
-            title: switch (s.equipment[slot]) {
-              final key? => _name(context, game.data, labels, key),
-              null => const Text('Empty'),
-            },
-            subtitle: Text(
-              [
-                labels.slot(slot),
-                if (s.equipment[slot] case final key?)
-                  ..._bonusParts(game.data, key),
-              ].join(' · '),
-            ),
-            trailing: s.equipment[slot] == null
-                ? null
-                : SizedBox(
-                    width: _buttonWidth,
-                    child: OutlinedButton(
-                      onPressed: () => _run(context, () => c.unequip(slot)),
-                      child: const Text('Remove'),
+        // Worn slots only, until the paper doll (plan 0010 M3).
+        for (final slot in game.data.gearSlots.map((g) => g.id))
+          if (s.equipment.containsKey(slot))
+            ListTile(
+              leading: Icon(_slotIcons[slot] ?? Icons.checkroom),
+              title: switch (s.equipment[slot]) {
+                final key? => _name(context, game.data, labels, key),
+                null => const Text('Empty'),
+              },
+              subtitle: Text(
+                [
+                  labels.slot(slot),
+                  if (s.equipment[slot] case final key?)
+                    ..._bonusParts(game.data, key),
+                ].join(' · '),
+              ),
+              trailing: s.equipment[slot] == null
+                  ? null
+                  : SizedBox(
+                      width: _buttonWidth,
+                      child: OutlinedButton(
+                        onPressed: () => _run(context, () => c.unequip(slot)),
+                        child: const Text('Remove'),
+                      ),
                     ),
-                  ),
-          ),
+            ),
         const SizedBox(height: 16),
         Text('Inventory', style: text.titleMedium),
         if (s.inventory.isEmpty)
@@ -137,13 +139,12 @@ class CharacterTab extends StatelessWidget {
         ],
         const SizedBox(height: 16),
         Text('Settings', style: text.titleMedium),
-        if (level >= 10)
-          SwitchListTile(
-            key: const ValueKey('show-next-goal'),
-            title: const Text('Show "Next goal"'),
-            value: !c.nextGoalHidden,
-            onChanged: (show) => c.setNextGoalHidden(!show),
-          ),
+        SwitchListTile(
+          key: const ValueKey('show-next-goal'),
+          title: const Text('Show "Next goal"'),
+          value: !c.nextGoalHidden,
+          onChanged: (show) => c.setNextGoalHidden(!show),
+        ),
         // Friends quote it when they report something (spec 0007 §7).
         ListTile(
           key: const ValueKey('version'),
@@ -184,12 +185,12 @@ class CharacterTab extends StatelessWidget {
       Labels(data).bonus(data.bonusOf(key));
 
   static const _slotIcons = {
-    'weapon': Icons.gavel,
-    'body': Icons.checkroom,
-    'shield': Icons.shield,
+    'mainHand': Icons.gavel,
+    'chest': Icons.checkroom,
+    'offHand': Icons.shield,
     'head': Icons.face,
-    'feet': Icons.hiking,
-    'amulet': Icons.diamond,
+    'boots': Icons.hiking,
+    'neck': Icons.diamond,
   };
 
   static Future<void> _run(
