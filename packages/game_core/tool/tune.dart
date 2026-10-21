@@ -3,7 +3,10 @@
 // rounds, XP per step against spec 0002's target, and the step up from the
 // previous normal monster; then the boss gear checks (amendment 1) and the
 // two-hander / shield targets (spec 0009 §4.2). The player wields the
-// one-hander of the strong type with a shield (spec 0009 §9.1).
+// one-hander of the strong type with a shield (spec 0009 §9.1). Last, the
+// `fightXpPerStep` list for `economy.json` (spec 0010 §2.4): the measured
+// XP per step of every monster but the lurkers, by level, between them on a log
+// scale and beyond them at the end slopes.
 //
 //   dart run tool/tune.dart
 import 'dart:io';
@@ -30,6 +33,7 @@ void main() {
     'monster            lvl   win  rounds  xp/step  target  step-up',
   );
   double? previous;
+  final measured = <int, double>{};
   for (final e in enemies) {
     final player = referencePlayer(
       game,
@@ -43,6 +47,7 @@ void main() {
         ? ''
         : pct(r.xpPerStep / previous - 1);
     if (normal) previous = r.xpPerStep;
+    if (!e.lurker) measured[e.level] = r.xpPerStep;
     stdout.writeln(
       '${e.name.padRight(18)} ${e.level.toString().padLeft(3)} '
       '${pct(r.winRate)} ${r.roundsPerFight.toStringAsFixed(1).padLeft(7)} '
@@ -65,6 +70,8 @@ void main() {
     );
   }
 
+  stdout.writeln('\n"fightXpPerStep": ${fightXpPerStep(measured, 30)},');
+
   stdout.writeln(
     '\ntwo-hander           fewer rounds (~25%, >=15%)  '
     'shield: less damage (>=20%)  monsters',
@@ -76,4 +83,21 @@ void main() {
       '${h.passes ? '' : '  FAILS'}',
     );
   }
+}
+
+/// XP per step for levels 1 to [levels] from [measured] levels: geometric
+/// between them, and along the first and last slopes outside them.
+List<double> fightXpPerStep(Map<int, double> measured, int levels) {
+  final known = measured.keys.toList()..sort();
+  double at(int level) {
+    var i = 0;
+    while (i < known.length - 2 && level > known[i + 1]) {
+      i++;
+    }
+    final (a, b) = (known[i], known[i + 1]);
+    final (va, vb) = (math.log(measured[a]!), math.log(measured[b]!));
+    return math.exp(va + (vb - va) * (level - a) / (b - a));
+  }
+
+  return [for (var l = 1; l <= levels; l++) (at(l) * 1000).round() / 1000];
 }

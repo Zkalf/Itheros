@@ -76,8 +76,12 @@ void main() {
     expect((goal! as CollectGoal).source, const Activity.gather('copper_vein'));
   });
 
+  // Crafting 1 makes the copper gear from level 1 (spec 0010 amendment 1),
+  // so the player here already wears it.
   test('4: otherwise the yellow monster that pays best', () {
-    expect(game.nextGoal(stateAt(game)), isA<FightGoal>());
-    expect((game.nextGoal(stateAt(game))! as FightGoal).enemy, 'goblin');
+    final s = stateAt(game)
+      ..equipment.addAll({'mainHand': 'copper_sword', 'chest': 'hide_vest'});
+    expect(game.nextGoal(s), isA<FightGoal>());
+    expect((game.nextGoal(s)! as FightGoal).enemy, 'goblin');
   });
 }

@@ -86,19 +86,55 @@ Map<String, Object?> monster(
   ...extra,
 };
 
-Game newTestGame({Map<String, Object> overrides = const {}}) =>
-    Game(loadGameData(overrides: overrides));
+/// A game from the real data with [overrides]. A test world of its own
+/// gets the teachers at its start (spec 0010 §6.1).
+Game newTestGame({Map<String, Object> overrides = const {}}) {
+  final world = overrides['world'];
+  if (world is! Map<String, Object?> || overrides.containsKey('professions')) {
+    return Game(loadGameData(overrides: overrides));
+  }
+  return Game(
+    loadGameData(
+      overrides: {
+        ...overrides,
+        'professions': {
+          'professions': [
+            for (final p in dataJson('professions')['professions']! as List)
+              {
+                ...p as Map<String, Object?>,
+                'teacher': {
+                  ...p['teacher']! as Map<String, Object?>,
+                  'location': world['startLocation'],
+                },
+              },
+          ],
+        },
+      },
+    ),
+  );
+}
 
-/// A fresh state at [location] with enough XP for [level].
+/// A fresh state at [location] with enough XP for [level], every profession
+/// learned (spec 0010 decision 9) at [professionLevel] (default: [level]).
 GameState stateAt(
   Game game, {
   String location = 'camp',
   int level = 1,
+  int? professionLevel,
   int bank = 0,
   int seed = 1,
   Map<String, int> inventory = const {},
 }) {
-  return game.newGame(seed: seed)
+  final s = game.newGame(seed: seed);
+  for (final p in game.data.professions.values) {
+    s
+      ..learned.add(p.id)
+      ..tools[p.id] = p.teacher.starterTool
+      ..professions[p.id] = game.data.professionXpForLevel(
+        professionLevel ?? level,
+      );
+  }
+  return s
     ..location = location
     ..xp = game.data.xpForLevel(level)
     ..bank = bank

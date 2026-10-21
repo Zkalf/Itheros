@@ -16,9 +16,19 @@ class Game {
   final GameData data;
 
   GameState newGame({required int seed}) => _visit(
-    GameState(location: data.startLocation, rngState: Rng.seeded(seed).state),
+    GameState(
+      location: data.startLocation,
+      rngState: Rng.seeded(seed).state,
+      professionRng: professionStream(seed),
+    ),
     data.startLocation,
   );
+
+  /// The profession stream's first state, a fixed hash of [from] (a game
+  /// seed, or an old save's generator state): no draw from the shared
+  /// generator (spec 0010 §9.1).
+  static int professionStream(int from) =>
+      Rng.fromState(((from ^ 0x5BD1E995) * 0x85EBCA6B) & 0xFFFFFFFF).state;
 
   /// Counts [area] as visited, once (spec 0004 §4), and explored (spec
   /// 0008 decision 5). Mutates and returns [s].
@@ -32,6 +42,71 @@ class Game {
   }
 
   int level(GameState s) => data.levelForXp(s.xp);
+
+  /// [profession]'s level (spec 0010 §2.2); 1 before any XP.
+  int professionLevel(GameState s, String profession) =>
+      data.professionLevelForXp(s.professions[profession] ?? 0);
+
+  /// The share of XP, in percent, an action at [actionLevel] of
+  /// [profession] pays (spec 0010 §2.3).
+  int professionFade(GameState s, String profession, int actionLevel) => data
+      .professionBandFor(actionLevel, professionLevel(s, profession))
+      .xpPercent;
+
+  /// Learns [profession] from its teacher, who must be here, and wears the
+  /// starter tool (spec 0010 §6.1). Throws [ActivityError] otherwise.
+  GameState learn(GameState s, String profession) {
+    final p = data.professions[profession];
+    if (p == null) throw ActivityError('No profession $profession');
+    if (s.learned.contains(profession)) {
+      throw ActivityError('You already know ${p.name}');
+    }
+    if (s.location != p.teacher.location) {
+      throw ActivityError(
+        '${p.teacher.name} teaches ${p.name} in '
+        '${data.locations[p.teacher.location]!.name}',
+      );
+    }
+    return s.copy()
+      ..learned.add(profession)
+      ..tools[profession] = p.teacher.starterTool;
+  }
+
+  /// What reaching [level] in [profession] opens: its spots and recipes of
+  /// that level (spec 0010 §2.2).
+  List<LevelNews> professionNews(String profession, int level) => [
+    for (final n in data.nodes.values)
+      if (n.profession == profession && n.level == level && level > 1)
+        LevelNews(NewsKind.gatheringSpot, n.id),
+    for (final r in data.recipes.values)
+      if (r.profession == profession && r.craftingLevel == level && level > 1)
+        LevelNews(NewsKind.recipe, r.id),
+  ];
+
+  /// Steps one action of [profession] costs, [base] times the worn tool's
+  /// share, rounded up (spec 0010 §3.2).
+  int professionSteps(GameState s, String profession, int base) {
+    final tool = s.tools[profession];
+    final factor = tool == null
+        ? 1.0
+        : data.itemOf(tool)?.tool?.stepFactor ?? 1.0;
+    return (base * factor - 1e-9).ceil();
+  }
+
+  /// Character XP for [steps] of [profession] work at [fade] percent: a
+  /// share of an even-level fight's XP per step (spec 0010 §2.4).
+  int professionCharacterXp(GameState s, int steps, int fade) {
+    final xp =
+        (steps *
+                    data.professionShare *
+                    data.fightXpPerStep(level(s)) *
+                    fade /
+                    100 +
+                1e-9)
+            .floor();
+    final grey = data.professionBands.last.xpPercent;
+    return fade > grey ? math.max(1, xp) : xp;
+  }
 
   int bankCap(GameState s) {
     var cap = data.bankCapBase + data.bankCapPerLevel * level(s);
@@ -181,8 +256,8 @@ class Game {
   int talentPoints(int level) => math.max(0, level - data.talentPointsFrom + 1);
 
   /// What reaching [level] brings, for its level-up card (spec 0002 §9.1).
-  /// Only gathering spots and recipes open by level (spec 0008 amendments 1
-  /// and 2). With [s], monsters in the fog are left out (decision 5).
+  /// Spots and recipes open by profession level instead (spec 0010 §2.2).
+  /// With [s], monsters in the fog are left out (spec 0008 decision 5).
   List<LevelNews> levelNews(int level, [GameState? s]) {
     final enemies = data.enemies.values.where(
       (e) => s == null || !enemyFogged(s, e.id),
@@ -190,11 +265,6 @@ class Game {
     return [
       for (final r in data.ranks)
         if (r.level == level && level > 1) LevelNews(NewsKind.rank, r.name),
-      for (final n in data.nodes.values)
-        if (n.level == level && level > 1)
-          LevelNews(NewsKind.gatheringSpot, n.id),
-      for (final r in data.recipes.values)
-        if (r.level == level && level > 1) LevelNews(NewsKind.recipe, r.id),
       if (level >= data.talentPointsFrom)
         const LevelNews(NewsKind.talentPoint, ''),
       for (final e in enemies)
@@ -333,6 +403,8 @@ class Game {
   /// visited areas as explored (spec 0008 §2.4).
   /// Saves before version 7 roll bonus stats for owned gear above Common
   /// and count every monster with a kill as fought (spec 0009 §10).
+  /// Saves before version 8 learn Mining and Crafting at the levels their
+  /// counters earn, and seed the profession stream (spec 0010 §10).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {
@@ -341,7 +413,34 @@ class Game {
     if (s.loadedVersion < 5) n = _findOwnedDrops(n.copy());
     if (s.loadedVersion < 6) n = _migrateLayout(n.copy());
     if (s.loadedVersion < 7) n = _migrateBonus(n.copy());
+    if (s.loadedVersion < 8) n = _migrateProfessions(n.copy());
     return _freeOffHand(n);
+  }
+
+  /// Every vein mined and item crafted counts its profession XP, unfaded;
+  /// Mining and Crafting are learned with their starter tools.
+  GameState _migrateProfessions(GameState s) {
+    void earn(String profession, String counter, int xp) {
+      final n = s.counters[counter] ?? 0;
+      if (n == 0) return;
+      s.professions[profession] = (s.professions[profession] ?? 0) + n * xp;
+    }
+
+    for (final node in data.nodes.values) {
+      earn(node.profession, 'gathered.${node.item}', node.xp);
+    }
+    final seen = <String>{};
+    for (final r in data.recipes.values) {
+      if (seen.add(r.output)) earn(r.profession, 'crafted.${r.output}', r.xp);
+    }
+    for (final id in const ['mining', 'crafting']) {
+      if (data.professions[id] case final p?) {
+        s.learned.add(id);
+        s.tools[id] ??= p.teacher.starterTool;
+      }
+    }
+    s.professionRng = professionStream(s.rngState);
+    return s;
   }
 
   /// Each owned item above Common rolls its bonus stats once, with the
@@ -461,14 +560,18 @@ class Game {
       // A version 2 save walking to a neighbour, with no leg set.
       ActivityKind.travel => data.route(s.location, a.target)!.steps,
       ActivityKind.fight => data.combatRoundSteps,
-      ActivityKind.gather => data.nodes[a.target]!.steps,
-      ActivityKind.craft => data.recipes[a.target]!.steps,
+      ActivityKind.gather => switch (data.nodes[a.target]!) {
+        final n => professionSteps(s, n.profession, n.steps),
+      },
+      ActivityKind.craft => switch (data.recipes[a.target]!) {
+        final r => professionSteps(s, r.profession, r.steps),
+      },
     };
   }
 
-  // Queries for the UI. Nothing is locked by level but gathering spots and
-  // recipes (spec 0008 amendments 1 and 2), which still show; fogged areas
-  // show nothing.
+  // Queries for the UI. Nothing is locked but gathering spots and recipes,
+  // by profession (spec 0010 §2), which still show; fogged areas show
+  // nothing.
 
   List<String> travelDestinations(GameState s) => [
     for (final to in data.destinationsFrom(s.location))
@@ -484,13 +587,22 @@ class Game {
   List<String> availableRecipes(GameState s) =>
       _here(s).crafting ? allRecipes() : const [];
 
-  /// Whether the player's level is high enough to work [node].
-  bool nodeLevelMet(GameState s, String node) =>
-      data.nodes[node]!.level <= level(s);
+  /// Whether the player has learned [node]'s profession and has the level
+  /// to work it (spec 0010 §2.2).
+  bool nodeLevelMet(GameState s, String node) {
+    final n = data.nodes[node]!;
+    return _canPractise(s, n.profession, n.level);
+  }
 
-  /// Whether the player's level is high enough to craft [recipe].
-  bool recipeLevelMet(GameState s, String recipe) =>
-      data.recipes[recipe]!.level <= level(s);
+  /// Whether the player has learned Crafting and has the level for
+  /// [recipe].
+  bool recipeLevelMet(GameState s, String recipe) {
+    final r = data.recipes[recipe]!;
+    return _canPractise(s, r.profession, r.craftingLevel);
+  }
+
+  bool _canPractise(GameState s, String profession, int level) =>
+      s.learned.contains(profession) && level <= professionLevel(s, profession);
 
   /// Open locations, nearest first, with their walking distance from here
   /// (spec 0003 §8: plan a day from anywhere).
@@ -759,10 +871,18 @@ class Game {
         a.target;
     return switch (r) {
       SkipReason.locked => switch (a.kind) {
-        ActivityKind.gather when data.nodes[a.target] != null =>
-          '$name needs level ${data.nodes[a.target]!.level}',
-        ActivityKind.craft when data.recipes[a.target] != null =>
-          '$name needs level ${data.recipes[a.target]!.level}',
+        ActivityKind.gather when data.nodes[a.target] != null => _needs(
+          s,
+          name,
+          data.nodes[a.target]!.profession,
+          data.nodes[a.target]!.level,
+        ),
+        ActivityKind.craft when data.recipes[a.target] != null => _needs(
+          s,
+          name,
+          data.recipes[a.target]!.profession,
+          data.recipes[a.target]!.craftingLevel,
+        ),
         _ => '$name is locked',
       },
       SkipReason.noRoute => 'The way there is in the fog',
@@ -773,6 +893,34 @@ class Game {
         _ => 'You already have ${stop.count} ${data.items[stop.item]?.name}',
       },
     };
+  }
+
+  /// Why a gathering spot or recipe [a] is closed to the player ("Iron vein
+  /// needs Mining 10", "Learn Mining from Hilde in Camp"), or null.
+  String? lockedReason(GameState s, Activity a) {
+    final open = switch (a.kind) {
+      ActivityKind.gather => nodeLevelMet(s, a.target),
+      ActivityKind.craft => recipeLevelMet(s, a.target),
+      _ => true,
+    };
+    return open
+        ? null
+        : _explain(s, a, const StopCondition.never(), SkipReason.locked);
+  }
+
+  /// The profession XP one action of [profession] at [level] paying [xp]
+  /// gives now, faded (spec 0010 §2.3).
+  int professionXpFor(GameState s, String profession, int level, int xp) =>
+      xp * professionFade(s, profession, level) ~/ 100;
+
+  /// What [name] lacks: its profession learned, or its level.
+  String _needs(GameState s, String name, String profession, int level) {
+    final p = data.professions[profession]!;
+    if (!s.learned.contains(profession)) {
+      return 'Learn ${p.name} from ${p.teacher.name} in '
+          '${data.locations[p.teacher.location]!.name}';
+    }
+    return '$name needs ${p.name} $level';
   }
 
   /// Why an action stops by its condition now, or null (spec 0003 §3).
@@ -1095,7 +1243,7 @@ class _Run {
         return _combatRound(act);
       case ActivityKind.gather:
         final node = data.nodes[a.target]!;
-        final xp = _faded(node.xp, node.level);
+        final xp = _practise(node.profession, node.level, node.xp, node.steps);
         s.addItem(node.item);
         _gain(act, node.item);
         s.count('gathered.${node.item}');
@@ -1104,9 +1252,19 @@ class _Run {
         return null;
       case ActivityKind.craft:
         final recipe = data.recipes[a.target]!;
-        final xp = _faded(recipe.xp, recipe.level);
+        final xp = _practise(
+          recipe.profession,
+          recipe.level,
+          recipe.xp,
+          recipe.steps,
+        );
         recipe.inputs.forEach((item, n) => s.addItem(item, -n));
-        final made = _withQuality(recipe.output, recipe.level);
+        final made = _withQuality(
+          recipe.output,
+          recipe.level,
+          // The overlevel bonus counts Crafting levels (spec 0010).
+          playerLevel: game.professionLevel(s, recipe.profession),
+        );
         s.addItem(made);
         _gain(act, made);
         act.crafted++;
@@ -1294,15 +1452,32 @@ class _Run {
   /// [item]'s key: gear rolls a quality, then its bonus stats (spec 0009
   /// §5.1); materials stay plain. The bonus stats come from a generator
   /// seeded by one draw, so how many there are never shifts later rolls.
-  String _withQuality(String item, int itemLevel) {
+  String _withQuality(String item, int itemLevel, {int? playerLevel}) {
     if (data.items[item]!.slot == null) return item;
     final q = game.rollQuality(
       rng,
-      playerLevel: game.level(s),
+      playerLevel: playerLevel ?? game.level(s),
       itemLevel: itemLevel,
     );
     final own = Rng.fromState(rng.nextUint32());
     return data.keyFor(item, q, game.rollBonus(own, item, q, itemLevel));
+  }
+
+  /// One action of [profession] at [level]: pays its profession XP [xp]
+  /// faded (a [ProfessionLevelUp] per level gained), and returns the
+  /// character XP for its steps, from the [base] steps through the tool
+  /// (spec 0010 §2).
+  int _practise(String profession, int level, int xp, int base) {
+    final fade = game.professionFade(s, profession, level);
+    final before = game.professionLevel(s, profession);
+    s.professions[profession] =
+        (s.professions[profession] ?? 0) + xp * fade ~/ 100;
+    final after = game.professionLevel(s, profession);
+    for (var l = before + 1; l <= after; l++) {
+      events.add(ProfessionLevelUp(profession, l));
+    }
+    final steps = game.professionSteps(s, profession, base);
+    return game.professionCharacterXp(s, steps, fade);
   }
 
   /// [xp] for something at [level], faded by the colour table; at least 1

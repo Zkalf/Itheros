@@ -121,7 +121,11 @@ void main() {
 
   test('criterion 8: the same save and steps give the same items', () {
     GameState run() {
-      var s = stateAt(game, level: 3, inventory: {'copper_ore': 5 * 60});
+      var s = stateAt(
+        game,
+        level: 3,
+        inventory: {'copper_ore': 5 * 60, 'oak_log': 60},
+      );
       s = game.startActivity(
         s,
         const Activity.craft('copper_mace'),

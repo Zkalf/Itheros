@@ -191,6 +191,11 @@ class GameState {
     Set<String>? explored,
     Set<String>? fought,
     Set<String>? lore,
+    Map<String, int>? professions,
+    Set<String>? learned,
+    Map<String, String>? tools,
+    Set<String>? tips,
+    this.professionRng = 0,
     this.loadedVersion = schemaVersion,
   }) : queue = queue ?? [],
        inventory = inventory ?? {},
@@ -199,7 +204,11 @@ class GameState {
        achievements = achievements ?? {},
        explored = explored ?? {location},
        fought = fought ?? {},
-       lore = lore ?? {};
+       lore = lore ?? {},
+       professions = professions ?? {},
+       learned = learned ?? {},
+       tools = tools ?? {},
+       tips = tips ?? {};
 
   factory GameState.fromJson(Map<String, Object?> json) {
     final version = json['version'];
@@ -234,9 +243,21 @@ class GameState {
       },
       fought: _stringSet(json['fought']),
       lore: _stringSet(json['lore']),
+      // Before version 8, `Game.migrate` fills these (spec 0010 §10).
+      professions: json['professions'] == null
+          ? null
+          : _intMap(json['professions']),
+      learned: _stringSet(json['learned']),
+      tools: (json['tools'] as Map<String, Object?>? ?? const {}).map(
+        (k, v) => MapEntry(k, v as String),
+      ),
+      tips: _stringSet(json['tips']),
+      professionRng: json['professionRng'] as int? ?? 0,
     );
   }
 
+  /// 8: profession XP, learned professions, tools, tips and the profession
+  /// stream (spec 0010 §10).
   /// 7: bonus stats in item keys, fought monsters, found lore notes (spec
   /// 0009 §10).
   /// 6: paper-doll slot ids and explored areas (spec 0008).
@@ -245,7 +266,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 7;
+  static const schemaVersion = 8;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -277,8 +298,24 @@ class GameState {
   /// Lore notes found (spec 0009 §7.2).
   final Set<String> lore;
 
+  /// Profession XP by profession id (spec 0010 §2.2).
+  final Map<String, int> professions;
+
+  /// Professions taught by their teacher (spec 0010 decision 9).
+  final Set<String> learned;
+
+  /// Profession id to the worn tool's item key (spec 0010 §3).
+  final Map<String, String> tools;
+
+  /// Teachers' tips told (spec 0010 §6.2).
+  final Set<String> tips;
+
   /// State of the seeded random generator (see `Rng`).
   int rngState;
+
+  /// State of the profession stream: every roll spec 0010 adds draws from
+  /// it, never from [rngState] (spec 0010 §9.1).
+  int professionRng;
 
   /// Lifetime counters such as `steps.walked` and `kills.goblin`.
   final Map<String, int> counters;
@@ -302,6 +339,11 @@ class GameState {
     'fought': fought.toList()..sort(),
     // In the order found: the Lore tab lists the newest first.
     'lore': lore.toList(),
+    'professions': Map.of(professions),
+    'learned': learned.toList()..sort(),
+    'tools': Map.of(tools),
+    'tips': tips.toList()..sort(),
+    'professionRng': professionRng,
   };
 
   void addItem(String item, [int count = 1]) {

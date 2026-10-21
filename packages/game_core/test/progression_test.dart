@@ -122,13 +122,20 @@ void main() {
     expect(r.state.bank, 50);
   });
 
-  test('mining yields one ore and 20 XP per 100 steps', () {
-    var s = stateAt(game, level: 2, location: 'copper_hills');
-    final xp0 = s.xp;
+  // Mining pays Mining XP; the character gets a quarter of a fight's XP per
+  // step (spec 0010 §2.4).
+  test('mining yields one ore and 20 Mining XP per 100 steps', () {
+    var s = stateAt(
+      game,
+      level: 2,
+      professionLevel: 1,
+      location: 'copper_hills',
+    );
+    final mining0 = s.professions['mining']!;
     s = game.startActivity(s, const Activity.gather('copper_vein'));
     final r = game.applySteps(s, 350);
     expect(r.state.inventory['copper_ore'], 3);
-    expect(r.state.xp - xp0, 60);
+    expect(r.state.professions['mining']! - mining0, 60);
     expect(r.state.activity!.progress, 50);
   });
 

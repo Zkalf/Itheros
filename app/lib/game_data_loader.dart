@@ -1,7 +1,14 @@
 import 'package:flutter/services.dart';
 import 'package:game_core/game_core.dart';
 
-const _files = ['economy', 'world', 'enemies', 'items', 'achievements'];
+const _files = [
+  'economy',
+  'world',
+  'enemies',
+  'items',
+  'achievements',
+  'professions',
+];
 
 /// Loads the game data bundled from `packages/game_core/data/`.
 Future<GameData> loadBundledGameData([AssetBundle? bundle]) async {

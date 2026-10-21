@@ -174,6 +174,9 @@ class AwaySummary {
           gain(item, 1);
         case LevelUp(:final level):
           levels.add(level);
+        // Profession news comes with the screens (plan 0012 M3).
+        case ProfessionLevelUp():
+          break;
         case AchievementUnlocked(:final id):
           achievements.add(id);
         case LoreFound(:final note):
