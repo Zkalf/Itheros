@@ -38,7 +38,7 @@ void main() {
     test('an enemy in the fog (spec 0008 decision 6)', () {
       rejects(stateAt(game), const Activity.fight('wolf'));
     });
-    test('a node above the player's level', () {
+    test('a node above the player level', () {
       rejects(
         stateAt(game, location: 'copper_hills'),
         const Activity.gather('copper_vein'),

@@ -51,6 +51,7 @@ void main() {
             {
               'id': 'goblin',
               'name': 'Goblin champion',
+              'level': 1,
               'hp': 500,
               'attack': 100,
               'defense': 50,

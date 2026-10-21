@@ -1,5 +1,6 @@
 // No level gates, the paper doll and fog by exploring: spec 0008 criteria 3-7,
-// 11-13 (rules side), with amendment 1 (gathering spots keep a level).
+// 11-13 (rules side), with amendments 1 and 2 (gathering spots and recipes keep
+// a level).
 import 'dart:convert';
 import 'dart:io';
 
@@ -51,13 +52,18 @@ void main() {
   group('criterion 4: no unlock levels (amendment 1)', () {
     test('no data file has an unlockLevel', () {
       for (final f in Directory('data').listSync().whereType<File>()) {
-        expect(f.readAsStringSync(), isNot(contains('unlockLevel')), reason: f.path);
+        expect(
+          f.readAsStringSync(),
+          isNot(contains('unlockLevel')),
+          reason: f.path,
+        );
       }
     });
 
     test('the loader rejects an unlockLevel', () {
       final world = dataJson('world');
-      final locations = (world['locations'] as List).cast<Map<String, Object?>>();
+      final locations = (world['locations'] as List)
+          .cast<Map<String, Object?>>();
       locations.first['unlockLevel'] = 1;
       expect(
         () => loadGameData(overrides: {'world': world}),
@@ -65,13 +71,20 @@ void main() {
       );
     });
 
-    test('at level 1 every monster, spot and recipe shows where not fogged', () {
-      final s = stateAt(game, location: 'old_graveyard');
-      expect(game.availableEnemies(s), ['skeleton', 'zombie', 'graveyard_king']);
-      expect(game.allRecipes(), game.data.recipes.keys.toList());
-      final hills = stateAt(game, location: 'copper_hills');
-      expect(game.availableNodes(hills), ['copper_vein']);
-    });
+    test(
+      'at level 1 every monster, spot and recipe shows where not fogged',
+      () {
+        final s = stateAt(game, location: 'old_graveyard');
+        expect(game.availableEnemies(s), [
+          'skeleton',
+          'zombie',
+          'graveyard_king',
+        ]);
+        expect(game.allRecipes(), game.data.recipes.keys.toList());
+        final hills = stateAt(game, location: 'copper_hills');
+        expect(game.availableNodes(hills), ['copper_vein']);
+      },
+    );
 
     test('a level 1 player can fight the Graveyard King', () {
       final s = game.startActivity(
@@ -105,12 +118,22 @@ void main() {
       game.startActivity(l2, const Activity.gather('copper_vein'));
     });
 
-    test('crafting any recipe needs only its materials', () {
-      final s = game.startActivity(
-        stateAt(game, inventory: {'mithril_ore': 8}),
-        const Activity.craft('mithril_sword'),
+    test('a recipe needs its level, but shows before it (amendment 2)', () {
+      final s = stateAt(game, level: 21, inventory: {'mithril_ore': 8});
+      expect(game.allRecipes(), contains('mithril_sword'));
+      expect(game.recipeLevelMet(s, 'mithril_sword'), isFalse);
+      expect(
+        () => game.startActivity(s, const Activity.craft('mithril_sword')),
+        throwsA(
+          isA<ActivityError>().having(
+            (e) => e.message,
+            'message',
+            'Mithril sword needs level 22',
+          ),
+        ),
       );
-      expect(s.activity!.activity.target, 'mithril_sword');
+      final l22 = stateAt(game, level: 22, inventory: {'mithril_ore': 8});
+      game.startActivity(l22, const Activity.craft('mithril_sword'));
     });
 
     test('a spot reaching its level is level news; nothing else unlocks', () {
@@ -125,6 +148,7 @@ void main() {
             isIn([
               NewsKind.rank,
               NewsKind.gatheringSpot,
+              NewsKind.recipe,
               NewsKind.talentPoint,
               NewsKind.yourLevel,
               NewsKind.turnedGrey,
@@ -140,7 +164,12 @@ void main() {
     test('a new game sees Camp and its neighbours', () {
       final s = game.newGame(seed: 1);
       expect(s.explored, {'camp'});
-      for (final a in ['camp', 'goblin_woods', 'copper_hills', 'old_graveyard']) {
+      for (final a in [
+        'camp',
+        'goblin_woods',
+        'copper_hills',
+        'old_graveyard',
+      ]) {
         expect(game.isFogged(s, a), isFalse, reason: a);
       }
       for (final a in ['grey_moor', 'iron_ridge', 'dragons_peak']) {
@@ -169,7 +198,10 @@ void main() {
         () => game.startActivity(s, const Activity.fight('wolf')),
         throwsA(isA<ActivityError>()),
       );
-      expect(game.openLocationsByDistance(s).keys, isNot(contains('grey_moor')));
+      expect(
+        game.openLocationsByDistance(s).keys,
+        isNot(contains('grey_moor')),
+      );
       expect(game.enemiesAt(s, 'grey_moor'), isEmpty);
     });
 
@@ -198,7 +230,10 @@ void main() {
         s.equipment.length + s.inventory.values.fold(0, (a, b) => a + b);
 
     test('a two-hander moves the shield to the bag', () {
-      var s = stateAt(g, inventory: {'big_axe': 1, 'copper_sword': 1, 'bone_shield': 1});
+      var s = stateAt(
+        g,
+        inventory: {'big_axe': 1, 'copper_sword': 1, 'bone_shield': 1},
+      );
       s = g.equip(s, 'copper_sword');
       s = g.equip(s, 'bone_shield');
       final before = total(s);
@@ -230,7 +265,10 @@ void main() {
     });
 
     test('the comparison counts the shield a two-hander takes off', () {
-      var s = stateAt(g, inventory: {'big_axe': 1, 'copper_sword': 1, 'bone_shield': 1});
+      var s = stateAt(
+        g,
+        inventory: {'big_axe': 1, 'copper_sword': 1, 'bone_shield': 1},
+      );
       s = g.equip(s, 'copper_sword');
       s = g.equip(s, 'bone_shield');
       final d = g.compare(s, 'big_axe', 'mainHand');
@@ -306,8 +344,9 @@ void main() {
       return json;
     }
 
-    GameState load(Map<String, Object?> json) =>
-        game.migrate(GameState.fromJson(jsonDecode(jsonEncode(json)) as Map<String, Object?>));
+    GameState load(Map<String, Object?> json) => game.migrate(
+      GameState.fromJson(jsonDecode(jsonEncode(json)) as Map<String, Object?>),
+    );
 
     test('gear moves to its new slot', () {
       final s = load(
@@ -350,7 +389,9 @@ void main() {
 
     test('a new save keeps its explored areas', () {
       final s = game.newGame(seed: 1)..explored.add('goblin_woods');
-      final back = GameState.fromJson(jsonDecode(jsonEncode(s.toJson())) as Map<String, Object?>);
+      final back = GameState.fromJson(
+        jsonDecode(jsonEncode(s.toJson())) as Map<String, Object?>,
+      );
       expect(back.explored, {'camp', 'goblin_woods'});
     });
   });
