@@ -31,7 +31,7 @@ class SimulationResult {
       days.where((d) => d.level >= level).map((d) => d.day).firstOrNull;
 }
 
-/// The expected outcome of one fight, with every hit at its average damage.
+/// The expected outcome of one fight, with every swing at its average.
 class FightEstimate {
   FightEstimate(this.win, this.rounds, this.hpLeft);
 
@@ -45,12 +45,29 @@ class FightEstimate {
   bool get safe => win && hpLeft >= 0.25;
 }
 
-/// Plays one fight with average damage, following the combat rules in
-/// `Game` (spec 0001 §4, spec 0002 §5.1).
-FightEstimate estimateFight(Stats me, EnemyDef e) {
+/// Plays one fight of [s] against [e] with average swings, following the
+/// combat rules in `Game` (spec 0001 §4, spec 0002 §5.1, spec 0009 §2): each
+/// side's damage is scaled by its chance to land, crits and blocks.
+FightEstimate estimateFight(Game game, GameState s, EnemyDef e) {
+  final c = game.data.combat;
+  final me = game.stats(s);
+  final level = game.level(s);
+  final slayerHit = game.slayer(s, e.id) ? c.slayerHit : 0;
   double hit(int attack, int defense) => math.max(1, attack - defense / 2);
-  final mine = hit(me.attack, e.stats.defense);
-  final theirs = hit(e.stats.attack, e.has(Trait.ghostly) ? 0 : me.defense);
+  double lands(int hitChance, int dodge) =>
+      hitChance / 100 * (1 - math.min(c.dodgeCap, dodge) / 100);
+
+  final crit = math.min(c.critCap, c.critBase + me.crit) / 100;
+  final block = math.min(c.blockCap, me.block) / 100;
+  final mine =
+      hit(me.attack, e.stats.defense) *
+      c.typeFactor(game.damageType(s), e.armour) *
+      lands(c.hitChance(level - e.level, me.hit + slayerHit), e.stats.dodge) *
+      (1 + crit * (c.critDamage - 1));
+  final theirs =
+      hit(e.stats.attack, e.has(Trait.ghostly) ? 0 : me.defense) *
+      lands(c.hitChance(e.level - level, 0), me.dodge) *
+      (1 - block * (1 - c.blockShare));
   var hp = me.hp.toDouble();
   var enemyHp = e.stats.hp.toDouble();
 
@@ -76,26 +93,126 @@ FightEstimate estimateFight(Stats me, EnemyDef e) {
   return FightEstimate(false, 1000, 0);
 }
 
+/// The better of two estimates: safe first, then fewer rounds, then more HP
+/// left; between unsafe ones, a win, then more HP left.
+bool _better(FightEstimate a, FightEstimate b) {
+  if (a.safe != b.safe) return a.safe;
+  if (a.safe) {
+    return a.rounds < b.rounds || (a.rounds == b.rounds && a.hpLeft > b.hpLeft);
+  }
+  if (a.win != b.win) return a.win;
+  return a.hpLeft > b.hpLeft;
+}
+
+/// What a weapon is compared within: its damage type and hands (spec 0009
+/// §5.3). Null for anything that isn't a weapon.
+(String, bool)? weaponGroup(GameData data, String key) {
+  final item = data.itemOf(key);
+  final type = item?.damageType;
+  return type == null ? null : (type, item!.twoHanded);
+}
+
+/// The main hand and off hand [s] would arm against [enemy] from what it
+/// owns, and the fight's estimate (spec 0009 §9.2): the weapon (and shield,
+/// or two-hander) that wins fastest and safely.
+(String?, String?, FightEstimate) bestArms(Game game, GameState s, EnemyDef e) {
+  final data = game.data;
+  final owned = {...s.inventory.keys, ...s.equipment.values};
+  // The best weapon of each damage type and hands, and every off-hand item.
+  final mains = <(String, bool), String>{};
+  final offs = <String?>{null};
+  for (final key in owned) {
+    final item = data.itemOf(key);
+    if (item?.slot == 'offHand') offs.add(key);
+    final group = weaponGroup(data, key);
+    if (group == null) continue;
+    final best = mains[group];
+    if (best == null || data.scoreOf(key) > data.scoreOf(best)) {
+      mains[group] = key;
+    }
+  }
+  final armed = s.copy();
+  (String?, String?, FightEstimate)? best;
+  for (final main in <String?>[null, ...mains.values]) {
+    final twoHanded = main != null && data.itemOf(main)!.twoHanded;
+    for (final off in twoHanded ? const <String?>[null] : offs) {
+      _wield(armed, main, off);
+      final f = estimateFight(game, armed, e);
+      if (best == null || _better(f, best.$3)) best = (main, off, f);
+    }
+  }
+  return best!;
+}
+
+/// Sets [s]'s hands without the bag (for estimates only).
+void _wield(GameState s, String? main, String? off) {
+  for (final (slot, key) in [('mainHand', main), ('offHand', off)]) {
+    if (key == null) {
+      s.equipment.remove(slot);
+    } else {
+      s.equipment[slot] = key;
+    }
+  }
+}
+
+/// [s] holding [main] and [off] in its hands, moved from and to the bag.
+GameState armWith(Game game, GameState s, String? main, String? off) {
+  for (final (slot, key) in [('mainHand', main), ('offHand', off)]) {
+    if (s.equipment[slot] == key) continue;
+    if (key == null) {
+      if (s.equipment.containsKey(slot)) s = game.unequip(s, slot);
+    } else {
+      s = game.equip(s, key, slot: slot);
+    }
+  }
+  return s;
+}
+
+/// [s] armed for [enemy] with [bestArms].
+GameState armFor(Game game, GameState s, String enemy) {
+  final (main, off, _) = bestArms(game, s, game.data.enemies[enemy]!);
+  return armWith(game, s, main, off);
+}
+
 /// A player at [level] wearing, per open slot, the best item a recipe up to
 /// [level] makes ("the gear of that stretch"), or no gear at all. Recipes
-/// needing any of [without] are skipped (a boss's own drops).
+/// needing any of [without] are skipped (a boss's own drops). The weapon is
+/// the best crafted one-hander, of the type strong against [vs] when given,
+/// with a shield (spec 0009 §9.1). All of it is common.
 GameState referencePlayer(
   Game game,
   int level, {
   bool geared = true,
   Set<String> without = const {},
+  String? vs,
 }) {
-  final s = game.newGame(seed: 1)..xp = game.data.xpForLevel(level);
+  final data = game.data;
+  final s = game.newGame(seed: 1)..xp = data.xpForLevel(level);
   if (!geared) return s;
-  for (final r in game.data.recipes.values) {
+  final strong = vs == null
+      ? null
+      : data.combat.strongAgainst(data.enemies[vs]!.armour);
+  final weapons = <ItemDef>[];
+  for (final r in data.recipes.values) {
     if (r.level > level || r.inputs.keys.any(without.contains)) continue;
-    final item = game.data.items[r.output]!;
-    if (item.slot == null) continue;
+    final item = data.items[r.output]!;
+    if (item.slot == null || item.twoHanded) continue;
+    if (item.damageType != null) {
+      weapons.add(item);
+      continue;
+    }
     final slot = game.slotsFor(item.id).first;
     final current = s.equipment[slot];
-    if (current == null || item.score > game.data.scoreOf(current)) {
+    if (current == null || item.score > data.scoreOf(current)) {
       s.equipment[slot] = item.id;
     }
+  }
+  final typed = weapons.where((w) => w.damageType == strong).toList();
+  final pick = typed.isNotEmpty ? typed : weapons;
+  if (pick.isNotEmpty) {
+    s.equipment['mainHand'] = pick
+        .reduce((a, b) => b.score > a.score ? b : a)
+        .id;
   }
   return s;
 }
@@ -145,24 +262,28 @@ BossCheck bossCheck(Game game, String boss, {int fights = 200}) {
   FightRecord vs(GameState p) => measureFights(game, p, boss, fights: fights);
   return BossCheck(
     vs(referencePlayer(game, lvl, geared: false)),
-    vs(referencePlayer(game, lvl, without: own)),
+    vs(referencePlayer(game, lvl, without: own, vs: boss)),
     first
         ? vs(referencePlayer(game, lvl + 5, geared: false))
-        : vs(referencePlayer(game, lvl - 3, without: own)),
+        : vs(referencePlayer(game, lvl - 3, without: own, vs: boss)),
     first: first,
   );
 }
 
 /// Measured results of many real fights (the rules, with damage rolls).
 class FightRecord {
-  FightRecord(this.fights, this.wins, this.steps, this.xp);
+  FightRecord(this.fights, this.wins, this.steps, this.xp, this.taken);
 
   final int fights;
   final int wins;
   final int steps;
   final int xp;
 
+  /// Damage the player took, all fights together.
+  final int taken;
+
   double get winRate => wins / fights;
+  double get takenPerFight => taken / fights;
   double get xpPerStep => xp / steps;
   double get roundsPerFight => steps / fights / 10;
 }
@@ -183,7 +304,7 @@ FightRecord measureFights(
     ..location = home.id
     ..rngState = game.newGame(seed: seed).rngState;
   final xp0 = s.xp;
-  var wins = 0, losses = 0, steps = 0;
+  var wins = 0, losses = 0, steps = 0, taken = 0;
   // The level must not change mid-measurement: XP is restored after each
   // fight, and only the gain is counted.
   var gained = 0;
@@ -193,6 +314,8 @@ FightRecord measureFights(
     }
     final r = game.applySteps(s, game.data.combatRoundSteps);
     steps += game.data.combatRoundSteps;
+    // One round per call; a fight that ends the action leaves no log.
+    taken += r.state.activity?.log.lastOrNull?.taken ?? 0;
     for (final e in r.events) {
       if (e is FightWon) {
         wins++;
@@ -206,7 +329,109 @@ FightRecord measureFights(
       ..xp = xp0
       ..inventory.clear();
   }
-  return FightRecord(fights, wins, steps, gained);
+  return FightRecord(fights, wins, steps, gained, taken);
+}
+
+/// A two-hander against its tier's one-hander, and that one-hander with and
+/// without a shield (spec 0009 §4.2), over the monsters of its stretch.
+class HandsCheck {
+  HandsCheck(this.twoHander, this.monsters, this.roundsCut, this.shieldCut);
+
+  final String twoHander;
+  final List<String> monsters;
+
+  /// How many fewer rounds the two-hander needs (target about 25%, at least
+  /// 15%).
+  final double roundsCut;
+
+  /// How much less damage the one-hander takes per fight with a shield than
+  /// without (at least 20%; the owner's reading of §4.2, plan 0011 M1).
+  final double shieldCut;
+
+  bool get passes => roundsCut >= 0.15 && shieldCut >= 0.2;
+}
+
+/// One [HandsCheck] per two-hander. Its tier's one-handers are those of the
+/// latest weapon recipe level up to the two-hander's. Its stretch is the
+/// monsters (no lurkers) from that tier's level (or the two-hander's own,
+/// when the tier's one-handers came before the previous two-hander) up to
+/// the next weapon recipe's level; each is fought by an even-level player
+/// with the stretch's gear. Rounds: the two-hander against the tier's
+/// one-hander of the same damage type (so types don't tip it: decision 9),
+/// on the monsters that one-hander beats at least 90% of the time. Damage:
+/// the reference player (spec 0009 §9.1) with and without its shield.
+List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
+  final data = game.data;
+  final weaponRecipes = [
+    for (final r in data.recipes.values)
+      if (data.items[r.output]!.damageType != null) r,
+  ];
+  final checks = <HandsCheck>[];
+  var previous = 0;
+  for (final r in weaponRecipes) {
+    final two = data.items[r.output]!;
+    if (!two.twoHanded) continue;
+    final next = weaponRecipes
+        .map((w) => w.level)
+        .where((l) => l > r.level)
+        .fold<int?>(null, (m, l) => m == null || l < m ? l : m);
+    final tierLevel = weaponRecipes
+        .where((w) => w.level <= r.level && !data.items[w.output]!.twoHanded)
+        .map((w) => w.level)
+        .reduce(math.max);
+    final one = weaponRecipes
+        .map((w) => data.items[w.output]!)
+        .firstWhere(
+          (w) =>
+              !w.twoHanded &&
+              data.recipes[w.id]?.level == tierLevel &&
+              w.damageType == two.damageType,
+        );
+    final from = tierLevel > previous ? tierLevel : r.level;
+    previous = r.level;
+    final monsters =
+        data.enemies.values
+            .where(
+              (e) =>
+                  !e.lurker &&
+                  e.level >= from &&
+                  (next == null || e.level < next),
+            )
+            .toList()
+          ..sort((a, b) => a.level.compareTo(b.level));
+    var rounds = 0.0, taken = 0.0, beaten = 0;
+    for (final e in monsters) {
+      final base = referencePlayer(
+        game,
+        e.level,
+        without: bossOnlyItems(game, e.id),
+        vs: e.id,
+      );
+      final shielded = base.copy()..equipment['mainHand'] = one.id;
+      final twoHanded = base.copy()
+        ..equipment['mainHand'] = r.output
+        ..equipment.remove('offHand');
+      final a = measureFights(game, shielded, e.id, fights: fights);
+      if (a.winRate >= 0.9) {
+        final b = measureFights(game, twoHanded, e.id, fights: fights);
+        rounds += 1 - b.roundsPerFight / a.roundsPerFight;
+        beaten++;
+      }
+      final alone = base.copy()..equipment.remove('offHand');
+      final withShield = measureFights(game, base, e.id, fights: fights);
+      final without = measureFights(game, alone, e.id, fights: fights);
+      taken += 1 - withShield.takenPerFight / without.takenPerFight;
+    }
+    checks.add(
+      HandsCheck(
+        r.output,
+        [for (final e in monsters) e.id],
+        beaten == 0 ? 0 : rounds / beaten,
+        taken / monsters.length,
+      ),
+    );
+  }
+  return checks;
 }
 
 /// Opens the app every so often and picks what to do: equips the best gear,
@@ -219,6 +444,9 @@ class SensiblePlayer {
   final Game game;
   final _lostAtLevel = <String, int>{};
 
+  /// This decision's best arms per monster (see [bestArms]).
+  final _arms = <String, (String?, String?, FightEstimate)>{};
+
   GameData get data => game.data;
 
   void observe(StepReport r) {
@@ -229,7 +457,12 @@ class SensiblePlayer {
 
   GameState decide(GameState s) {
     s = _equipBest(s);
+    _arms.clear();
     final goal = _goal(s);
+    if (goal.kind == ActivityKind.fight) {
+      final (main, off, _) = _armed(s, data.enemies[goal.target]!);
+      s = armWith(game, s, main, off);
+    }
     final current = s.activity?.activity;
     if (current == goal) return s;
 
@@ -245,8 +478,28 @@ class SensiblePlayer {
   /// Gear rank with quality (spec 0005 criterion 7).
   int _score(String? key) => key == null ? 0 : data.scoreOf(key);
 
+  (String?, String?, FightEstimate) _armed(GameState s, EnemyDef e) =>
+      _arms[e.id] ??= bestArms(game, s, e);
+
+  /// How much better [key] is than what it would replace. Weapons are
+  /// compared within their damage type and hands, off-hand items with the
+  /// best one owned: each type is crafted once per tier (spec 0009 §9.2).
+  int _gain(GameState s, String key) {
+    final group = weaponGroup(data, key);
+    final hand = data.itemOf(key)?.slot == 'offHand';
+    if (group == null && !hand) return game.gearGain(s, key);
+    var best = 0;
+    for (final k in {...s.inventory.keys, ...s.equipment.values}) {
+      final same = group == null
+          ? data.itemOf(k)?.slot == 'offHand'
+          : weaponGroup(data, k) == group;
+      if (same) best = math.max(best, _score(k));
+    }
+    return _score(key) - best;
+  }
+
   Activity _goal(GameState s) {
-    int gain(RecipeDef r) => game.gearGain(s, r.output);
+    int gain(RecipeDef r) => _gain(s, r.output);
     final upgrades = data.recipes.values.where((r) {
       return data.items[r.output]!.slot != null &&
           game.recipeLevelMet(s, r.id) &&
@@ -268,7 +521,7 @@ class SensiblePlayer {
   bool _canFight(GameState s, EnemyDef e) =>
       !game.enemyFogged(s, e.id) &&
       _lostAtLevel[e.id] != game.level(s) &&
-      estimateFight(game.stats(s), e).safe;
+      _armed(s, e).$3.safe;
 
   /// The fastest safe way to get [item], or null.
   Activity? _sourceOf(GameState s, String item) {
@@ -288,7 +541,7 @@ class SensiblePlayer {
           .where((d) => d.item == item)
           .fold(0.0, (sum, d) => sum + d.chance * d.count);
       if (per == 0 || !_canFight(s, e)) continue;
-      final rounds = estimateFight(game.stats(s), e).rounds;
+      final rounds = _armed(s, e).$3.rounds;
       final rate = per / (rounds * data.combatRoundSteps);
       if (rate > bestRate) (best, bestRate) = (Activity.fight(e.id), rate);
     }
@@ -300,7 +553,7 @@ class SensiblePlayer {
     var bestRate = -1.0;
     for (final e in data.enemies.values) {
       if (!_canFight(s, e)) continue;
-      final f = estimateFight(game.stats(s), e);
+      final f = _armed(s, e).$3;
       final xp = e.xp * game.enemyBand(s, e.id).xpPercent / 100;
       final rate = math.max(1, xp) / (f.rounds * data.combatRoundSteps);
       if (rate > bestRate) (best, bestRate) = (e, rate);
@@ -357,8 +610,11 @@ class SensiblePlayer {
     return (dist, previous);
   }
 
+  /// Wears the best gear, hands aside: those are armed per fight.
   GameState _equipBest(GameState s) {
     for (final item in s.inventory.keys.toList()) {
+      final slot = data.itemOf(item)?.slot;
+      if (slot == 'mainHand' || slot == 'offHand') continue;
       if (game.gearGain(s, item) <= 0) continue;
       final slots = game.slotsFor(item);
       final weakest = slots.reduce(

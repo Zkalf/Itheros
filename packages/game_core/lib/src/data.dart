@@ -1,37 +1,131 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
-/// Character stats. Also used for gear bonuses and per-level growth.
+/// Character stats. Also used for gear bonuses and per-level growth. [crit],
+/// [hit], [dodge] and [block] are percent points (spec 0009 §2.2).
 class Stats {
-  const Stats({this.hp = 0, this.attack = 0, this.defense = 0});
+  const Stats({
+    this.hp = 0,
+    this.attack = 0,
+    this.defense = 0,
+    this.crit = 0,
+    this.hit = 0,
+    this.dodge = 0,
+    this.block = 0,
+  });
 
   factory Stats.fromJson(Map<String, Object?> json) => Stats(
     hp: _intOr(json, 'hp'),
     attack: _intOr(json, 'attack'),
     defense: _intOr(json, 'defense'),
+    crit: _intOr(json, 'crit'),
+    hit: _intOr(json, 'hit'),
+    dodge: _intOr(json, 'dodge'),
+    block: _intOr(json, 'block'),
   );
 
   final int hp;
   final int attack;
   final int defense;
+  final int crit;
+  final int hit;
+  final int dodge;
+  final int block;
 
-  Stats operator +(Stats o) => Stats(
-    hp: hp + o.hp,
-    attack: attack + o.attack,
-    defense: defense + o.defense,
+  Stats _zip(Stats o, int Function(int, int) f) => Stats(
+    hp: f(hp, o.hp),
+    attack: f(attack, o.attack),
+    defense: f(defense, o.defense),
+    crit: f(crit, o.crit),
+    hit: f(hit, o.hit),
+    dodge: f(dodge, o.dodge),
+    block: f(block, o.block),
   );
 
-  Stats operator -(Stats o) => Stats(
-    hp: hp - o.hp,
-    attack: attack - o.attack,
-    defense: defense - o.defense,
-  );
+  Stats operator +(Stats o) => _zip(o, (a, b) => a + b);
 
-  Stats operator *(int n) =>
-      Stats(hp: hp * n, attack: attack * n, defense: defense * n);
+  Stats operator -(Stats o) => _zip(o, (a, b) => a - b);
+
+  Stats operator *(int n) => _zip(this, (a, _) => a * n);
 
   @override
-  String toString() => 'Stats(hp: $hp, attack: $attack, defense: $defense)';
+  String toString() =>
+      'Stats(hp: $hp, attack: $attack, defense: $defense, crit: $crit, '
+      'hit: $hit, dodge: $dodge, block: $block)';
+}
+
+/// The combat numbers of spec 0009 §2.1 and the type table of §3, from
+/// `economy.json`. Chances are percent points.
+class CombatRules {
+  CombatRules._(Map<String, Object?> j)
+    : hitBase = _int(j, 'hitBase'),
+      hitPerLevel = _int(j, 'hitPerLevel'),
+      hitMin = _int(j, 'hitMin'),
+      hitMax = _int(j, 'hitMax'),
+      critBase = _int(j, 'critBase'),
+      critDamage = (j['critDamage'] as num).toDouble(),
+      blockShare = (j['blockShare'] as num).toDouble(),
+      critCap = _int(j, 'critCap'),
+      blockCap = _int(j, 'blockCap'),
+      dodgeCap = _int(j, 'dodgeCap'),
+      slayerKills = _int(j, 'slayerKills'),
+      slayerHit = _int(j, 'slayerHit'),
+      typeFactors = Map.unmodifiable(
+        _map(j, 'typeFactors').map(
+          (armour, row) => MapEntry(
+            armour,
+            Map<String, double>.unmodifiable(
+              (row as Map<String, Object?>).map(
+                (type, f) => MapEntry(type, (f as num).toDouble()),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  final int hitBase;
+  final int hitPerLevel;
+  final int hitMin;
+  final int hitMax;
+  final int critBase;
+
+  /// A crit's damage, times a normal hit's.
+  final double critDamage;
+
+  /// A blocked hit's share of the damage.
+  final double blockShare;
+  final int critCap;
+  final int blockCap;
+  final int dodgeCap;
+
+  /// Kills of a monster that earn Slayer, and the Hit it gives against that
+  /// monster (spec 0009 §7.1).
+  final int slayerKills;
+  final int slayerHit;
+
+  /// Armour type -> damage type -> damage factor.
+  final Map<String, Map<String, double>> typeFactors;
+
+  Iterable<String> get armourTypes => typeFactors.keys;
+
+  Set<String> get damageTypes => {
+    for (final row in typeFactors.values) ...row.keys,
+  };
+
+  /// The attacker's chance to hit, in percent: base, plus per level above
+  /// the defender, plus Hit, kept within the bounds.
+  int hitChance(int levelDiff, int hit) =>
+      (hitBase + hitPerLevel * levelDiff + hit).clamp(hitMin, hitMax);
+
+  /// The damage factor of [damageType] against [armour]; bare hands (null)
+  /// are neutral.
+  double typeFactor(String? damageType, String armour) =>
+      damageType == null ? 1 : typeFactors[armour]![damageType]!;
+
+  /// The damage type that hits [armour] hardest.
+  String strongAgainst(String armour) => typeFactors[armour]!.entries
+      .reduce((a, b) => a.value >= b.value ? a : b)
+      .key;
 }
 
 class LocationDef {
@@ -174,6 +268,7 @@ class EnemyDef {
       name = _str(j, 'name'),
       level = _int(j, 'level'),
       stats = Stats.fromJson(j),
+      armour = _str(j, 'armour'),
       xp = _int(j, 'xp'),
       traits = Set.unmodifiable(_strList(j, 'traits').map(_trait)),
       regen = _intOr(j, 'regen'),
@@ -188,7 +283,13 @@ class EnemyDef {
 
   /// The monster's own level, which sets its colour (spec 0002 §3).
   final int level;
+
+  /// Its Dodge is in [stats]; it has no Crit, Hit or Block (spec 0009
+  /// decision 7).
   final Stats stats;
+
+  /// light, medium or heavy (spec 0009 §3).
+  final String armour;
   final int xp;
   final Set<Trait> traits;
 
@@ -242,6 +343,8 @@ class ItemDef {
       name = _str(j, 'name'),
       slot = j['slot'] as String?,
       twoHanded = j['twoHanded'] as bool? ?? false,
+      damageType = j['damageType'] as String?,
+      armourType = j['armourType'] as String?,
       bonus = Stats.fromJson(j);
 
   final String id;
@@ -253,10 +356,16 @@ class ItemDef {
 
   /// A main-hand weapon that also fills the off hand (spec 0008 §2.1).
   final bool twoHanded;
+
+  /// A weapon's slash, pierce or crush (spec 0009 §4).
+  final String? damageType;
+
+  /// An armour piece's light, medium or heavy (spec 0009 §6).
+  final String? armourType;
   final Stats bonus;
 
   /// How it ranks against other gear for the same slot.
-  int get score => bonus.attack * 5 + bonus.defense * 3 + bonus.hp;
+  int get score => GameData.scoreStats(bonus);
 }
 
 class RecipeDef {
@@ -347,6 +456,7 @@ class GameData {
        qualityPerLevel = (economy['qualityPerLevel'] as num).toDouble(),
        qualityMaxLevels = _int(economy, 'qualityMaxLevels'),
        fightLogRounds = _int(economy, 'fightLogRounds'),
+       combat = CombatRules._(_map(economy, 'combat')),
        startLocation = _str(world, 'startLocation'),
        mapAspect = (world['mapAspect'] as num? ?? 1).toDouble(),
        mapRiver = List.unmodifiable(
@@ -452,6 +562,9 @@ class GameData {
   /// Fight rounds the running action remembers (spec 0006 decision 8).
   final int fightLogRounds;
 
+  /// Hit, crit, block and the type table (spec 0009 §2–§3).
+  final CombatRules combat;
+
   /// Separates an item id from its quality in inventory and equipment keys:
   /// `bone_sword@rare`. Common gear and materials use the plain id.
   static const qualityMark = '@';
@@ -483,18 +596,28 @@ class GameData {
     int up(int v) => v == 0 || tier == 0
         ? v
         : math.max((v * (1 + q.bonus)).round(), v + tier);
+    // Quality doesn't raise Crit, Hit, Dodge or Block (spec 0009 §5.2).
     return Stats(
       hp: up(base.hp),
       attack: up(base.attack),
       defense: up(base.defense),
+      crit: base.crit,
+      hit: base.hit,
+      dodge: base.dodge,
+      block: base.block,
     );
   }
 
   /// How a key ranks against other gear for the same slot, quality included.
-  int scoreOf(String key) {
-    final b = bonusOf(key);
-    return b.attack * 5 + b.defense * 3 + b.hp;
-  }
+  int scoreOf(String key) => scoreStats(bonusOf(key));
+
+  /// Every stat weighed (spec 0009 §5.3).
+  static int scoreStats(Stats b) =>
+      b.attack * 5 +
+      b.defense * 3 +
+      b.hp +
+      (b.crit + b.hit + b.block) * 2 +
+      b.dodge * 3;
 
   final String startLocation;
 
@@ -617,6 +740,20 @@ class GameData {
         !i.twoHanded || i.slot == 'mainHand',
         'item ${i.id}: only main-hand items can be two-handed',
       );
+      check(
+        (i.slot == 'mainHand') == (i.damageType != null) &&
+            (i.damageType == null || combat.damageTypes.contains(i.damageType)),
+        'item ${i.id}: every weapon, and only a weapon, has a damage type',
+      );
+      check(
+        i.armourType == null || combat.armourTypes.contains(i.armourType),
+        'item ${i.id}: unknown armour type ${i.armourType}',
+      );
+      // Block comes only from the off hand (spec 0009 §2.1).
+      check(
+        i.bonus.block == 0 || i.slot == 'offHand',
+        'item ${i.id}: only off-hand items have Block',
+      );
     }
     for (var i = 1; i < xpToReachLevel.length; i++) {
       check(
@@ -650,6 +787,10 @@ class GameData {
     for (final e in enemies.values) {
       check(e.level >= 1, 'enemy ${e.id}: level must be >= 1');
       check(
+        combat.armourTypes.contains(e.armour),
+        'enemy ${e.id}: unknown armour ${e.armour}',
+      );
+      check(
         e.has(Trait.regenerates) == (e.regen > 0),
         'enemy ${e.id}: regen is set exactly when it regenerates',
       );
@@ -668,6 +809,13 @@ class GameData {
       }
     }
     check(combatRoundSteps > 0, 'combatRoundSteps must be > 0');
+    for (final row in combat.typeFactors.values) {
+      check(
+        row.keys.toSet().containsAll(combat.damageTypes),
+        'typeFactors: every armour needs a factor for every damage type',
+      );
+    }
+    check(combat.hitMin <= combat.hitMax, 'combat: hitMin must be <= hitMax');
     check(fightLogRounds > 0, 'fightLogRounds must be > 0');
     for (final p in [...mapRiver, for (final l in locations.values) ?l.map]) {
       check(

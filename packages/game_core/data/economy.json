@@ -15,6 +15,17 @@
   "qualityMaxLevels": 10,
   "combatRoundSteps": 10,
   "fightLogRounds": 4,
+  "combat": {
+    "hitBase": 85, "hitPerLevel": 5, "hitMin": 50, "hitMax": 95,
+    "critBase": 5, "critDamage": 2, "blockShare": 0.3,
+    "critCap": 50, "blockCap": 50, "dodgeCap": 30,
+    "slayerKills": 50, "slayerHit": 5,
+    "typeFactors": {
+      "light": { "slash": 1.3, "pierce": 1.0, "crush": 0.8 },
+      "medium": { "pierce": 1.3, "crush": 1.0, "slash": 0.8 },
+      "heavy": { "crush": 1.3, "slash": 1.0, "pierce": 0.8 }
+    }
+  },
   "baseStats": { "hp": 30, "attack": 5, "defense": 2 },
   "statsPerLevel": { "hp": 10, "attack": 1, "defense": 1 },
   "damageVariance": 0.2,

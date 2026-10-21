@@ -26,15 +26,42 @@ class FightState {
 /// How a fight ended, on the round that ended it.
 enum FightOutcome { won, lost }
 
-/// One fight round, for the fight log (spec 0006 decision 8). [dealt] or
-/// [taken] is null when that side didn't strike.
+/// What became of one swing (spec 0009 §2.1).
+enum Swing {
+  hit,
+
+  /// The player's hit, for double damage.
+  crit,
+  miss,
+
+  /// The defender slipped a hit.
+  dodge,
+
+  /// The player's shield took most of a monster's hit.
+  block,
+}
+
+/// One fight round, for the fight log (spec 0006 decision 8). [mine] and
+/// [theirs] say how each side's swing went, or are null when that side
+/// didn't swing; [dealt] and [taken] are the damage (0 on a miss or dodge).
 class RoundLog {
-  const RoundLog({required this.round, this.dealt, this.taken, this.outcome});
+  const RoundLog({
+    required this.round,
+    this.dealt,
+    this.taken,
+    this.mine,
+    this.theirs,
+    this.outcome,
+  });
 
   factory RoundLog.fromJson(Map<String, Object?> json) => RoundLog(
     round: json['round'] as int,
     dealt: json['dealt'] as int?,
     taken: json['taken'] as int?,
+    // Logs from before spec 0009 knew only hits.
+    mine: _swing(json['mine']) ?? (json['dealt'] == null ? null : Swing.hit),
+    theirs:
+        _swing(json['theirs']) ?? (json['taken'] == null ? null : Swing.hit),
     outcome: switch (json['outcome']) {
       final String o => FightOutcome.values.byName(o),
       _ => null,
@@ -44,12 +71,19 @@ class RoundLog {
   final int round;
   final int? dealt;
   final int? taken;
+  final Swing? mine;
+  final Swing? theirs;
   final FightOutcome? outcome;
+
+  static Swing? _swing(Object? name) =>
+      name is String ? Swing.values.byName(name) : null;
 
   Map<String, Object?> toJson() => {
     'round': round,
     if (dealt != null) 'dealt': dealt,
     if (taken != null) 'taken': taken,
+    if (mine != null) 'mine': mine!.name,
+    if (theirs != null) 'theirs': theirs!.name,
     if (outcome != null) 'outcome': outcome!.name,
   };
 }

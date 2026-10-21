@@ -49,6 +49,43 @@ class Game {
     return total;
   }
 
+  /// The main-hand weapon's damage type; null bare-handed (spec 0009 §3).
+  String? damageType(GameState s) => switch (s.equipment['mainHand']) {
+    final key? => data.itemOf(key)?.damageType,
+    null => null,
+  };
+
+  /// Whether the player has earned Slayer against [enemy] (spec 0009 §7.1).
+  bool slayer(GameState s, String enemy) =>
+      (s.counters['kills.$enemy'] ?? 0) >= data.combat.slayerKills;
+
+  /// The player's chance to hit [enemy], in percent (spec 0009 §2.1). The
+  /// monster's Dodge is a roll of its own and doesn't change it.
+  int playerHitChance(GameState s, String enemy) {
+    final e = data.enemies[enemy]!;
+    final slayerHit = slayer(s, enemy) ? data.combat.slayerHit : 0;
+    return data.combat.hitChance(level(s) - e.level, stats(s).hit + slayerHit);
+  }
+
+  /// [enemy]'s chance to hit the player, in percent. Monsters have no Hit.
+  int monsterHitChance(GameState s, String enemy) =>
+      data.combat.hitChance(data.enemies[enemy]!.level - level(s), 0);
+
+  /// The player's Crit, Block and Dodge in percent, base Crit included and
+  /// each within its cap (spec 0009 §2.1).
+  int critChance(GameState s) =>
+      math.min(data.combat.critCap, data.combat.critBase + stats(s).crit);
+
+  int blockChance(GameState s) =>
+      math.min(data.combat.blockCap, stats(s).block);
+
+  int dodgeChance(GameState s) =>
+      math.min(data.combat.dodgeCap, stats(s).dodge);
+
+  /// [enemy]'s Dodge, within the cap.
+  int enemyDodge(String enemy) =>
+      math.min(data.combat.dodgeCap, data.enemies[enemy]!.stats.dodge);
+
   /// Picks a quality id for gear of [itemLevel] made or found by a player of
   /// [playerLevel] (spec 0005 §3). Uses one roll of [rng].
   String rollQuality(
@@ -930,7 +967,8 @@ class _Run {
 
   /// One auto-resolved round. The player strikes first unless the monster is
   /// quick. HP is full at the start of each fight (spec 0001 §4). Traits:
-  /// spec 0002 §5.1.
+  /// spec 0002 §5.1. Each swing can miss, be dodged, crit or be blocked
+  /// (spec 0009 §2.1).
   EndReason? _combatRound(RunningActivity act) {
     final enemy = data.enemies[act.activity.target]!;
     final me = game.stats(s);
@@ -942,15 +980,19 @@ class _Run {
 
     int? dealt;
     int? taken;
+    Swing? mine;
+    Swing? theirs;
     bool playerTurn() {
-      final hit = _damage(me.attack, enemy.stats.defense);
-      dealt = hit;
+      final (swing, hit) = _playerSwing(enemy, me);
+      (mine, dealt) = (swing, hit);
       fight.enemyHp -= hit;
       return fight.enemyHp <= 0;
     }
 
     bool monsterTurn() {
-      taken = _monsterTurn(enemy, fight, me);
+      if (_monsterSwing(enemy, fight, me) case (final swing, final hit)) {
+        (theirs, taken) = (swing, hit);
+      }
       return fight.playerHp <= 0;
     }
 
@@ -969,6 +1011,8 @@ class _Run {
         round: fight.round,
         dealt: dealt,
         taken: taken,
+        mine: mine,
+        theirs: theirs,
         outcome: outcome,
       ),
     );
@@ -982,18 +1026,44 @@ class _Run {
     };
   }
 
-  /// The monster's strike, or null when it doesn't strike (slow). It
-  /// regenerates if the player survives.
-  int? _monsterTurn(EnemyDef enemy, FightState fight, Stats me) {
-    int? hit;
+  /// Whether a roll comes in under [percent]. Uses no roll at 0%.
+  bool _chance(int percent) => percent > 0 && rng.nextDouble() * 100 < percent;
+
+  /// The player's swing and its damage: hit roll, the monster's dodge roll,
+  /// then damage with the type factor and the crit roll.
+  (Swing, int) _playerSwing(EnemyDef enemy, Stats me) {
+    if (!_chance(game.playerHitChance(s, enemy.id))) return (Swing.miss, 0);
+    if (_chance(game.enemyDodge(enemy.id))) return (Swing.dodge, 0);
+    final factor = data.combat.typeFactor(game.damageType(s), enemy.armour);
+    final hit = _damage(me.attack, enemy.stats.defense, factor);
+    if (_chance(game.critChance(s))) {
+      return (Swing.crit, (hit * data.combat.critDamage).round());
+    }
+    return (Swing.hit, hit);
+  }
+
+  /// The monster's swing and its damage, or null when it doesn't swing
+  /// (slow). It regenerates if the player survives, hit or miss.
+  (Swing, int)? _monsterSwing(EnemyDef enemy, FightState fight, Stats me) {
+    (Swing, int)? swing;
     if (!enemy.has(Trait.slow) || fight.round.isEven) {
-      final defense = enemy.has(Trait.ghostly) ? 0 : me.defense;
-      hit = _damage(enemy.stats.attack, defense);
-      fight.playerHp -= hit;
-      if (fight.playerHp <= 0) return hit;
+      swing = _monsterStrike(enemy, me);
+      fight.playerHp -= swing.$2;
+      if (fight.playerHp <= 0) return swing;
     }
     fight.enemyHp = math.min(enemy.stats.hp, fight.enemyHp + enemy.regen);
-    return hit;
+    return swing;
+  }
+
+  (Swing, int) _monsterStrike(EnemyDef enemy, Stats me) {
+    if (!_chance(game.monsterHitChance(s, enemy.id))) return (Swing.miss, 0);
+    if (_chance(game.dodgeChance(s))) return (Swing.dodge, 0);
+    final defense = enemy.has(Trait.ghostly) ? 0 : me.defense;
+    final hit = _damage(enemy.stats.attack, defense);
+    if (_chance(game.blockChance(s))) {
+      return (Swing.block, math.max(1, (hit * data.combat.blockShare).round()));
+    }
+    return (Swing.hit, hit);
   }
 
   /// Adds [key] to the running action's tally.
@@ -1069,8 +1139,8 @@ class _Run {
     return math.max(1, xp * band.xpPercent ~/ 100);
   }
 
-  int _damage(int attack, int defense) {
-    final base = math.max(1.0, attack - defense / 2);
+  int _damage(int attack, int defense, [double factor = 1]) {
+    final base = math.max(1.0, attack - defense / 2) * factor;
     final v = data.damageVariance;
     final roll = 1 - v + 2 * v * rng.nextDouble();
     return math.max(1, (base * roll).round());
