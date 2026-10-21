@@ -107,6 +107,33 @@ class Game {
     return data.qualities.first.id;
   }
 
+  /// The bonus stats gear of [quality] rolls when made or found (spec 0009
+  /// §5.1): one per quality step above common, each a stat picked from the
+  /// pool of [itemLevel]'s tier (Block only for the off hand) and a value
+  /// in its range. Repeats can happen.
+  List<BonusRoll> rollBonus(
+    Rng rng,
+    String item,
+    String quality,
+    int itemLevel,
+  ) {
+    final steps = data.qualities.indexWhere((q) => q.id == quality);
+    final offHand = data.items[item]!.slot == 'offHand';
+    final pool = [
+      for (final MapEntry(key: stat, value: range)
+          in data.bonusTierFor(itemLevel).ranges.entries)
+        if (stat != 'block' || offHand) (stat, range),
+    ];
+    return [
+      for (var i = 0; i < steps; i++)
+        if (pool[rng.nextInt(pool.length)] case (
+          final stat,
+          (final lo, final hi),
+        ))
+          (stat: stat, value: lo + rng.nextInt(hi - lo + 1)),
+    ];
+  }
+
   /// Total XP needed for the next level. There is no level cap.
   int xpForNextLevel(GameState s) => data.xpForLevel(level(s) + 1);
 
@@ -257,6 +284,8 @@ class Game {
   /// and the item is owned or worn (spec 0006 decision 6).
   /// Saves before version 6 move their gear onto the paper doll and count
   /// visited areas as explored (spec 0008 §2.4).
+  /// Saves before version 7 roll bonus stats for owned gear above Common
+  /// and count every monster with a kill as fought (spec 0009 §10).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {
@@ -264,7 +293,47 @@ class Game {
     if (s.loadedVersion < 4) n = _visit(n.copy(), n.location);
     if (s.loadedVersion < 5) n = _findOwnedDrops(n.copy());
     if (s.loadedVersion < 6) n = _migrateLayout(n.copy());
+    if (s.loadedVersion < 7) n = _migrateBonus(n.copy());
     return _freeOffHand(n);
+  }
+
+  /// Each owned item above Common rolls its bonus stats once, with the
+  /// save's generator: worn ones in doll order, then the bag in key order,
+  /// each item of a stack on its own (spec 0009 §5.4).
+  GameState _migrateBonus(GameState s) {
+    final rng = Rng.fromState(s.rngState);
+    bool needs(String key) =>
+        data.itemOf(key)?.slot != null &&
+        data.qualityOf(key) != data.qualities.first &&
+        data.bonusRolls(key).isEmpty;
+    String roll(String key) {
+      final item = data.itemOf(key)!.id;
+      final q = data.qualityOf(key).id;
+      return data.keyFor(
+        item,
+        q,
+        rollBonus(rng, item, q, data.itemLevel(item)),
+      );
+    }
+
+    for (final slot in data.gearSlots) {
+      if (s.equipment[slot.id] case final key? when needs(key)) {
+        s.equipment[slot.id] = roll(key);
+      }
+    }
+    for (final key in s.inventory.keys.toList()..sort()) {
+      if (!needs(key)) continue;
+      final n = s.inventory.remove(key)!;
+      for (var i = 0; i < n; i++) {
+        s.addItem(roll(key));
+      }
+    }
+    s.rngState = rng.state;
+    s.fought.addAll([
+      for (final e in data.enemies.keys)
+        if ((s.counters['kills.$e'] ?? 0) > 0) e,
+    ]);
+    return s;
   }
 
   /// A worn two-hander empties the off hand into the bag: an item may have
@@ -1087,6 +1156,7 @@ class _Run {
 
   EndReason? _win(RunningActivity act, EnemyDef enemy) {
     act.fight = null;
+    s.fought.add(enemy.id);
     act.lossStreak = 0;
     act.won++;
     final drops = <String, int>{};
@@ -1121,6 +1191,7 @@ class _Run {
   EndReason? _lose(RunningActivity act, EnemyDef enemy) {
     final share = (enemy.stats.hp - act.fight!.enemyHp) / enemy.stats.hp;
     act.fight = null;
+    s.fought.add(enemy.id);
     final pct = data.bandFor(enemy.level, game.level(s)).xpPercent;
     final xp = share <= 0
         ? 0
@@ -1136,7 +1207,9 @@ class _Run {
     return act.lossStreak >= data.lossesToGiveUp ? EndReason.defeated : null;
   }
 
-  /// [item]'s key: gear rolls a quality, materials stay plain.
+  /// [item]'s key: gear rolls a quality, then its bonus stats (spec 0009
+  /// §5.1); materials stay plain. The bonus stats come from a generator
+  /// seeded by one draw, so how many there are never shifts later rolls.
   String _withQuality(String item, int itemLevel) {
     if (data.items[item]!.slot == null) return item;
     final q = game.rollQuality(
@@ -1144,7 +1217,8 @@ class _Run {
       playerLevel: game.level(s),
       itemLevel: itemLevel,
     );
-    return data.keyFor(item, q);
+    final own = Rng.fromState(rng.nextUint32());
+    return data.keyFor(item, q, game.rollBonus(own, item, q, itemLevel));
   }
 
   /// [xp] for something at [level], faded by the colour table; at least 1

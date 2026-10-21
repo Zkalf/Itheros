@@ -385,6 +385,8 @@ void main() {
     );
 
     test('gear moves to its new slot', () {
+      // Gear above Common also rolls bonus stats (spec 0009 §5.4): compared
+      // without them.
       final s = load(
         v5(
           equipment: {
@@ -397,7 +399,7 @@ void main() {
           },
         ),
       );
-      expect(s.equipment, {
+      expect(s.equipment.map((k, v) => MapEntry(k, game.data.plainKey(v))), {
         'mainHand': 'kings_blade@rare',
         'offHand': 'bone_shield',
         'chest': 'stitched_armour',

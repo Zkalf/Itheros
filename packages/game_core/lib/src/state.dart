@@ -189,13 +189,17 @@ class GameState {
     Map<String, int>? counters,
     Set<String>? achievements,
     Set<String>? explored,
+    Set<String>? fought,
+    Set<String>? lore,
     this.loadedVersion = schemaVersion,
   }) : queue = queue ?? [],
        inventory = inventory ?? {},
        equipment = equipment ?? {},
        counters = counters ?? {},
        achievements = achievements ?? {},
-       explored = explored ?? {location};
+       explored = explored ?? {location},
+       fought = fought ?? {},
+       lore = lore ?? {};
 
   factory GameState.fromJson(Map<String, Object?> json) {
     final version = json['version'];
@@ -228,16 +232,20 @@ class GameState {
         final List<Object?> l => l.cast<String>().toSet(),
         _ => null,
       },
+      fought: _stringSet(json['fought']),
+      lore: _stringSet(json['lore']),
     );
   }
 
+  /// 7: bonus stats in item keys, fought monsters, found lore notes (spec
+  /// 0009 §10).
   /// 6: paper-doll slot ids and explored areas (spec 0008).
   /// 5: the running action's tally and fight log, found drops (spec 0006).
   /// 4: visited areas are counted (spec 0004); same format as 3.
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 6;
+  static const schemaVersion = 7;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -262,6 +270,13 @@ class GameState {
   /// decision 5).
   final Set<String> explored;
 
+  /// Monsters fought at least once, won or lost: their armour is known
+  /// (spec 0009 §7.1).
+  final Set<String> fought;
+
+  /// Lore notes found (spec 0009 §7.2).
+  final Set<String> lore;
+
   /// State of the seeded random generator (see `Rng`).
   int rngState;
 
@@ -284,6 +299,8 @@ class GameState {
     'counters': Map.of(counters),
     'achievements': achievements.toList()..sort(),
     'explored': explored.toList()..sort(),
+    'fought': fought.toList()..sort(),
+    'lore': lore.toList()..sort(),
   };
 
   void addItem(String item, [int count = 1]) {
@@ -298,6 +315,9 @@ class GameState {
   void count(String counter, [int by = 1]) =>
       counters[counter] = (counters[counter] ?? 0) + by;
 }
+
+Set<String> _stringSet(Object? json) =>
+    (json as List<Object?>? ?? const []).cast<String>().toSet();
 
 Map<String, int> _intMap(Object? json) =>
     (json as Map<String, Object?>).map((k, v) => MapEntry(k, v as int));

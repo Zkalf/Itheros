@@ -62,6 +62,30 @@ void main() {
       expect(s.explored, containsAll({...visited, raw['location']}));
       expect(s.xp, raw['xp']);
     });
+
+    // Spec 0009 criterion 10: gear above Common rolls its bonus stats once,
+    // and every monster with a kill counts as fought.
+    test('$name rolls bonus stats and marks fought monsters', () {
+      final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+      final raw = json['game'] as Map<String, Object?>;
+      final game = loadTestGame();
+      final data = game.data;
+      final s = game.migrate(SaveData.fromJson(json).game);
+      for (final key in [...s.inventory.keys, ...s.equipment.values]) {
+        if (data.itemOf(key)?.slot == null) continue;
+        expect(
+          data.bonusRolls(key),
+          hasLength(data.qualities.indexOf(data.qualityOf(key))),
+          reason: key,
+        );
+      }
+      final killed = {
+        for (final MapEntry(:key, :value) in (raw['counters'] as Map).entries)
+          if ((key as String).startsWith('kills.') && (value as int) > 0)
+            key.substring(6),
+      };
+      expect(s.fought, killed);
+    });
   }
 
   test('the version shown in the game matches pubspec.yaml', () {

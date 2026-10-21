@@ -146,7 +146,13 @@ class AwaySummary {
       (wins, xp, items, losses) = (0, 0, {}, []);
     }
 
-    void gain(String item, int n) => items[item] = (items[item] ?? 0) + n;
+    // Counted by item and quality: report rows show no bonus stats (spec
+    // 0009 §8.2).
+    void gain(String key, int n) {
+      final item = key.split(GameData.bonusMark).first;
+      items[item] = (items[item] ?? 0) + n;
+    }
+
     for (final e in r.events) {
       switch (e) {
         case FightWon(:final drops):

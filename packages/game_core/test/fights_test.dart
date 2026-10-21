@@ -307,7 +307,8 @@ void main() {
     final s = game.migrate(
       GameState.fromJson(jsonDecode(jsonEncode(json)) as Map<String, Object?>),
     );
-    expect(s.equipment, {
+    // The rare maul also rolls its bonus stats (§5.4).
+    expect(s.equipment.map((k, v) => MapEntry(k, game.data.plainKey(v))), {
       'mainHand': 'troll_bone_maul@rare',
       'chest': 'troll_hide_armour',
     });
