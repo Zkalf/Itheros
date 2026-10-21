@@ -2,6 +2,8 @@
 // acceptance criteria 1-4. Arena fights have no damage variance; unless a
 // test says otherwise, every swing lands and none crits (support.dart's
 // sureHits). A level 1 player has 30 HP, 5 Attack and 2 Defense.
+import 'dart:convert';
+
 import 'package:game_core/game_core.dart';
 import 'package:test/test.dart';
 
@@ -290,5 +292,25 @@ void main() {
     expect(g.slayer(s, 'goblin'), isTrue);
     expect(g.playerHitChance(s, 'goblin'), 90);
     expect(g.playerHitChance(s, 'other'), 85);
+  });
+
+  test('a save wearing the maul and a shield loads with the shield in the bag '
+      '(the maul becomes two-handed, §4.1)', () {
+    final game = newTestGame();
+    final json = game.newGame(seed: 1).toJson()
+      ..['version'] = 6
+      ..['equipment'] = {
+        'mainHand': 'troll_bone_maul@rare',
+        'offHand': 'iron_shield',
+        'chest': 'troll_hide_armour',
+      };
+    final s = game.migrate(
+      GameState.fromJson(jsonDecode(jsonEncode(json)) as Map<String, Object?>),
+    );
+    expect(s.equipment, {
+      'mainHand': 'troll_bone_maul@rare',
+      'chest': 'troll_hide_armour',
+    });
+    expect(s.inventory, {'iron_shield': 1});
   });
 }
