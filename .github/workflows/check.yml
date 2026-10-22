@@ -24,16 +24,34 @@ jobs:
       PUB_CACHE: D:\pub-cache
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Only Markdown changed (intent, specs, plans, notes): the check passes without the build, so docs merge in
+      # a minute. Anything else, or a diff that can't be read, builds as before.
+      - name: What changed
+        id: scope
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then base=${{ github.event.pull_request.base.sha }}; else base=${{ github.event.before }}; fi
+          if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qv '\.md$'; then
+            echo "Only Markdown changed; skipping the build."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-java@v4
+        if: steps.scope.outputs.build == 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
+        if: steps.scope.outputs.build == 'true'
         with:
           flutter-version: '3.47.7'
           channel: stable
           cache: true
           pub-cache-path: D:\pub-cache
       - name: Format, analyze, tests, APK build and APK check
+        if: steps.scope.outputs.build == 'true'
         shell: powershell
         run: .\scripts\check.ps1 -Release
