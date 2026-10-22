@@ -3,6 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/sync/away_summary.dart';
+import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/labels.dart';
 
 import 'support.dart';
@@ -152,5 +153,67 @@ void main() {
       labels.salvaged('bone_sword', SalvageResult(s, 'common_dust', null)),
       'Salvaged the Bone sword: Common dust.',
     );
+  });
+  // Spec 0011 §3.2-§3.4, §4, §5.4, §6: trophies, records, bottles, the
+  // chest and meals are news in the report, and survive the journal.
+  test('trophies, records, bottles, the chest and meals are news', () {
+    final game = loadTestGame();
+    final summary = AwaySummary.fromReports([
+      StepReport(
+        state: GameState(location: 'camp', rngState: 1),
+        walked: 10,
+        activitySteps: 10,
+        boostUsed: 0,
+        banked: 0,
+        lost: 0,
+        events: const [
+          RareFound('old_mossback', weight: 142),
+          RareFound('golden_antler'),
+          RecordBeaten('pike', 63, 48),
+          BottleFound(revealed: 'smugglers_cove'),
+          BottleFound(item: 'rare_dust'),
+          ChestFound('drowned_captains_ring@rare+crit2'),
+          MealEaten('venison_skewer', left: 4),
+          MealsOut('venison_skewer'),
+        ],
+      ),
+    ]);
+    final back = AwaySummary.fromJson(summary.toJson());
+    expect(back.isEventful, isTrue);
+    final labels = Labels(game.data);
+    expect(
+      [for (final (_, text) in reportNews(back, labels)) text],
+      containsAll([
+        'Caught Old Mossback, 14.2 kg!',
+        'Tracked the Golden stag: a golden antler!',
+        'A message in a bottle! An old sea chart, an X beside the lake: '
+            "Smugglers' Cove.",
+        'Another bottle: a few grains of Rare dust inside.',
+        "A sunken chest! The Drowned Captain's ring (Rare)",
+      ]),
+    );
+    expect(
+      reportLines(back, labels),
+      containsAll([
+        'New record: Pike, 6.3 kg (was 4.8)',
+        'Ate Venison skewer (auto, 4 left)',
+        'Out of Venison skewer: no meal running',
+      ]),
+    );
+  });
+
+  test('meals alone make a report eventful', () {
+    final summary = AwaySummary.fromReports([
+      StepReport(
+        state: GameState(location: 'camp', rngState: 1),
+        walked: 10,
+        activitySteps: 10,
+        boostUsed: 0,
+        banked: 0,
+        lost: 0,
+        events: const [MealsOut('venison_skewer')],
+      ),
+    ]);
+    expect(summary.isEventful, isTrue);
   });
 }

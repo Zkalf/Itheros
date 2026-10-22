@@ -149,6 +149,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  lakeAndHunt();
   professionScreens();
   fightsWithDepth();
   characterScreen();
@@ -2286,6 +2287,343 @@ void professionScreens() {
       await pumpGame(t, level: 30, professionLevel: 1);
       expect(
         within('next-goal', find.textContaining(RegExp('^Reach Crafting'))),
+        findsOneWidget,
+      );
+    });
+  });
+}
+
+void lakeAndHunt() {
+  group('lake and hunt (spec 0011 §8)', () {
+    Finder within(String key, Finder f) =>
+        find.descendant(of: find.byKey(ValueKey(key)), matching: f);
+    Finder card(Finder f) => within('item-card', f);
+
+    Future<void> openItem(WidgetTester t, String key) async {
+      await openTab(t, 'character');
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey('bag-$key')));
+      await t.pumpAndSettle();
+    }
+
+    /// Redraws the screens after a test changed the state by hand.
+    Future<void> redraw(WidgetTester t, String screen) async {
+      await openTab(t, screen == 'now' ? 'world' : 'now');
+      await openTab(t, screen);
+    }
+
+    testWidgets('criterion 15: six cards, in the order of §8.1', (t) async {
+      await pumpGame(t, level: 5);
+      await openTab(t, 'professions');
+      const order = [
+        'mining',
+        'woodcutting',
+        'fishing',
+        'hunting',
+        'crafting',
+        'cooking',
+      ];
+      double top(String p) =>
+          t.getTopLeft(find.byKey(ValueKey('profession-$p'))).dy;
+      for (var i = 0; i < order.length; i++) {
+        expect(find.byKey(ValueKey('profession-${order[i]}')), findsOne);
+        if (i > 0) expect(top(order[i - 1]), lessThan(top(order[i])));
+      }
+    });
+
+    testWidgets('criterion 15: unlearned, the new cards name their '
+        'teachers', (t) async {
+      await pumpGame(t, learned: false);
+      await openTab(t, 'professions');
+      for (final (p, who) in [
+        ('fishing', 'Wen'),
+        ('hunting', 'Sigrun'),
+        ('cooking', 'Marta'),
+      ]) {
+        expect(
+          within('profession-$p', find.text('Learn from $who in camp')),
+          findsOneWidget,
+        );
+      }
+    });
+
+    testWidgets('criterion 15: Fishing records, "???" for the uncaught', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      c.state.records['pike'] = 63;
+      await openTab(t, 'professions');
+      expect(
+        within('profession-fishing', find.text('Pike · 6.3 kg')),
+        findsOneWidget,
+      );
+      // Lake, river and tarn hold 4 species each; the cove is hidden.
+      expect(within('profession-fishing', find.text('???')), findsNWidgets(11));
+      c.state.revealed.add('smugglers_cove');
+      await redraw(t, 'professions');
+      expect(within('profession-fishing', find.text('???')), findsNWidgets(15));
+    });
+
+    testWidgets('criterion 15: Cooking holds the meal recipes, the active '
+        'meal and auto-eat', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      c.state
+        ..meal = ActiveMeal('venison_skewer', 1850)
+        ..autoEat = const AutoEat('venison_skewer', 0);
+      await openTab(t, 'professions');
+      expect(
+        within('profession-cooking', option('craft', 'grilled_perch')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-crafting', option('craft', 'grilled_perch')),
+        findsNothing,
+      );
+      expect(
+        within('profession-cooking', option('craft', 'copper_sword')),
+        findsNothing,
+      );
+      expect(
+        within('profession-cooking', find.text('At the camp fire (Camp)')),
+        findsOneWidget,
+      );
+      expect(
+        within(
+          'profession-cooking',
+          find.textContaining('Venison skewer · +6% Attack · 1,850 steps left'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-cooking', find.textContaining('Auto-eat')),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('criterion 15: Cooking says what its recipes need', (t) async {
+      await pumpGame(t, level: 5);
+      await openTab(t, 'professions');
+      expect(
+        within(
+          'option-craft-smoked_trout',
+          find.textContaining('needs Cooking 10', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('criterion 15: Cooking away from camp walks to the fire', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      await openTab(t, 'professions');
+      expect(
+        within('profession-cooking', find.textContaining('Camp fire')),
+        findsOneWidget,
+      );
+      await t.tap(find.byKey(const ValueKey('go-cooking')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.activity!.activity, const Activity.travel('camp'));
+    });
+
+    testWidgets('criterion 15: Now shows the active meal; tap opens it', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {'venison_skewer': 3, 'venison_skewer@perfect': 1},
+      );
+      expect(find.byKey(const ValueKey('meal-line')), findsNothing);
+      c.state
+        ..meal = ActiveMeal('venison_skewer', 1850)
+        ..autoEat = const AutoEat('venison_skewer', 0);
+      await redraw(t, 'now');
+      expect(
+        find.text(
+          'Venison skewer · +6% Attack · 1,850 steps left · '
+          'auto-eat until out (4)',
+        ),
+        findsOneWidget,
+      );
+      await t.tap(find.byKey(const ValueKey('meal-line')));
+      await t.pumpAndSettle();
+      expect(card(find.text('+6% Attack for 3,000 steps')), findsOneWidget);
+    });
+
+    testWidgets('criterion 15: Camp has the three new teachers and the Camp '
+        'fire, which opens Cooking', (t) async {
+      await pumpGame(t, learned: false);
+      for (final p in ['fishing', 'hunting', 'cooking']) {
+        expect(within('here', find.byKey(ValueKey('teacher-$p'))), findsOne);
+      }
+      expect(find.text('Wen, the fisherman'), findsOneWidget);
+      expect(find.text('Sigrun, the hunter'), findsOneWidget);
+      expect(find.text('Marta, the cook'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('here-fire')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('profession-cooking')), findsOneWidget);
+    });
+
+    testWidgets('criterion 15: the new spots are in Here', (t) async {
+      for (final (area, spot) in [
+        ('mirror_lake', 'lake_shore'),
+        ('troll_bridge', 'under_the_bridge'),
+        ('goblin_woods', 'deer_trail'),
+        ('grey_moor', 'moor_tracks'),
+        ('mountain_pass', 'cold_tarn'),
+        ('mountain_pass', 'high_crags'),
+      ]) {
+        await pumpGame(t, level: 5, location: area);
+        expect(
+          within('here', find.byKey(ValueKey('spot-level-$spot'))),
+          findsOneWidget,
+          reason: spot,
+        );
+      }
+    });
+
+    testWidgets('§8.2: a cast tallies its catches and records', (t) async {
+      final (c, source) = await pumpGame(t, level: 5, location: 'mirror_lake');
+      await tapAndStart(t, option('gather', 'lake_shore'));
+      await settle(t, c);
+      source.walk(DateTime(2026, 10, 18, 9, 5), 3000);
+      now = DateTime(2026, 10, 18, 9, 30);
+      await c.resume();
+      await t.pumpAndSettle();
+      if (find.byKey(const ValueKey('away-continue')).evaluate().isNotEmpty) {
+        await t.tap(find.byKey(const ValueKey('away-continue')));
+        await t.pumpAndSettle();
+      }
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('tally-items')),
+          matching: find.textContaining('Perch'),
+          findRichText: true,
+        ),
+        findsOneWidget,
+      );
+      expect(c.state.activity!.records, greaterThan(0));
+      expect(find.byKey(const ValueKey('tally-records')), findsOneWidget);
+    });
+
+    testWidgets('§8.3: a meal card: buff, length, Eat', (t) async {
+      final (c, _) = await pumpGame(t, inventory: {'grilled_perch': 2});
+      await openItem(t, 'grilled_perch');
+      expect(card(find.text('+6% HP for 3,000 steps')), findsOneWidget);
+      await t.tap(card(find.byKey(const ValueKey('card-eat'))));
+      await settle(t, c);
+      expect(c.state.meal!.key, 'grilled_perch');
+      expect(c.state.meal!.left, 3000);
+      expect(c.state.inventory['grilled_perch'], 1);
+    });
+
+    testWidgets('§8.3: a perfect dish lasts 6,000 steps', (t) async {
+      await pumpGame(t, inventory: {'grilled_perch@perfect': 1});
+      await openItem(t, 'grilled_perch@perfect');
+      expect(card(find.text('Grilled perch (Perfect)')), findsOneWidget);
+      expect(card(find.text('+6% HP for 6,000 steps')), findsOneWidget);
+    });
+
+    testWidgets('criterion 11: Eat with a meal running asks, then replaces', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, inventory: {'grilled_perch': 1});
+      c.state.meal = ActiveMeal('venison_skewer', 1240);
+      await openItem(t, 'grilled_perch');
+      expect(
+        card(find.text('Replaces Venison skewer (1,240 steps left)')),
+        findsOneWidget,
+      );
+      await t.tap(card(find.byKey(const ValueKey('card-eat'))));
+      await t.pumpAndSettle();
+      expect(c.state.meal!.key, 'venison_skewer', reason: 'asks first');
+      await t.tap(find.byKey(const ValueKey('eat-confirm')));
+      await settle(t, c);
+      expect(c.state.meal!.key, 'grilled_perch');
+      expect(c.state.inventory['grilled_perch'], isNull);
+    });
+
+    testWidgets('criterion 11: Auto-eat off, until out, only N', (t) async {
+      final (c, _) = await pumpGame(t, inventory: {'venison_skewer': 5});
+      await openItem(t, 'venison_skewer');
+      await t.tap(card(find.byKey(const ValueKey('auto-eat-out'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.autoEat!.meal, 'venison_skewer');
+      expect(c.state.autoEat!.keep, 0);
+
+      await t.tap(card(find.byKey(const ValueKey('auto-eat-keep'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      await t.tap(card(find.byKey(const ValueKey('keep-up'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.autoEat!.keep, 2);
+      expect(card(find.text('Keep 2')), findsOneWidget);
+
+      await t.tap(card(find.byKey(const ValueKey('auto-eat-off'))));
+      await settle(t, c);
+      expect(c.state.autoEat, isNull);
+    });
+
+    testWidgets('criterion 11: picking another meal replaces the auto-eat '
+        'meal', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {'venison_skewer': 2, 'grilled_perch': 2},
+      );
+      c.state.autoEat = const AutoEat('venison_skewer', 0);
+      await openItem(t, 'grilled_perch');
+      expect(
+        card(find.textContaining('Replaces Venison skewer')),
+        findsOneWidget,
+      );
+      await t.tap(card(find.byKey(const ValueKey('auto-eat-out'))));
+      await settle(t, c);
+      expect(c.state.autoEat!.meal, 'grilled_perch');
+    });
+
+    testWidgets('§8.3: fish and meat are materials with where and what', (
+      t,
+    ) async {
+      await pumpGame(t, inventory: {'perch': 1, 'venison': 1});
+      await openItem(t, 'perch');
+      expect(card(find.text('Fished at: Lake shore')), findsOneWidget);
+      expect(card(find.textContaining('Grilled perch')), findsWidgets);
+      await closeSheet(t);
+      await t.tap(find.byKey(const ValueKey('bag-venison')));
+      await t.pumpAndSettle();
+      expect(card(find.text('Hunted at: Deer trail')), findsOneWidget);
+    });
+
+    testWidgets('§8.3: Character marks the meal in its stats', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      c.state.meal = ActiveMeal('venison_skewer', 1850);
+      await openTab(t, 'character');
+      final bonus = c.game.mealBonus(c.state).attack;
+      expect(bonus, greaterThan(0));
+      expect(
+        within('stat-Attack', find.text('(+$bonus meal)')),
+        findsOneWidget,
+      );
+      expect(within('stat-HP', find.textContaining('meal')), findsNothing);
+    });
+
+    testWidgets('§8.4: Mirror Lake on the map; the cove once revealed', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 5, location: 'mirror_lake');
+      await openTab(t, 'world');
+      expect(find.byKey(const ValueKey('area-mirror_lake')), findsOneWidget);
+      expect(find.byKey(const ValueKey('area-smugglers_cove')), findsNothing);
+      c.state.revealed.add('smugglers_cove');
+      await redraw(t, 'world');
+      expect(find.byKey(const ValueKey('area-smugglers_cove')), findsOne);
+      expect(
+        within('area-smugglers_cove', find.text("Smugglers' Cove")),
         findsOneWidget,
       );
     });
