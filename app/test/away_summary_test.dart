@@ -60,7 +60,10 @@ void main() {
     expect(back.isEventful, isTrue);
     final labels = Labels(game.data);
     expect(labels.loreFound(note), "Found a lore note: The King's armour");
-    expect(labels.weaknessLearned('goblin'), 'Goblin: weakness learned');
+    expect(
+      labels.weaknessLearned('goblin'),
+      'Goblin: weakness learned, see the Bestiary in the Journal',
+    );
     expect(labels.slayerEarned('goblin'), 'Slayer: Goblin');
   });
 
