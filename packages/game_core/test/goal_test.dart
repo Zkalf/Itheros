@@ -84,4 +84,36 @@ void main() {
     expect(game.nextGoal(s), isA<FightGoal>());
     expect((game.nextGoal(s)! as FightGoal).enemy, 'goblin');
   });
+
+  // Spec 0010 §8.4: the best upgrade for the character's level is out of
+  // reach only because of a profession level.
+  test('a recipe held back by Crafting names the level to reach', () {
+    final s = stateAt(game, level: 30, professionLevel: 1);
+    final goal = game.nextGoal(s);
+    expect(goal, isA<ProfessionGoal>());
+    final g = goal! as ProfessionGoal;
+    expect(g.profession, 'crafting');
+    expect(g.current, 1);
+    final r = game.data.recipes[g.target.target]!;
+    expect(g.target.kind, ActivityKind.craft);
+    expect(g.level, r.craftingLevel);
+    expect(r.level, lessThanOrEqualTo(30));
+  });
+
+  test('a vein held back by Mining names the vein', () {
+    final s = stateAt(game, level: 15, professionLevel: 15)
+      ..professions['mining'] = game.data.professionXpForLevel(4);
+    final drops = {
+      for (final e in game.data.enemies.keys) ...game.dropItems(e),
+    };
+    for (final r in game.data.recipes.values) {
+      // Every monster drop in hand: only the ore is missing.
+      for (final i in r.inputs.keys) {
+        if (drops.contains(i)) s.inventory[i] = 99;
+      }
+    }
+    final g = game.nextGoal(s)! as ProfessionGoal;
+    expect((g.profession, g.level, g.current), ('mining', 10, 4));
+    expect(g.target, const Activity.gather('iron_vein'));
+  });
 }

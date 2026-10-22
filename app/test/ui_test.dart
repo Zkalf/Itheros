@@ -2,6 +2,9 @@
 // criterion 8), plus the permission flow, starting activities and the
 // "while you were away" card. In-memory storage keeps real I/O out of the
 // fake-async test zone.
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
@@ -146,6 +149,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  professionScreens();
   fightsWithDepth();
   characterScreen();
   layoutScreens();
@@ -1970,4 +1974,346 @@ void fightsWithDepth() {
       }
     });
   });
+}
+
+void professionScreens() {
+  group('professions (spec 0010 §8)', () {
+    Finder within(String key, Finder f) =>
+        find.descendant(of: find.byKey(ValueKey(key)), matching: f);
+    Finder card(Finder f) => within('item-card', f);
+    Finder sheet(Finder f) => within('teacher-sheet', f);
+
+    Future<void> openItem(WidgetTester t, String key) async {
+      await openTab(t, 'character');
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey('bag-$key')));
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('criterion 14: a card per profession, Crafting holds the '
+        'recipes', (t) async {
+      final (c, _) = await pumpGame(t, level: 12, professionLevel: 11);
+      // The best spots lie beyond explored land.
+      c.state.explored.addAll(['copper_hills', 'iron_ridge', 'grey_moor']);
+      await openTab(t, 'professions');
+      for (final p in ['mining', 'woodcutting', 'crafting']) {
+        expect(find.byKey(ValueKey('profession-$p')), findsOneWidget);
+        expect(
+          within('profession-$p', find.byType(LinearProgressIndicator)),
+          findsOneWidget,
+        );
+      }
+      // In the order Mining, Woodcutting, Crafting.
+      double top(String p) =>
+          t.getTopLeft(find.byKey(ValueKey('profession-$p'))).dy;
+      expect(top('mining'), lessThan(top('woodcutting')));
+      expect(top('woodcutting'), lessThan(top('crafting')));
+      // Level, tier and tool with its step cost.
+      expect(within('profession-mining', find.text('Level 11')), findsOne);
+      expect(within('profession-mining', find.text('Iron')), findsOneWidget);
+      expect(
+        within('profession-mining', find.text("Hilde's old pick · 100% steps")),
+        findsOneWidget,
+      );
+      // Where to practise: the best spot for the level, with Go there.
+      expect(
+        within('profession-mining', find.text('Iron vein · Iron Ridge')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-woodcutting', find.text('Ash tree · Grey Moor')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-crafting', find.text('At the forge (Camp)')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-crafting', option('craft', 'copper_sword')),
+        findsOneWidget,
+      );
+      // Go there walks to the spot, then works it.
+      await t.tap(find.byKey(const ValueKey('go-mining')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('start-now')));
+      await settle(t, c);
+      expect(c.state.activity!.activity, const Activity.gather('iron_vein'));
+    });
+
+    testWidgets('criterion 14: the tool line opens its card', (t) async {
+      await pumpGame(t, level: 5);
+      await openTab(t, 'professions');
+      await t.tap(within('profession-mining', find.textContaining('old pick')));
+      await t.pumpAndSettle();
+      expect(card(find.text("Hilde's old pick")), findsOneWidget);
+      expect(card(find.text('Mining tool · 100% steps')), findsOneWidget);
+    });
+
+    testWidgets('criterion 14: an unlearned profession points to its '
+        'teacher', (t) async {
+      await pumpGame(t, learned: false);
+      await openTab(t, 'professions');
+      expect(
+        within('profession-mining', find.text('Learn from Hilde in camp')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-crafting', find.text('Learn from Garrow in camp')),
+        findsOneWidget,
+      );
+      expect(option('craft', 'copper_sword'), findsNothing);
+      expect(find.byKey(const ValueKey('go-mining')), findsNothing);
+    });
+
+    testWidgets('criterion 4: learn from a teacher in camp, then hear a '
+        'tip', (t) async {
+      final (c, _) = await pumpGame(t, learned: false);
+      for (final p in ['mining', 'woodcutting', 'crafting']) {
+        expect(within('here', find.byKey(ValueKey('teacher-$p'))), findsOne);
+      }
+      expect(find.text('Hilde, the miner'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('teacher-mining')));
+      await t.pumpAndSettle();
+      await t.tap(sheet(find.byKey(const ValueKey('learn-mining'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.learned, contains('mining'));
+      expect(c.state.tools['mining'], 'old_pick');
+      expect(sheet(find.textContaining('Take my old pick.')), findsOneWidget);
+      // Mining 1's tip is told at once and reveals the skeleton.
+      expect(sheet(find.text('Bones under the hills')), findsOneWidget);
+      expect(c.state.tips, contains('hilde_1'));
+      expect(c.game.knowledge(c.state, 'skeleton').weakness, isTrue);
+      expect(sheet(find.byKey(const ValueKey('learn-mining'))), findsNothing);
+    });
+
+    testWidgets('criterion 4: a dot marks a waiting tip until heard', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, professionLevel: 10);
+      c.state.tips.addAll([
+        'hilde_1',
+        'bram_1',
+        'bram_10',
+        'garrow_1',
+        'garrow_10',
+      ]);
+      await openTab(t, 'professions');
+      await openTab(t, 'now');
+      expect(find.byKey(const ValueKey('teacher-dot-mining')), findsOneWidget);
+      expect(find.byKey(const ValueKey('teacher-dot-crafting')), findsNothing);
+      await t.tap(find.byKey(const ValueKey('teacher-mining')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(sheet(find.text('Troll skin')), findsOneWidget);
+      expect(sheet(find.text('Bones under the hills')), findsOneWidget);
+      expect(sheet(find.textContaining('Next tip at Mining 20')), findsOne);
+      expect(c.state.tips, contains('hilde_10'));
+      await closeSheet(t);
+      expect(find.byKey(const ValueKey('teacher-dot-mining')), findsNothing);
+    });
+
+    testWidgets('no teachers away from camp', (t) async {
+      await pumpGame(t, location: 'goblin_woods');
+      expect(find.byKey(const ValueKey('teacher-mining')), findsNothing);
+    });
+
+    testWidgets('criterion 13: an old save opens on the levels it earned', (
+      t,
+    ) async {
+      final json =
+          jsonDecode(File('test/fixtures/saves/0.2.0.json').readAsStringSync())
+              as Map<String, Object?>;
+      final c = await pumpSave(t, json);
+      final mining = c.game.professionLevel(c.state, 'mining');
+      final crafting = c.game.professionLevel(c.state, 'crafting');
+      expect(c.state.learned, {'mining', 'crafting'});
+      await openTab(t, 'professions');
+      expect(within('profession-mining', find.text('Level $mining')), findsOne);
+      expect(
+        within('profession-crafting', find.text('Level $crafting')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-woodcutting', find.text('Learn from Bram in camp')),
+        findsOneWidget,
+      );
+      // No level-up news for the catch-up (spec 0010 §10).
+      expect(find.textContaining('Reached Mining'), findsNothing);
+    });
+
+    testWidgets('Here: a spot shows its profession level colour', (t) async {
+      await pumpGame(t, level: 5, location: 'copper_hills');
+      expect(
+        within('here', find.byKey(const ValueKey('spot-level-copper_vein'))),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('§8.3: a tool in the bag: profession, step cost, Swap', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, inventory: {'copper_pickaxe@rare': 1});
+      await openItem(t, 'copper_pickaxe@rare');
+      expect(card(find.text('Rare pickaxe · Mining')), findsOneWidget);
+      // 90% less 2 points per quality step: Rare is 2 steps up.
+      expect(card(find.text('Mining tool · 86% steps')), findsOneWidget);
+      expect(card(find.text("Instead of Hilde's old pick")), findsOneWidget);
+      await t.tap(card(find.byKey(const ValueKey('card-tool'))));
+      await settle(t, c);
+      expect(c.state.tools['mining'], 'copper_pickaxe@rare');
+      expect(c.state.inventory['old_pick'], 1);
+    });
+
+    testWidgets('§8.3: salvage at a forge; Rare and up ask first', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {'bone_sword': 1, 'bone_sword@rare+crit2+hp10': 1},
+      );
+      await openItem(t, 'bone_sword');
+      await t.tap(card(find.byKey(const ValueKey('card-salvage'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.inventory['common_dust'], 1);
+      expect(c.state.inventory['bone_sword'], isNull);
+      expect(find.textContaining('Salvaged the Bone sword'), findsOneWidget);
+
+      await openItem(t, 'bone_sword@rare+crit2+hp10');
+      await t.tap(card(find.byKey(const ValueKey('card-salvage'))));
+      await t.pumpAndSettle();
+      expect(c.state.inventory['rare_dust'], isNull, reason: 'asks first');
+      await t.tap(find.byKey(const ValueKey('salvage-confirm')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.inventory['rare_dust'], 1);
+    });
+
+    testWidgets('§8.3: away from a forge the card says where', (t) async {
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        inventory: {'bone_sword': 1},
+      );
+      await openItem(t, 'bone_sword');
+      expect(card(find.text('Salvage and reroll at a forge')), findsOneWidget);
+      expect(card(find.byKey(const ValueKey('card-salvage'))), findsNothing);
+      expect(card(find.byKey(const ValueKey('card-reroll'))), findsNothing);
+    });
+
+    testWidgets('a starter tool has no Salvage', (t) async {
+      await pumpGame(t, inventory: {'old_hatchet': 1});
+      await openItem(t, 'old_hatchet');
+      expect(card(find.byKey(const ValueKey('card-salvage'))), findsNothing);
+    });
+
+    testWidgets('§7.2: Reroll names the dust, starts at once, and reports', (
+      t,
+    ) async {
+      const key = 'bone_sword@uncommon+crit2';
+      final (c, source) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {key: 1, 'uncommon_dust': 3},
+      );
+      await openItem(t, key);
+      expect(card(find.text('Reroll (3 Uncommon dust)')), findsOneWidget);
+      await t.tap(card(find.byKey(const ValueKey('card-reroll'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      // One roll: no stop condition sheet.
+      expect(find.byKey(const ValueKey('start-now')), findsNothing);
+      expect(c.state.activity!.activity, const Activity.reroll(key));
+      source.walk(DateTime(2026, 10, 18, 9, 5), 100);
+      now = DateTime(2026, 10, 18, 9, 30);
+      await c.resume();
+      await t.pumpAndSettle();
+      expect(find.textContaining('Bone sword reroll: '), findsOneWidget);
+    });
+
+    testWidgets('§7.3: a Legendary rerolls one chosen stat', (t) async {
+      const key = 'iron_sword@legendary+crit2+crit1+hp11+hp10';
+      final (c, _) = await pumpGame(
+        t,
+        level: 20,
+        inventory: {key: 1, 'legendary_dust': 3},
+      );
+      await openItem(t, key);
+      expect(card(find.byKey(const ValueKey('card-reroll'))), findsNothing);
+      expect(
+        card(find.textContaining('Reroll (3 Legendary dust)')),
+        findsNWidgets(4),
+      );
+      await t.tap(card(find.byKey(const ValueKey('card-reroll-stat-1'))));
+      await settle(t, c);
+      expect(c.state.activity!.activity, Activity.rerollStat(key, 1));
+    });
+
+    testWidgets('§7.3: Keep new / Keep old, anywhere', (t) async {
+      const key = 'iron_sword@legendary+crit2+crit1+hp11+hp10';
+      final (c, _) = await pumpGame(
+        t,
+        level: 20,
+        location: 'goblin_woods',
+        inventory: {'$key+~1.hit4': 1},
+      );
+      await openItem(t, '$key+~1.hit4');
+      expect(card(find.text('New roll: +4% Hit (was +1% Crit)')), findsOne);
+      await t.tap(card(find.byKey(const ValueKey('card-keep-new'))));
+      await settle(t, c);
+      final kept = c.state.inventory.keys.single;
+      expect(c.game.data.pendingRoll(kept), isNull);
+      expect(c.game.data.bonusRolls(kept), contains((stat: 'hit', value: 4)));
+    });
+
+    testWidgets('Lore: tips under each teacher', (t) async {
+      final (c, _) = await pumpGame(t);
+      c.state.tips.addAll(['hilde_1', 'garrow_1']);
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Lore'));
+      await t.pumpAndSettle();
+      expect(find.text('0 of 16 found'), findsOneWidget);
+      expect(find.text('Hilde, the miner'), findsOneWidget);
+      expect(find.text('Bones under the hills'), findsOneWidget);
+      expect(find.text('Garrow, the smith'), findsOneWidget);
+      expect(find.text('Bram, the woodcutter'), findsNothing);
+    });
+
+    testWidgets('§8.4: Next goal names a missing profession level', (
+      t,
+    ) async {
+      await pumpGame(t, level: 30, professionLevel: 1);
+      expect(
+        within('next-goal', find.textContaining(RegExp('^Reach Crafting'))),
+        findsOneWidget,
+      );
+    });
+  });
+}
+
+/// Starts the app on a save from [json] (a fixture file's contents).
+Future<GameController> pumpSave(
+  WidgetTester tester,
+  Map<String, Object?> json,
+) async {
+  tester.view.physicalSize = const Size(1080, 4000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  now = DateTime(2026, 10, 18, 9);
+  final source = FakeStepSource();
+  final c = GameController(
+    game: game,
+    source: source,
+    permissions: source,
+    store: MemorySaveStore(json),
+    clock: () => now,
+    syncInterval: null,
+    newSeed: () => 1,
+  );
+  addTearDown(c.dispose);
+  await tester.pumpWidget(WalkingRpgApp(controller: c));
+  await c.start();
+  await tester.pump();
+  return c;
 }
