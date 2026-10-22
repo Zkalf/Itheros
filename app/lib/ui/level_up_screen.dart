@@ -90,7 +90,7 @@ class _LevelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final game = c.game;
-    final labels = Labels(game.data);
+    final labels = Labels(game.data, c.state.character);
     final text = Theme.of(context).textTheme;
     final gained = game.data.statsPerLevel * levels.length;
     final news = [for (final l in levels) ...game.levelNews(l, c.state)];

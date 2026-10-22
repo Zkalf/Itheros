@@ -31,6 +31,14 @@ final _game = loadTestGame();
 Game get game => _game;
 late DateTime now;
 
+/// The character tests play as unless they say otherwise: a Tavern cook,
+/// so no other test meets a kin line (spec 0012 §3.1).
+const ada = Character(
+  name: 'Ada',
+  gender: Gender.neither,
+  origin: 'tavern_cook',
+);
+
 Finder option(String kind, String target) =>
     find.byKey(ValueKey('option-$kind-$target'));
 
@@ -47,6 +55,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   bool learned = true,
   int? professionLevel,
   Game? withGame,
+  Character? character = ada,
 }) async {
   final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
@@ -61,7 +70,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
     ..explored.add(location)
     ..inventory.addAll(inventory)
     ..counters.addAll(counters)
-    ..equipment.addAll(equipment);
+    ..equipment.addAll(equipment)
+    ..character = character;
   // Every profession learned at the character's level (spec 0010), unless
   // the test says otherwise.
   if (learned) {
@@ -149,6 +159,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  yourCharacter();
   lakeAndHunt();
   professionScreens();
   fightsWithDepth();
@@ -260,6 +271,13 @@ void main() {
     expect(find.text('Allow step access'), findsOneWidget);
 
     await t.tap(find.text('Allow step access'));
+    await settle(t, c);
+
+    // A new game asks who you are first (spec 0012 decision 6).
+    expect(find.text('Who are you?'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('origin-coast_fisher')));
+    await t.pump();
+    await t.tap(find.byKey(const ValueKey('set-out')));
     await settle(t, c);
 
     expect(find.text('Camp'), findsOneWidget);
@@ -400,7 +418,14 @@ void main() {
       );
       expect(find.text('Level 10!'), findsOneWidget);
       expect(find.text('Adventurer'), findsOneWidget);
-      expect(find.text(game.data.ranks[1].line), findsOneWidget);
+      // It names the player (spec 0012 decision 5).
+      expect(
+        find.text(
+          'The Guild names you Adventurer, Ada. The lands beyond the river '
+          'know your name.',
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('+1 talent point'), findsOneWidget);
     });
   });
@@ -2133,9 +2158,17 @@ void professionScreens() {
         File('test/fixtures/saves/0.2.0.json').readAsStringSync(),
       ) as Map<String, Object?>;
       final c = await pumpSave(t, json);
+      // It sets out first (spec 0012 decision 6).
+      expect(find.text('Who are you?'), findsOneWidget);
+      await t.ensureVisible(find.byKey(const ValueKey('origin-tavern_cook')));
+      await t.tap(find.byKey(const ValueKey('origin-tavern_cook')));
+      await t.pump();
+      await t.ensureVisible(find.byKey(const ValueKey('set-out')));
+      await t.tap(find.byKey(const ValueKey('set-out')));
+      await settle(t, c);
       final mining = c.game.professionLevel(c.state, 'mining');
       final crafting = c.game.professionLevel(c.state, 'crafting');
-      expect(c.state.learned, {'mining', 'crafting'});
+      expect(c.state.learned, {'mining', 'crafting', 'cooking'});
       await openTab(t, 'professions');
       expect(within('profession-mining', find.text('Level $mining')), findsOne);
       expect(
@@ -2673,4 +2706,275 @@ Future<GameController> pumpSave(
   await c.start();
   await tester.pump();
   return c;
+}
+
+/// Your character: spec 0012 criteria 1, 2, 6 (screen side), 7, 8 and 9
+/// (plan 0014 M2).
+void yourCharacter() {
+  group('your character (spec 0012)', () {
+    Finder key(String k) => find.byKey(ValueKey(k));
+    Finder within(String k, Finder f) =>
+        find.descendant(of: key(k), matching: f);
+    String textOf(WidgetTester t, String k) => t.widget<Text>(key(k)).data!;
+    const oldSaveLine =
+        "Your progress stays. Your origin's profession rises to level 5 if "
+        'it is lower.';
+
+    Future<void> setOut(
+      WidgetTester t,
+      GameController c,
+      String origin, {
+      String? name,
+    }) async {
+      if (name != null) {
+        await t.enterText(key('character-name-field'), name);
+      }
+      await t.ensureVisible(key('origin-$origin'));
+      await t.tap(key('origin-$origin'));
+      await t.pump();
+      await t.ensureVisible(key('set-out'));
+      await t.tap(key('set-out'));
+      await settle(t, c);
+    }
+
+    testWidgets('criterion 1: a save with no character opens "Who are '
+        'you?", which only Set out leaves', (t) async {
+      final (c, _) = await pumpGame(t, level: 6, character: null);
+      expect(find.text('Who are you?'), findsOneWidget);
+      expect(find.byType(HomeShell), findsNothing);
+      expect(find.byType(BackButton), findsNothing);
+      // An old save is told its progress stays (spec 0012 §4.1).
+      expect(find.text(oldSaveLine), findsOneWidget);
+      await setOut(t, c, 'hunters_apprentice', name: 'Zkalf');
+      expect(find.byType(HomeShell), findsOneWidget);
+      expect(c.state.character!.name, 'Zkalf');
+      expect(c.state.character!.origin, 'hunters_apprentice');
+      expect(c.game.level(c.state), 6, reason: 'progress stays');
+      expect(c.game.professionLevel(c.state, 'hunting'), 6);
+    });
+
+    testWidgets('criterion 1: before level-up cards and the away screen', (
+      t,
+    ) async {
+      final (c, source) = await pumpGame(
+        t,
+        xp: game.data.xpForLevel(2) - 1,
+        location: 'goblin_woods',
+        character: null,
+      );
+      await c.startActivity(Activity.fight('goblin'));
+      source.walk(DateTime(2026, 10, 18, 10), 200);
+      now = DateTime(2026, 10, 18, 11);
+      await c.resume();
+      await t.pump();
+      expect(c.levelCards, isNotEmpty);
+      expect(find.text('Who are you?'), findsOneWidget);
+      expect(find.text('Level 2!'), findsNothing);
+      await setOut(t, c, 'miners_child');
+      expect(find.text('Level 2!'), findsOneWidget);
+    });
+
+    testWidgets('criterion 2: name, gender, six origin cards; Set out waits '
+        'for an origin', (t) async {
+      final (c, _) = await pumpGame(t, learned: false, character: null);
+      expect(
+        t.widget<TextField>(key('character-name-field')).decoration!.hintText,
+        'Wanderer',
+      );
+      final gender = t.widget<SegmentedButton<Gender>>(
+        find.byType(SegmentedButton<Gender>),
+      );
+      expect(gender.selected, {Gender.neither});
+      for (final w in ['Male', 'Female', 'Neither']) {
+        expect(find.text(w), findsOneWidget);
+      }
+      expect(find.text(oldSaveLine), findsNothing, reason: 'a new game');
+      for (final o in game.data.origins.values) {
+        expect(key('origin-${o.id}'), findsOneWidget);
+      }
+      expect(
+        within('origin-coast_fisher', find.text('Fisher from the coast')),
+        findsOneWidget,
+      );
+      expect(
+        within(
+          'origin-coast_fisher',
+          find.text(
+            '"You learned to read the water before you could read words."',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        within(
+          'origin-coast_fisher',
+          find.text(
+            'Starts with Fishing 5 · Wen, the fisherman, greets you as kin',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        t.widget<FilledButton>(key('set-out')).onPressed,
+        isNull,
+        reason: 'no origin yet',
+      );
+      await t.tap(key('origin-coast_fisher'));
+      await t.pump();
+      expect(t.widget<FilledButton>(key('set-out')).onPressed, isNotNull);
+      expect(c.state.character, isNull, reason: 'only Set out makes it');
+    });
+
+    testWidgets('criterion 3: an empty name sets out as Wanderer; names stop '
+        'at 20', (t) async {
+      final (c, _) = await pumpGame(t, character: null);
+      expect(t.widget<TextField>(key('character-name-field')).maxLength, 20);
+      await setOut(t, c, 'tavern_cook', name: '   ');
+      expect(c.state.character!.name, 'Wanderer');
+    });
+
+    testWidgets('criterion 4: Set out on a new game learns the origin at 5', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, learned: false, character: null);
+      await setOut(t, c, 'smiths_apprentice');
+      expect(c.state.learned, {'crafting'});
+      expect(c.state.tools['crafting'], 'old_hammer');
+      expect(c.game.professionLevel(c.state, 'crafting'), 5);
+      expect(c.game.level(c.state), 1);
+    });
+
+    testWidgets('criterion 6: gendered titles follow the picked gender', (
+      t,
+    ) async {
+      await pumpGame(t, character: null);
+      expect(find.text("Woodcutter's child"), findsOneWidget);
+      await t.tap(find.text('Male'));
+      await t.pump();
+      expect(find.text("Woodcutter's son"), findsOneWidget);
+      await t.tap(find.text('Female'));
+      await t.pump();
+      expect(find.text("Woodcutter's daughter"), findsOneWidget);
+    });
+
+    testWidgets('criterion 6: changing gender in Settings changes them '
+        'everywhere at once', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 12,
+        character: const Character(
+          name: 'Ada',
+          gender: Gender.male,
+          origin: 'woodcutters_child',
+        ),
+      );
+      c.state.tips.add('bram_10');
+      await openTab(t, 'character');
+      expect(textOf(t, 'character-origin'), "· Woodcutter's son");
+      await openSettings(t);
+      await t.tap(key('settings-gender'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Female').last);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.character!.gender, Gender.female);
+      expect(within('settings-gender', find.text('Female')), findsOneWidget);
+      await t.pageBack();
+      await t.pumpAndSettle();
+      expect(textOf(t, 'character-origin'), "· Woodcutter's daughter");
+      // Bram's level 10 tip, in the Lore tab.
+      await t.tap(key('journal-button'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Lore'));
+      await t.pumpAndSettle();
+      expect(find.textContaining('Point first, lass.'), findsOneWidget);
+    });
+
+    testWidgets('criterion 7: teachers greet by name; the kin teacher says '
+        'the kin line instead of the learn line', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        learned: false,
+        character: const Character(
+          name: 'Ada',
+          gender: Gender.female,
+          origin: 'coast_fisher',
+        ),
+      );
+      c.state
+        ..learned.add('fishing')
+        ..tools['fishing'] = 'old_rod';
+      await t.tap(key('teacher-mining'));
+      await t.pumpAndSettle();
+      expect(textOf(t, 'teacher-line'), '"Back from the hills, Ada?"');
+      expect(key('learn-mining'), findsOneWidget);
+      await closeSheet(t);
+
+      await t.tap(key('teacher-fishing'));
+      await t.pumpAndSettle();
+      expect(
+        textOf(t, 'teacher-line'),
+        "\"A coast lass! Salt in your hair, Ada. Take my old rod; you'll not "
+        'need telling how."',
+      );
+      expect(find.textContaining('Bring me back some fish'), findsNothing);
+      await closeSheet(t);
+
+      // A learned teacher of another origin: greeting, then the learn line.
+      await c.learn('cooking');
+      await t.pumpAndSettle();
+      await t.tap(key('teacher-cooking'));
+      await t.pumpAndSettle();
+      expect(textOf(t, 'teacher-line'), '"Hungry, Ada?"');
+      expect(find.textContaining("Here's my old pot."), findsOneWidget);
+    });
+
+    testWidgets('criterion 8: the header and the journal title name the '
+        'player', (t) async {
+      await pumpGame(
+        t,
+        character: const Character(
+          name: 'Zkalf',
+          gender: Gender.neither,
+          origin: 'coast_fisher',
+        ),
+      );
+      await openTab(t, 'character');
+      expect(textOf(t, 'character-name'), 'Zkalf');
+      expect(find.text('Recruit'), findsOneWidget);
+      expect(textOf(t, 'character-origin'), '· Fisher from the coast');
+      await t.tap(key('journal-button'));
+      await t.pumpAndSettle();
+      expect(find.text("Zkalf's journal"), findsOneWidget);
+    });
+
+    testWidgets('criterion 9: Settings change the name and show the origin', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t);
+      await openSettings(t);
+      expect(within('settings-name', find.text('Ada')), findsOneWidget);
+      expect(within('settings-gender', find.text('Neither')), findsOneWidget);
+      expect(
+        within('settings-origin', find.text('Tavern cook')),
+        findsOneWidget,
+      );
+      expect(
+        within('settings-origin', find.text('Chosen when you set out')),
+        findsOneWidget,
+      );
+      expect(t.widget<ListTile>(key('settings-origin')).onTap, isNull);
+
+      await t.tap(key('settings-name'));
+      await t.pumpAndSettle();
+      expect(t.widget<TextField>(key('rename-field')).maxLength, 20);
+      await t.enterText(key('rename-field'), '  Brann ');
+      await t.tap(find.text('Save'));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.character!.name, 'Brann');
+      expect(within('settings-name', find.text('Brann')), findsOneWidget);
+    });
+  });
 }

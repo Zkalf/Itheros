@@ -262,6 +262,22 @@ class GameController extends ChangeNotifier {
   Future<void> learn(String profession) =>
       _act((s) => game.talk(game.learn(s, profession), profession));
 
+  /// Makes the character on "Who are you?" (spec 0012 §2.2).
+  Future<void> setOut({
+    required String name,
+    required Gender gender,
+    required String origin,
+  }) => _act(
+    (s) => game.makeCharacter(s, name: name, gender: gender, origin: origin),
+  );
+
+  /// Settings' Name and Gender (spec 0012 §4.2).
+  Future<void> renameCharacter(String name) =>
+      _act((s) => game.renameCharacter(s, name));
+
+  Future<void> setGender(Gender gender) =>
+      _act((s) => game.setGender(s, gender));
+
   /// Talks to [profession]'s teacher here: every waiting tip is told.
   Future<void> talk(String profession) => _act((s) => game.talk(s, profession));
 

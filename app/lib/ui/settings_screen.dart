@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
 
+import '../game_controller.dart';
 import '../version.dart';
 import 'controller_scope.dart';
+import 'labels.dart';
 
-/// Settings, opened from the top bar (spec 0008 decision 12). Name and
-/// gender join them with spec 0012.
+/// Settings, opened from the top bar (spec 0008 decision 12), with the
+/// character's name, gender and origin on top (spec 0012 §4.2).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -12,12 +15,38 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final text = Theme.of(context).textTheme;
+    final who = c.state.character;
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (who != null) ...[
+              ListTile(
+                key: const ValueKey('settings-name'),
+                title: const Text('Name'),
+                trailing: Text(who.name),
+                onTap: () => _rename(context, c, who.name),
+              ),
+              ListTile(
+                key: const ValueKey('settings-gender'),
+                title: const Text('Gender'),
+                trailing: Text(genderName(who.gender)),
+                onTap: () => _pickGender(context, c, who.gender),
+              ),
+              ListTile(
+                key: const ValueKey('settings-origin'),
+                title: const Text('Origin'),
+                subtitle: const Text('Chosen when you set out'),
+                trailing: Text(
+                  c.game.fill(
+                    c.game.data.origins[who.origin]?.title ?? '',
+                    who,
+                  ),
+                ),
+              ),
+            ],
             SwitchListTile(
               key: const ValueKey('show-next-goal'),
               title: const Text('Show "Next goal"'),
@@ -43,4 +72,85 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _rename(
+    BuildContext context,
+    GameController c,
+    String name,
+  ) async {
+    final next = await showDialog<String>(
+      context: context,
+      builder: (_) => _NameDialog(name),
+    );
+    if (next != null) await c.renameCharacter(next);
+  }
+
+  Future<void> _pickGender(
+    BuildContext context,
+    GameController c,
+    Gender gender,
+  ) async {
+    final next = await showDialog<Gender>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Gender'),
+        children: [
+          for (final g in Gender.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, g),
+              child: Text(
+                genderName(g),
+                style: g == gender
+                    ? const TextStyle(fontWeight: FontWeight.bold)
+                    : null,
+              ),
+            ),
+        ],
+      ),
+    );
+    if (next != null && next != gender) await c.setGender(next);
+  }
+}
+
+/// Owns its text field's controller, so it lives as long as the dialog.
+class _NameDialog extends StatefulWidget {
+  const _NameDialog(this.name);
+
+  final String name;
+
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  late final _field = TextEditingController(text: widget.name);
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Name'),
+    content: TextField(
+      key: const ValueKey('rename-field'),
+      controller: _field,
+      autofocus: true,
+      maxLength: Game.maxNameLength,
+      textCapitalization: TextCapitalization.words,
+      decoration: const InputDecoration(hintText: Game.defaultName),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, _field.text),
+        child: const Text('Save'),
+      ),
+    ],
+  );
 }
