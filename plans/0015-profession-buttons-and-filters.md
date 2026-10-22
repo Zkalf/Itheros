@@ -1,6 +1,6 @@
 # Plan 0015: Build "Profession buttons and recipe filters"
 
-Status: draft
+Status: accepted
 Spec: `specs/0010-professions.amendment-3.md` (accepted) · Intent: the owner's playtest notes, 2026-10-22
 Product owner: Zkalf · Date: 2026-10-22
 
