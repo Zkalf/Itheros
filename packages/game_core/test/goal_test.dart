@@ -101,19 +101,23 @@ void main() {
   });
 
   test('a vein held back by Mining names the vein', () {
-    final s = stateAt(game, level: 15, professionLevel: 15)
-      ..professions['mining'] = game.data.professionXpForLevel(4);
-    final drops = {
-      for (final e in game.data.enemies.keys) ...game.dropItems(e),
-    };
-    for (final r in game.data.recipes.values) {
-      // Every monster drop in hand: only the ore is missing.
-      for (final i in r.inputs.keys) {
-        if (drops.contains(i)) s.inventory[i] = 99;
-      }
+    final s = stateAt(game, level: 25, professionLevel: 25)
+      ..professions['mining'] = game.data.professionXpForLevel(15)
+      // Next door to Mithril Deep; no monster drops mithril ore.
+      ..explored.add('mountain_pass')
+      ..inventory['star_diamond'] = 1;
+    // The best of everything worn but rings: the star-diamond ring is the
+    // upgrade, and only its mithril ore is missing.
+    for (final slot in game.data.gearSlots) {
+      if (slot.id.startsWith('ring')) continue;
+      final fits = [
+        for (final i in game.data.items.values)
+          if (game.slotsFor(i.id).contains(slot.id)) i,
+      ]..sort((a, b) => b.score.compareTo(a.score));
+      if (fits.isNotEmpty) s.equipment[slot.id] = fits.first.id;
     }
     final g = game.nextGoal(s)! as ProfessionGoal;
-    expect((g.profession, g.level, g.current), ('mining', 10, 4));
-    expect(g.target, const Activity.gather('iron_vein'));
+    expect((g.profession, g.level, g.current), ('mining', 20, 15));
+    expect(g.target, const Activity.gather('mithril_vein'));
   });
 }

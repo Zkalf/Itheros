@@ -100,16 +100,20 @@ void main() {
     expect(back.isEventful, isTrue);
     final labels = Labels(game.data);
     expect(
-      [for (final (p, l) in back.professionLevels) labels.professionLevel(p, l)],
+      [
+        for (final (p, l) in back.professionLevels)
+          labels.professionLevel(p, l),
+      ],
       [
         'Reached Mining 2!',
         'Mining 10: the Iron vein is yours to work',
         'Crafting 14: new recipes',
       ],
     );
-    expect([for (final f in back.finds) labels.rareFound(f)], [
-      'Found a Garnet!',
-    ]);
+    expect(
+      [for (final f in back.finds) labels.rareFound(f)],
+      ['Found a Garnet!'],
+    );
     expect(
       [for (final (a, b) in back.rerolls) labels.rerollNews(a, b)],
       [

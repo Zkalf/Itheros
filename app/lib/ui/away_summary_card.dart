@@ -41,8 +41,8 @@ Widget reportLine(String line, Labels labels) =>
     Text.rich(TextSpan(children: reportSpans(line, labels.data)));
 
 /// The big moments of a report, shown as banners above its lines (spec 0004
-/// amendment 3): levels reached, achievements, then what was learned about
-/// monsters (spec 0009 §7).
+/// amendment 3): levels reached, achievements, what was learned about
+/// monsters (spec 0009 §7), then profession news.
 List<Widget> reportBanners(AwaySummary s, Labels labels) => [
   for (final l in s.levelsReached)
     ReportBanner(icon: Icons.military_tech, text: 'Reached level $l!'),
@@ -57,6 +57,13 @@ List<Widget> reportBanners(AwaySummary s, Labels labels) => [
     ReportBanner(icon: Icons.visibility, text: labels.weaknessLearned(e)),
   for (final e in s.slayers)
     ReportBanner(icon: Icons.gps_fixed, text: labels.slayerEarned(e)),
+  // Profession news (spec 0010 §2.2, §5.1, §7.2-7.3).
+  for (final (p, l) in s.professionLevels)
+    ReportBanner(icon: Icons.construction, text: labels.professionLevel(p, l)),
+  for (final f in s.finds)
+    ReportBanner(icon: Icons.diamond, text: labels.rareFound(f)),
+  for (final (a, b) in s.rerolls)
+    ReportBanner(icon: Icons.autorenew, text: labels.rerollNews(a, b)),
 ];
 
 /// A highlighted line with an icon, in the theme's highlight colour.

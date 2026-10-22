@@ -257,6 +257,28 @@ class GameController extends ChangeNotifier {
 
   Future<void> unequip(String slot) => _act((s) => game.unequip(s, slot));
 
+  /// Learns [profession] from its teacher here, who then tells the tips
+  /// waiting (spec 0010 §6).
+  Future<void> learn(String profession) =>
+      _act((s) => game.talk(game.learn(s, profession), profession));
+
+  /// Talks to [profession]'s teacher here: every waiting tip is told.
+  Future<void> talk(String profession) => _act((s) => game.talk(s, profession));
+
+  /// Wears the tool [key] from the bag; the one worn goes to the bag.
+  Future<void> useTool(String key) => _act((s) => game.equipTool(s, key));
+
+  /// Salvages the bag item [key] at a forge (spec 0010 §7.1).
+  Future<SalvageResult> salvage(String key) async {
+    late SalvageResult result;
+    await _act((s) => (result = game.salvage(s, key)).state);
+    return result;
+  }
+
+  /// Settles a Legendary's waiting stat roll (spec 0010 §7.3).
+  Future<void> keepRoll(String key, {required bool keepNew}) =>
+      _act((s) => game.keepRoll(s, key, keepNew: keepNew));
+
   Future<void> _act(GameState Function(GameState) action) => _serial(() async {
     await _syncNow(away: false);
     final next = action(state);

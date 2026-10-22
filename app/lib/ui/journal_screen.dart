@@ -6,6 +6,7 @@ import 'bestiary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 import 'level_badge.dart';
+import 'teacher_sheet.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
@@ -159,7 +160,8 @@ class _Bestiary extends StatelessWidget {
   }
 }
 
-/// Found lore notes, newest first, and how many there are (spec 0009 §8.4).
+/// Found lore notes, newest first, and how many there are (spec 0009 §8.4),
+/// then the tips each teacher told.
 class _Lore extends StatelessWidget {
   const _Lore();
 
@@ -197,6 +199,14 @@ class _Lore extends StatelessWidget {
               ),
             ),
           ),
+        // Teachers' tips, under each teacher; they aren't counted above
+        // (spec 0010 §6.2).
+        for (final p in data.professions.values)
+          if (p.tips.any((t) => c.state.tips.contains(t.id))) ...[
+            Heading(teacherName(p)),
+            for (final t in p.tips)
+              if (c.state.tips.contains(t.id)) TipCard(tip: t, labels: labels),
+          ],
       ],
     );
   }

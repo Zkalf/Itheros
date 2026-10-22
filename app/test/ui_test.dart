@@ -2122,9 +2122,9 @@ void professionScreens() {
     testWidgets('criterion 13: an old save opens on the levels it earned', (
       t,
     ) async {
-      final json =
-          jsonDecode(File('test/fixtures/saves/0.2.0.json').readAsStringSync())
-              as Map<String, Object?>;
+      final json = jsonDecode(
+        File('test/fixtures/saves/0.2.0.json').readAsStringSync(),
+      ) as Map<String, Object?>;
       final c = await pumpSave(t, json);
       final mining = c.game.professionLevel(c.state, 'mining');
       final crafting = c.game.professionLevel(c.state, 'crafting');
@@ -2190,11 +2190,7 @@ void professionScreens() {
     });
 
     testWidgets('§8.3: away from a forge the card says where', (t) async {
-      await pumpGame(
-        t,
-        location: 'goblin_woods',
-        inventory: {'bone_sword': 1},
-      );
+      await pumpGame(t, location: 'goblin_woods', inventory: {'bone_sword': 1});
       await openItem(t, 'bone_sword');
       expect(card(find.text('Salvage and reroll at a forge')), findsOneWidget);
       expect(card(find.byKey(const ValueKey('card-salvage'))), findsNothing);
@@ -2280,9 +2276,7 @@ void professionScreens() {
       expect(find.text('Bram, the woodcutter'), findsNothing);
     });
 
-    testWidgets('§8.4: Next goal names a missing profession level', (
-      t,
-    ) async {
+    testWidgets('§8.4: Next goal names a missing profession level', (t) async {
       await pumpGame(t, level: 30, professionLevel: 1);
       expect(
         within('next-goal', find.textContaining(RegExp('^Reach Crafting'))),

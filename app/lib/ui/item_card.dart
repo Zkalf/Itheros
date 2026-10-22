@@ -6,26 +6,34 @@ import 'away_summary_card.dart';
 import 'labels.dart';
 
 /// Opens the card for [item] (spec 0008 §3.5). [wornIn] is set when it was
-/// tapped on the doll. An item the data no longer has (an old save) has no
-/// card.
+/// tapped on the doll, [toolWorn] when it is the tool in use (spec 0010
+/// §3). An item the data no longer has (an old save) has no card.
 Future<void> showItemCard(
   BuildContext context,
   GameController c,
   String item, {
   String? wornIn,
+  bool toolWorn = false,
 }) async {
   if (c.game.data.itemOf(item) == null) return;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    builder: (_) =>
-        ItemCard(controller: c, item: item, wornIn: wornIn, host: context),
+    builder: (_) => ItemCard(
+      controller: c,
+      item: item,
+      wornIn: wornIn,
+      toolWorn: toolWorn,
+      host: context,
+    ),
   );
 }
 
 /// The item's name in its quality colour, the quality and kind in words, its
 /// stats, how it compares with what is worn, and Equip / Swap / Unequip. A
-/// material says where it comes from and what uses it.
+/// tool says what it serves and costs; at a forge gear and tools salvage
+/// and gear rerolls (spec 0010 §8.3). A material says where it comes from
+/// and what uses it.
 class ItemCard extends StatelessWidget {
   const ItemCard({
     super.key,
@@ -33,11 +41,13 @@ class ItemCard extends StatelessWidget {
     required this.item,
     required this.host,
     this.wornIn,
+    this.toolWorn = false,
   });
 
   final GameController controller;
   final String item;
   final String? wornIn;
+  final bool toolWorn;
 
   /// The screen behind the sheet, for messages after the sheet closes.
   final BuildContext host;
@@ -53,6 +63,10 @@ class ItemCard extends StatelessWidget {
     final def = data.itemOf(item)!;
     final gear = def.slot != null;
     final colour = itemColour(data, item);
+    final legendary = data.qualityOf(item) == data.qualities.last;
+    final pending = data.pendingRoll(item);
+    // A Legendary's bonus stats reroll one at a time at a forge (§7.3).
+    final statRerolls = gear && legendary && pending == null && game.atForge(s);
 
     final rows = <Widget>[
       Text(
@@ -68,8 +82,53 @@ class ItemCard extends StatelessWidget {
         // on its own line (spec 0009 §8.2).
         Text(labels.bonus(data.baseStatsOf(item)).join(' · ')),
         if (labels.typeLine(item) case final type?) Text(type),
-        for (final r in data.bonusRolls(item))
-          Text(labels.bonusRoll(r), style: TextStyle(color: colour)),
+        for (final (i, r) in data.bonusRolls(item).indexed)
+          if (statRerolls)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    labels.bonusRoll(r),
+                    style: TextStyle(color: colour),
+                  ),
+                ),
+                TextButton(
+                  key: ValueKey('card-reroll-stat-$i'),
+                  onPressed: () => _close(
+                    context,
+                    () => c.addAction(Activity.rerollStat(item, i)),
+                  ),
+                  child: Text('Reroll (${_dust(item)})'),
+                ),
+              ],
+            )
+          else
+            Text(labels.bonusRoll(r), style: TextStyle(color: colour)),
+        if (pending case final p?) ...[
+          const SizedBox(height: 8),
+          Text(
+            'New roll: ${labels.bonusRoll(p.roll)} '
+            '(was ${labels.bonusRoll(data.bonusRolls(item)[p.index])})',
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _button(
+                context,
+                const ValueKey('card-keep-new'),
+                'Keep new',
+                () => c.keepRoll(item, keepNew: true),
+              ),
+              const SizedBox(width: 8),
+              _button(
+                context,
+                const ValueKey('card-keep-old'),
+                'Keep old',
+                () => c.keepRoll(item, keepNew: false),
+              ),
+            ],
+          ),
+        ],
         if (def.twoHanded)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -81,11 +140,17 @@ class ItemCard extends StatelessWidget {
           ),
         const SizedBox(height: 12),
         ..._gearActions(context, labels),
+        ..._forgeActions(context, labels),
+      ] else if (def.tool != null) ...[
+        Text(labels.toolLine(item)),
+        const SizedBox(height: 12),
+        ..._toolActions(context, labels),
+        ..._forgeActions(context, labels),
       ] else
         ..._materialLines(labels),
     ];
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         key: const ValueKey('item-card'),
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
         child: Column(
@@ -154,6 +219,124 @@ class ItemCard extends StatelessWidget {
     ];
   }
 
+  /// Use or Swap for a tool in the bag (spec 0010 §3.2).
+  List<Widget> _toolActions(BuildContext context, Labels labels) {
+    final c = controller;
+    if (toolWorn) return [const Text('In use')];
+    final worn = c.state.tools[c.game.data.toolProfession(item)];
+    return [
+      if (worn != null)
+        Text(
+          'Instead of ${labels.plain(worn)}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      const SizedBox(height: 8),
+      _button(
+        context,
+        const ValueKey('card-tool'),
+        worn == null ? 'Use' : 'Swap',
+        () => c.useTool(item),
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  /// Salvage for a bag item, Reroll for gear below Legendary, both at a
+  /// forge (spec 0010 §7.1-7.2); elsewhere, where to go.
+  List<Widget> _forgeActions(BuildContext context, Labels labels) {
+    final c = controller;
+    final game = c.game;
+    final data = game.data;
+    final def = data.itemOf(item)!;
+    final inBag = wornIn == null && !toolWorn;
+    final salvage = inBag && !(def.tool?.starter ?? false);
+    final reroll =
+        def.slot != null &&
+        data.qualityOf(item) != data.qualities.last &&
+        data.pendingRoll(item) == null;
+    if (!salvage && !reroll) return const [];
+    if (!game.atForge(c.state)) {
+      return [
+        Text(
+          'Salvage and reroll at a forge',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ];
+    }
+    return [
+      Wrap(
+        spacing: 8,
+        children: [
+          if (reroll)
+            _button(
+              context,
+              const ValueKey('card-reroll'),
+              'Reroll (${_dust(item)})',
+              // One roll: no stop condition to pick.
+              () => c.addAction(Activity.reroll(item)),
+            ),
+          if (salvage)
+            OutlinedButton(
+              key: const ValueKey('card-salvage'),
+              onPressed: () => _close(context, () => _salvage(labels)),
+              child: const Text('Salvage'),
+            ),
+        ],
+      ),
+    ];
+  }
+
+  /// Salvages the item, asking first from Rare up, and says what it gave.
+  Future<void> _salvage(Labels labels) async {
+    final data = controller.game.data;
+    final messenger = ScaffoldMessenger.of(host);
+    if (data.qualities.indexOf(data.qualityOf(item)) >= 2) {
+      final sure = await showDialog<bool>(
+        context: host,
+        builder: (context) => AlertDialog(
+          title: Text('Salvage the ${labels.owned(item)}?'),
+          content: const Text('It breaks down into dust for good.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep it'),
+            ),
+            TextButton(
+              key: const ValueKey('salvage-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Salvage'),
+            ),
+          ],
+        ),
+      );
+      if (sure != true) return;
+    }
+    final result = await controller.salvage(item);
+    messenger.showSnackBar(
+      SnackBar(content: Text(labels.salvaged(item, result))),
+    );
+  }
+
+  /// What a reroll of [key] takes: "3 Rare dust".
+  String _dust(String key) {
+    final data = controller.game.data;
+    return '${data.rerollDust} ${data.qualityOf(key).name} dust';
+  }
+
+  /// Closes the card, then runs [action]; a refusal shows on [host].
+  Future<void> _close(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
+    final messenger = ScaffoldMessenger.of(host);
+    Navigator.of(context).pop();
+    try {
+      await action();
+    } on ActivityError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   List<Widget> _materialLines(Labels labels) {
     final game = controller.game;
     final (enemies, nodes) = game.itemSources(controller.state, item);
@@ -161,8 +344,13 @@ class ItemCard extends StatelessWidget {
     return [
       if (enemies.isNotEmpty)
         Text('Drops from: ${enemies.map(labels.enemy).join(', ')}'),
-      if (nodes.isNotEmpty)
-        Text('Mined at: ${nodes.map(labels.node).join(', ')}'),
+      for (final (verb, profession) in const [
+        ('Mined', 'mining'),
+        ('Chopped', 'woodcutting'),
+      ])
+        if (nodes.where((n) => game.data.nodes[n]?.profession == profession)
+            case final at when at.isNotEmpty)
+          Text('$verb at: ${at.map(labels.node).join(', ')}'),
       if (uses.isNotEmpty)
         Text('Used in: ${uses.map(labels.recipe).join(', ')}'),
     ];
@@ -180,7 +368,8 @@ class ItemCard extends StatelessWidget {
 /// text colour) for common gear and materials.
 Color? itemColour(GameData data, String key) {
   final q = data.qualityOf(key);
-  return data.itemOf(key)?.slot != null && q != data.qualities.first
+  final item = data.itemOf(key);
+  return (item?.slot != null || item?.tool != null) && q != data.qualities.first
       ? qualityColour(q)
       : null;
 }

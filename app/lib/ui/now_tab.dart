@@ -6,6 +6,8 @@ import 'actions.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'item_square.dart';
+import 'teacher_sheet.dart';
 
 /// What am I doing, and what can I do here (spec 0008 §3.2): the running
 /// action, the queue, the step bank, then what the player's place offers.
@@ -463,7 +465,8 @@ class _QueueCard extends StatelessWidget {
 }
 
 /// Everything the player's place offers (spec 0008 §3.2): its monsters and
-/// gathering spots, and a Forge row where there is one. No Camp screen.
+/// gathering spots, its teachers, and a Forge row where there is one. No
+/// Camp screen.
 class _Here extends StatelessWidget {
   const _Here({
     required this.controller,
@@ -491,6 +494,23 @@ class _Here extends StatelessWidget {
         for (final id in enemies)
           enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
         for (final id in nodes) nodeTile(c, id),
+        // The teachers here (spec 0010 §6.1), a dot when a tip waits.
+        for (final p in game.data.professions.values)
+          if (p.teacher.location == s.location)
+            ListTile(
+              key: ValueKey('teacher-${p.id}'),
+              leading: Icon(professionIcon(p.icon)),
+              title: Text(teacherName(p)),
+              subtitle: Text(
+                s.learned.contains(p.id)
+                    ? '${p.name} ${game.professionLevel(s, p.id)}'
+                    : 'Teaches ${p.name}',
+              ),
+              trailing: game.tipsWaiting(s, p.id).isEmpty
+                  ? null
+                  : Badge(key: ValueKey('teacher-dot-${p.id}')),
+              onTap: () => showTeacher(context, c, p.id),
+            ),
         if (place.crafting && onOpenProfessions != null)
           ListTile(
             key: const ValueKey('here-forge'),
@@ -499,7 +519,12 @@ class _Here extends StatelessWidget {
             subtitle: const Text('Craft gear in Professions'),
             onTap: onOpenProfessions,
           ),
-        if (enemies.isEmpty && nodes.isEmpty && !place.crafting)
+        if (enemies.isEmpty &&
+            nodes.isEmpty &&
+            !place.crafting &&
+            !game.data.professions.values.any(
+              (p) => p.teacher.location == s.location,
+            ))
           const ListTile(title: Text('Nothing to do here. Try the World map.')),
       ],
     );
