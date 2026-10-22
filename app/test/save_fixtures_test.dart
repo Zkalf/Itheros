@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/persistence/save_data.dart';
 import 'package:walkingrpg/version.dart';
 
@@ -108,6 +109,24 @@ void main() {
       expect(s.professions['mining'] ?? 0, mining);
       expect(s.professions['crafting'] ?? 0, crafting);
       expect(s.xp, raw['xp']);
+    });
+
+    // Spec 0011 criterion 14: version 9, the new professions unlearned, no
+    // meal, no records, the cove hidden.
+    test('$name loads as version 9 with nothing of the lake yet', () {
+      final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+      final game = loadTestGame();
+      final s = game.migrate(SaveData.fromJson(json).game);
+      expect(GameState.fromJson(s.toJson()).loadedVersion, 9);
+      for (final p in ['fishing', 'hunting', 'cooking']) {
+        expect(s.learned, isNot(contains(p)));
+        expect(s.tools, isNot(contains(p)));
+      }
+      expect(s.meal, isNull);
+      expect(s.autoEat, isNull);
+      expect(s.records, isEmpty);
+      expect(s.bottles, 0);
+      expect(game.isHidden(s, 'smugglers_cove'), isTrue);
     });
   }
 

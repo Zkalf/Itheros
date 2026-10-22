@@ -36,7 +36,7 @@
   "damageVariance": 0.2,
   "xpToReachLevel": [0, 20, 100, 300, 700, 2160, 4740, 8640, 14090, 21380, 28930, 37390, 46880, 57520, 69440, 82790, 97740, 114480, 133210, 154160, 177600, 203810, 233100, 265840, 302410, 343270, 388900, 439840, 496710, 560170],
   "xpGrowthAfterList": 1.05,
-  "professionXpToReachLevel": [0, 22, 48, 80, 118, 164, 218, 284, 363, 458, 571, 707, 871, 1067, 1302, 1585, 1924, 2330, 2819, 3404, 4107, 4951, 5963, 7177, 8635, 10384, 12482, 15001, 18023, 21649],
+  "professionXpToReachLevel": [0, 28, 60, 100, 148, 205, 272, 355, 454, 572, 714, 884, 1089, 1334, 1628, 1981, 2405, 2912, 3524, 4255, 5134, 6189, 7454, 8971, 10794, 12980, 15602, 18751, 22529, 27061],
   "professionXpGrowthAfterList": 1.2,
   "professionBands": [
     { "atLeast": -5, "colour": "yellow", "xp": 100 },
@@ -48,6 +48,10 @@
   "rareFind": { "base": 0.005, "perToolQualityStep": 0.05, "perLevelAbove": 0.01, "maxLevelBonus": 0.10 },
   "salvage": { "shardBase": 0.02, "shardPerQualityStep": 0.005, "shards": ["kings_shard", "chieftains_shard", "dragons_shard"] },
   "reroll": { "steps": 50, "dust": 3 },
+  "meals": { "steps": 3000, "percent": [6, 10, 14], "crit": [2, 3, 4] },
+  "perfectDish": { "base": 0.10, "perToolQualityStep": 0.05, "perLevelAbove": 0.01, "maxLevelBonus": 0.10 },
+  "bottle": { "chance": 0.0005, "reveals": "smugglers_cove", "later": "rare_dust" },
+  "chestChance": 0.002,
   "fightXpPerStep": [0.197, 0.212, 0.229, 0.248, 0.275, 0.305, 0.343, 0.386, 0.417, 0.451, 0.481, 0.541, 0.608, 0.678, 0.758, 0.816, 0.915, 1.027, 1.115, 1.21, 1.316, 1.416, 1.523, 1.723, 1.949, 2.057, 2.17, 2.565, 2.856, 3.18],
   "levelBands": [
     { "atLeast": 10, "colour": "skull", "xp": 100 },

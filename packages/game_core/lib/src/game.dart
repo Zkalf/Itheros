@@ -85,8 +85,10 @@ class Game {
 
   /// Steps one action of [profession] costs, [base] times the worn tool's
   /// share, rounded up (spec 0010 §3.2).
+  /// A fewer-steps meal multiplies in (spec 0011 §5.3).
   int professionSteps(GameState s, String profession, int base) =>
-      (base * toolFactor(s.tools[profession]) - 1e-9).ceil();
+      (base * toolFactor(s.tools[profession]) * (1 - mealStepShare(s)) - 1e-9)
+          .ceil();
 
   /// The share of an action's steps the tool with [key] costs: its tier's,
   /// less [GameData.toolQualityStep] per quality step (spec 0010 §3.2).
@@ -142,9 +144,69 @@ class Game {
       data.rareMaxLevelBonus,
       data.rarePerLevelAbove * above,
     );
-    return data.rareBase *
+    return (n.rareBase ?? data.rareBase) *
         (1 + data.rarePerToolQualityStep * steps) *
         (1 + levelBonus);
+  }
+
+  /// The chance a cook of [recipe] turns out a perfect dish (spec 0011
+  /// §5.3): spec 0010 §5.1's formula with the pot and Cooking.
+  double perfectChance(GameState s, String recipe) {
+    final r = data.recipes[recipe]!;
+    final tool = s.tools[r.profession];
+    final steps = tool == null ? 0 : _qualitySteps(tool);
+    final above = math.max(0, professionLevel(s, r.profession) - r.level);
+    final levelBonus = math.min(
+      data.perfectMaxLevelBonus,
+      data.perfectPerLevelAbove * above,
+    );
+    return data.perfectBase *
+        (1 + data.perfectPerToolQualityStep * steps) *
+        (1 + levelBonus);
+  }
+
+  /// Eats the meal [key] from the bag; one running now is replaced (spec
+  /// 0011 §5.4). Throws [ActivityError] otherwise.
+  GameState eat(GameState s, String key) {
+    if (data.itemOf(key)?.meal == null) throw ActivityError('$key is no meal');
+    if ((s.inventory[key] ?? 0) < 1) throw ActivityError('No $key to eat');
+    return s.copy()
+      ..addItem(key, -1)
+      ..meal = ActiveMeal(key, data.mealStepsOf(key));
+  }
+
+  /// Sets the meal kind [meal] (an item id) to be eaten when the running
+  /// one ends, keeping [keep] in the bag; null turns auto-eat off.
+  GameState setAutoEat(GameState s, String? meal, {int keep = 0}) {
+    if (meal != null && data.items[meal]?.meal == null) {
+      throw ActivityError('$meal is no meal');
+    }
+    if (keep < 0) throw ActivityError('Keep at least 0');
+    return s.copy()..autoEat = meal == null ? null : AutoEat(meal, keep);
+  }
+
+  /// What the running meal adds to the stats (spec 0011 §5.3): a percent
+  /// of the total with gear, rounded down, at least 1; Crit in points.
+  Stats mealBonus(GameState s) {
+    final meal = s.meal == null ? null : data.itemOf(s.meal!.key)?.meal;
+    if (meal == null) return const Stats();
+    final gear = _gearStats(s);
+    final pct = data.mealPercent[meal.tier - 1];
+    int up(int v) => math.max(1, v * pct ~/ 100);
+    return Stats(
+      hp: meal.buffs.contains('hp') ? up(gear.hp) : 0,
+      attack: meal.buffs.contains('attack') ? up(gear.attack) : 0,
+      defense: meal.buffs.contains('defense') ? up(gear.defense) : 0,
+      crit: meal.buffs.contains('crit') ? data.mealCrit[meal.tier - 1] : 0,
+    );
+  }
+
+  /// The share of profession and reroll steps the running meal takes off
+  /// (spec 0011 §5.3).
+  double mealStepShare(GameState s) {
+    final meal = s.meal == null ? null : data.itemOf(s.meal!.key)?.meal;
+    if (meal == null || !meal.buffs.contains('steps')) return 0;
+    return data.mealPercent[meal.tier - 1] / 100;
   }
 
   /// The chance salvaging [key] gives a boss shard (spec 0010 §7.1).
@@ -240,7 +302,10 @@ class Game {
     return cap;
   }
 
-  Stats stats(GameState s) {
+  /// The character's stats: level, gear and the running meal.
+  Stats stats(GameState s) => _gearStats(s) + mealBonus(s);
+
+  Stats _gearStats(GameState s) {
     var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
     for (final item in s.equipment.values) {
       total += data.bonusOf(item);
@@ -552,7 +617,9 @@ class Game {
   Activity? _safeSource(GameState s, String item) {
     final lvl = level(s);
     for (final n in data.nodes.values) {
-      if (n.item == item && nodeLevelMet(s, n.id) && !nodeFogged(s, n.id)) {
+      if (n.yieldOf(item) > 0 &&
+          nodeLevelMet(s, n.id) &&
+          !nodeFogged(s, n.id)) {
         return Activity.gather(n.id);
       }
     }
@@ -582,6 +649,8 @@ class Game {
   /// and count every monster with a kill as fought (spec 0009 §10).
   /// Saves before version 8 learn Mining and Crafting at the levels their
   /// counters earn, and seed the profession stream (spec 0010 §10).
+  /// Saves before version 9 need nothing: no meal, no records, the cove
+  /// hidden, the new professions unlearned (spec 0011 §10).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {
@@ -743,7 +812,8 @@ class Game {
       ActivityKind.craft => switch (data.recipes[a.target]!) {
         final r => professionSteps(s, r.profession, r.steps),
       },
-      ActivityKind.reroll => data.rerollSteps,
+      ActivityKind.reroll =>
+        (data.rerollSteps * (1 - mealStepShare(s)) - 1e-9).ceil(),
     };
   }
 
@@ -762,8 +832,15 @@ class Game {
   /// [nodeLevelMet]).
   List<String> availableNodes(GameState s) => _here(s).nodes;
 
-  List<String> availableRecipes(GameState s) =>
-      _here(s).crafting ? allRecipes() : const [];
+  /// Recipes made here: crafts at a forge, meals at a fire (spec 0011
+  /// §5.1).
+  List<String> availableRecipes(GameState s) => [
+    for (final id in allRecipes())
+      if (_makesHere(_here(s), data.recipes[id]!)) id,
+  ];
+
+  bool _makesHere(LocationDef l, RecipeDef r) =>
+      r.profession == 'cooking' ? l.fire : l.crafting;
 
   /// Whether the player has learned [node]'s profession and has the level
   /// to work it (spec 0010 §2.2).
@@ -806,9 +883,17 @@ class Game {
 
   /// Whether [area] is in the fog: neither explored nor joined by a route to
   /// an explored area (spec 0008 decision 5).
+  /// A hidden area is fogged until revealed, whatever its neighbours (spec
+  /// 0011 §6.2).
   bool isFogged(GameState s, String area) =>
+      isHidden(s, area) ||
       !s.explored.contains(area) &&
-      !data.destinationsFrom(area).any(s.explored.contains);
+          !data.destinationsFrom(area).any(s.explored.contains);
+
+  /// Whether [area] is hidden and not yet revealed: off the map and out of
+  /// every list (spec 0011 §6.2).
+  bool isHidden(GameState s, String area) =>
+      data.locations[area]!.hidden && !s.revealed.contains(area);
 
   /// The nearest open crafting place and its distance, or null if none is
   /// reachable.
@@ -844,7 +929,8 @@ class Game {
     ],
     [
       for (final n in data.nodes.values)
-        if (n.item == item && !nodeFogged(s, n.id)) n.id,
+        if ((n.yieldOf(item) > 0 || n.rareFind == item) && !nodeFogged(s, n.id))
+          n.id,
     ],
   );
 
@@ -893,6 +979,8 @@ class Game {
     if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
       StopKind.untilHave
     else if (a.kind == ActivityKind.craft) ...[
+      // Meals: "until I have N" (spec 0011 §5.1).
+      if (data.recipes[a.target]?.profession == 'cooking') StopKind.untilHave,
       StopKind.untilCrafted,
       StopKind.untilQuality,
     ],
@@ -909,7 +997,14 @@ class Game {
     ActivityKind.fight => {
       for (final d in data.enemies[a.target]!.drops) d.item,
     }.toList(),
-    ActivityKind.gather => [data.nodes[a.target]!.item],
+    ActivityKind.gather => switch (data.nodes[a.target]!) {
+      final n => {
+        n.item,
+        for (final c in n.catches) c.item,
+        if (n.catches.isNotEmpty) ?n.rareFind,
+      }.toList(),
+    },
+    ActivityKind.craft => [data.recipes[a.target]!.output],
     _ => const [],
   };
 
@@ -1193,7 +1288,11 @@ class Game {
         for (final l in data.locations.values)
           if (l.nodes.contains(a.target)) l.id,
       ],
-      ActivityKind.craft || ActivityKind.reroll => [
+      ActivityKind.craft => [
+        for (final l in data.locations.values)
+          if (_makesHere(l, data.recipes[a.target]!)) l.id,
+      ],
+      ActivityKind.reroll => [
         for (final l in data.locations.values)
           if (l.crafting) l.id,
       ],
@@ -1401,6 +1500,7 @@ class _Run {
       boostUsed += boost;
       activitySteps += 1 + boost;
       act.progress += 1 + boost;
+      _countMeal(1 + boost);
       _advance(act);
     } else if (s.bank < game.bankCap(s)) {
       s.bank++;
@@ -1489,9 +1589,12 @@ class _Run {
       case ActivityKind.gather:
         final node = data.nodes[a.target]!;
         final xp = _practise(node.profession, node.level, node.xp, node.steps);
-        // The rare-find roll is drawn every action (spec 0010 §5.1).
+        // The rare-find roll is drawn every action (spec 0010 §5.1); at a
+        // water or a trail it picks the catch too (spec 0011 §3.2, §4).
         final chance = game.rareFindChance(s, node.id);
-        if (stream.nextDouble() < chance && node.rareFind != null) {
+        if (node.catches.isNotEmpty) {
+          _catch(act, node, chance);
+        } else if (stream.nextDouble() < chance && node.rareFind != null) {
           s.addItem(node.rareFind!);
           _gain(act, node.rareFind!);
           events.add(RareFound(node.rareFind!));
@@ -1531,6 +1634,11 @@ class _Run {
   String _crafted(RecipeDef recipe) {
     final out = data.items[recipe.output]!;
     final crafting = game.professionLevel(s, recipe.profession);
+    // A meal may be perfect (spec 0011 §5.3).
+    if (out.meal != null) {
+      final perfect = stream.nextDouble() < game.perfectChance(s, recipe.id);
+      return perfect ? GameData.perfectKey(out.id) : out.id;
+    }
     if (out.tool != null) {
       final q = game.rollQuality(
         stream,
@@ -1539,7 +1647,9 @@ class _Run {
       );
       return data.keyFor(out.id, q);
     }
-    final rare = recipe.inputs.keys.any((i) => data.items[i]!.rare);
+    // So do the hide, scale and trophy pieces (spec 0011 §9.1).
+    final rare =
+        !out.reference || recipe.inputs.keys.any((i) => data.items[i]!.rare);
     return _withQuality(
       out.id,
       recipe.level,
@@ -1581,6 +1691,104 @@ class _Run {
     act.crafted++;
     events.add(Rerolled(key, after));
     return null;
+  }
+
+  /// One cast or hunt's catch, all on the profession stream (spec 0011
+  /// §3-§4, §6): the row (the rare find first, at [rareChance]), a fish's
+  /// weight and record, a bottle, a sunken chest.
+  void _catch(RunningActivity act, NodeDef node, double rareChance) {
+    void give(String item, {int? weight}) {
+      s.addItem(item);
+      _gain(act, item);
+      s.count('gathered.$item');
+      events.add(Gathered(item, 0, weight: weight));
+    }
+
+    var u = stream.nextDouble();
+    final trophy = node.rareFind != null && u < rareChance;
+    String? row;
+    if (!trophy) {
+      if (node.rareFind != null) u -= rareChance;
+      for (final c in node.catches) {
+        if (c.chance case final p?) {
+          if (u < p) {
+            row = c.item;
+            break;
+          }
+          u -= p;
+        }
+      }
+      row ??= node.catches.firstWhere((c) => c.chance == null).item;
+    }
+    final item = row ?? node.rareFind!;
+    final weight = switch (data.items[item]!.weight) {
+      (final lo, final hi) => (() {
+        final w = stream.nextDouble();
+        return ((lo + (hi - lo) * w * w) * 10).round();
+      })(),
+      null => null,
+    };
+    if (trophy) {
+      s.addItem(item);
+      _gain(act, item);
+      s.count('gathered.$item');
+      events.add(RareFound(item, weight: weight));
+      node.rareWith.forEach(give);
+    } else {
+      give(item, weight: weight);
+    }
+    if (weight != null) {
+      final was = s.records[item];
+      if (was == null || weight > was) s.records[item] = weight;
+      if (was != null && weight > was) {
+        events.add(RecordBeaten(item, weight, was));
+      }
+    }
+    if (node.bottle && stream.nextDouble() < data.bottleChance) {
+      s.bottles++;
+      if (s.bottles == 1) {
+        s.revealed.add(data.bottleReveals);
+        events.add(BottleFound(revealed: data.bottleReveals));
+      } else {
+        s
+          ..addItem(data.bottleLater)
+          ..count('gathered.${data.bottleLater}');
+        _gain(act, data.bottleLater);
+        events.add(BottleFound(item: data.bottleLater));
+      }
+    }
+    if (node.chest case final ring?
+        when stream.nextDouble() < data.chestChance) {
+      final key = _withQuality(ring, data.itemLevel(ring), with_: stream);
+      s.addItem(key);
+      _gain(act, key);
+      events.add(ChestFound(key));
+    }
+  }
+
+  /// The running meal counts down [steps]; when it ends, the auto-eat meal
+  /// follows at once if the bag holds more than its keep number, plain
+  /// ones first (spec 0011 §5.4).
+  void _countMeal(int steps) {
+    final meal = s.meal;
+    if (meal == null) return;
+    meal.left -= steps;
+    if (meal.left > 0) return;
+    s.meal = null;
+    final auto = s.autoEat;
+    if (auto != null) {
+      final plain = s.inventory[auto.meal] ?? 0;
+      final perfect = s.inventory[GameData.perfectKey(auto.meal)] ?? 0;
+      if (plain + perfect > auto.keep) {
+        final key = plain > 0 ? auto.meal : GameData.perfectKey(auto.meal);
+        s
+          ..addItem(key, -1)
+          ..meal = ActiveMeal(key, data.mealStepsOf(key));
+        events.add(MealEaten(key, left: plain + perfect - 1));
+        return;
+      }
+    }
+    events.add(MealsOut(data.itemOf(meal.key)!.id));
   }
 
   /// One auto-resolved round. The player strikes first unless the monster is

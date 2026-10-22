@@ -50,6 +50,12 @@ void main() {
       for (final p in data.professions.values) p.teacher.starterTool,
       // Rare finds, salvage's dust and shards (spec 0010 §5, §7.1).
       for (final n in data.nodes.values) ?n.rareFind,
+      // Catches, a rare animal's meat, a sunken chest (spec 0011 §3-§6).
+      for (final n in data.nodes.values) ...[
+        for (final c in n.catches) c.item,
+        ...n.rareWith,
+        ?n.chest,
+      ],
       for (final q in data.qualities) GameData.dustOf(q.id),
       ...data.shards,
       for (final e in data.enemies.values) ...[
@@ -258,6 +264,9 @@ void main() {
           'mithril_helm': ('heavy', 0),
           'dragon_scale_armour': ('heavy', 0),
           'dragon_helm': ('heavy', 0),
+          // The hide and scale pieces (spec 0011 §7).
+          for (final i in data.items.values)
+            if (!i.reference) i.id: (i.armourType, 0),
         },
       );
     });
