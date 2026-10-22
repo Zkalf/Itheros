@@ -159,6 +159,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  playtest3();
   yourCharacter();
   lakeAndHunt();
   professionScreens();
@@ -2975,6 +2976,53 @@ void yourCharacter() {
       await t.pumpAndSettle();
       expect(c.state.character!.name, 'Brann');
       expect(within('settings-name', find.text('Brann')), findsOneWidget);
+    });
+  });
+}
+
+/// The owner's playtest notes after 0.3.0's build.
+void playtest3() {
+  group('playtest 3', () {
+    testWidgets('starting an action from World goes to Now', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await openArea(t, 'goblin_woods');
+      await tapAndStart(t, option('fight', 'goblin'));
+      expect(c.state.activity!.activity, const Activity.fight('goblin'));
+      final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.selectedIndex, 0, reason: 'Now');
+    });
+
+    testWidgets('starting an action from Professions goes to Now', (t) async {
+      final (c, _) = await pumpGame(t, location: 'copper_hills');
+      await openTab(t, 'professions');
+      await t.ensureVisible(find.byKey(const ValueKey('go-mining')));
+      await tapAndStart(t, find.byKey(const ValueKey('go-mining')));
+      expect(c.state.activity, isNotNull);
+      final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.selectedIndex, 0, reason: 'Now');
+    });
+
+    testWidgets('Achievements marks the ones not seen yet as new', (t) async {
+      final (c, _) = await pumpGame(t);
+      c.state.achievements.add('first_steps');
+      await t.pump();
+      Finder isNew(String id) => find.byKey(ValueKey('achievement-new-$id'));
+
+      await openAchievements(t);
+      expect(isNew('first_steps'), findsOneWidget);
+      expect(isNew('marathon'), findsNothing, reason: 'not earned');
+      await t.pageBack();
+      await t.pumpAndSettle();
+
+      await openAchievements(t);
+      expect(isNew('first_steps'), findsNothing, reason: 'seen');
+    });
+
+    test('a learned weakness points to the Bestiary', () {
+      expect(
+        Labels(_game.data).weaknessLearned('goblin'),
+        contains('Bestiary'),
+      );
     });
   });
 }
