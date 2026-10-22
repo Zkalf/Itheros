@@ -8,6 +8,7 @@ const _files = [
   'items',
   'achievements',
   'professions',
+  'origins',
 ];
 
 /// Loads the game data bundled from `packages/game_core/data/`.

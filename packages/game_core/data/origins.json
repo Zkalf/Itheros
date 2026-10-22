@@ -1,0 +1,16 @@
+{
+  "origins": [
+    { "id": "miners_child", "title": "Miner's child", "profession": "mining",
+      "line": "You grew up under the Copper Hills. You hear rock crack before it falls." },
+    { "id": "woodcutters_child", "title": "Woodcutter's {son|daughter|child}", "profession": "woodcutting",
+      "line": "You can tell oak from ash by the sound of the axe." },
+    { "id": "smiths_apprentice", "title": "Smith's apprentice", "profession": "crafting",
+      "line": "Your hands carry burns from a forge that was never quite yours." },
+    { "id": "coast_fisher", "title": "Fisher from the coast", "profession": "fishing",
+      "line": "You learned to read the water before you could read words." },
+    { "id": "hunters_apprentice", "title": "Hunter's apprentice", "profession": "hunting",
+      "line": "You walk soft, and you have never stepped on a dry branch." },
+    { "id": "tavern_cook", "title": "Tavern cook", "profession": "cooking",
+      "line": "You have fed a full tavern at midnight. A camp fire holds no fear for you." }
+  ]
+}

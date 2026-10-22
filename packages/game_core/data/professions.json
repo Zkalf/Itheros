@@ -6,6 +6,8 @@
       "teacher": {
         "name": "Hilde", "title": "the miner", "location": "camp", "starterTool": "old_pick",
         "learnLine": "Take my old pick. Bring me copper and we'll talk.",
+        "greeting": "Back from the hills, {name}?",
+        "kinLine": "A miner's {son|daughter|child}, I'd know it anywhere. You know which end of a pick goes in the rock, {name}. Keep my old one.",
         "tips": [
         { "id": "hilde_1", "level": 1, "enemy": "skeleton", "title": "Bones under the hills",
           "text": "\"Dug up a skeleton once. Still had its mail on. Blades just skate off that stuff. Bring a hammer, or a mace.\"" },
@@ -22,11 +24,13 @@
       "teacher": {
         "name": "Bram", "title": "the woodcutter", "location": "camp", "starterTool": "old_hatchet",
         "learnLine": "Here, my old hatchet. Mind the goblins when you're in the oaks.",
+        "greeting": "Mind the goblins in the oaks, {name}.",
+        "kinLine": "{name}! You swing like one of us. Keep the old hatchet; it knows you.",
         "tips": [
         { "id": "bram_1", "level": 1, "enemy": "old_bear", "title": "The old one",
           "text": "\"That bear's coat turns an axe like oak bark. A spear finds the gap between the ribs.\"" },
         { "id": "bram_10", "level": 10, "enemy": "giant_spider", "title": "Webs in the arches",
-          "text": "\"Spiders wear their bones outside, hard as boiled leather. Point first, lad. Never the edge.\"" },
+          "text": "\"Spiders wear their bones outside, hard as boiled leather. Point first, {lad|lass|friend}. Never the edge.\"" },
         { "id": "bram_20", "level": 20, "enemy": "harpy", "title": "Feathers on the pass",
           "text": "\"Harpies are feathers and spite, nothing to stop a blade. Swing wide and they come apart.\"" }
         ]
@@ -38,6 +42,8 @@
       "teacher": {
         "name": "Wen", "title": "the fisherman", "location": "camp", "starterTool": "old_rod",
         "learnLine": "Take my old rod. Bring me back some fish.",
+        "greeting": "Fish biting, {name}?",
+        "kinLine": "A coast {lad|lass|friend}! Salt in your hair, {name}. Take my old rod; you'll not need telling how.",
         "tips": []
       }
     },
@@ -47,6 +53,8 @@
       "teacher": {
         "name": "Sigrun", "title": "the hunter", "location": "camp", "starterTool": "old_bow",
         "learnLine": "My old bow. Walk soft, aim low, and never follow a golden stag past dusk.",
+        "greeting": "Walk soft, {name}.",
+        "kinLine": "You walk like one of mine, {name}. Soft. The old bow is yours.",
         "tips": [
         { "id": "sigrun_1", "level": 1, "enemy": "goblin_brute", "title": "Goblin hide",
           "text": "\"Brutes wear goblin hide and nothing else. An edge does the work; just don't let it get its arms round you.\"" },
@@ -63,6 +71,8 @@
       "teacher": {
         "name": "Garrow", "title": "the smith", "location": "camp", "starterTool": "old_hammer",
         "learnLine": "My old hammer still rings true. Any forge will do: strike while it's hot.",
+        "greeting": "Forge is hot, {name}. What are we making?",
+        "kinLine": "Burns on your hands and soot in your ears. Another smith, {name}. Any forge will do.",
         "tips": [
         { "id": "garrow_1", "level": 1, "enemy": "zombie", "title": "Soft as wet clay",
           "text": "\"Zombies wear nothing but rot. Any blade I make you will go clean through.\"" },
@@ -79,6 +89,8 @@
       "teacher": {
         "name": "Marta", "title": "the cook", "location": "camp", "starterTool": "old_pot",
         "learnLine": "Here's my old pot. Bring me fish and meat, and I'll show you what a fire is for.",
+        "greeting": "Hungry, {name}?",
+        "kinLine": "Another tavern cook! Don't scorch my pot, {name}. Bring fish and meat and we'll feed this whole camp.",
         "tips": []
       }
     }
