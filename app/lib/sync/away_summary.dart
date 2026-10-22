@@ -210,6 +210,13 @@ class AwaySummary {
           logs.add(ActionLog(activity, skipped: reason, missing: missing));
         case Arrived():
           break;
+        // Spec 0011's news lines come with its screens (plan 0013 M2).
+        case RecordBeaten() ||
+            BottleFound() ||
+            ChestFound() ||
+            MealEaten() ||
+            MealsOut():
+          break;
       }
     }
     final running = started ?? r.state.activity?.activity;

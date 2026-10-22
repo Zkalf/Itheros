@@ -7,7 +7,7 @@
 // gatherer-crafter's level on day 90 (target 4). Medians last.
 //
 //   dart run tool/seeds.dart [--seeds 8] [--steps-per-day 5000] [--batch 10]
-//                            [--meals-from 5] [--mixed-only]
+//                            [--meals-from 10] [--mixed-only]
 import 'dart:io';
 
 import 'package:game_core/game_core.dart';
@@ -27,7 +27,7 @@ void main(List<String> args) {
   final game = Game(GameData.fromJsonStrings(files));
   final steps = opt('steps-per-day', 5000);
   final batch = opt('batch', 10);
-  final from = opt('meals-from', 5);
+  final from = opt('meals-from', 10);
   const levels = [5, 10, 20, 30];
   const professions = [('mining', 'Mi'), ('crafting', 'Cr')];
   const lake = [('fishing', 'Fi'), ('hunting', 'Hu'), ('cooking', 'Co')];

@@ -776,7 +776,8 @@ void main() {
       await pumpGame(t);
       await openAchievements(t);
       expect(find.text('Travelling Salesman'), findsOneWidget);
-      expect(find.text('Arrive at all 10 areas'), findsOneWidget);
+      // The hidden cove is a bonus (owner's choice, plan 0013 M1).
+      expect(find.text('Arrive at all 11 areas'), findsOneWidget);
     });
 
     testWidgets('no achievement shows a raw counter name', (t) async {
@@ -1258,6 +1259,11 @@ void playtest2() {
           'mainHand': 'kings_blade',
           'chest': 'stitched_armour',
           'offHand': 'bone_shield',
+          // Spec 0011 §7's first pieces, so Next goal is a fight.
+          'gloves': 'deer_hide_gloves',
+          'bracer': 'deer_hide_bracers',
+          'belt': 'deer_hide_belt',
+          'legs': 'lake_scale_greaves',
         },
       );
       expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);

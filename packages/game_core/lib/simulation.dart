@@ -481,7 +481,7 @@ class SensiblePlayer {
     this.walker = Walker.mixed,
     this.meals = true,
     this.mealBatch = 10,
-    this.mealsFrom = 5,
+    this.mealsFrom = 10,
   });
 
   final Game game;
@@ -822,6 +822,9 @@ class SensiblePlayer {
                   game.recipeLevelMet(s, r.id) &&
                   // Earlier, it costs more steps than it saves (amendment 2).
                   r.level + 2 <= game.level(s) &&
+                  // Weighed by steps saved: only for work it has done up
+                  // to the tool's tier (spec 0010 §9.2).
+                  game.professionLevel(s, p) >= r.level &&
                   _have(s, r.output) == 0 &&
                   data.items[r.output]!.tool!.stepFactor < worn)
                 r,
@@ -1038,7 +1041,7 @@ SimulationResult simulate(
   Walker walker = Walker.mixed,
   bool meals = true,
   int mealBatch = 10,
-  int mealsFrom = 5,
+  int mealsFrom = 10,
 }) {
   final player = SensiblePlayer(
     game,
