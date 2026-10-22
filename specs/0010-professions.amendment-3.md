@@ -19,9 +19,10 @@ level (+5)", the last two never on together.
 2. **Recipe filters:** three chips that filter every recipe list on the screen (Crafting's and Cooking's):
    - **Have mats:** recipes the player can make at least once with what's in the bag now.
    - **Have level:** recipes whose profession level the player has.
-   - **Within 5 levels:** recipes that need 1 to 5 more profession levels.
+   - **Up to 5 levels ahead:** recipes the player has the level for, plus those that need up to 5 more profession
+     levels: a peek at what comes next.
 
-   Turning on "Have level" or "Within 5 levels" turns the other off. "Have mats" combines with either. With no chip
+   Turning on "Have level" or "Up to 5 levels ahead" turns the other off. "Have mats" combines with either. With no chip
    on, the lists show as before. A card whose list is filtered empty says "Nothing matches the filter".
 3. The filters are a view setting: they aren't saved and are off each time the app starts.
 
@@ -30,5 +31,5 @@ Nothing else in §8.1 changes: the cards, their order and contents stay as they 
 ## Acceptance criteria
 1. Tapping a profession's button brings its card into view.
 2. Each filter shows exactly the recipes its rule describes, on Crafting's and Cooking's lists.
-3. "Have level" and "Within 5 levels" are never on together; "Have mats" combines with either.
+3. "Have level" and "Up to 5 levels ahead" are never on together; "Have mats" combines with either.
 4. With no filter on, the screen lists the same recipes as before this amendment.
