@@ -175,6 +175,7 @@ Future<void> startAction(
   bool deadly = false,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
+  final showNow = ShowNow.maybeOf(context);
   if (deadly) {
     final go = await showDialog<bool>(
       context: context,
@@ -202,6 +203,7 @@ Future<void> startAction(
     // whether to start now or queue it.
     if (c.game.queueSlots(c.state) == 1) {
       await c.addAction(a);
+      showNow?.call();
       return;
     }
     final choice = await showModalBottomSheet<(StopCondition, bool)>(
@@ -212,9 +214,24 @@ Future<void> startAction(
     if (choice == null) return;
     final (stop, now) = choice;
     await (now ? c.startActivity(a, stop: stop) : c.addAction(a, stop: stop));
+    if (now) showNow?.call();
   } on ActivityError catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));
   }
+}
+
+/// Brings the player to Now once an action starts (playtest 3), from any
+/// screen below the bottom bar.
+class ShowNow extends InheritedWidget {
+  const ShowNow({super.key, required this.show, required super.child});
+
+  final VoidCallback show;
+
+  static VoidCallback? maybeOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<ShowNow>()?.show;
+
+  @override
+  bool updateShouldNotify(ShowNow oldWidget) => false;
 }
 
 /// A section heading in a screen's list.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'achievements_screen.dart';
+import 'actions.dart';
 import 'away_summary_card.dart';
 import 'character_tab.dart';
 import 'controller_scope.dart';
@@ -70,10 +71,14 @@ class _HomeShellState extends State<HomeShell> {
             ),
             tooltip: 'Achievements',
             onPressed: () {
-              c.markSeen(c.unseenAchievements);
+              final unseen = c.unseenAchievements;
+              c.markSeen(unseen);
+              final fresh = {
+                for (final id in unseen) id.substring('achievement.'.length),
+              };
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const AchievementsScreen(),
+                  builder: (_) => AchievementsScreen(fresh: fresh),
                 ),
               );
             },
@@ -96,18 +101,23 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      body: switch (_screen) {
-        _Screen.now => NowTab(
-          onOpenWorld: () => setState(() => _screen = _Screen.world),
-          onOpenProfessions: ([profession]) => setState(() {
-            _focus = profession;
-            _screen = _Screen.professions;
-          }),
-        ),
-        _Screen.world => const WorldTab(),
-        _Screen.professions => ProfessionsTab(focus: _focus),
-        _Screen.character => const CharacterTab(),
-      },
+      body: ShowNow(
+        show: () {
+          if (mounted) setState(() => _screen = _Screen.now);
+        },
+        child: switch (_screen) {
+          _Screen.now => NowTab(
+            onOpenWorld: () => setState(() => _screen = _Screen.world),
+            onOpenProfessions: ([profession]) => setState(() {
+              _focus = profession;
+              _screen = _Screen.professions;
+            }),
+          ),
+          _Screen.world => const WorldTab(),
+          _Screen.professions => ProfessionsTab(focus: _focus),
+          _Screen.character => const CharacterTab(),
+        },
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: screens.indexOf(_screen),
         onDestinationSelected: (i) => setState(() {

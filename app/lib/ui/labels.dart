@@ -154,7 +154,8 @@ class Labels {
   /// The bestiary and lore news of a report (spec 0009 §7).
   String loreFound(String note) =>
       'Found a lore note: ${data.loreNotes.where((n) => n.id == note).firstOrNull?.title ?? note}';
-  String weaknessLearned(String id) => '${enemy(id)}: weakness learned';
+  String weaknessLearned(String id) =>
+      '${enemy(id)}: weakness learned, see the Bestiary in the Journal';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
 
   /// How working [node] reads: "Mining" / "Mined" / "mine", and so on for

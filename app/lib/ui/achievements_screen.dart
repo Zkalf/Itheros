@@ -6,7 +6,10 @@ import 'labels.dart';
 
 /// Opens from the trophy button in the top bar (spec 0006 amendment 2).
 class AchievementsScreen extends StatelessWidget {
-  const AchievementsScreen({super.key});
+  const AchievementsScreen({super.key, this.fresh = const {}});
+
+  /// Earned achievements not seen before this visit: they show "New".
+  final Set<String> fresh;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +27,7 @@ class AchievementsScreen extends StatelessWidget {
               _AchievementTile(
                 achievement: a,
                 unlocked: s.achievements.contains(a.id),
+                fresh: fresh.contains(a.id),
                 progress: s.counters[a.counter] ?? 0,
                 labels: labels,
               ),
@@ -38,12 +42,14 @@ class _AchievementTile extends StatelessWidget {
   const _AchievementTile({
     required this.achievement,
     required this.unlocked,
+    required this.fresh,
     required this.progress,
     required this.labels,
   });
 
   final AchievementDef achievement;
   final bool unlocked;
+  final bool fresh;
   final int progress;
   final Labels labels;
 
@@ -58,6 +64,12 @@ class _AchievementTile extends StatelessWidget {
           color: unlocked ? Theme.of(context).colorScheme.primary : null,
         ),
         title: Text(a.name),
+        trailing: fresh
+            ? Chip(
+                key: ValueKey('achievement-new-${a.id}'),
+                label: const Text('New'),
+              )
+            : null,
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
