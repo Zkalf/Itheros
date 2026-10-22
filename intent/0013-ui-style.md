@@ -12,14 +12,14 @@ tell loot and monsters apart only by name. Zkalf and nabriis chose one style for
 1. **One style on all screens:** slate panels on black, one soft teal accent and no brown. The quality and level
    colours stay.
 2. **Black borders** on all buttons.
-3. **Images** for all monsters, items, achievements and the World map. The item count is outside the frame. Gear
-   never looks like a material.
+3. **Images** for monsters, items, achievements and the World map. Anything without its own image yet shows a
+   placeholder (point 7). The item count is outside the frame. Gear never looks like a material.
 4. **A splash:** the name Itheros on a full-screen image, with a loading bar at the bottom. The launcher icon is an
    emblem in the same style.
 5. **One teal ring** shows where you are on the map.
 6. **Each fact shows only once** on a screen. A fact that the app shows once today stays.
-7. **Placeholders** for new content without its own image: one for each kind of thing (for example boots, a sword
-   or a monster), and one generic placeholder for the rest. New boots then show the boots placeholder.
+7. **Placeholders** for anything without its own image yet: one for each kind of thing (for example boots, a sword
+   or a monster), and one generic placeholder for the rest. Boots without an image then show the boots placeholder.
 
 ## Affected users and systems
 All players and all screens. The theme, images, fonts and launcher icon. No change to the game rules. The new spec
@@ -29,10 +29,11 @@ icons in spec 0004 amendment 3 and the launcher icon in spec 0007 decision 5.
 ## Constraints
 - **Dark only.** The app no longer follows the light or dark setting of the phone.
 - No network code and no new packages.
-- New content can ship without its own image.
+- **The style ships first.** About 130 of the 178 items have no image yet. They show their placeholder until their
+  images are made later. New content can also ship without its own image.
 - The fonts keep their own licence (SIL Open Font License 1.1). The app includes the licence texts.
 - The images are AI-made. The image files are their source.
-- The images make the app about 10 MB bigger: about 60 MB instead of 50 MB.
+- With all images in, the app is about 10 MB bigger: about 60 MB instead of 50 MB.
 - The style goes on the current screens. The design shows some older screens.
 - In scope: a talents screen, a boss screen, portraits and a route map in the away report. The talent rules (how
   players spend points) come in their own intent.
