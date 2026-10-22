@@ -241,6 +241,14 @@ void main() {
       newSeed: () => 1,
     );
 
+    // Stops the timer and waits for a sync still writing the save, so
+    // tearDown can delete the folder (Windows refuses while a file is open).
+    Future<void> stop(GameController c) async {
+      c.pause();
+      await c.idle();
+      c.dispose();
+    }
+
     test('syncs while the app is in the foreground', () async {
       final c = timed();
       await c.start();
@@ -250,7 +258,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
       expect(c.state.bank, 500);
-      c.dispose();
+      await stop(c);
     });
 
     test('does not sync when the app opened while in the background', () async {
@@ -268,7 +276,7 @@ void main() {
         0,
         reason: 'Health Connect refuses background reads',
       );
-      c.dispose();
+      await stop(c);
     });
   });
 
