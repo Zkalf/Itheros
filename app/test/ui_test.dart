@@ -2632,6 +2632,20 @@ void lakeAndHunt() {
         findsOneWidget,
       );
     });
+
+    testWidgets('§8.4: waters are drawn as water, not hills', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      c.state.revealed.add('smugglers_cove');
+      c.state.explored.add('mirror_lake');
+      await openTab(t, 'world');
+      for (final area in ['mirror_lake', 'smugglers_cove']) {
+        expect(within('area-$area', find.byIcon(Icons.water)), findsOne);
+      }
+      expect(
+        within('area-copper_hills', find.byIcon(Icons.water)),
+        findsNothing,
+      );
+    });
   });
 }
 
