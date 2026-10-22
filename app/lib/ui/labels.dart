@@ -16,11 +16,25 @@ String fmt(int n) {
 /// (1, 'step') -> "1 step"; (1200, 'step') -> "1,200 steps".
 String plural(int n, String noun) => '${fmt(n)} $noun${n == 1 ? '' : 's'}';
 
+/// Male, Female, Neither (spec 0012 §4.1).
+String genderName(Gender g) => switch (g) {
+  Gender.male => 'Male',
+  Gender.female => 'Female',
+  Gender.neither => 'Neither',
+};
+
 /// Display names from the game data.
 class Labels {
-  Labels(this.data);
+  Labels(this.data, [this.who]);
 
   final GameData data;
+
+  /// Whose name and gendered words data lines are filled with (spec 0012
+  /// §2.3).
+  final Character? who;
+
+  /// [line] filled for [who].
+  String fill(String line) => Game(data).fill(line, who);
 
   String location(String id) => data.locations[id]?.name ?? id;
   String enemy(String id) => data.enemies[id]?.name ?? id;
@@ -451,7 +465,7 @@ class Labels {
 
   /// One "What's new" line of a level-up card (spec 0002 §9.1).
   String news(LevelNews n) => switch (n.kind) {
-    NewsKind.rank => data.ranks.firstWhere((r) => r.name == n.id).line,
+    NewsKind.rank => fill(data.ranks.firstWhere((r) => r.name == n.id).line),
     NewsKind.gatheringSpot => 'You can now ${_verbs(n.id).$3} ${_spot(n.id)}',
     NewsKind.recipe => 'New recipe: ${recipe(n.id)}',
     NewsKind.talentPoint =>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
 import 'away_summary_card.dart';
+import 'character_creation_screen.dart';
 import 'controller_scope.dart';
 import 'home_shell.dart';
 import 'level_up_screen.dart';
@@ -54,8 +55,11 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
             ControllerStatus.loading => const LoadingScreen(),
             ControllerStatus.unavailable => const UnavailableScreen(),
             ControllerStatus.needsPermission => const PermissionScreen(),
+            // Who you are comes first (spec 0012 decision 6).
             ControllerStatus.ready =>
-              widget.controller.levelCards.isNotEmpty
+              widget.controller.state.character == null
+                  ? const CharacterCreationScreen()
+                  : widget.controller.levelCards.isNotEmpty
                   ? const LevelUpScreen()
                   : widget.controller.awaySummary != null
                   ? const AwayScreen()

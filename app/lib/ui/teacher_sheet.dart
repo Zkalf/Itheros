@@ -50,11 +50,12 @@ class TeacherSheet extends StatelessWidget {
       final game = c.game;
       final s = c.state;
       final p = game.data.professions[profession]!;
-      final labels = Labels(game.data);
+      final labels = Labels(game.data, s.character);
       final text = Theme.of(context).textTheme;
       final learned = s.learned.contains(profession);
       final level = game.professionLevel(s, profession);
       final next = p.tips.where((t) => t.level > level).firstOrNull;
+      const italic = TextStyle(fontStyle: FontStyle.italic);
       return SafeArea(
         child: SingleChildScrollView(
           key: const ValueKey('teacher-sheet'),
@@ -63,6 +64,14 @@ class TeacherSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(teacherName(p), style: text.titleLarge),
+              const SizedBox(height: 8),
+              // The greeting, or the kin line in place of the learn line
+              // (spec 0012 §3.1).
+              Text(
+                '"${game.teacherLine(s, profession)}"',
+                key: const ValueKey('teacher-line'),
+                style: italic,
+              ),
               const SizedBox(height: 8),
               if (!learned) ...[
                 Text('${p.teacher.name} teaches ${p.name}.'),
@@ -82,11 +91,10 @@ class TeacherSheet extends StatelessWidget {
                   child: Text('Learn ${p.name}'),
                 ),
               ] else ...[
-                Text(
-                  '"${p.teacher.learnLine}"',
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-                const SizedBox(height: 8),
+                if (!game.isKin(s, profession)) ...[
+                  Text('"${labels.fill(p.teacher.learnLine)}"', style: italic),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   '${p.name} $level · ${p.tierAt(level).name}. '
                   '${next == null ? "You've heard all my tips." : 'Next tip at ${p.name} ${next.level}.'}',
@@ -122,7 +130,7 @@ class TipCard extends StatelessWidget {
             Text(tip.title, style: text.titleMedium),
             Text('About the ${labels.enemy(tip.enemy)}', style: text.bodySmall),
             const SizedBox(height: 8),
-            Text(tip.text),
+            Text(labels.fill(tip.text)),
           ],
         ),
       ),

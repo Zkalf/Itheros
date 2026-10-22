@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
 
 import 'actions.dart';
 import 'away_summary_card.dart';
@@ -48,7 +49,10 @@ class JournalScreen extends StatelessWidget {
     length: 3,
     child: Scaffold(
       appBar: AppBar(
-        title: const Text('Journal'),
+        // "Zkalf's journal" (spec 0012 §4.5).
+        title: Text(
+          "${ControllerScope.of(context).state.character?.name ?? Game.defaultName}'s journal",
+        ),
         bottom: const TabBar(
           tabs: [
             Tab(text: 'Log'),
@@ -169,7 +173,7 @@ class _Lore extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final data = c.game.data;
-    final labels = Labels(data);
+    final labels = Labels(data, c.state.character);
     final text = Theme.of(context).textTheme;
     final byId = {for (final n in data.loreNotes) n.id: n};
     final found = [for (final id in c.state.lore.toList().reversed) ?byId[id]];

@@ -37,7 +37,28 @@ class _CharacterTabState extends State<CharacterTab> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _RankTitle(game.rank(level).name),
+                // Name, then rank · origin (spec 0012 §4.4).
+                if (s.character case final who?) ...[
+                  Text(
+                    who.name,
+                    key: const ValueKey('character-name'),
+                    style: text.headlineSmall,
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _RankTitle(game.rank(level).name),
+                    if (s.character case final who?)
+                      Text(
+                        '· ${game.fill(game.data.origins[who.origin]?.title ?? '', who)}',
+                        key: const ValueKey('character-origin'),
+                        style: text.titleMedium,
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -133,7 +154,10 @@ class _RankTitleState extends State<_RankTitle> {
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: _tap,
-    child: Text(widget.name, style: Theme.of(context).textTheme.titleLarge),
+    child: Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Text(widget.name, style: Theme.of(context).textTheme.titleMedium),
+    ),
   );
 }
 

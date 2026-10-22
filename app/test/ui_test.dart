@@ -2158,9 +2158,17 @@ void professionScreens() {
         File('test/fixtures/saves/0.2.0.json').readAsStringSync(),
       ) as Map<String, Object?>;
       final c = await pumpSave(t, json);
+      // It sets out first (spec 0012 decision 6).
+      expect(find.text('Who are you?'), findsOneWidget);
+      await t.ensureVisible(find.byKey(const ValueKey('origin-tavern_cook')));
+      await t.tap(find.byKey(const ValueKey('origin-tavern_cook')));
+      await t.pump();
+      await t.ensureVisible(find.byKey(const ValueKey('set-out')));
+      await t.tap(find.byKey(const ValueKey('set-out')));
+      await settle(t, c);
       final mining = c.game.professionLevel(c.state, 'mining');
       final crafting = c.game.professionLevel(c.state, 'crafting');
-      expect(c.state.learned, {'mining', 'crafting'});
+      expect(c.state.learned, {'mining', 'crafting', 'cooking'});
       await openTab(t, 'professions');
       expect(within('profession-mining', find.text('Level $mining')), findsOne);
       expect(
@@ -2802,6 +2810,7 @@ void yourCharacter() {
           'origin-coast_fisher',
           find.text(
             'Starts with Fishing 5 · Wen, the fisherman, greets you as kin',
+            findRichText: true,
           ),
         ),
         findsOneWidget,
