@@ -113,6 +113,7 @@ class _OriginCard extends StatelessWidget {
   });
 
   final OriginDef origin;
+
   /// Both filled for the gender picked (spec 0012 §2.3).
   final String title;
   final String line;
