@@ -1708,7 +1708,7 @@ class _Run {
     final trophy = node.rareFind != null && u < rareChance;
     String? row;
     if (!trophy) {
-      u -= rareChance;
+      if (node.rareFind != null) u -= rareChance;
       for (final c in node.catches) {
         if (c.chance case final p?) {
           if (u < p) {
