@@ -80,6 +80,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
               _OriginCard(
                 origin: o,
                 title: game.fill(o.title, who),
+                line: game.fill(o.line, who),
                 selected: _origin == o.id,
                 onTap: () => setState(() => _origin = o.id),
               ),
@@ -106,12 +107,15 @@ class _OriginCard extends StatelessWidget {
   const _OriginCard({
     required this.origin,
     required this.title,
+    required this.line,
     required this.selected,
     required this.onTap,
   });
 
   final OriginDef origin;
+  /// Both filled for the gender picked (spec 0012 §2.3).
   final String title;
+  final String line;
   final bool selected;
   final VoidCallback onTap;
 
@@ -141,7 +145,7 @@ class _OriginCard extends StatelessWidget {
               Text(title, style: theme.textTheme.titleMedium),
               const SizedBox(height: 4),
               Text(
-                '"${origin.line}"',
+                '"$line"',
                 style: const TextStyle(fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 8),
