@@ -1,6 +1,6 @@
 # Spec 0010 amendment 3: profession buttons and recipe filters
 
-Status: draft
+Status: accepted
 Amends: [spec 0010](0010-professions.md) §8.1 (the Professions screen)
 Product owner: Zkalf (playtest notes, 2026-10-22)
 Date: 2026-10-22
