@@ -31,6 +31,9 @@ IconData professionIcon(String name) => switch (name) {
   'pickaxe' => Icons.hardware,
   'axe' => Icons.carpenter,
   'anvil' => Icons.handyman,
+  'fish' => Icons.phishing,
+  'bow' => Icons.my_location,
+  'pot' => Icons.soup_kitchen,
   _ => Icons.work,
 };
 
@@ -83,7 +86,7 @@ class ItemSquare extends StatelessWidget {
       iconColour = border;
     } else {
       border = Colors.transparent;
-      icon = materialIcon;
+      icon = def?.meal != null ? Icons.restaurant : materialIcon;
       iconColour = scheme.onSurfaceVariant;
     }
     return Opacity(

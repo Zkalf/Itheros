@@ -53,15 +53,19 @@ class WorldTab extends StatelessWidget {
                               Offset(p.x * width, p.y * height),
                           ],
                           paths: [
+                            // A hidden area's roads aren't drawn either
+                            // (spec 0011 §6.2).
                             for (final r in game.data.routes)
-                              (
-                                at(r.from),
-                                at(r.to),
-                                game.isFogged(s, r.from) ||
-                                        game.isFogged(s, r.to)
-                                    ? null
-                                    : fmt(r.steps),
-                              ),
+                              if (!game.isHidden(s, r.from) &&
+                                  !game.isHidden(s, r.to))
+                                (
+                                  at(r.from),
+                                  at(r.to),
+                                  game.isFogged(s, r.from) ||
+                                          game.isFogged(s, r.to)
+                                      ? null
+                                      : fmt(r.steps),
+                                ),
                           ],
                           water: scheme.primaryContainer,
                           road: scheme.outline,
@@ -71,25 +75,26 @@ class WorldTab extends StatelessWidget {
                       ),
                     ),
                     for (final area in game.data.locations.keys)
-                      Positioned(
-                        // Kept inside the map, so edge names stay tappable.
-                        left: (at(area).dx - _label / 2).clamp(
-                          0,
-                          width - _label,
+                      if (!game.isHidden(s, area))
+                        Positioned(
+                          // Kept inside the map, so edge names stay tappable.
+                          left: (at(area).dx - _label / 2).clamp(
+                            0,
+                            width - _label,
+                          ),
+                          top: at(area).dy - _marker,
+                          width: _label,
+                          child: _Place(
+                            key: ValueKey('area-$area'),
+                            name: game.isFogged(s, area)
+                                ? '???'
+                                : labels.location(area),
+                            icon: _icon(game, s, area),
+                            here: area == s.location,
+                            fogged: game.isFogged(s, area),
+                            onTap: () => _open(context, c, area),
+                          ),
                         ),
-                        top: at(area).dy - _marker,
-                        width: _label,
-                        child: _Place(
-                          key: ValueKey('area-$area'),
-                          name: game.isFogged(s, area)
-                              ? '???'
-                              : labels.location(area),
-                          icon: _icon(game, s, area),
-                          here: area == s.location,
-                          fogged: game.isFogged(s, area),
-                          onTap: () => _open(context, c, area),
-                        ),
-                      ),
                   ],
                 ),
               ),

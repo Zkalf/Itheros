@@ -120,6 +120,13 @@ class AwaySummary {
     this.professionLevels = const [],
     this.finds = const [],
     this.rerolls = const [],
+    this.trophyFish = const [],
+    this.records = const [],
+    this.charts = const [],
+    this.bottleItems = const [],
+    this.chests = const [],
+    this.mealsEaten = const [],
+    this.mealsOut = const [],
   });
 
   factory AwaySummary.fromReports(Iterable<StepReport> reports) =>
@@ -132,8 +139,14 @@ class AwaySummary {
     final levels = <int>[];
     final achievements = <String>[];
     final lore = <String>[], learned = <String>[], slayers = <String>[];
-    final professionLevels = <(String, int)>[], finds = <String>[];
+    final professionLevels = <(String, int)>[];
+    final finds = <String>[];
+    final trophyFish = <(String, int)>[];
     final rerolls = <(String, String)>[];
+    final records = <(String, int, int)>[];
+    final charts = <String>[], bottleItems = <String>[], chests = <String>[];
+    final mealsEaten = <(String, int)>[];
+    final mealsOut = <String>[];
     var wins = 0, xp = 0;
     var items = <String, int>{};
     var losses = <FightLost>[];
@@ -181,6 +194,9 @@ class AwaySummary {
           levels.add(level);
         // Gems and heartwood join the action's items, and are news (spec
         // 0010 §5.1).
+        case RareFound(:final item, :final weight?):
+          gain(item, 1);
+          trophyFish.add((item, weight));
         case RareFound(:final item):
           gain(item, 1);
           finds.add(item);
@@ -210,13 +226,19 @@ class AwaySummary {
           logs.add(ActionLog(activity, skipped: reason, missing: missing));
         case Arrived():
           break;
-        // Spec 0011's news lines come with its screens (plan 0013 M2).
-        case RecordBeaten() ||
-            BottleFound() ||
-            ChestFound() ||
-            MealEaten() ||
-            MealsOut():
-          break;
+        // Spec 0011's news: records, bottles, the chest, meals.
+        case RecordBeaten(:final item, :final weight, :final was):
+          records.add((item, weight, was));
+        case BottleFound(:final revealed?):
+          charts.add(revealed);
+        case BottleFound(:final item):
+          if (item != null) bottleItems.add(item);
+        case ChestFound(:final key):
+          chests.add(key);
+        case MealEaten(:final key, :final left):
+          mealsEaten.add((key, left));
+        case MealsOut(:final meal):
+          mealsOut.add(meal);
       }
     }
     final running = started ?? r.state.activity?.activity;
@@ -236,6 +258,13 @@ class AwaySummary {
       professionLevels: professionLevels,
       finds: finds,
       rerolls: rerolls,
+      trophyFish: trophyFish,
+      records: records,
+      charts: charts,
+      bottleItems: bottleItems,
+      chests: chests,
+      mealsEaten: mealsEaten,
+      mealsOut: mealsOut,
     );
   }
 
@@ -262,6 +291,18 @@ class AwaySummary {
   final List<String> finds;
   final List<(String, String)> rerolls;
 
+  /// Spec 0011's news: trophy fish caught (fish, weight in tenths of a kg),
+  /// records beaten (fish, weight, was), areas a sea chart
+  /// revealed, what later bottles held, sunken chests' rings, meals eaten by
+  /// auto-eat (key, left) and meals that ran out (§3.4, §5.4, §6).
+  final List<(String, int)> trophyFish;
+  final List<(String, int, int)> records;
+  final List<String> charts;
+  final List<String> bottleItems;
+  final List<String> chests;
+  final List<(String, int)> mealsEaten;
+  final List<String> mealsOut;
+
   bool get isEmpty => walked == 0;
 
   /// Something happened beyond steps going to the bank or toward an
@@ -275,7 +316,14 @@ class AwaySummary {
       slayers.isNotEmpty ||
       professionLevels.isNotEmpty ||
       finds.isNotEmpty ||
-      rerolls.isNotEmpty;
+      rerolls.isNotEmpty ||
+      trophyFish.isNotEmpty ||
+      records.isNotEmpty ||
+      charts.isNotEmpty ||
+      bottleItems.isNotEmpty ||
+      chests.isNotEmpty ||
+      mealsEaten.isNotEmpty ||
+      mealsOut.isNotEmpty;
 
   factory AwaySummary.fromJson(Map<String, Object?> j) => AwaySummary(
     walked: j['walked']! as int,
@@ -303,6 +351,24 @@ class AwaySummary {
       for (final r in j['rerolls'] as List<Object?>? ?? const [])
         if (r case [final String before, final String after]) (before, after),
     ],
+    // Entries from before spec 0011 have none.
+    trophyFish: [
+      for (final f in j['trophyFish'] as List<Object?>? ?? const [])
+        if (f case [final String item, final int weight]) (item, weight),
+    ],
+    records: [
+      for (final r in j['records'] as List<Object?>? ?? const [])
+        if (r case [final String item, final int weight, final int was])
+          (item, weight, was),
+    ],
+    charts: _strings(j['charts']),
+    bottleItems: _strings(j['bottleItems']),
+    chests: _strings(j['chests']),
+    mealsEaten: [
+      for (final m in j['mealsEaten'] as List<Object?>? ?? const [])
+        if (m case [final String key, final int left]) (key, left),
+    ],
+    mealsOut: _strings(j['mealsOut']),
   );
 
   Map<String, Object?> toJson() => {
@@ -324,6 +390,19 @@ class AwaySummary {
     'rerolls': [
       for (final (a, b) in rerolls) [a, b],
     ],
+    'trophyFish': [
+      for (final (item, weight) in trophyFish) [item, weight],
+    ],
+    'records': [
+      for (final (item, weight, was) in records) [item, weight, was],
+    ],
+    'charts': charts,
+    'bottleItems': bottleItems,
+    'chests': chests,
+    'mealsEaten': [
+      for (final (key, left) in mealsEaten) [key, left],
+    ],
+    'mealsOut': mealsOut,
   };
 
   AwaySummary operator +(AwaySummary o) {
@@ -352,6 +431,13 @@ class AwaySummary {
       professionLevels: [...professionLevels, ...o.professionLevels],
       finds: [...finds, ...o.finds],
       rerolls: [...rerolls, ...o.rerolls],
+      trophyFish: [...trophyFish, ...o.trophyFish],
+      records: [...records, ...o.records],
+      charts: [...charts, ...o.charts],
+      bottleItems: [...bottleItems, ...o.bottleItems],
+      chests: [...chests, ...o.chests],
+      mealsEaten: [...mealsEaten, ...o.mealsEaten],
+      mealsOut: [...mealsOut, ...o.mealsOut],
     );
   }
 

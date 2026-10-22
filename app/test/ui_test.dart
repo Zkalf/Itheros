@@ -2422,7 +2422,9 @@ void lakeAndHunt() {
         within('profession-cooking', find.textContaining('Camp fire')),
         findsOneWidget,
       );
-      await t.tap(find.byKey(const ValueKey('go-cooking')));
+      await t.ensureVisible(find.byKey(const ValueKey('go-cooking')));
+      await t.pumpAndSettle();
+      await tapAndStart(t, find.byKey(const ValueKey('go-cooking')));
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.activity!.activity, const Activity.travel('camp'));
@@ -2464,7 +2466,11 @@ void lakeAndHunt() {
       expect(find.text('Marta, the cook'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('here-fire')));
       await t.pumpAndSettle();
-      expect(find.byKey(const ValueKey('profession-cooking')), findsOneWidget);
+      // Scrolled to the Cooking card, below Crafting's recipes.
+      final top = t.getTopLeft(
+        find.byKey(const ValueKey('profession-cooking')),
+      );
+      expect(top.dy, inInclusiveRange(0, 4000));
     });
 
     testWidgets('criterion 15: the new spots are in Here', (t) async {
@@ -2500,8 +2506,7 @@ void lakeAndHunt() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('tally-items')),
-          matching: find.textContaining('Perch'),
-          findRichText: true,
+          matching: find.textContaining('Perch', findRichText: true),
         ),
         findsOneWidget,
       );

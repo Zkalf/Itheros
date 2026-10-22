@@ -100,6 +100,7 @@ class RunningActivity {
     this.crafted = 0,
     this.won = 0,
     this.lost = 0,
+    this.records = 0,
     Map<String, int>? gained,
     List<RoundLog>? log,
   }) : stop = stop ?? StopCondition.defaultFor(activity),
@@ -123,6 +124,7 @@ class RunningActivity {
         // Version 4 saves have no tally: it starts empty.
         won: json['won'] as int? ?? 0,
         lost: json['lost'] as int? ?? 0,
+        records: json['records'] as int? ?? 0,
         gained: json['gained'] == null ? null : _intMap(json['gained']),
         log: [
           for (final r in json['log'] as List<Object?>? ?? const [])
@@ -157,6 +159,9 @@ class RunningActivity {
   int lost;
   final Map<String, int> gained;
 
+  /// Fish records beaten while this action ran (spec 0011 §8.2).
+  int records;
+
   /// The last few fight rounds, oldest first (spec 0006 decision 8).
   final List<RoundLog> log;
 
@@ -170,6 +175,7 @@ class RunningActivity {
     'crafted': crafted,
     'won': won,
     'lost': lost,
+    'records': records,
     'gained': Map.of(gained),
     'log': [for (final r in log) r.toJson()],
   };

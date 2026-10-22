@@ -1741,6 +1741,7 @@ class _Run {
       final was = s.records[item];
       if (was == null || weight > was) s.records[item] = weight;
       if (was != null && weight > was) {
+        act.records++;
         events.add(RecordBeaten(item, weight, was));
       }
     }

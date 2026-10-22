@@ -42,28 +42,30 @@ Widget reportLine(String line, Labels labels) =>
 
 /// The big moments of a report, shown as banners above its lines (spec 0004
 /// amendment 3): levels reached, achievements, what was learned about
-/// monsters (spec 0009 §7), then profession news.
-List<Widget> reportBanners(AwaySummary s, Labels labels) => [
-  for (final l in s.levelsReached)
-    ReportBanner(icon: Icons.military_tech, text: 'Reached level $l!'),
+/// monsters (spec 0009 §7), then profession news and the lake's (spec 0011
+/// §3.2, §4, §6).
+List<(IconData, String)> reportNews(AwaySummary s, Labels labels) => [
+  for (final l in s.levelsReached) (Icons.military_tech, 'Reached level $l!'),
   for (final a in s.achievements)
-    ReportBanner(
-      icon: Icons.emoji_events,
-      text: 'Achievement unlocked: ${labels.achievement(a)}',
-    ),
-  for (final n in s.lore)
-    ReportBanner(icon: Icons.menu_book, text: labels.loreFound(n)),
-  for (final e in s.learned)
-    ReportBanner(icon: Icons.visibility, text: labels.weaknessLearned(e)),
-  for (final e in s.slayers)
-    ReportBanner(icon: Icons.gps_fixed, text: labels.slayerEarned(e)),
+    (Icons.emoji_events, 'Achievement unlocked: ${labels.achievement(a)}'),
+  for (final n in s.lore) (Icons.menu_book, labels.loreFound(n)),
+  for (final e in s.learned) (Icons.visibility, labels.weaknessLearned(e)),
+  for (final e in s.slayers) (Icons.gps_fixed, labels.slayerEarned(e)),
   // Profession news (spec 0010 §2.2, §5.1, §7.2-7.3).
   for (final (p, l) in s.professionLevels)
-    ReportBanner(icon: Icons.construction, text: labels.professionLevel(p, l)),
-  for (final f in s.finds)
-    ReportBanner(icon: Icons.diamond, text: labels.rareFound(f)),
-  for (final (a, b) in s.rerolls)
-    ReportBanner(icon: Icons.autorenew, text: labels.rerollNews(a, b)),
+    (Icons.construction, labels.professionLevel(p, l)),
+  for (final f in s.finds) (Icons.diamond, labels.rareFound(f)),
+  for (final (f, weight) in s.trophyFish)
+    (Icons.set_meal, labels.rareFound(f, weight: weight)),
+  for (final (a, b) in s.rerolls) (Icons.autorenew, labels.rerollNews(a, b)),
+  for (final area in s.charts) (Icons.map, labels.bottle(revealed: area)),
+  for (final item in s.bottleItems) (Icons.mail, labels.bottle(item: item)),
+  for (final key in s.chests) (Icons.inventory_2, labels.chest(key)),
+];
+
+List<Widget> reportBanners(AwaySummary s, Labels labels) => [
+  for (final (icon, text) in reportNews(s, labels))
+    ReportBanner(icon: icon, text: text),
 ];
 
 /// A highlighted line with an icon, in the theme's highlight colour.
@@ -107,6 +109,10 @@ List<String> reportLines(AwaySummary s, Labels labels) => [
   if (s.boostUsed > 0)
     'Used ${plural(s.boostUsed, 'step')} from your step bank.',
   for (final a in s.actions) ...labels.actionLines(a),
+  // Spec 0011 §3.4, §5.4.
+  for (final (item, weight, was) in s.records) labels.record(item, weight, was),
+  for (final (key, left) in s.mealsEaten) labels.mealEaten(key, left),
+  for (final meal in s.mealsOut) labels.mealsOut(meal),
   if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
   if (s.lost > 0)
     'Your step bank was full, so ${plural(s.lost, 'step')} '

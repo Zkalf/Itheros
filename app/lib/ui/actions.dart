@@ -136,10 +136,15 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     title: labels.node(node),
     enabled: game.nodeLevelMet(c.state, node),
     // Spots pay profession XP (spec 0010 §2.2).
+    // A water or trail rolls its catch (spec 0011 §3.2, §4).
     subtitle:
         game.lockedReason(c.state, Activity.gather(node)) ??
         '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
-            '${labels.item(n.item)} · '
+            '${n.catches.isEmpty
+                ? labels.item(n.item)
+                : n.profession == 'fishing'
+                ? 'cast'
+                : 'hunt'} · '
             '${game.professionXpFor(c.state, n.profession, n.level, n.xp)} '
             '${game.data.professions[n.profession]!.name} XP',
     startFrom: startFrom,

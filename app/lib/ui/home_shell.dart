@@ -36,6 +36,9 @@ class _HomeShellState extends State<HomeShell> {
   /// The app opens on Now.
   var _screen = _Screen.now;
 
+  /// The profession card Professions opens on, from a row in Now.
+  String? _focus;
+
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
@@ -96,16 +99,21 @@ class _HomeShellState extends State<HomeShell> {
       body: switch (_screen) {
         _Screen.now => NowTab(
           onOpenWorld: () => setState(() => _screen = _Screen.world),
-          onOpenProfessions: () =>
-              setState(() => _screen = _Screen.professions),
+          onOpenProfessions: ([profession]) => setState(() {
+            _focus = profession;
+            _screen = _Screen.professions;
+          }),
         ),
         _Screen.world => const WorldTab(),
-        _Screen.professions => const ProfessionsTab(),
+        _Screen.professions => ProfessionsTab(focus: _focus),
         _Screen.character => const CharacterTab(),
       },
       bottomNavigationBar: NavigationBar(
         selectedIndex: screens.indexOf(_screen),
-        onDestinationSelected: (i) => setState(() => _screen = screens[i]),
+        onDestinationSelected: (i) => setState(() {
+          _focus = null;
+          _screen = screens[i];
+        }),
         destinations: [
           for (final screen in screens)
             NavigationDestination(

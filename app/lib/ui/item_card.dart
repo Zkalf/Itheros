@@ -32,7 +32,8 @@ Future<void> showItemCard(
 /// The item's name in its quality colour, the quality and kind in words, its
 /// stats, how it compares with what is worn, and Equip / Swap / Unequip. A
 /// tool says what it serves and costs; at a forge gear and tools salvage
-/// and gear rerolls (spec 0010 §8.3). A material says where it comes from
+/// and gear rerolls (spec 0010 §8.3). A meal says its buff and length, with
+/// Eat and Auto-eat (spec 0011 §8.3). A material says where it comes from
 /// and what uses it.
 class ItemCard extends StatelessWidget {
   const ItemCard({
@@ -146,6 +147,10 @@ class ItemCard extends StatelessWidget {
         const SizedBox(height: 12),
         ..._toolActions(context, labels),
         ..._forgeActions(context, labels),
+      ] else if (def.meal != null) ...[
+        Text(labels.mealLength(item), key: const ValueKey('card-buff')),
+        const SizedBox(height: 12),
+        ..._mealActions(context, labels),
       ] else
         ..._materialLines(labels),
     ];
@@ -239,6 +244,69 @@ class ItemCard extends StatelessWidget {
       ),
       const SizedBox(height: 8),
     ];
+  }
+
+  /// Eat, asking first while a meal runs, and the auto-eat choice (spec
+  /// 0011 §5.4).
+  List<Widget> _mealActions(BuildContext context, Labels labels) {
+    final c = controller;
+    final s = c.state;
+    final running = s.meal;
+    final small = Theme.of(context).textTheme.bodySmall;
+    return [
+      if (running != null)
+        Text(
+          'Replaces ${labels.item(running.key)} '
+          '(${fmt(running.left)} steps left)',
+          style: small,
+        ),
+      const SizedBox(height: 8),
+      FilledButton.tonal(
+        key: const ValueKey('card-eat'),
+        onPressed: () => _close(context, () => _eat(labels)),
+        child: const Text('Eat'),
+      ),
+      const SizedBox(height: 16),
+      Text('Auto-eat', style: Theme.of(context).textTheme.titleSmall),
+      if (s.autoEat case final auto?
+          when auto.meal != c.game.data.itemOf(item)!.id)
+        Text(
+          'Replaces ${labels.item(auto.meal)} as the auto-eat meal',
+          style: small,
+        ),
+      const SizedBox(height: 4),
+      _AutoEat(controller: c, meal: c.game.data.itemOf(item)!.id),
+    ];
+  }
+
+  /// Eats the meal; with one running, asks first.
+  Future<void> _eat(Labels labels) async {
+    final running = controller.state.meal;
+    if (running != null) {
+      final sure = await showDialog<bool>(
+        context: host,
+        builder: (context) => AlertDialog(
+          title: Text('Eat the ${labels.item(item)}?'),
+          content: Text(
+            'It replaces your ${labels.item(running.key)} '
+            '(${fmt(running.left)} steps left).',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Not now'),
+            ),
+            TextButton(
+              key: const ValueKey('eat-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eat'),
+            ),
+          ],
+        ),
+      );
+      if (sure != true) return;
+    }
+    await controller.eat(item);
   }
 
   /// Salvage for a bag item, Reroll for gear below Legendary, both at a
@@ -347,6 +415,8 @@ class ItemCard extends StatelessWidget {
       for (final (verb, profession) in const [
         ('Mined', 'mining'),
         ('Chopped', 'woodcutting'),
+        ('Fished', 'fishing'),
+        ('Hunted', 'hunting'),
       ])
         if (nodes.where((n) => game.data.nodes[n]?.profession == profession)
             case final at when at.isNotEmpty)
@@ -362,6 +432,85 @@ class ItemCard extends StatelessWidget {
     String label,
     Future<void> Function() action,
   ) => sheetButton(context, host, key, label, action);
+}
+
+/// Auto-eat for one meal kind (spec 0011 §5.4): off, until out, or only
+/// N, keeping N in the bag. It keeps its own choice, since the card doesn't
+/// redraw on the controller's changes.
+class _AutoEat extends StatefulWidget {
+  const _AutoEat({required this.controller, required this.meal});
+
+  final GameController controller;
+  final String meal;
+
+  @override
+  State<_AutoEat> createState() => _AutoEatState();
+}
+
+class _AutoEatState extends State<_AutoEat> {
+  /// null: off; 0: until out; N: keep N.
+  int? _keep;
+
+  @override
+  void initState() {
+    super.initState();
+    final auto = widget.controller.state.autoEat;
+    _keep = auto?.meal == widget.meal ? auto!.keep : null;
+  }
+
+  void _set(int? keep) {
+    setState(() => _keep = keep);
+    widget.controller.setAutoEat(
+      keep == null ? null : widget.meal,
+      keep: keep ?? 0,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keep = _keep;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final (key, label, value, on) in [
+              ('auto-eat-off', 'Off', null, keep == null),
+              ('auto-eat-out', 'Until out', 0, keep == 0),
+              ('auto-eat-keep', 'Only N', 1, keep != null && keep > 0),
+            ])
+              ChoiceChip(
+                key: ValueKey(key),
+                label: Text(label),
+                selected: on,
+                onSelected: on ? null : (_) => _set(value),
+              ),
+          ],
+        ),
+        if (keep != null && keep > 0)
+          Row(
+            children: [
+              IconButton(
+                key: const ValueKey('keep-down'),
+                icon: const Icon(Icons.remove),
+                onPressed: keep > 1 ? () => _set(keep - 1) : null,
+              ),
+              Text(
+                'Keep $keep',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              IconButton(
+                key: const ValueKey('keep-up'),
+                icon: const Icon(Icons.add),
+                onPressed: () => _set(keep + 1),
+              ),
+              const Expanded(child: Text('in the bag; eat the rest')),
+            ],
+          ),
+      ],
+    );
+  }
 }
 
 /// The colour an item's name is drawn in: its quality's, or null (the normal
