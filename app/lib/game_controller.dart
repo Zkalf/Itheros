@@ -268,6 +268,14 @@ class GameController extends ChangeNotifier {
   /// Wears the tool [key] from the bag; the one worn goes to the bag.
   Future<void> useTool(String key) => _act((s) => game.equipTool(s, key));
 
+  /// Eats the meal [key] from the bag, replacing one running (spec 0011
+  /// §5.4).
+  Future<void> eat(String key) => _act((s) => game.eat(s, key));
+
+  /// Sets the auto-eat meal and how many to keep; null turns it off.
+  Future<void> setAutoEat(String? meal, {int keep = 0}) =>
+      _act((s) => game.setAutoEat(s, meal, keep: keep));
+
   /// Salvages the bag item [key] at a forge (spec 0010 §7.1).
   Future<SalvageResult> salvage(String key) async {
     late SalvageResult result;

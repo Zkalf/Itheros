@@ -23,6 +23,8 @@ class _CharacterTabState extends State<CharacterTab> {
     final game = c.game;
     final s = c.state;
     final stats = game.stats(s);
+    // The meal's share, marked on its stats (spec 0011 §8.3).
+    final meal = game.mealBonus(s);
     final level = game.level(s);
     final points = game.talentPoints(level);
     final text = Theme.of(context).textTheme;
@@ -41,9 +43,9 @@ class _CharacterTabState extends State<CharacterTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _Stat('Level', '$level'),
-                    _Stat('HP', '${stats.hp}'),
-                    _Stat('Attack', '${stats.attack}'),
-                    _Stat('Defense', '${stats.defense}'),
+                    _Stat('HP', '${stats.hp}', meal: meal.hp),
+                    _Stat('Attack', '${stats.attack}', meal: meal.attack),
+                    _Stat('Defense', '${stats.defense}', meal: meal.defense),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -51,7 +53,7 @@ class _CharacterTabState extends State<CharacterTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _Stat('Crit', '${game.critChance(s)}%'),
+                    _Stat('Crit', '${game.critChance(s)}%', meal: meal.crit),
                     _Stat('Hit', '${stats.hit}%'),
                     _Stat('Dodge', '${game.dodgeChance(s)}%'),
                     _Stat('Block', '${game.blockChance(s)}%'),
@@ -136,10 +138,13 @@ class _RankTitleState extends State<_RankTitle> {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat(this.label, this.value);
+  const _Stat(this.label, this.value, {this.meal = 0});
 
   final String label;
   final String value;
+
+  /// What the running meal adds, shown as "(+2 meal)".
+  final int meal;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +154,7 @@ class _Stat extends StatelessWidget {
       children: [
         Text(value, style: text.headlineSmall),
         Text(label, style: text.bodySmall),
+        if (meal > 0) Text('(+$meal meal)', style: text.bodySmall),
       ],
     );
   }

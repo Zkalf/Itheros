@@ -6,7 +6,9 @@ import 'actions.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'item_card.dart';
 import 'item_square.dart';
+import 'meals.dart';
 import 'teacher_sheet.dart';
 
 /// What am I doing, and what can I do here (spec 0008 §3.2): the running
@@ -17,8 +19,9 @@ class NowTab extends StatelessWidget {
   /// Shows the World map, from the resting card.
   final VoidCallback? onOpenWorld;
 
-  /// Shows Professions, from the Forge row.
-  final VoidCallback? onOpenProfessions;
+  /// Shows Professions, from the Forge row, or on one profession's card
+  /// (the Camp fire row opens Cooking).
+  final void Function([String? profession])? onOpenProfessions;
 
   @override
   Widget build(BuildContext context) {
@@ -242,6 +245,22 @@ class _StatusCard extends StatelessWidget {
               'Walked today: ${fmt(controller.stepsToday)}',
               key: const ValueKey('walked-today'),
             ),
+            // The meal running (spec 0011 §8.2); tap for its card.
+            if (mealLine(game, s) case final line?)
+              InkWell(
+                key: const ValueKey('meal-line'),
+                onTap: () => showItemCard(context, controller, s.meal!.key),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.restaurant, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(line)),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -385,6 +404,12 @@ class _QueueCard extends StatelessWidget {
                 labels,
               ),
             ),
+          // Fish records beaten on this run (spec 0011 §8.2).
+          if (run.records > 0)
+            Text(
+              'New records: ${fmt(run.records)}',
+              key: const ValueKey('tally-records'),
+            ),
         ],
         for (var i = 0; i < s.queue.length; i++)
           ListTile(
@@ -440,9 +465,11 @@ class _QueueCard extends StatelessWidget {
       byPlain[plain] = (byPlain[plain] ?? 0) + n;
     });
     return {
-      for (final id in data.items.keys)
+      for (final id in data.items.keys) ...{
         for (final q in data.qualities)
           data.keyFor(id, q.id): ?byPlain[data.keyFor(id, q.id)],
+        GameData.perfectKey(id): ?byPlain[GameData.perfectKey(id)],
+      },
     };
   }
 
@@ -476,7 +503,7 @@ class _Here extends StatelessWidget {
 
   final GameController controller;
   final Labels labels;
-  final VoidCallback? onOpenProfessions;
+  final void Function([String? profession])? onOpenProfessions;
 
   @override
   Widget build(BuildContext context) {
@@ -517,11 +544,21 @@ class _Here extends StatelessWidget {
             leading: const Icon(Icons.local_fire_department),
             title: const Text('Forge'),
             subtitle: const Text('Craft gear in Professions'),
-            onTap: onOpenProfessions,
+            onTap: () => onOpenProfessions!('crafting'),
+          ),
+        // The camp fire opens Cooking (spec 0011 §5.1).
+        if (place.fire && onOpenProfessions != null)
+          ListTile(
+            key: const ValueKey('here-fire'),
+            leading: const Icon(Icons.outdoor_grill),
+            title: const Text('Camp fire'),
+            subtitle: const Text('Cook meals in Professions'),
+            onTap: () => onOpenProfessions!('cooking'),
           ),
         if (enemies.isEmpty &&
             nodes.isEmpty &&
             !place.crafting &&
+            !place.fire &&
             !game.data.professions.values.any(
               (p) => p.teacher.location == s.location,
             ))

@@ -31,6 +31,7 @@ class Labels {
   String item(String key) {
     final item = data.itemOf(key);
     if (item == null) return key;
+    if (data.isPerfect(key)) return '${item.name} (Perfect)';
     final q = data.qualityOf(key);
     return q == data.qualities.first ? item.name : '${item.name} (${q.name})';
   }
@@ -40,7 +41,7 @@ class Labels {
   String owned(String key) {
     final item = data.itemOf(key);
     if (item == null) return key;
-    if (item.slot == null) return item.name;
+    if (item.slot == null) return this.item(key);
     return '${item.name} (${data.qualityOf(key).name})';
   }
 
@@ -142,8 +143,24 @@ class Labels {
   String weaknessLearned(String id) => '${enemy(id)}: weakness learned';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
 
-  /// Woodcutting chops; every other gathering mines.
-  bool _chops(String node) => data.nodes[node]?.profession == 'woodcutting';
+  /// How working [node] reads: "Mining" / "Mined" / "mine", and so on for
+  /// chopping, fishing and hunting.
+  (String, String, String) _verbs(String node) =>
+      switch (data.nodes[node]?.profession) {
+        'woodcutting' => ('Chopping', 'Chopped', 'chop'),
+        'fishing' => ('Fishing', 'Fished', 'fish'),
+        'hunting' => ('Hunting', 'Hunted', 'hunt'),
+        _ => ('Mining', 'Mined', 'mine'),
+      };
+
+  /// A spot as a sentence names it: "the Iron vein", or a water or trail
+  /// with its area, "Under the bridge (Troll Bridge)".
+  String _spot(String node) => (data.nodes[node]?.catches.isEmpty ?? true)
+      ? 'the ${this.node(node)}'
+      : '${this.node(node)} (${homeOf(node)})';
+
+  /// Whether [recipe] is a meal, cooked at the camp fire (spec 0011 §5.1).
+  bool _cooks(String recipe) => data.recipes[recipe]?.profession == 'cooking';
 
   String profession(String id) => data.professions[id]?.name ?? id;
 
@@ -155,14 +172,79 @@ class Labels {
     final name = '${profession(id)} $level';
     for (final n in news) {
       if (n.kind == NewsKind.gatheringSpot) {
-        return '$name: the ${node(n.id)} is yours to work';
+        final verb = switch (data.nodes[n.id]?.profession) {
+          'fishing' || 'hunting' => _verbs(n.id).$3,
+          _ => 'work',
+        };
+        return '$name: ${_spot(n.id)} is yours to $verb';
       }
     }
     return news.isEmpty ? 'Reached $name!' : '$name: new recipes';
   }
 
-  /// "Found a Garnet!" (spec 0010 §5.1).
-  String rareFound(String item) => 'Found a ${plain(item)}!';
+  /// "Found a Garnet!" (spec 0010 §5.1); a trophy fish with its weight,
+  /// "Caught Old Mossback, 14.2 kg!", and a rare animal's trophy, "Tracked
+  /// the Golden stag: a golden antler!" (spec 0011 §3.2, §4).
+  String rareFound(String item, {int? weight}) {
+    if (weight != null) return 'Caught ${plain(item)}, ${kg(weight)}!';
+    final animal = data.nodes.values
+        .where((n) => n.rareFind == item && n.rareAnimal != null)
+        .firstOrNull
+        ?.rareAnimal;
+    if (animal == null) return 'Found a ${plain(item)}!';
+    final name = plain(item);
+    // "Old Tusk's tusk" keeps its capital and takes no article.
+    final what = name.contains("'s ")
+        ? name
+        : 'a ${name[0].toLowerCase()}${name.substring(1)}';
+    return 'Tracked the $animal: $what!';
+  }
+
+  /// Tenths of a kg in words: 63 -> "6.3 kg".
+  String kg(int tenths) => '${tenths ~/ 10}.${tenths % 10} kg';
+
+  /// "New record: Pike, 6.3 kg (was 4.8)" (spec 0011 §3.4).
+  String record(String item, int weight, int was) =>
+      'New record: ${plain(item)}, ${kg(weight)} '
+      '(was ${was ~/ 10}.${was % 10})';
+
+  /// What a message in a bottle held (spec 0011 §6.1).
+  String bottle({String? revealed, String? item}) => revealed != null
+      ? 'A message in a bottle! An old sea chart, an X beside the lake: '
+            '${location(revealed)}.'
+      : 'Another bottle: a few grains of ${plain(item ?? '')} inside.';
+
+  /// "A sunken chest! The Drowned Captain's ring (Rare)" (spec 0011 §6.3).
+  String chest(String key) => 'A sunken chest! The ${owned(key)}';
+
+  /// "Ate Venison skewer (auto, 4 left)" (spec 0011 §5.4).
+  String mealEaten(String key, int left) =>
+      'Ate ${item(key)} (auto, ${fmt(left)} left)';
+
+  /// "Out of Venison skewer: no meal running".
+  String mealsOut(String meal) => 'Out of ${item(meal)}: no meal running';
+
+  /// A meal's buffs (spec 0011 §5.3): "+6% Attack", "+2% Crit", "6% fewer
+  /// steps"; a feast's two joined, "+6% HP, +6% Attack".
+  String mealBuff(String key) {
+    final meal = data.itemOf(key)?.meal;
+    if (meal == null) return '';
+    final pct = data.mealPercent[meal.tier - 1];
+    return [
+      for (final b in meal.buffs)
+        switch (b) {
+          'hp' => '+$pct% HP',
+          'attack' => '+$pct% Attack',
+          'defense' => '+$pct% Defense',
+          'crit' => '+${data.mealCrit[meal.tier - 1]}% Crit',
+          _ => '$pct% fewer steps',
+        },
+    ].join(', ');
+  }
+
+  /// "+6% Attack for 3,000 steps"; a perfect dish lasts twice as long.
+  String mealLength(String key) =>
+      '${mealBuff(key)} for ${fmt(data.mealStepsOf(key))} steps';
 
   /// A reroll's end (spec 0010 §7.2-7.3): "Bone sword reroll: Rare → Epic",
   /// "Bone sword reroll: stays Rare", or a Legendary's waiting roll.
@@ -206,7 +288,9 @@ class Labels {
   /// An item drawn as an object (bag, doll, card title): its name only, the
   /// quality shows as colour and on the card's kind line (spec 0008
   /// decision 10).
-  String plain(String key) => data.itemOf(key)?.name ?? key;
+  /// A perfect dish says so (spec 0011 §5.3).
+  String plain(String key) =>
+      data.isPerfect(key) ? item(key) : data.itemOf(key)?.name ?? key;
 
   /// The card's kind line: "Rare one-hand weapon · Main hand", "Material".
   String kind(String key) {
@@ -216,6 +300,9 @@ class Labels {
       final p = data.professions[tool.profession]!;
       return '${data.qualityOf(key).name} ${p.toolName.toLowerCase()} · '
           '${p.name}';
+    }
+    if (item?.meal != null) {
+      return data.isPerfect(key) ? 'Perfect meal' : 'Meal';
     }
     if (item == null || slot == null) return 'Material';
     final word = switch (slot) {
@@ -236,9 +323,9 @@ class Labels {
   String activity(Activity a) => switch (a.kind) {
     ActivityKind.travel => 'Walking to ${location(a.target)}',
     ActivityKind.fight => 'Fighting ${enemy(a.target)}s',
-    ActivityKind.gather =>
-      '${_chops(a.target) ? 'Chopping' : 'Mining'} ${node(a.target)}',
-    ActivityKind.craft => 'Crafting ${recipe(a.target)}',
+    ActivityKind.gather => '${_verbs(a.target).$1} ${node(a.target)}',
+    ActivityKind.craft =>
+      '${_cooks(a.target) ? 'Cooking' : 'Crafting'} ${recipe(a.target)}',
     ActivityKind.reroll => 'Rerolling ${rerolled(a)}',
   };
 
@@ -325,9 +412,9 @@ class Labels {
       if (a.kind != ActivityKind.travel)
         '${switch (a.kind) {
               ActivityKind.fight => 'Fought the ${enemy(a.target)}',
-              ActivityKind.gather => '${_chops(a.target) ? 'Chopped' : 'Mined'} the ${node(a.target)}',
+              ActivityKind.gather => '${_verbs(a.target).$2} ${_spot(a.target)}',
               ActivityKind.reroll => 'Rerolled the ${rerolled(a)}',
-              _ => 'Crafted the ${recipe(a.target)}',
+              _ => '${_cooks(a.target) ? 'Cooked' : 'Crafted'} the ${recipe(a.target)}',
             }}${gains.isEmpty ? '' : ': ${gains.join(', ')}'}.'
             '${ended == null ? '' : ' ${endReason(a, ended)}.'}$then'
       else if (ended == EndReason.arrived)
@@ -365,7 +452,7 @@ class Labels {
   /// One "What's new" line of a level-up card (spec 0002 §9.1).
   String news(LevelNews n) => switch (n.kind) {
     NewsKind.rank => data.ranks.firstWhere((r) => r.name == n.id).line,
-    NewsKind.gatheringSpot => 'You can now mine the ${node(n.id)}',
+    NewsKind.gatheringSpot => 'You can now ${_verbs(n.id).$3} ${_spot(n.id)}',
     NewsKind.recipe => 'New recipe: ${recipe(n.id)}',
     NewsKind.talentPoint =>
       '+1 talent point. Talents arrive in a later update; your points wait '
@@ -384,13 +471,15 @@ class Labels {
     bool yourLevel = false,
   }) => switch (g) {
     EquipGoal(:final item) => 'Equip the ${owned(item)} (Character tab).',
+    CraftGoal(:final recipe) when _cooks(recipe) =>
+      'Cook the ${this.recipe(recipe)} at the camp fire.',
     CraftGoal(:final recipe) =>
       'Craft the ${this.recipe(recipe)}'
           '${canCraftHere ? ' here' : ' at Camp or an outpost'}.',
     CollectGoal(:final item, :final count, :final source) =>
       switch (source.kind) {
             ActivityKind.gather =>
-              '${_chops(source.target) ? 'Chop' : 'Mine'} ${fmt(count)} more ${this.item(item)} at '
+              '${capital(_verbs(source.target).$3)} ${fmt(count)} more ${this.item(item)} at '
                   '${homeOf(source.target)}.',
             _ =>
               'Get ${fmt(count)} more ${this.item(item)} from the '
@@ -400,8 +489,8 @@ class Labels {
     ProfessionGoal(:final profession, :final level, :final current) =>
       'Reach ${this.profession(profession)} $level to '
           '${switch (g.target) {
-            Activity(kind: ActivityKind.craft, :final target) => 'craft the ${recipe(target)}',
-            Activity(:final target) => '${_chops(target) ? 'chop' : 'mine'} the ${node(target)}',
+            Activity(kind: ActivityKind.craft, :final target) => '${_cooks(target) ? 'cook' : 'craft'} the ${recipe(target)}',
+            Activity(:final target) => '${_verbs(target).$3} ${_spot(target)}',
           }} (${level - current} to go).',
     FightGoal(:final enemy) =>
       'The ${this.enemy(enemy)} in ${homeOf(enemy)} '
