@@ -382,9 +382,8 @@ class _QueueCard extends StatelessWidget {
             key: const ValueKey('fight-log'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final r in run.log)
-                for (final line in labels.roundLines(r, run.activity.target))
-                  Text(line, style: text.bodySmall),
+              for (final line in labels.fightLog(run.log, run.activity.target))
+                Text(line, style: text.bodySmall),
             ],
           ),
         ],
