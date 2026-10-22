@@ -6,4 +6,8 @@ A big update: your own character, six professions, a lake to fish and a whole ne
 - **Fights with depth:** swords, spears and maces, misses, crits, dodges and blocks. Monsters wear armour that some weapons beat. A bestiary and lore notes tell you which.
 - **A new look:** four screens (Now, World, Professions, Character), a drawn map and a paper doll with 16 gear slots. Everywhere is open from day one, so explore at your own risk.
 - Better gear gets bonus stats. Break down spare gear for dust and reroll its quality.
+- **Easier to get around:** buttons at the top of Professions jump to each profession, and filters show only the
+  recipes you have the mats or the level for (or will in 5 levels). Starting an action takes you to Now.
+- **Small things:** the game stays upright when you turn the phone, new achievements are marked "New", a learned
+  weakness tells you where to read it (the Bestiary), and the fight log shows the newest round first.
 - Your step data still stays on your phone. The game has no internet access at all.
