@@ -557,6 +557,8 @@ class TeacherDef {
       location = _str(j, 'location'),
       starterTool = _str(j, 'starterTool'),
       learnLine = _str(j, 'learnLine'),
+      greeting = _str(j, 'greeting'),
+      kinLine = _str(j, 'kinLine'),
       tips = List.unmodifiable(_maps(j, 'tips').map(TipDef._));
 
   final String name;
@@ -564,6 +566,11 @@ class TeacherDef {
   final String location;
   final String starterTool;
   final String learnLine;
+
+  /// What they say to a player of another origin, and to one of theirs in
+  /// place of [learnLine] (spec 0012 §3.1).
+  final String greeting;
+  final String kinLine;
 
   /// Lowest level first (spec 0010 §6.2).
   final List<TipDef> tips;
@@ -656,6 +663,21 @@ class RecipeDef {
   final String output;
 }
 
+/// Where the character comes from (spec 0012 §2.1): [profession] starts at
+/// [GameData.headStartLevel]. [title] may hold gendered words.
+class OriginDef {
+  OriginDef._(Map<String, Object?> j)
+    : id = _str(j, 'id'),
+      title = _str(j, 'title'),
+      line = _str(j, 'line'),
+      profession = _str(j, 'profession');
+
+  final String id;
+  final String title;
+  final String line;
+  final String profession;
+}
+
 /// A place on the paper doll (spec 0008 §2.1). Items of [kind] fit it.
 class GearSlotDef {
   GearSlotDef._(Map<String, Object?> j)
@@ -695,6 +717,7 @@ class GameData {
     required Map<String, Object?> items,
     required Map<String, Object?> achievements,
     required Map<String, Object?> professions,
+    required Map<String, Object?> origins,
   }) : bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
        bankCapPerLevel = _int(_map(economy, 'bankCap'), 'perLevel'),
        combatRoundSteps = _int(economy, 'combatRoundSteps'),
@@ -767,6 +790,7 @@ class GameData {
        ranks = List.unmodifiable(_maps(economy, 'ranks').map(RankDef._)),
        talentPointsFrom = _int(economy, 'talentPointsFrom'),
        queueSlots = _int(economy, 'queueSlots'),
+       headStartLevel = _int(economy, 'headStartLevel'),
        lossXpShare = (economy['lossXpShare'] as num).toDouble(),
        lossesToGiveUp = _int(economy, 'lossesToGiveUp'),
        journalEntries = _int(economy, 'journalEntries'),
@@ -801,12 +825,17 @@ class GameData {
        professions = _byId(
          _maps(professions, 'professions').map(ProfessionDef._),
          (d) => d.id,
+       ),
+       origins = _byId(
+         _maps(origins, 'origins').map(OriginDef._),
+         (d) => d.id,
        ) {
     _validate();
   }
 
   /// [files] maps a data file name without extension (`economy`, `world`,
-  /// `enemies`, `items`, `achievements`, `professions`) to its JSON text.
+  /// `enemies`, `items`, `achievements`, `professions`, `origins`) to its
+  /// JSON text.
   factory GameData.fromJsonStrings(Map<String, String> files) {
     Map<String, Object?> file(String name) {
       final text = files[name];
@@ -828,6 +857,7 @@ class GameData {
       items: file('items'),
       achievements: file('achievements'),
       professions: file('professions'),
+      origins: file('origins'),
     );
   }
 
@@ -977,6 +1007,12 @@ class GameData {
 
   /// Titles by level, lowest first; the first is held from level 1.
   final List<RankDef> ranks;
+
+  /// Origins in screen order (spec 0012 §2.1).
+  final Map<String, OriginDef> origins;
+
+  /// The level an origin's profession starts at (spec 0012 decision 1).
+  final int headStartLevel;
 
   /// One talent point per level from this level on.
   final int talentPointsFrom;
@@ -1388,6 +1424,36 @@ class GameData {
         items[p.teacher.starterTool]?.tool?.profession == p.id,
         'profession ${p.id}: the starter tool must be its tool',
       );
+    }
+    for (final o in origins.values) {
+      check(
+        professions.containsKey(o.profession),
+        'origin ${o.id}: unknown profession ${o.profession}',
+      );
+    }
+    check(
+      origins.values.map((o) => o.profession).toSet().length == origins.length,
+      'origins: one per profession',
+    );
+    check(headStartLevel >= 1, 'headStartLevel must be >= 1');
+    // Lines the game fills for the player (spec 0012 §2.3).
+    for (final line in [
+      for (final o in origins.values) ...[o.title, o.line],
+      for (final p in professions.values) ...[
+        p.teacher.learnLine,
+        p.teacher.greeting,
+        p.teacher.kinLine,
+        for (final t in p.tips) t.text,
+      ],
+      for (final r in ranks) r.line,
+    ]) {
+      for (final m in RegExp(r'\{([^{}]*)\}').allMatches(line)) {
+        final t = m[1]!;
+        check(
+          t == 'name' || t.split('|').length == 3,
+          'line "$line": {$t} needs {name} or three choices',
+        );
+      }
     }
     for (final i in items.values) {
       if (i.tool case final t?) {

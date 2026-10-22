@@ -1,6 +1,7 @@
 {
   "bankCap": { "base": 9500, "perLevel": 500 },
   "queueSlots": 3,
+  "headStartLevel": 5,
   "lossXpShare": 0.75,
   "lossesToGiveUp": 3,
   "journalEntries": 20,
@@ -74,7 +75,7 @@
   "talentPointsFrom": 10,
   "ranks": [
     { "level": 1, "name": "Recruit", "line": "The Guild takes you in. The roads are open; the dangers are real." },
-    { "level": 10, "name": "Adventurer", "line": "The Guild names you Adventurer. The lands beyond the river know your name." },
+    { "level": 10, "name": "Adventurer", "line": "The Guild names you Adventurer, {name}. The lands beyond the river know your name." },
     { "level": 20, "name": "Veteran", "line": "The Guild names you Veteran. The mountain roads are yours." },
     { "level": 30, "name": "Champion", "line": "The Guild names you Champion. Even dragons have heard of you." }
   ]

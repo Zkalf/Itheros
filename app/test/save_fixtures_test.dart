@@ -117,7 +117,6 @@ void main() {
       final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
       final game = loadTestGame();
       final s = game.migrate(SaveData.fromJson(json).game);
-      expect(GameState.fromJson(s.toJson()).loadedVersion, 9);
       for (final p in ['fishing', 'hunting', 'cooking']) {
         expect(s.learned, isNot(contains(p)));
         expect(s.tools, isNot(contains(p)));
@@ -127,6 +126,19 @@ void main() {
       expect(s.records, isEmpty);
       expect(s.bottles, 0);
       expect(game.isHidden(s, 'smugglers_cove'), isTrue);
+    });
+
+    // Spec 0012 criterion 10: version 10 with no character yet, so "Who are
+    // you?" shows once; everything else kept.
+    test('$name loads as version 10 with no character', () {
+      final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+      final raw = json['game'] as Map<String, Object?>;
+      final game = loadTestGame();
+      final s = game.migrate(SaveData.fromJson(json).game);
+      expect(GameState.fromJson(s.toJson()).loadedVersion, 10);
+      expect(s.character, isNull);
+      expect(s.xp, raw['xp']);
+      expect(s.bank, raw['bank']);
     });
   }
 

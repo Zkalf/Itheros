@@ -72,6 +72,89 @@ class Game {
       ..tools[profession] = p.teacher.starterTool;
   }
 
+  /// The name a character gets for [raw] (spec 0012 decision 7): trimmed,
+  /// at most 20 characters, [defaultName] when empty.
+  static String characterName(String raw) {
+    final runes = raw.trim().runes;
+    if (runes.isEmpty) return defaultName;
+    return String.fromCharCodes(runes.take(maxNameLength)).trimRight();
+  }
+
+  static const defaultName = 'Wanderer';
+  static const maxNameLength = 20;
+
+  /// Makes the character on Set out (spec 0012 §2.2): the origin's
+  /// profession is learned with its starter tool if it wasn't, and its XP
+  /// raised to [GameData.headStartLevel]'s only if lower. No news, no
+  /// character XP, no draws. Throws [ActivityError] for a second character
+  /// or an unknown origin.
+  GameState makeCharacter(
+    GameState s, {
+    required String name,
+    required Gender gender,
+    required String origin,
+  }) {
+    if (s.character != null) throw ActivityError('You already set out');
+    final o = data.origins[origin];
+    if (o == null) throw ActivityError('No origin $origin');
+    final p = data.professions[o.profession]!;
+    final n = s.copy()
+      ..character = Character(
+        name: characterName(name),
+        gender: gender,
+        origin: origin,
+      );
+    if (n.learned.add(p.id)) n.tools[p.id] ??= p.teacher.starterTool;
+    n.professions[p.id] = math.max(
+      n.professions[p.id] ?? 0,
+      data.professionXpForLevel(data.headStartLevel),
+    );
+    return n;
+  }
+
+  /// Renames the character, by [characterName]'s rules (spec 0012 §4.2).
+  GameState renameCharacter(GameState s, String name) {
+    final c = _character(s);
+    return s.copy()
+      ..character = Character(
+        name: characterName(name),
+        gender: c.gender,
+        origin: c.origin,
+      );
+  }
+
+  GameState setGender(GameState s, Gender gender) {
+    final c = _character(s);
+    return s.copy()
+      ..character = Character(name: c.name, gender: gender, origin: c.origin);
+  }
+
+  Character _character(GameState s) =>
+      s.character ?? (throw ActivityError('You have not set out yet'));
+
+  /// [line] with `{name}` as [who]'s name and each `{a|b|c}` as the word
+  /// for their gender (spec 0012 §2.3). Before Set out: Wanderer, neither.
+  String fill(String line, Character? who) =>
+      line.replaceAllMapped(RegExp(r'\{([^{}]*)\}'), (m) {
+        final t = m[1]!;
+        if (t == 'name') return who?.name ?? defaultName;
+        final words = t.split('|');
+        if (words.length != 3) return m[0]!;
+        return words[(who?.gender ?? Gender.neither).index];
+      });
+
+  /// Whether [profession]'s teacher shares the character's origin.
+  bool isKin(GameState s, String profession) =>
+      s.character != null &&
+      data.origins[s.character!.origin]?.profession == profession;
+
+  /// The line [profession]'s teacher opens with, filled: the kin line for
+  /// the origin's own teacher, else the greeting (spec 0012 §3.1).
+  String teacherLine(GameState s, String profession) {
+    final t = data.professions[profession]!.teacher;
+    return fill(isKin(s, profession) ? t.kinLine : t.greeting, s.character);
+  }
+
   /// What reaching [level] in [profession] opens: its spots and recipes of
   /// that level (spec 0010 §2.2).
   List<LevelNews> professionNews(String profession, int level) => [
@@ -651,6 +734,8 @@ class Game {
   /// counters earn, and seed the profession stream (spec 0010 §10).
   /// Saves before version 9 need nothing: no meal, no records, the cove
   /// hidden, the new professions unlearned (spec 0011 §10).
+  /// Saves before version 10 need nothing: no character yet, so "Who are
+  /// you?" shows once (spec 0012 §6).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {

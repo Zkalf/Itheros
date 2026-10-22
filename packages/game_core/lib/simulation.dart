@@ -1050,11 +1050,17 @@ SimulationResult simulate(
     mealBatch: mealBatch,
     mealsFrom: mealsFrom,
   );
-  var s = game.newGame(seed: seed);
+  // Every walker is a Miner's child (spec 0012 §5.2).
+  var s = game.makeCharacter(
+    game.newGame(seed: seed),
+    name: 'Walker',
+    gender: Gender.neither,
+    origin: 'miners_child',
+  );
   // The teachers are in camp, where a new game starts (spec 0010 §9.2).
   if (walker != Walker.fighter) {
     for (final p in game.data.professions.keys) {
-      s = game.learn(s, p);
+      if (!s.learned.contains(p)) s = game.learn(s, p);
     }
   }
   final results = <DayResult>[];

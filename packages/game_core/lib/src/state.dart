@@ -209,6 +209,34 @@ class AutoEat {
   Map<String, Object?> toJson() => {'meal': meal, 'keep': keep};
 }
 
+/// Picks the word in gendered data lines (spec 0012 §2.3).
+enum Gender { male, female, neither }
+
+/// Who the player is (spec 0012 §6): [origin] is an origin id.
+class Character {
+  const Character({
+    required this.name,
+    required this.gender,
+    required this.origin,
+  });
+
+  factory Character.fromJson(Map<String, Object?> json) => Character(
+    name: json['name'] as String,
+    gender: Gender.values.byName(json['gender'] as String),
+    origin: json['origin'] as String,
+  );
+
+  final String name;
+  final Gender gender;
+  final String origin;
+
+  Map<String, Object?> toJson() => {
+    'name': name,
+    'gender': gender.name,
+    'origin': origin,
+  };
+}
+
 /// Everything saved for one player. Level is derived from [xp].
 class GameState {
   GameState({
@@ -234,6 +262,7 @@ class GameState {
     this.meal,
     this.autoEat,
     this.bottles = 0,
+    this.character,
     this.professionRng = 0,
     this.loadedVersion = schemaVersion,
   }) : queue = queue ?? [],
@@ -306,9 +335,15 @@ class GameState {
         _ => null,
       },
       bottles: json['bottles'] as int? ?? 0,
+      // Before version 10: none yet (spec 0012 §6).
+      character: switch (json['character']) {
+        final Map<String, Object?> m => Character.fromJson(m),
+        _ => null,
+      },
     );
   }
 
+  /// 10: the character, or none until Set out (spec 0012 §6).
   /// 9: fish records, the running meal, auto-eat, revealed areas and
   /// bottles found (spec 0011 §10).
   /// 8: profession XP, learned professions, tools, tips and the profession
@@ -321,7 +356,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 9;
+  static const schemaVersion = 10;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -380,6 +415,9 @@ class GameState {
   /// Messages in a bottle found (spec 0011 §6.1).
   int bottles;
 
+  /// Who the player is, or null until Set out (spec 0012 §6).
+  Character? character;
+
   /// State of the seeded random generator (see `Rng`).
   int rngState;
 
@@ -419,6 +457,7 @@ class GameState {
     'autoEat': autoEat?.toJson(),
     'revealed': revealed.toList()..sort(),
     'bottles': bottles,
+    'character': character?.toJson(),
   };
 
   void addItem(String item, [int count = 1]) {

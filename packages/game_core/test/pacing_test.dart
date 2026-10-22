@@ -76,10 +76,12 @@ void main() {
     expect(gain, inInclusiveRange(0, 5));
   });
 
-  test('spec 0010 amendment 1: Mining and Crafting 10 by day 8-22, 20 by '
-      'day 45-65 (medians)', () {
+  // The walkers start Mining at 5 as Miner's children (spec 0012 amendment
+  // 1), so it may reach 10 from day 5.
+  test('spec 0010 amendment 1: Mining and Crafting 10 by day 8-22 (Mining '
+      '5-22), 20 by day 45-65 (medians)', () {
     professionDays.forEach((k, days) {
-      final range = k.$2 == 10 ? (8, 22) : (45, 65);
+      final range = k.$2 == 10 ? (k.$1 == 'mining' ? 5 : 8, 22) : (45, 65);
       expect(
         median(days),
         inInclusiveRange(range.$1, range.$2),
