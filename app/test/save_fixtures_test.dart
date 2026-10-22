@@ -24,6 +24,8 @@ void main() {
 
   for (final f in fixtures) {
     final name = f.uri.pathSegments.last;
+    final saved =
+        (jsonDecode(f.readAsStringSync())['game'] as Map)['version'] as int;
     test('$name loads with level, XP, bank and items kept', () {
       final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
       final raw = json['game'] as Map<String, Object?>;
@@ -109,7 +111,7 @@ void main() {
       expect(s.professions['mining'] ?? 0, mining);
       expect(s.professions['crafting'] ?? 0, crafting);
       expect(s.xp, raw['xp']);
-    });
+    }, skip: saved >= 8 ? 'saved with professions: nothing to migrate' : false);
 
     // Spec 0011 criterion 14: version 9, the new professions unlearned, no
     // meal, no records, the cove hidden.
