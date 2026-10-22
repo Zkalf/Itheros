@@ -748,7 +748,7 @@ void main() {
         keep: 1,
       );
       final back = GameState.fromJson(fed.toJson());
-      expect(back.loadedVersion, 9);
+      expect(back.loadedVersion, GameState.schemaVersion);
       expect(back.toJson(), fed.toJson());
       expect(back.meal!.key, 'grilled_perch');
       expect(back.autoEat!.keep, 1);
