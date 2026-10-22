@@ -1,6 +1,6 @@
 # Intent: The daily chest
 
-Status: draft
+Status: accepted
 Product owner: Zkalf
 Date: 2026-10-22
 
