@@ -159,6 +159,7 @@ Future<void> settle(WidgetTester tester, GameController c) async {
 }
 
 void main() {
+  professionFilters();
   playtest3();
   yourCharacter();
   lakeAndHunt();
@@ -3023,6 +3024,108 @@ void playtest3() {
         Labels(_game.data).weaknessLearned('goblin'),
         contains('Bestiary'),
       );
+    });
+  });
+}
+
+void professionFilters() {
+  group('profession buttons and filters (spec 0010 amendment 3)', () {
+    Finder recipe(String id) => find.byKey(ValueKey('option-craft-$id'));
+    Iterable<RecipeDef> lists(Game g) => g.data.recipes.values.where(
+      (r) => r.profession == 'crafting' || r.profession == 'cooking',
+    );
+    Future<void> chip(WidgetTester t, String id) async {
+      await t.tap(find.byKey(ValueKey('filter-$id')));
+      await t.pumpAndSettle();
+    }
+
+    bool selected(WidgetTester t, String id) =>
+        t.widget<FilterChip>(find.byKey(ValueKey('filter-$id'))).selected;
+
+    testWidgets('criterion 1: a button brings its card into view', (t) async {
+      await pumpGame(t, level: 5);
+      await openTab(t, 'professions');
+      t.view.physicalSize = const Size(1080, 2400);
+      await t.pumpAndSettle();
+      final card = find.byKey(const ValueKey('profession-cooking'));
+      expect(t.getTopLeft(card).dy, greaterThan(2400), reason: 'far down');
+      await t.tap(find.byKey(const ValueKey('jump-cooking')));
+      await t.pumpAndSettle();
+      expect(t.getTopLeft(card).dy, inInclusiveRange(0, 2400));
+    });
+
+    testWidgets('criteria 2 and 4: each filter shows what its rule says', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {'copper_ore': 50, 'oak_log': 20},
+      );
+      await openTab(t, 'professions');
+      final g = c.game;
+      final s = c.state;
+      void expectShown(bool Function(RecipeDef r) rule, String why) {
+        for (final r in lists(g)) {
+          expect(
+            recipe(r.id),
+            rule(r) ? findsOneWidget : findsNothing,
+            reason: '$why: ${r.id}',
+          );
+        }
+      }
+
+      expectShown((_) => true, 'no filter');
+      await chip(t, 'mats');
+      expectShown((r) => g.hasMaterials(s, r.id), 'have mats');
+      await chip(t, 'level');
+      expectShown(
+        (r) => g.hasMaterials(s, r.id) && g.recipeLevelMet(s, r.id),
+        'have mats and level',
+      );
+      await chip(t, 'mats');
+      expectShown((r) => g.recipeLevelMet(s, r.id), 'have level');
+      await chip(t, 'ahead');
+      expectShown(
+        (r) => r.craftingLevel <= g.professionLevel(s, r.profession) + 5,
+        'up to 5 levels ahead',
+      );
+      await chip(t, 'ahead');
+      expectShown((_) => true, 'all off again');
+    });
+
+    testWidgets(
+      'criterion 3: Have level and Up to 5 ahead exclude each other',
+      (t) async {
+        await pumpGame(t, level: 5);
+        await openTab(t, 'professions');
+        await chip(t, 'level');
+        await chip(t, 'ahead');
+        expect(selected(t, 'ahead'), isTrue);
+        expect(selected(t, 'level'), isFalse);
+        await chip(t, 'mats');
+        expect(selected(t, 'mats'), isTrue);
+        expect(selected(t, 'ahead'), isTrue);
+        await chip(t, 'level');
+        expect(selected(t, 'level'), isTrue);
+        expect(selected(t, 'ahead'), isFalse);
+        expect(selected(t, 'mats'), isTrue);
+      },
+    );
+
+    testWidgets('an empty list says nothing matches; the running craft stays', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 50});
+      final craft = lists(c.game).firstWhere(
+        (r) => c.game.hasMaterials(c.state, r.id) && r.profession == 'crafting',
+      );
+      await c.startActivity(Activity.craft(craft.id));
+      c.state.inventory.clear();
+      await openTab(t, 'professions');
+      await chip(t, 'mats');
+      expect(recipe(craft.id), findsOneWidget, reason: 'running');
+      expect(find.byKey(const ValueKey('no-match-cooking')), findsOneWidget);
     });
   });
 }
