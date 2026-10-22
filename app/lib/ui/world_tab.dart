@@ -114,6 +114,12 @@ class WorldTab extends StatelessWidget {
     final l = game.data.locations[area]!;
     if (game.isFogged(s, area)) return Icons.cloud;
     if (l.crafting) return Icons.cottage;
+    // A lake or cove: only fishing spots, no monsters (spec 0011 §3.1).
+    if (l.enemies.isEmpty &&
+        l.nodes.isNotEmpty &&
+        l.nodes.every((n) => game.data.nodes[n]?.profession == 'fishing')) {
+      return Icons.water;
+    }
     if (l.enemies.isEmpty) return Icons.landscape;
     return Icons.forest;
   }
