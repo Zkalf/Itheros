@@ -23,6 +23,9 @@ String genderName(Gender g) => switch (g) {
   Gender.neither => 'Neither',
 };
 
+/// The line between two fights in the fight log.
+const newFight = '── New fight ──';
+
 /// Display names from the game data.
 class Labels {
   Labels(this.data, [this.who]);
@@ -90,6 +93,18 @@ class Labels {
     if (lines.isEmpty) return ['Round ${r.round}'];
     return ['Round ${r.round}: ${lines.first}', ...lines.skip(1)];
   }
+
+  /// The fight log, newest round first, with [newFight] between fights
+  /// (playtest 3): a fight ends on a round with an outcome, or the next
+  /// round's number starts over.
+  List<String> fightLog(List<RoundLog> log, String enemyId) => [
+    for (var i = log.length - 1; i >= 0; i--) ...[
+      ...roundLines(log[i], enemyId),
+      if (i > 0 &&
+          (log[i - 1].outcome != null || log[i].round <= log[i - 1].round))
+        newFight,
+    ],
+  ];
 
   /// "+4 Defense", "+14 HP", "+25% Block": the stats a piece of gear adds.
   List<String> bonus(Stats b) => [
