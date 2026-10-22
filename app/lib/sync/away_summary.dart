@@ -117,6 +117,9 @@ class AwaySummary {
     this.lore = const [],
     this.learned = const [],
     this.slayers = const [],
+    this.professionLevels = const [],
+    this.finds = const [],
+    this.rerolls = const [],
   });
 
   factory AwaySummary.fromReports(Iterable<StepReport> reports) =>
@@ -129,6 +132,8 @@ class AwaySummary {
     final levels = <int>[];
     final achievements = <String>[];
     final lore = <String>[], learned = <String>[], slayers = <String>[];
+    final professionLevels = <(String, int)>[], finds = <String>[];
+    final rerolls = <(String, String)>[];
     var wins = 0, xp = 0;
     var items = <String, int>{};
     var losses = <FightLost>[];
@@ -174,12 +179,15 @@ class AwaySummary {
           gain(item, 1);
         case LevelUp(:final level):
           levels.add(level);
-        // Gems and heartwood join the action's items (spec 0010 §5.1).
+        // Gems and heartwood join the action's items, and are news (spec
+        // 0010 §5.1).
         case RareFound(:final item):
           gain(item, 1);
-        // Profession and reroll news come with the screens (plan 0012 M3).
-        case ProfessionLevelUp() || Rerolled():
-          break;
+          finds.add(item);
+        case ProfessionLevelUp(:final profession, :final level):
+          professionLevels.add((profession, level));
+        case Rerolled(:final before, :final after):
+          rerolls.add((before, after));
         case AchievementUnlocked(:final id):
           achievements.add(id);
         case LoreFound(:final note):
@@ -218,6 +226,9 @@ class AwaySummary {
       lore: lore,
       learned: learned,
       slayers: slayers,
+      professionLevels: professionLevels,
+      finds: finds,
+      rerolls: rerolls,
     );
   }
 
@@ -238,6 +249,12 @@ class AwaySummary {
   final List<String> learned;
   final List<String> slayers;
 
+  /// Profession levels reached, rare finds, and rerolls as the item's key
+  /// before and after (spec 0010 §2.2, §5.1, §7.2-7.3).
+  final List<(String, int)> professionLevels;
+  final List<String> finds;
+  final List<(String, String)> rerolls;
+
   bool get isEmpty => walked == 0;
 
   /// Something happened beyond steps going to the bank or toward an
@@ -248,7 +265,10 @@ class AwaySummary {
       achievements.isNotEmpty ||
       lore.isNotEmpty ||
       learned.isNotEmpty ||
-      slayers.isNotEmpty;
+      slayers.isNotEmpty ||
+      professionLevels.isNotEmpty ||
+      finds.isNotEmpty ||
+      rerolls.isNotEmpty;
 
   factory AwaySummary.fromJson(Map<String, Object?> j) => AwaySummary(
     walked: j['walked']! as int,
@@ -266,6 +286,16 @@ class AwaySummary {
     lore: _strings(j['lore']),
     learned: _strings(j['learned']),
     slayers: _strings(j['slayers']),
+    // Entries from before spec 0010 have none.
+    professionLevels: [
+      for (final p in j['professionLevels'] as List<Object?>? ?? const [])
+        if (p case [final String id, final int level]) (id, level),
+    ],
+    finds: _strings(j['finds']),
+    rerolls: [
+      for (final r in j['rerolls'] as List<Object?>? ?? const [])
+        if (r case [final String before, final String after]) (before, after),
+    ],
   );
 
   Map<String, Object?> toJson() => {
@@ -280,6 +310,13 @@ class AwaySummary {
     'lore': lore,
     'learned': learned,
     'slayers': slayers,
+    'professionLevels': [
+      for (final (id, level) in professionLevels) [id, level],
+    ],
+    'finds': finds,
+    'rerolls': [
+      for (final (a, b) in rerolls) [a, b],
+    ],
   };
 
   AwaySummary operator +(AwaySummary o) {
@@ -305,6 +342,9 @@ class AwaySummary {
       lore: [...lore, ...o.lore],
       learned: [...learned, ...o.learned],
       slayers: [...slayers, ...o.slayers],
+      professionLevels: [...professionLevels, ...o.professionLevels],
+      finds: [...finds, ...o.finds],
+      rerolls: [...rerolls, ...o.rerolls],
     );
   }
 

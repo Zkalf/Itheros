@@ -26,6 +26,17 @@ class CollectGoal extends Goal {
   final Activity source;
 }
 
+/// The best upgrade for the character's level waits only on [profession]
+/// reaching [level] (it is at [current]): [target] is the recipe or the
+/// spot that level opens (spec 0010 §8.4).
+class ProfessionGoal extends Goal {
+  const ProfessionGoal(this.profession, this.level, this.current, this.target);
+  final String profession;
+  final int level;
+  final int current;
+  final Activity target;
+}
+
 /// The yellow monster with the most XP per step.
 class FightGoal extends Goal {
   const FightGoal(this.enemy);

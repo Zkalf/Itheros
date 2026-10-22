@@ -142,6 +142,67 @@ class Labels {
   String weaknessLearned(String id) => '${enemy(id)}: weakness learned';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
 
+  /// Woodcutting chops; every other gathering mines.
+  bool _chops(String node) => data.nodes[node]?.profession == 'woodcutting';
+
+  String profession(String id) => data.professions[id]?.name ?? id;
+
+  /// A profession level reached, with what it opens (spec 0010 §2.2):
+  /// "Mining 10: the Iron vein is yours to work", "Crafting 14: new
+  /// recipes", or "Reached Mining 2!".
+  String professionLevel(String id, int level) {
+    final news = Game(data).professionNews(id, level);
+    final name = '${profession(id)} $level';
+    for (final n in news) {
+      if (n.kind == NewsKind.gatheringSpot) {
+        return '$name: the ${node(n.id)} is yours to work';
+      }
+    }
+    return news.isEmpty ? 'Reached $name!' : '$name: new recipes';
+  }
+
+  /// "Found a Garnet!" (spec 0010 §5.1).
+  String rareFound(String item) => 'Found a ${plain(item)}!';
+
+  /// A reroll's end (spec 0010 §7.2-7.3): "Bone sword reroll: Rare → Epic",
+  /// "Bone sword reroll: stays Rare", or a Legendary's waiting roll.
+  String rerollNews(String before, String after) {
+    final name = plain(before);
+    if (data.pendingRoll(after) != null) {
+      return '$name: new roll ready at the forge';
+    }
+    final (from, to) = (data.qualityOf(before), data.qualityOf(after));
+    return from == to
+        ? '$name reroll: stays ${from.name}'
+        : '$name reroll: ${from.name} → ${to.name}';
+  }
+
+  /// What salvaging [item] gave (spec 0010 §7.1), with a shard's count
+  /// toward its unique: "… Found a Shard of the Graveyard King (3 of 10)!".
+  String salvaged(String item, SalvageResult r) {
+    final line = 'Salvaged the ${plain(item)}: ${plain(r.dust)}.';
+    final shard = r.shard;
+    if (shard == null) return line;
+    final need = data.recipes.values
+        .where((x) => x.inputs.containsKey(shard))
+        .firstOrNull
+        ?.inputs[shard];
+    final count = need == null
+        ? ''
+        : ' (${r.state.inventory[shard] ?? 0} of $need)';
+    return '$line Found a ${plain(shard)}$count!';
+  }
+
+  /// A tool's profession and step cost: "Mining tool · 86% steps" (spec
+  /// 0010 §3.2).
+  String toolLine(String key) {
+    final p = data.toolProfession(key);
+    return '${profession(p!)} tool · ${stepShare(key)}% steps';
+  }
+
+  /// The share of an action's steps the tool with [key] costs, in percent.
+  int stepShare(String? key) => (Game(data).toolFactor(key) * 100).round();
+
   /// An item drawn as an object (bag, doll, card title): its name only, the
   /// quality shows as colour and on the card's kind line (spec 0008
   /// decision 10).
@@ -151,6 +212,11 @@ class Labels {
   String kind(String key) {
     final item = data.itemOf(key);
     final slot = item?.slot;
+    if (item?.tool case final tool?) {
+      final p = data.professions[tool.profession]!;
+      return '${data.qualityOf(key).name} ${p.toolName.toLowerCase()} · '
+          '${p.name}';
+    }
     if (item == null || slot == null) return 'Material';
     final word = switch (slot) {
       'mainHand' => item.twoHanded ? 'two-hand weapon' : 'one-hand weapon',
@@ -170,7 +236,8 @@ class Labels {
   String activity(Activity a) => switch (a.kind) {
     ActivityKind.travel => 'Walking to ${location(a.target)}',
     ActivityKind.fight => 'Fighting ${enemy(a.target)}s',
-    ActivityKind.gather => 'Mining ${node(a.target)}',
+    ActivityKind.gather =>
+      '${_chops(a.target) ? 'Chopping' : 'Mining'} ${node(a.target)}',
     ActivityKind.craft => 'Crafting ${recipe(a.target)}',
     ActivityKind.reroll => 'Rerolling ${rerolled(a)}',
   };
@@ -258,7 +325,7 @@ class Labels {
       if (a.kind != ActivityKind.travel)
         '${switch (a.kind) {
               ActivityKind.fight => 'Fought the ${enemy(a.target)}',
-              ActivityKind.gather => 'Mined the ${node(a.target)}',
+              ActivityKind.gather => '${_chops(a.target) ? 'Chopped' : 'Mined'} the ${node(a.target)}',
               ActivityKind.reroll => 'Rerolled the ${rerolled(a)}',
               _ => 'Crafted the ${recipe(a.target)}',
             }}${gains.isEmpty ? '' : ': ${gains.join(', ')}'}.'
@@ -323,13 +390,19 @@ class Labels {
     CollectGoal(:final item, :final count, :final source) =>
       switch (source.kind) {
             ActivityKind.gather =>
-              'Mine ${fmt(count)} more ${this.item(item)} at '
+              '${_chops(source.target) ? 'Chop' : 'Mine'} ${fmt(count)} more ${this.item(item)} at '
                   '${homeOf(source.target)}.',
             _ =>
               'Get ${fmt(count)} more ${this.item(item)} from the '
                   '${enemy(source.target)} in ${homeOf(source.target)}.',
           } +
           (grey ? ' Grey monsters still drop their loot.' : ''),
+    ProfessionGoal(:final profession, :final level, :final current) =>
+      'Reach ${this.profession(profession)} $level to '
+          '${switch (g.target) {
+            Activity(kind: ActivityKind.craft, :final target) => 'craft the ${recipe(target)}',
+            Activity(:final target) => '${_chops(target) ? 'chop' : 'mine'} the ${node(target)}',
+          }} (${level - current} to go).',
     FightGoal(:final enemy) =>
       'The ${this.enemy(enemy)} in ${homeOf(enemy)} '
           '${yourLevel ? 'is your level' : 'gives the most XP for your steps'}.',

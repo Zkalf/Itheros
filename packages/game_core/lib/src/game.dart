@@ -437,6 +437,7 @@ class Game {
         if (data.itemOf(key)?.slot != null && gain(key) > 0) key,
     ]..sort((a, b) => gain(b).compareTo(gain(a)));
     if (better.isNotEmpty) return EquipGoal(better.first);
+    if (_professionGoal(s, gain) case final g?) return g;
 
     final upgrades = [
       for (final r in data.recipes.values)
@@ -479,6 +480,43 @@ class Game {
       if (rate > bestRate) (best, bestRate) = (e, rate);
     }
     return best == null ? null : FightGoal(best.id);
+  }
+
+  /// The level to reach when the best upgrade up to the character's level
+  /// waits only on a profession level: its recipe's Crafting level, or the
+  /// level of the spot its missing input comes from (spec 0010 §8.4).
+  ProfessionGoal? _professionGoal(GameState s, int Function(String) gain) {
+    RecipeDef? best;
+    for (final r in data.recipes.values) {
+      if (data.items[r.output]!.slot == null ||
+          r.level > level(s) ||
+          owned(s, r.output) > 0 ||
+          gain(r.output) <= 0) {
+        continue;
+      }
+      if (best == null || gain(r.output) > gain(best.output)) best = r;
+    }
+    if (best == null) return null;
+    ProfessionGoal? need(String profession, int at, Activity target) =>
+        // Learning comes first: the screens point to the teacher.
+        _canPractise(s, profession, 1)
+        ? ProfessionGoal(profession, at, professionLevel(s, profession), target)
+        : null;
+    if (!recipeLevelMet(s, best.id)) {
+      return need(best.profession, best.craftingLevel, Activity.craft(best.id));
+    }
+    for (final MapEntry(key: input, value: count) in best.inputs.entries) {
+      if ((s.inventory[input] ?? 0) >= count || _safeSource(s, input) != null) {
+        continue;
+      }
+      for (final n in data.nodes.values) {
+        if (n.item == input && !nodeFogged(s, n.id)) {
+          return need(n.profession, n.level, Activity.gather(n.id));
+        }
+      }
+      return null;
+    }
+    return null;
   }
 
   /// How much better [key] is than what it takes off in its weakest slot

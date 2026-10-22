@@ -26,8 +26,16 @@ IconData slotIcon(String slot) =>
 /// Materials share one icon, so Common gear never looks like a material.
 const materialIcon = Icons.grain;
 
+/// A profession's icon, by the name its data gives (spec 0010 §8.1).
+IconData professionIcon(String name) => switch (name) {
+  'pickaxe' => Icons.hardware,
+  'axe' => Icons.carpenter,
+  'anvil' => Icons.handyman,
+  _ => Icons.work,
+};
+
 /// One square of the doll or the bag. Gear: its slot's icon in a border of its
-/// quality colour. A material: the material icon, no border. Empty ([key]
+/// quality colour; a tool the same, with its profession's icon. A material: the material icon, no border. Empty ([key]
 /// null): a faint outline of [emptySlot]'s icon. [count] shows in the corner
 /// from 2 up.
 class ItemSquare extends StatelessWidget {
@@ -57,7 +65,7 @@ class ItemSquare extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final key = item;
     final def = key == null ? null : data.itemOf(key);
-    final gear = def?.slot != null;
+    final gear = def?.slot != null || def?.tool != null;
     final Color border;
     final IconData icon;
     final Color iconColour;
@@ -68,7 +76,10 @@ class ItemSquare extends StatelessWidget {
     } else if (gear) {
       final q = data.qualityOf(key);
       border = q == data.qualities.first ? scheme.onSurface : qualityColour(q);
-      icon = slotIcon(def!.slot!);
+      icon = switch (def!.tool) {
+        final tool? => professionIcon(data.professions[tool.profession]!.icon),
+        null => slotIcon(def.slot!),
+      };
       iconColour = border;
     } else {
       border = Colors.transparent;

@@ -122,10 +122,20 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
   return ActionTile(
     controller: c,
     activity: Activity.gather(node),
-    leading: const Icon(Icons.landscape),
+    leading: LevelBadge(
+      key: ValueKey('spot-level-$node'),
+      level: n.level,
+      colour: professionColour(
+        game,
+        c.state,
+        n.profession,
+        n.level,
+        open: game.nodeLevelMet(c.state, node),
+      ),
+    ),
     title: labels.node(node),
     enabled: game.nodeLevelMet(c.state, node),
-    // Spots pay profession XP (spec 0010 §2.2); M3 adds colours.
+    // Spots pay profession XP (spec 0010 §2.2).
     subtitle:
         game.lockedReason(c.state, Activity.gather(node)) ??
         '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
@@ -135,6 +145,21 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     startFrom: startFrom,
   );
 }
+
+/// The colour of a spot or recipe whose XP fades by [level] of
+/// [profession] (spec 0010 §2.3): its fade band, like a monster's, or red
+/// while it isn't [open] to the player.
+LevelColour professionColour(
+  Game game,
+  GameState s,
+  String profession,
+  int level, {
+  required bool open,
+}) => open
+    ? game.data
+          .professionBandFor(level, game.professionLevel(s, profession))
+          .colour
+    : LevelColour.red;
 
 /// Starts or queues [a]: a warning first for [deadly] fights, then from 2
 /// queue slots the stop condition sheet (spec 0003 §8).

@@ -84,4 +84,40 @@ void main() {
     expect(game.nextGoal(s), isA<FightGoal>());
     expect((game.nextGoal(s)! as FightGoal).enemy, 'goblin');
   });
+
+  // Spec 0010 §8.4: the best upgrade for the character's level is out of
+  // reach only because of a profession level.
+  test('a recipe held back by Crafting names the level to reach', () {
+    final s = stateAt(game, level: 30, professionLevel: 1);
+    final goal = game.nextGoal(s);
+    expect(goal, isA<ProfessionGoal>());
+    final g = goal! as ProfessionGoal;
+    expect(g.profession, 'crafting');
+    expect(g.current, 1);
+    final r = game.data.recipes[g.target.target]!;
+    expect(g.target.kind, ActivityKind.craft);
+    expect(g.level, r.craftingLevel);
+    expect(r.level, lessThanOrEqualTo(30));
+  });
+
+  test('a vein held back by Mining names the vein', () {
+    final s = stateAt(game, level: 25, professionLevel: 25)
+      ..professions['mining'] = game.data.professionXpForLevel(15)
+      // Next door to Mithril Deep; no monster drops mithril ore.
+      ..explored.add('mountain_pass')
+      ..inventory['star_diamond'] = 1;
+    // The best of everything worn but rings: the star-diamond ring is the
+    // upgrade, and only its mithril ore is missing.
+    for (final slot in game.data.gearSlots) {
+      if (slot.id.startsWith('ring')) continue;
+      final fits = [
+        for (final i in game.data.items.values)
+          if (game.slotsFor(i.id).contains(slot.id)) i,
+      ]..sort((a, b) => b.score.compareTo(a.score));
+      if (fits.isNotEmpty) s.equipment[slot.id] = fits.first.id;
+    }
+    final g = game.nextGoal(s)! as ProfessionGoal;
+    expect((g.profession, g.level, g.current), ('mining', 20, 15));
+    expect(g.target, const Activity.gather('mithril_vein'));
+  });
 }
