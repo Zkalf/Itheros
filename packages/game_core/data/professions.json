@@ -33,6 +33,31 @@
       }
     },
     {
+      "id": "fishing", "name": "Fishing", "icon": "fish", "tool": "Rod",
+      "tiers": [{ "level": 1, "name": "Lake" }, { "level": 10, "name": "River" }, { "level": 20, "name": "Tarn" }],
+      "teacher": {
+        "name": "Wen", "title": "the fisherman", "location": "camp", "starterTool": "old_rod",
+        "learnLine": "Take my old rod. Bring me back some fish.",
+        "tips": []
+      }
+    },
+    {
+      "id": "hunting", "name": "Hunting", "icon": "bow", "tool": "Bow",
+      "tiers": [{ "level": 1, "name": "Deer" }, { "level": 10, "name": "Elk" }, { "level": 20, "name": "Ibex" }],
+      "teacher": {
+        "name": "Sigrun", "title": "the hunter", "location": "camp", "starterTool": "old_bow",
+        "learnLine": "My old bow. Walk soft, aim low, and never follow a golden stag past dusk.",
+        "tips": [
+        { "id": "sigrun_1", "level": 1, "enemy": "goblin_brute", "title": "Goblin hide",
+          "text": "\"Brutes wear goblin hide and nothing else. An edge does the work; just don't let it get its arms round you.\"" },
+        { "id": "sigrun_10", "level": 10, "enemy": "wolf", "title": "Thin pelt",
+          "text": "\"I've skinned a hundred wolves. Thin pelt over lean meat. Cut, don't poke.\"" },
+        { "id": "sigrun_20", "level": 20, "enemy": "wyvern", "title": "Roof tiles",
+          "text": "\"Wyvern scales lie like roof tiles. Swing and you slide off. Find the seam with a point.\"" }
+        ]
+      }
+    },
+    {
       "id": "crafting", "name": "Crafting", "icon": "anvil", "tool": "Smith's hammer",
       "tiers": [{ "level": 1, "name": "Copper" }, { "level": 10, "name": "Iron" }, { "level": 20, "name": "Mithril" }],
       "teacher": {
@@ -46,6 +71,15 @@
         { "id": "garrow_20", "level": 20, "enemy": "wraith", "title": "Cold mail",
           "text": "\"The wraiths still wear the mail they died in. Blades skid off the rings; a spear point goes between them.\"" }
         ]
+      }
+    },
+    {
+      "id": "cooking", "name": "Cooking", "icon": "pot", "tool": "Cooking pot",
+      "tiers": [{ "level": 1, "name": "Simple" }, { "level": 10, "name": "Hearty" }, { "level": 20, "name": "Fine" }],
+      "teacher": {
+        "name": "Marta", "title": "the cook", "location": "camp", "starterTool": "old_pot",
+        "learnLine": "Here's my old pot. Bring me fish and meat, and I'll show you what a fire is for.",
+        "tips": []
       }
     }
   ]

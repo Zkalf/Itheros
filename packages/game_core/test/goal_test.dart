@@ -29,7 +29,11 @@ void main() {
         'offHand': 'bone_shield',
       });
     final goal = game.nextGoal(s);
-    expect(goal, isNot(isA<CollectGoal>()));
+    // Spec 0011 §7 gear may send it hunting in the open woods; never to a
+    // monster in the fog.
+    if (goal case CollectGoal(:final source)) {
+      expect(source.kind, isNot(ActivityKind.fight));
+    }
   });
 
   test('2: a recipe that improves a slot and can be crafted now', () {

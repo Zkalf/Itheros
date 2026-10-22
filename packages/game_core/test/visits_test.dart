@@ -61,10 +61,14 @@ void main() {
     );
   });
 
-  test('Travelling Salesman asks for every area in the game data', () {
+  // A hidden area is a bonus: the owner's choice in plan 0013 M1.
+  test('Travelling Salesman asks for every area that isn\'t hidden', () {
     final a = game.data.achievements[salesman]!;
     expect(a.counter, 'areas.visited');
-    expect(a.atLeast, game.data.locations.length);
+    expect(
+      a.atLeast,
+      game.data.locations.values.where((l) => !l.hidden).length,
+    );
   });
 
   test('an older save counts the area it is in, and nothing is lost', () {

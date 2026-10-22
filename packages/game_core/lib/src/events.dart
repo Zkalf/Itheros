@@ -52,10 +52,13 @@ class ActionSkipped extends GameEvent {
   final Map<String, int> missing;
 }
 
+/// One item from a gathering action. A fish carries its [weight] in tenths
+/// of a kg (spec 0011 §3.4).
 class Gathered extends GameEvent {
-  const Gathered(this.item, this.xp);
+  const Gathered(this.item, this.xp, {this.weight});
   final String item;
   final int xp;
+  final int? weight;
 }
 
 class Crafted extends GameEvent {
@@ -69,10 +72,49 @@ class LevelUp extends GameEvent {
   final int level;
 }
 
-/// A gathering action found its spot's rare find (spec 0010 §5.1).
+/// A gathering action found its spot's rare find (spec 0010 §5.1): a
+/// trophy fish carries its [weight] in tenths of a kg (spec 0011 §3.2).
 class RareFound extends GameEvent {
-  const RareFound(this.item);
+  const RareFound(this.item, {this.weight});
   final String item;
+  final int? weight;
+}
+
+/// A catch beat the record for its fish (spec 0011 §3.4); tenths of a kg.
+class RecordBeaten extends GameEvent {
+  const RecordBeaten(this.item, this.weight, this.was);
+  final String item;
+  final int weight;
+  final int was;
+}
+
+/// A message in a bottle (spec 0011 §6.1): the first [revealed] an area,
+/// a later one held [item].
+class BottleFound extends GameEvent {
+  const BottleFound({this.revealed, this.item});
+  final String? revealed;
+  final String? item;
+}
+
+/// A sunken chest held [key] (spec 0011 §6.3).
+class ChestFound extends GameEvent {
+  const ChestFound(this.key);
+  final String key;
+}
+
+/// The meal [key] was eaten by auto-eat, with [left] of its kind in the
+/// bag (spec 0011 §5.4).
+class MealEaten extends GameEvent {
+  const MealEaten(this.key, {required this.left, this.auto = true});
+  final String key;
+  final int left;
+  final bool auto;
+}
+
+/// The running [meal] (an item id) ended with none to follow it.
+class MealsOut extends GameEvent {
+  const MealsOut(this.meal);
+  final String meal;
 }
 
 /// A reroll ended: [before] became [after] (the same key when the quality

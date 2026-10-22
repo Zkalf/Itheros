@@ -3,7 +3,8 @@
 // spec 0001 criterion 6), as spec 0009 criterion 16 sets them: seeds 1-8,
 // level 5 on day 1-2; level 30 as spec 0009 amendment 1 sets it. Spec 0010
 // §9.3: the walker's professions (target 2), the fighter (target 3) and the
-// gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart.
+// gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart. Spec 0011
+// §9.3 target 5: meals help, they aren't a must.
 import 'package:game_core/simulation.dart';
 import 'package:test/test.dart';
 
@@ -12,6 +13,7 @@ import 'support.dart';
 void main() {
   final game = newTestGame();
   final level30 = <int?>[];
+  final level30NoMeals = <int?>[];
   final professionDays = <(String, int), List<int?>>{
     for (final p in ['mining', 'crafting'])
       for (final l in [10, 20]) (p, l): [],
@@ -21,6 +23,15 @@ void main() {
     group('seed $seed', () {
       final result = simulate(game, stepsPerDay: 5000, days: 100, seed: seed);
       level30.add(result.dayReached(30));
+      level30NoMeals.add(
+        simulate(
+          game,
+          stepsPerDay: 5000,
+          days: 100,
+          seed: seed,
+          meals: false,
+        ).dayReached(30),
+      );
       professionDays.forEach(
         (k, days) => days.add(result.professionDay(k.$1, k.$2)),
       );
@@ -57,6 +68,12 @@ void main() {
   test('spec 0009 amendment 1: the median seed reaches level 30 on day '
       '80-100', () {
     expect(median(level30), inInclusiveRange(80, 100));
+  });
+
+  test('spec 0011 §9.3 target 5: with meals the median level 30 day is no '
+      'later than without, and at most 5 days sooner', () {
+    final gain = median(level30NoMeals) - median(level30);
+    expect(gain, inInclusiveRange(0, 5));
   });
 
   test('spec 0010 amendment 1: Mining and Crafting 10 by day 8-22, 20 by '

@@ -175,6 +175,34 @@ class RunningActivity {
   };
 }
 
+/// The meal running now and its steps left (spec 0011 §5.4). [key] is the
+/// meal's id, with `@perfect` for a perfect dish.
+class ActiveMeal {
+  ActiveMeal(this.key, this.left);
+
+  factory ActiveMeal.fromJson(Map<String, Object?> json) =>
+      ActiveMeal(json['key'] as String, json['left'] as int);
+
+  final String key;
+  int left;
+
+  Map<String, Object?> toJson() => {'key': key, 'left': left};
+}
+
+/// The meal kind eaten when the running one ends, while the bag holds more
+/// than [keep] (spec 0011 §5.4): 0 is "until out".
+class AutoEat {
+  const AutoEat(this.meal, this.keep);
+
+  factory AutoEat.fromJson(Map<String, Object?> json) =>
+      AutoEat(json['meal'] as String, json['keep'] as int? ?? 0);
+
+  final String meal;
+  final int keep;
+
+  Map<String, Object?> toJson() => {'meal': meal, 'keep': keep};
+}
+
 /// Everything saved for one player. Level is derived from [xp].
 class GameState {
   GameState({
@@ -195,6 +223,11 @@ class GameState {
     Set<String>? learned,
     Map<String, String>? tools,
     Set<String>? tips,
+    Map<String, int>? records,
+    Set<String>? revealed,
+    this.meal,
+    this.autoEat,
+    this.bottles = 0,
     this.professionRng = 0,
     this.loadedVersion = schemaVersion,
   }) : queue = queue ?? [],
@@ -208,7 +241,9 @@ class GameState {
        professions = professions ?? {},
        learned = learned ?? {},
        tools = tools ?? {},
-       tips = tips ?? {};
+       tips = tips ?? {},
+       records = records ?? {},
+       revealed = revealed ?? {};
 
   factory GameState.fromJson(Map<String, Object?> json) {
     final version = json['version'];
@@ -253,9 +288,23 @@ class GameState {
       ),
       tips: _stringSet(json['tips']),
       professionRng: json['professionRng'] as int? ?? 0,
+      // Before version 9: no records, meal or bottles (spec 0011 §10).
+      records: json['records'] == null ? null : _intMap(json['records']),
+      revealed: _stringSet(json['revealed']),
+      meal: switch (json['meal']) {
+        final Map<String, Object?> m => ActiveMeal.fromJson(m),
+        _ => null,
+      },
+      autoEat: switch (json['autoEat']) {
+        final Map<String, Object?> m => AutoEat.fromJson(m),
+        _ => null,
+      },
+      bottles: json['bottles'] as int? ?? 0,
     );
   }
 
+  /// 9: fish records, the running meal, auto-eat, revealed areas and
+  /// bottles found (spec 0011 §10).
   /// 8: profession XP, learned professions, tools, tips and the profession
   /// stream (spec 0010 §10).
   /// 7: bonus stats in item keys, fought monsters, found lore notes (spec
@@ -266,7 +315,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 8;
+  static const schemaVersion = 9;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -310,6 +359,21 @@ class GameState {
   /// Teachers' tips told (spec 0010 §6.2).
   final Set<String> tips;
 
+  /// Heaviest catch per fish, in tenths of a kg (spec 0011 §3.4).
+  final Map<String, int> records;
+
+  /// Hidden areas revealed (spec 0011 §6.2).
+  final Set<String> revealed;
+
+  /// The meal running, or null (spec 0011 §5.4).
+  ActiveMeal? meal;
+
+  /// The meal eaten when the running one ends, or null.
+  AutoEat? autoEat;
+
+  /// Messages in a bottle found (spec 0011 §6.1).
+  int bottles;
+
   /// State of the seeded random generator (see `Rng`).
   int rngState;
 
@@ -344,6 +408,11 @@ class GameState {
     'tools': Map.of(tools),
     'tips': tips.toList()..sort(),
     'professionRng': professionRng,
+    'records': Map.of(records),
+    'meal': meal?.toJson(),
+    'autoEat': autoEat?.toJson(),
+    'revealed': revealed.toList()..sort(),
+    'bottles': bottles,
   };
 
   void addItem(String item, [int count = 1]) {

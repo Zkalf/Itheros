@@ -3,26 +3,30 @@
   "mapAspect": 1.5,
   "mapRiver": [{ "x": 0, "y": 0.58 }, { "x": 0.3, "y": 0.55 }, { "x": 0.6, "y": 0.58 }, { "x": 1, "y": 0.54 }],
   "locations": [
-    { "id": "camp", "map": { "x": 0.5, "y": 0.92 }, "name": "Camp", "crafting": true, "enemies": [], "nodes": [],
+    { "id": "camp", "map": { "x": 0.5, "y": 0.92 }, "name": "Camp", "crafting": true, "fire": true, "enemies": [], "nodes": [],
       "flavour": "The Guild camp: a fire, a forge, and a notice board." },
-    { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": ["oak_tree"],
+    { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": ["oak_tree", "deer_trail"],
       "flavour": "Goblin Woods: small thieves, big brothers, and something that growls in the deep." },
     { "id": "copper_hills", "map": { "x": 0.8, "y": 0.8 }, "name": "Copper Hills", "enemies": [], "nodes": ["copper_vein"],
       "flavour": "Copper Hills: red-brown rock that rings when you hit it." },
     { "id": "old_graveyard", "map": { "x": 0.14, "y": 0.68 }, "name": "Old Graveyard", "enemies": ["skeleton", "zombie", "graveyard_king"], "nodes": [],
       "flavour": "Old Graveyard: the dead here don't rest, and one of them wears a crown." },
-    { "id": "grey_moor", "map": { "x": 0.32, "y": 0.45 }, "name": "Grey Moor", "crafting": true, "enemies": ["wolf", "ghost", "bandit"], "nodes": ["ash_tree"],
+    { "id": "grey_moor", "map": { "x": 0.32, "y": 0.45 }, "name": "Grey Moor", "crafting": true, "enemies": ["wolf", "ghost", "bandit"], "nodes": ["ash_tree", "moor_tracks"],
       "flavour": "Grey Moor: fog, wolves, and something that doesn't leave footprints. The Guild keeps an outpost here." },
     { "id": "iron_ridge", "map": { "x": 0.8, "y": 0.47 }, "name": "Iron Ridge", "enemies": [], "nodes": ["iron_vein"],
       "flavour": "Iron Ridge: dark stone, heavy ore." },
-    { "id": "troll_bridge", "map": { "x": 0.22, "y": 0.3 }, "name": "Troll Bridge", "enemies": ["giant_spider", "troll", "ogre_chieftain"], "nodes": [],
+    { "id": "troll_bridge", "map": { "x": 0.22, "y": 0.3 }, "name": "Troll Bridge", "enemies": ["giant_spider", "troll", "ogre_chieftain"], "nodes": ["under_the_bridge"],
       "flavour": "Troll Bridge: webs under the arches and a toll nobody pays twice." },
-    { "id": "mountain_pass", "map": { "x": 0.55, "y": 0.19 }, "name": "Mountain Pass", "crafting": true, "enemies": ["stone_golem", "harpy", "wraith"], "nodes": ["pine_tree"],
+    { "id": "mountain_pass", "map": { "x": 0.55, "y": 0.19 }, "name": "Mountain Pass", "crafting": true, "enemies": ["stone_golem", "harpy", "wraith"], "nodes": ["pine_tree", "cold_tarn", "high_crags"],
       "flavour": "Mountain Pass: thin air, falling stones, and a Guild lodge with a warm forge." },
     { "id": "mithril_deep", "map": { "x": 0.85, "y": 0.27 }, "name": "Mithril Deep", "enemies": [], "nodes": ["mithril_vein"],
       "flavour": "Mithril Deep: silver light in the dark, and a long way down." },
     { "id": "dragons_peak", "map": { "x": 0.3, "y": 0.06 }, "name": "Dragon's Peak", "enemies": ["wyvern", "fire_drake", "young_dragon"], "nodes": [],
-      "flavour": "Dragon's Peak: scorched rock and the smell of smoke. Something big sleeps at the top." }
+      "flavour": "Dragon's Peak: scorched rock and the smell of smoke. Something big sleeps at the top." },
+    { "id": "mirror_lake", "map": { "x": 0.72, "y": 0.94 }, "name": "Mirror Lake", "enemies": [], "nodes": ["lake_shore"],
+      "flavour": "Mirror Lake: still water, reeds, and something big that rolls under the surface at dawn." },
+    { "id": "smugglers_cove", "map": { "x": 0.95, "y": 0.96 }, "name": "Smugglers' Cove", "hidden": true, "enemies": [], "nodes": ["cove_rocks"],
+      "flavour": "Smugglers' Cove: a crooked jetty, tar on the rocks, and an X nobody bothered to scratch out." }
   ],
   "routes": [
     { "from": "camp", "to": "goblin_woods", "steps": 200 },
@@ -35,7 +39,10 @@
     { "from": "grey_moor", "to": "troll_bridge", "steps": 900 },
     { "from": "troll_bridge", "to": "mountain_pass", "steps": 1000 },
     { "from": "mountain_pass", "to": "mithril_deep", "steps": 600 },
-    { "from": "mountain_pass", "to": "dragons_peak", "steps": 1200 }
+    { "from": "mountain_pass", "to": "dragons_peak", "steps": 1200 },
+    { "from": "camp", "to": "mirror_lake", "steps": 300 },
+    { "from": "copper_hills", "to": "mirror_lake", "steps": 300 },
+    { "from": "mirror_lake", "to": "smugglers_cove", "steps": 700 }
   ],
   "nodes": [
     { "id": "copper_vein", "name": "Copper vein", "profession": "mining", "level": 1, "steps": 100, "item": "copper_ore", "rareFind": "garnet", "xp": 20 },
@@ -43,6 +50,20 @@
     { "id": "mithril_vein", "name": "Mithril vein", "profession": "mining", "level": 20, "steps": 150, "item": "mithril_ore", "rareFind": "star_diamond", "xp": 175 },
     { "id": "oak_tree", "name": "Oak tree", "profession": "woodcutting", "level": 1, "steps": 100, "item": "oak_log", "rareFind": "oak_heartwood", "xp": 20 },
     { "id": "ash_tree", "name": "Ash tree", "profession": "woodcutting", "level": 10, "steps": 120, "item": "ash_log", "rareFind": "ash_heartwood", "xp": 55 },
-    { "id": "pine_tree", "name": "Pine tree", "profession": "woodcutting", "level": 20, "steps": 150, "item": "pine_log", "rareFind": "pine_heartwood", "xp": 175 }
+    { "id": "pine_tree", "name": "Pine tree", "profession": "woodcutting", "level": 20, "steps": 150, "item": "pine_log", "rareFind": "pine_heartwood", "xp": 175 },
+    { "id": "lake_shore", "name": "Lake shore", "profession": "fishing", "level": 1, "steps": 100, "item": "lake_scale", "rareFind": "old_mossback", "xp": 20, "bottle": true,
+      "catches": [{ "item": "perch" }, { "item": "pike", "chance": 0.2 }, { "item": "golden_carp", "chance": 0.045 }] },
+    { "id": "under_the_bridge", "name": "Under the bridge", "profession": "fishing", "level": 10, "steps": 120, "item": "river_scale", "rareFind": "river_king", "xp": 55, "bottle": true,
+      "catches": [{ "item": "brown_trout" }, { "item": "eel", "chance": 0.2 }, { "item": "silver_salmon", "chance": 0.045 }] },
+    { "id": "cove_rocks", "name": "Cove rocks", "profession": "fishing", "level": 15, "steps": 130, "item": "river_scale", "rareFind": "old_one_eye", "rareBase": 0.015, "xp": 90, "bottle": true, "chest": "drowned_captains_ring",
+      "catches": [{ "item": "sea_bass" }, { "item": "mackerel", "chance": 0.2 }, { "item": "moonfish", "chance": 0.045 }] },
+    { "id": "cold_tarn", "name": "Cold tarn", "profession": "fishing", "level": 20, "steps": 150, "item": "tarn_scale", "rareFind": "the_pale_one", "xp": 175, "bottle": true,
+      "catches": [{ "item": "arctic_char" }, { "item": "frostfin", "chance": 0.2 }, { "item": "glacier_pike", "chance": 0.045 }] },
+    { "id": "deer_trail", "name": "Deer trail", "profession": "hunting", "level": 1, "steps": 100, "item": "deer_hide", "rareFind": "golden_antler", "rareAnimal": "Golden stag", "rareWith": ["venison"], "xp": 20,
+      "catches": [{ "item": "venison", "animal": "Red deer", "chance": 0.75 }, { "item": "boar_meat", "animal": "Wild boar" }] },
+    { "id": "moor_tracks", "name": "Moor tracks", "profession": "hunting", "level": 10, "steps": 120, "item": "elk_hide", "rareFind": "old_tusks_tusk", "rareAnimal": "Old Tusk", "rareWith": ["elk_meat"], "xp": 55,
+      "catches": [{ "item": "elk_meat", "animal": "Moor elk", "chance": 0.75 }, { "item": "black_boar_meat", "animal": "Black boar" }] },
+    { "id": "high_crags", "name": "High crags", "profession": "hunting", "level": 20, "steps": 150, "item": "ibex_hide", "rareFind": "snow_lynx_pelt", "rareAnimal": "Snow lynx", "rareWith": ["ibex_meat"], "xp": 175,
+      "catches": [{ "item": "ibex_meat", "animal": "Ibex", "chance": 0.75 }, { "item": "grouse", "animal": "Snow grouse" }] }
   ]
 }

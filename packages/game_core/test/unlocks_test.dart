@@ -15,6 +15,8 @@ void main() {
       'goblin_woods',
       'copper_hills',
       'old_graveyard',
+      // Spec 0011 §3.1.
+      'mirror_lake',
     ]);
     expect(game.availableRecipes(s), game.data.recipes.keys.toList());
   });
@@ -22,8 +24,8 @@ void main() {
   test('level 1 in Goblin Woods: every monster there', () {
     final s = stateAt(game, location: 'goblin_woods');
     expect(game.availableEnemies(s), ['goblin', 'goblin_brute', 'old_bear']);
-    // The Oak tree (spec 0010 §4).
-    expect(game.availableNodes(s), ['oak_tree']);
+    // The Oak tree (spec 0010 §4) and the Deer trail (spec 0011 §4).
+    expect(game.availableNodes(s), ['oak_tree', 'deer_trail']);
   });
 
   test('Mining 1 works the Copper vein (spec 0010 §2.1)', () {

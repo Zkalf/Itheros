@@ -1,11 +1,13 @@
-// Pacing over seeds (plan 0011, plan 0012): the simulated walker at 5,000
-// steps a day on seeds 1-8, with the day it reaches levels 5, 10, 20 and 30
-// (spec 0009 criterion 16 and amendment 1: 1-2, 12-16, -, 70-100), the day
-// its Mining and Crafting reach 10 and 20 and their levels on day 90 (spec
-// 0010 §9.3 target 2); then the fighter's level 30 day (target 3) and the
+// Pacing over seeds (plans 0011-0013): the simulated walker at 5,000 steps
+// a day on seeds 1-8, with the day it reaches levels 5, 10, 20 and 30 (spec
+// 0010 amendment 1: 1-2, 11-16, -, 70-100), the day its Mining and Crafting
+// reach 10 and 20 (target 2), its level 30 day with meals off (spec 0011
+// target 5), its Fishing, Hunting and Cooking on days 30, 60 and 90
+// (target 6); then the fighter's level 30 day (target 3) and the
 // gatherer-crafter's level on day 90 (target 4). Medians last.
 //
-//   dart run tool/seeds.dart [--seeds 8] [--steps-per-day 5000] [--mixed-only]
+//   dart run tool/seeds.dart [--seeds 8] [--steps-per-day 5000] [--batch 10]
+//                            [--meals-from 5] [--mixed-only]
 import 'dart:io';
 
 import 'package:game_core/game_core.dart';
@@ -23,45 +25,63 @@ void main(List<String> args) {
         f.uri.pathSegments.last.replaceAll('.json', ''): f.readAsStringSync(),
   };
   final game = Game(GameData.fromJsonStrings(files));
+  final steps = opt('steps-per-day', 5000);
+  final batch = opt('batch', 10);
+  final from = opt('meals-from', 5);
   const levels = [5, 10, 20, 30];
   const professions = [('mining', 'Mi'), ('crafting', 'Cr')];
+  const lake = [('fishing', 'Fi'), ('hunting', 'Hu'), ('cooking', 'Co')];
+  const lakeDays = [30, 60, 90];
   final heads = [
     for (final l in levels) 'L$l',
     for (final (_, short) in professions) ...['$short 10', '$short 20'],
-    for (final (_, short) in professions) '$short@90',
+    'L30 no meals',
+    for (final (_, short) in lake)
+      for (final d in lakeDays) '$short@$d',
   ];
 
   final mixedOnly = args.contains('--mixed-only');
   if (!mixedOnly) heads.addAll(['fighter L30', 'gatherer L@90']);
   final columns = [for (final _ in heads) <int?>[]];
 
+  SimulationResult run(
+    int seed, {
+    Walker w = Walker.mixed,
+    bool meals = true,
+  }) => simulate(
+    game,
+    stepsPerDay: steps,
+    days: 120,
+    seed: seed,
+    walker: w,
+    meals: meals,
+    mealBatch: batch,
+    mealsFrom: from,
+  );
+
   stdout.writeln('| seed | ${heads.join(' | ')} |');
   stdout.writeln('|---|${heads.map((_) => '---').join('|')}|');
   for (var seed = 1; seed <= opt('seeds', 8); seed++) {
-    final r = simulate(
-      game,
-      stepsPerDay: opt('steps-per-day', 5000),
-      days: 120,
-      seed: seed,
-    );
-    final day90 = r.days.where((d) => d.day == 90).firstOrNull;
+    final r = run(seed);
+    int? on(int day, String p) =>
+        r.days.where((d) => d.day == day).firstOrNull?.professions[p];
     final values = <int?>[
       for (final l in levels) r.dayReached(l),
       for (final (p, _) in professions)
         for (final l in [10, 20]) r.professionDay(p, l),
-      for (final (p, _) in professions) day90?.professions[p],
+      run(seed, meals: false).dayReached(30),
+      for (final (p, _) in lake)
+        for (final d in lakeDays) on(d, p),
     ];
     if (!mixedOnly) {
-      SimulationResult run(Walker w) => simulate(
-        game,
-        stepsPerDay: opt('steps-per-day', 5000),
-        days: 120,
-        seed: seed,
-        walker: w,
-      );
       values
-        ..add(run(Walker.fighter).dayReached(30))
-        ..add(run(Walker.gatherer).days.where((d) => d.day == 90).first.level);
+        ..add(run(seed, w: Walker.fighter).dayReached(30))
+        ..add(
+          run(
+            seed,
+            w: Walker.gatherer,
+          ).days.where((d) => d.day == 90).first.level,
+        );
     }
     for (var i = 0; i < values.length; i++) {
       columns[i].add(values[i]);

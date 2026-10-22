@@ -27,7 +27,9 @@ void main() {
     });
 
     test('three tips each, at levels 1, 10 and 20', () {
+      // Of spec 0011's teachers only Sigrun tells tips (decision 7).
       for (final p in data.professions.values) {
+        if (const {'fishing', 'cooking'}.contains(p.id)) continue;
         expect(p.tips.map((t) => t.level), [1, 10, 20], reason: p.id);
       }
       final s = stateAt(game, professionLevel: 10);
@@ -118,7 +120,11 @@ void main() {
 
     test('each spot has its find', () {
       expect(
-        {for (final n in data.nodes.values) n.id: n.rareFind},
+        {
+          // Spec 0011's waters and trails have their trophies (lake_test).
+          for (final n in data.nodes.values)
+            if (n.catches.isEmpty) n.id: n.rareFind,
+        },
         {
           'copper_vein': 'garnet',
           'iron_vein': 'sapphire',

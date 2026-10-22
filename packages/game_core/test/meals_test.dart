@@ -91,13 +91,15 @@ void main() {
           2 => (80, 45),
           _ => (100, 140),
         };
-        expect((r.craftingLevel, r.inputs), (level, inputs), reason: id);
+        expect(r.craftingLevel, level, reason: id);
+        expect(r.inputs, inputs, reason: id);
         expect(
           (r.steps, r.xp),
           feast ? (steps * 2, xp * 2) : (steps, xp),
           reason: id,
         );
-        expect((meal.tier, meal.buffs), (tier, buffs), reason: id);
+        expect(meal.tier, tier, reason: id);
+        expect(meal.buffs, buffs, reason: id);
         expect(data.items[id]!.slot, isNull);
       }
     });

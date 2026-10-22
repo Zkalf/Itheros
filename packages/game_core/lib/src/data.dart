@@ -158,6 +158,8 @@ class LocationDef {
     : id = _str(j, 'id'),
       name = _str(j, 'name'),
       crafting = j['crafting'] as bool? ?? false,
+      fire = j['fire'] as bool? ?? false,
+      hidden = j['hidden'] as bool? ?? false,
       enemies = _strList(j, 'enemies'),
       nodes = _strList(j, 'nodes'),
       flavour = j['flavour'] as String?,
@@ -169,6 +171,13 @@ class LocationDef {
   final String id;
   final String name;
   final bool crafting;
+
+  /// A camp fire: cooking happens only here (spec 0011 §5.1).
+  final bool fire;
+
+  /// Off the map, out of every list and route until revealed (spec 0011
+  /// §6.2).
+  final bool hidden;
   final List<String> enemies;
   final List<String> nodes;
 
@@ -224,6 +233,12 @@ class NodeDef {
       item = _str(j, 'item'),
       profession = _str(j, 'profession'),
       rareFind = j['rareFind'] as String?,
+      rareBase = (j['rareBase'] as num?)?.toDouble(),
+      rareAnimal = j['rareAnimal'] as String?,
+      rareWith = _strList(j, 'rareWith'),
+      catches = List.unmodifiable(_maps(j, 'catches').map(CatchDef._)),
+      bottle = j['bottle'] as bool? ?? false,
+      chest = j['chest'] as String?,
       xp = _int(j, 'xp');
 
   final String id;
@@ -232,8 +247,28 @@ class NodeDef {
   /// The profession that works it (spec 0010 §2.1).
   final String profession;
 
-  /// The rare item each action may find (spec 0010 §5.1).
+  /// The rare item each action may find (spec 0010 §5.1). At a spot with
+  /// [catches] it is the table's top row: a trophy (spec 0011 §3.2, §4).
   final String? rareFind;
+
+  /// The spot's own base chance for [rareFind], if not the usual one.
+  final double? rareBase;
+
+  /// The rare animal tracked to get [rareFind], for its news.
+  final String? rareAnimal;
+
+  /// Items that come with [rareFind]: a rare animal's meat (spec 0011 §4).
+  final List<String> rareWith;
+
+  /// The fish or animals one action rolls from, besides [item] (spec 0011
+  /// §3.2, §4); empty for veins and trees.
+  final List<CatchDef> catches;
+
+  /// Each action rolls for a message in a bottle (spec 0011 §3.3).
+  final bool bottle;
+
+  /// The item a sunken chest holds, rolled for each action (§6.3).
+  final String? chest;
 
   /// The profession level it can be worked from, also its level for the
   /// profession fade (spec 0010 §2.2).
@@ -243,6 +278,43 @@ class NodeDef {
 
   /// Profession XP per action (spec 0010 §2.2).
   final int xp;
+
+  /// About how many [item]s one action gives, the rare find left out: 1 for
+  /// [item], a row's chance for a catch.
+  double yieldOf(String what) {
+    if (what == item) return 1;
+    final rest = 1 - catches.fold(0.0, (t, c) => t + (c.chance ?? 0));
+    return catches
+        .where((c) => c.item == what)
+        .fold(0.0, (t, c) => t + (c.chance ?? rest));
+  }
+}
+
+/// A row of a spot's catch table: the fish or the meat of an animal. The
+/// row without a [chance] takes what the others leave (spec 0011 §3.2, §4).
+class CatchDef {
+  CatchDef._(Map<String, Object?> j)
+    : item = _str(j, 'item'),
+      animal = j['animal'] as String?,
+      chance = (j['chance'] as num?)?.toDouble();
+
+  final String item;
+  final String? animal;
+  final double? chance;
+}
+
+/// What makes an item a meal: its tier and buffs (spec 0011 §5.2).
+class MealDef {
+  MealDef._(Map<String, Object?> j)
+    : tier = _int(j, 'tier'),
+      buffs = _strList(j, 'buffs');
+
+  final int tier;
+
+  /// hp, attack, defense, crit or steps; a feast has two.
+  final List<String> buffs;
+
+  static const kinds = {'hp', 'attack', 'defense', 'crit', 'steps'};
 }
 
 class DropDef {
@@ -403,6 +475,16 @@ class ItemDef {
       damageType = j['damageType'] as String?,
       armourType = j['armourType'] as String?,
       rare = j['rare'] as bool? ?? false,
+      reference = j['reference'] as bool? ?? true,
+      level = j['level'] as int?,
+      weight = switch (j['weight']) {
+        [final num lo, final num hi] => (lo.toDouble(), hi.toDouble()),
+        _ => null,
+      },
+      meal = switch (j['meal']) {
+        final Map<String, Object?> m => MealDef._(m),
+        _ => null,
+      },
       tool = switch (j['tool']) {
         final Map<String, Object?> t => ToolDef._(t),
         _ => null,
@@ -431,6 +513,20 @@ class ItemDef {
   /// A rare find or a boss shard (spec 0010 §5, §7.1): recipes using one
   /// roll on the profession stream and aren't the reference player's gear.
   final bool rare;
+
+  /// False for gear the spec 0002 reference player never wears: the hide,
+  /// scale and trophy pieces (spec 0011 §7). Their crafts roll on the
+  /// profession stream.
+  final bool reference;
+
+  /// Its item level when no recipe or monster gives one (spec 0011 §6.3).
+  final int? level;
+
+  /// A fish's weight range in kg (spec 0011 §3.4).
+  final (double, double)? weight;
+
+  /// Set for a meal (spec 0011 §5.2).
+  final MealDef? meal;
   final Stats bonus;
 
   /// How it ranks against other gear for the same slot.
@@ -533,6 +629,7 @@ class RecipeDef {
       craftingLevel = _intOr(j, 'crafting', _int(j, 'level')),
       steps = _int(j, 'steps'),
       xp = _int(j, 'xp'),
+      profession = j['profession'] as String? ?? 'crafting',
       inputs = (j['inputs'] as Map<String, Object?>).map(
         (k, v) => MapEntry(k, v as int),
       ),
@@ -545,12 +642,12 @@ class RecipeDef {
   /// (spec 0010 §2.2).
   final int level;
 
-  /// The Crafting level it needs: `crafting` in data, else [level]. The
-  /// first recipes need Crafting 1 (spec 0010 amendment 1).
+  /// The level of [profession] it needs: `crafting` in data, else [level].
+  /// The first recipes need Crafting 1 (spec 0010 amendment 1).
   final int craftingLevel;
 
-  /// Every recipe is Crafting's (spec 0010 §2.1).
-  String get profession => 'crafting';
+  /// Crafting's, or Cooking's for a meal (spec 0011 §5.1).
+  final String profession;
   final int steps;
 
   /// Crafting XP per craft (spec 0010 §2.2).
@@ -633,6 +730,30 @@ class GameData {
        shards = _strList(_map(economy, 'salvage'), 'shards'),
        rerollSteps = _int(_map(economy, 'reroll'), 'steps'),
        rerollDust = _int(_map(economy, 'reroll'), 'dust'),
+       mealSteps = _int(_map(economy, 'meals'), 'steps'),
+       mealPercent = List.unmodifiable(
+         (_map(economy, 'meals')['percent'] as List<Object?>).cast<int>(),
+       ),
+       mealCrit = List.unmodifiable(
+         (_map(economy, 'meals')['crit'] as List<Object?>).cast<int>(),
+       ),
+       perfectBase = _num(_map(economy, 'perfectDish'), 'base'),
+       perfectPerToolQualityStep = _num(
+         _map(economy, 'perfectDish'),
+         'perToolQualityStep',
+       ),
+       perfectPerLevelAbove = _num(
+         _map(economy, 'perfectDish'),
+         'perLevelAbove',
+       ),
+       perfectMaxLevelBonus = _num(
+         _map(economy, 'perfectDish'),
+         'maxLevelBonus',
+       ),
+       bottleChance = _num(_map(economy, 'bottle'), 'chance'),
+       bottleReveals = _str(_map(economy, 'bottle'), 'reveals'),
+       bottleLater = _str(_map(economy, 'bottle'), 'later'),
+       chestChance = _num(economy, 'chestChance'),
        fightXpPerStepList = List.unmodifiable([
          for (final v in economy['fightXpPerStep'] as List<Object?>)
            (v! as num).toDouble(),
@@ -765,6 +886,40 @@ class GameData {
   final int rerollSteps;
   final int rerollDust;
 
+  /// How long a meal lasts, in action and travel steps; a perfect dish
+  /// twice as long (spec 0011 §5.3).
+  final int mealSteps;
+
+  /// A stat buff's percent and a Crit buff's points, by meal tier from 1.
+  final List<int> mealPercent;
+  final List<int> mealCrit;
+
+  /// A cook's perfect-dish chance and its nudges, as [rareBase] (§5.3).
+  final double perfectBase;
+  final double perfectPerToolQualityStep;
+  final double perfectPerLevelAbove;
+  final double perfectMaxLevelBonus;
+
+  /// A cast's bottle chance; the area the first one reveals and the item
+  /// each later one holds (spec 0011 §6.1).
+  final double bottleChance;
+  final String bottleReveals;
+  final String bottleLater;
+
+  /// A sunken chest's chance per cast where there is one (§6.3).
+  final double chestChance;
+
+  /// Marks a perfect dish's key: `grilled_perch@perfect` (spec 0011 §5.3).
+  static const perfect = 'perfect';
+
+  static String perfectKey(String meal) => '$meal$qualityMark$perfect';
+
+  bool isPerfect(String key) =>
+      plainKey(key).split(qualityMark).skip(1).firstOrNull == perfect;
+
+  /// How long the meal with [key] lasts.
+  int mealStepsOf(String key) => isPerfect(key) ? mealSteps * 2 : mealSteps;
+
   /// The profession the tool with [key] serves, or null for anything else.
   String? toolProfession(String key) => itemOf(key)?.tool?.profession;
 
@@ -872,6 +1027,7 @@ class GameData {
   /// The level [item] is made or found at: its recipe's, else the lowest
   /// monster dropping it, else 1 (spec 0005 decision 2).
   int itemLevel(String item) {
+    if (items[item]?.level case final l?) return l;
     if (recipes.values.where((r) => r.output == item).firstOrNull
         case final r?) {
       return r.level;
@@ -1265,7 +1421,55 @@ class GameData {
         n.rareFind == null || items.containsKey(n.rareFind),
         'node ${n.id}: unknown rare find',
       );
+      for (final i in [
+        for (final c in n.catches) c.item,
+        ...n.rareWith,
+        ?n.chest,
+      ]) {
+        check(items.containsKey(i), 'node ${n.id}: unknown item $i');
+      }
+      check(
+        n.catches.isEmpty ||
+            n.catches.where((c) => c.chance == null).length == 1,
+        'node ${n.id}: one catch row takes the rest',
+      );
     }
+    for (final i in items.values) {
+      if (i.meal case final m?) {
+        check(
+          m.buffs.isNotEmpty && m.buffs.every(MealDef.kinds.contains),
+          'item ${i.id}: unknown meal buff',
+        );
+        check(
+          m.tier >= 1 &&
+              m.tier <= mealPercent.length &&
+              m.tier <= mealCrit.length,
+          'item ${i.id}: meal tier out of range',
+        );
+      }
+    }
+    for (final r in recipes.values) {
+      check(
+        professions.containsKey(r.profession),
+        'recipe ${r.id}: unknown profession ${r.profession}',
+      );
+      check(
+        (r.profession == 'cooking') == (items[r.output]!.meal != null),
+        'recipe ${r.id}: meals, and only meals, are cooked',
+      );
+    }
+    for (final l in locations.values.where((l) => l.hidden)) {
+      check(
+        destinationsFrom(l.id).any((d) => !locations[d]!.hidden),
+        'location ${l.id}: a hidden area needs a route',
+      );
+    }
+    check(
+      !nodes.values.any((n) => n.bottle) ||
+          (locations[bottleReveals]?.hidden ?? false),
+      'bottle: it must reveal a hidden area',
+    );
+    check(items.containsKey(bottleLater), 'bottle: unknown item');
     check(
       shards.length == bonusTiers.length && shards.every(items.containsKey),
       'salvage: one known shard per bonus stat tier',

@@ -39,7 +39,11 @@ void main() {
 
   group('criterion 1: profession levels gate spots and recipes', () {
     test('Mining, Woodcutting and Crafting have levels from the table', () {
-      expect(data.professions.keys, ['mining', 'woodcutting', 'crafting']);
+      // Spec 0011 §8.1 adds Fishing, Hunting and Cooking among them.
+      expect(
+        data.professions.keys,
+        containsAllInOrder(['mining', 'woodcutting', 'crafting']),
+      );
       final s = worker(prof: {'mining': 7});
       expect(game.professionLevel(s, 'mining'), 7);
       expect(game.professionLevel(s, 'woodcutting'), 1);

@@ -217,7 +217,8 @@ GameState referencePlayer(
       continue;
     }
     final item = data.items[r.output]!;
-    if (item.slot == null || item.twoHanded) continue;
+    // Nor the hide, scale and trophy pieces (spec 0011 §7).
+    if (item.slot == null || item.twoHanded || !item.reference) continue;
     if (item.damageType != null) {
       weapons.add(item);
       continue;
@@ -475,11 +476,32 @@ enum Walker {
 }
 
 class SensiblePlayer {
-  SensiblePlayer(this.game, {this.walker = Walker.mixed});
+  SensiblePlayer(
+    this.game, {
+    this.walker = Walker.mixed,
+    this.meals = true,
+    this.mealBatch = 10,
+    this.mealsFrom = 5,
+  });
 
   final Game game;
   final Walker walker;
+
+  /// Whether it cooks and eats (spec 0011 §9.2); off for target 5's
+  /// comparison.
+  final bool meals;
+
+  /// Meals it cooks in one go.
+  final int mealBatch;
+
+  /// The character level it starts cooking at: a batch on day 1 costs more
+  /// steps than its buff wins back.
+  final int mealsFrom;
   final _lostAtLevel = <String, int>{};
+
+  /// The meal recipe it is getting inputs for and cooking, until it holds
+  /// [mealBatch]; null when no batch is under way.
+  String? _batch;
 
   /// This decision's best arms per monster (see [bestArms]).
   final _arms = <String, (String?, String?, FightEstimate)>{};
@@ -497,6 +519,7 @@ class SensiblePlayer {
     s = _equipBest(s);
     s = _equipTools(s);
     if (walker != Walker.fighter && game.atForge(s)) s = _salvageSpares(s);
+    if (meals && walker != Walker.fighter) s = _keepFed(s);
     _arms.clear();
     final goal = _goal(s);
     if (goal.kind == ActivityKind.fight) {
@@ -545,6 +568,7 @@ class SensiblePlayer {
   Activity _goal(GameState s) {
     if (walker == Walker.fighter) return _bestFight(s);
     if (_rerollGoal(s) case final a?) return a;
+    if (_mealGoal(s) case final a?) return a;
     int gain(RecipeDef r) => _gain(s, r.output);
     final level = game.level(s);
     final upgrades = data.recipes.values.where((r) {
@@ -555,7 +579,7 @@ class SensiblePlayer {
               (walker == Walker.gatherer &&
                   r.inputs.keys.every(
                     (i) =>
-                        data.nodes.values.any((n) => n.item == i) &&
+                        data.nodes.values.any((n) => n.yieldOf(i) > 0) &&
                             _stepsPer(s, i).isFinite ||
                         _lockedSpot(s, i) != null,
                   ))) &&
@@ -668,6 +692,89 @@ class SensiblePlayer {
     return s;
   }
 
+  /// The buffs it cooks for: Attack or HP to fight, fewer steps to gather
+  /// (spec 0011 §9.2).
+  Set<String> get _mealBuffs =>
+      walker == Walker.gatherer ? const {'steps'} : const {'attack', 'hp'};
+
+  /// Meals in the bag, of any kind.
+  int _mealsHeld(GameState s) {
+    var n = 0;
+    s.inventory.forEach((key, count) {
+      if (data.itemOf(key)?.meal != null) n += count;
+    });
+    return n;
+  }
+
+  /// The best meal it can cook now: the highest tier with one of its
+  /// buffs, then the fewest steps to get the inputs; null if none.
+  String? _bestMeal(GameState s) {
+    String? best;
+    var bestTier = 0;
+    var bestSteps = double.infinity;
+    for (final r in data.recipes.values) {
+      final meal = data.items[r.output]!.meal;
+      if (meal == null ||
+          meal.buffs.length != 1 ||
+          !_mealBuffs.contains(meal.buffs.single) ||
+          !game.recipeLevelMet(s, r.id)) {
+        continue;
+      }
+      var steps = r.steps.toDouble();
+      for (final MapEntry(key: item, value: n) in r.inputs.entries) {
+        steps += n * _stepsPer(s, item);
+      }
+      if (!steps.isFinite) continue;
+      if (meal.tier > bestTier ||
+          (meal.tier == bestTier && steps < bestSteps)) {
+        (best, bestTier, bestSteps) = (r.id, meal.tier, steps);
+      }
+    }
+    return best;
+  }
+
+  /// In camp with fewer than two meals it starts a batch; a finished batch
+  /// is set to auto-eat until out. With no meal running it eats one.
+  GameState _keepFed(GameState s) {
+    if (_batch == null &&
+        game.level(s) >= mealsFrom &&
+        data.locations[s.location]!.fire &&
+        _mealsHeld(s) < 2) {
+      _batch = _bestMeal(s);
+    }
+    if (_batch case final r?
+        when _have(s, data.recipes[r]!.output) >= mealBatch) {
+      _batch = null;
+      s = game.setAutoEat(s, data.recipes[r]!.output);
+    }
+    if (s.meal == null) {
+      for (final key in s.inventory.keys.toList()) {
+        final meal = data.itemOf(key)?.meal;
+        if (meal != null && meal.buffs.any(_mealBuffs.contains)) {
+          s = game.setAutoEat(game.eat(s, key), data.itemOf(key)!.id);
+          break;
+        }
+      }
+    }
+    return s;
+  }
+
+  /// The batch under way: get the inputs for the meals still to cook, then
+  /// cook them at the fire.
+  Activity? _mealGoal(GameState s) {
+    final id = _batch;
+    if (id == null) return null;
+    final r = data.recipes[id]!;
+    final toCook = mealBatch - _have(s, r.output);
+    for (final MapEntry(key: item, value: n) in r.inputs.entries) {
+      if ((s.inventory[item] ?? 0) >= n * toCook) continue;
+      if (_sourceOf(s, item) case final a?) return a;
+      _batch = null;
+      return null;
+    }
+    return Activity.craft(id);
+  }
+
   /// At a forge, a reroll of the best worn gear above Common it has the dust
   /// for: its quality, or a Legendary's weakest bonus stat.
   Activity? _rerollGoal(GameState s) {
@@ -738,7 +845,7 @@ class SensiblePlayer {
   NodeDef? _lockedSpot(GameState s, String item) => data.nodes.values
       .where(
         (n) =>
-            n.item == item &&
+            n.yieldOf(item) > 0 &&
             !game.nodeFogged(s, n.id) &&
             !game.nodeLevelMet(s, n.id),
       )
@@ -749,7 +856,7 @@ class SensiblePlayer {
   /// its inputs included), crafted or gathered for. Null if nothing raises
   /// it.
   Activity? _practise(GameState s, String profession) {
-    if (profession != 'crafting') {
+    if (!data.recipes.values.any((r) => r.profession == profession)) {
       final spots = data.nodes.values.where(
         (n) =>
             n.profession == profession &&
@@ -765,7 +872,9 @@ class SensiblePlayer {
     RecipeDef? best;
     var bestRate = 0.0;
     for (final r in data.recipes.values) {
-      if (!game.recipeLevelMet(s, r.id)) continue;
+      if (r.profession != profession || !game.recipeLevelMet(s, r.id)) {
+        continue;
+      }
       final fade = game.professionFade(s, profession, r.level);
       if (fade <= grey) continue;
       var steps = r.steps.toDouble();
@@ -793,10 +902,10 @@ class SensiblePlayer {
   double _stepsPer(GameState s, String item) {
     var best = double.infinity;
     for (final n in data.nodes.values) {
-      if (n.item == item &&
+      if (n.yieldOf(item) > 0 &&
           game.nodeLevelMet(s, n.id) &&
           !game.nodeFogged(s, n.id)) {
-        best = math.min(best, n.steps.toDouble());
+        best = math.min(best, n.steps / n.yieldOf(item));
       }
     }
     for (final e in data.enemies.values) {
@@ -817,12 +926,12 @@ class SensiblePlayer {
     Activity? best;
     var bestRate = 0.0;
     for (final n in data.nodes.values) {
-      if (n.item != item ||
+      if (n.yieldOf(item) <= 0 ||
           !game.nodeLevelMet(s, n.id) ||
           game.nodeFogged(s, n.id)) {
         continue;
       }
-      final rate = 1 / n.steps;
+      final rate = n.yieldOf(item) / n.steps;
       if (rate > bestRate) (best, bestRate) = (Activity.gather(n.id), rate);
     }
     for (final e in data.enemies.values) {
@@ -853,8 +962,13 @@ class SensiblePlayer {
   String _locationFor(GameState s, Activity a) {
     if (a.kind == ActivityKind.craft || a.kind == ActivityKind.reroll) {
       final dist = _distances(s);
+      final cooking =
+          a.kind == ActivityKind.craft &&
+          data.recipes[a.target]!.profession == 'cooking';
       return data.locations.values
-          .where((l) => l.crafting && dist.containsKey(l.id))
+          .where(
+            (l) => (cooking ? l.fire : l.crafting) && dist.containsKey(l.id),
+          )
           .reduce((a, b) => dist[a.id]! <= dist[b.id]! ? a : b)
           .id;
     }
@@ -922,8 +1036,17 @@ SimulationResult simulate(
   int seed = 1,
   int checkEvery = 100,
   Walker walker = Walker.mixed,
+  bool meals = true,
+  int mealBatch = 10,
+  int mealsFrom = 5,
 }) {
-  final player = SensiblePlayer(game, walker: walker);
+  final player = SensiblePlayer(
+    game,
+    walker: walker,
+    meals: meals,
+    mealBatch: mealBatch,
+    mealsFrom: mealsFrom,
+  );
   var s = game.newGame(seed: seed);
   // The teachers are in camp, where a new game starts (spec 0010 §9.2).
   if (walker != Walker.fighter) {

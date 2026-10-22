@@ -130,10 +130,8 @@ void main() {
         ]) {
           final r = data.recipes[tool]!;
           expect(r.profession, 'crafting');
-          expect(
-            (r.level, r.steps, r.inputs),
-            (pick.level, pick.steps, pick.inputs),
-          );
+          expect((r.level, r.steps), (pick.level, pick.steps));
+          expect(r.inputs, pick.inputs);
           final t = data.items[tool]!.tool!;
           expect(t.profession, profession);
           expect(t.stepFactor, data.items['${tier}_pickaxe']!.tool!.stepFactor);
@@ -608,11 +606,8 @@ void main() {
           stats,
           reason: id,
         );
-        expect(
-          (r.level, r.craftingLevel, r.inputs),
-          (crafting, crafting, inputs),
-          reason: id,
-        );
+        expect((r.level, r.craftingLevel), (crafting, crafting), reason: id);
+        expect(r.inputs, inputs, reason: id);
         final (steps, xp) = switch (crafting) {
           6 => (200, 50),
           8 => (250, 70),
