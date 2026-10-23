@@ -2124,7 +2124,10 @@ void professionScreens() {
         ),
         findsOneWidget,
       );
+      // Unlearned, a screen shows whom to learn from and nothing else.
+      await openProfession(t, 'crafting');
       expect(option('craft', 'copper_sword'), findsNothing);
+      await openProfession(t, 'mining');
       expect(find.byKey(const ValueKey('go-mining')), findsNothing);
     });
 
@@ -2535,7 +2538,7 @@ void lakeAndHunt() {
       expect(find.text('Marta, the cook'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('here-fire')));
       await t.pumpAndSettle();
-      // Scrolled to the Cooking card, below Crafting's recipes.
+      // Cooking's own screen opens (spec 0010 amendment 4).
       final top = t.getTopLeft(
         find.byKey(const ValueKey('profession-cooking')),
       );
@@ -3277,5 +3280,31 @@ void professionFilters() {
       final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 0, reason: 'Now');
     });
+
+    testWidgets(
+      'criterion 6: a recipe from the Forge row\'s screen shows Now',
+      (t) async {
+        final (c, _) = await pumpGame(
+          t,
+          level: 5,
+          inventory: {'copper_ore': 5},
+        );
+        await t.scrollUntilVisible(
+          find.byKey(const ValueKey('here-forge')),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await t.tap(find.byKey(const ValueKey('here-forge')));
+        await t.pumpAndSettle();
+        await tapAndStart(t, recipe('copper_sword'));
+        expect(
+          c.state.activity!.activity,
+          const Activity.craft('copper_sword'),
+        );
+        expect(cardOf('crafting'), findsNothing, reason: 'the screen closed');
+        final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+        expect(bar.selectedIndex, 0, reason: 'Now');
+      },
+    );
   });
 }
