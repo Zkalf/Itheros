@@ -48,7 +48,8 @@ Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEac
   Step "${n}: pub get"  $pkg { dart pub get | Out-Null }
   Step "${n}: format"   $pkg { dart format --output=none --set-exit-if-changed . }
   Step "${n}: analyze"  $pkg { dart analyze --fatal-infos }
-  if (Test-Path "$pkg\test") { Step "${n}: test" $pkg { dart test } }
+  # Failing tests only: the full list is long enough that a cut-off tool output hid the one failure (eval E21).
+  if (Test-Path "$pkg\test") { Step "${n}: test" $pkg { dart test -r failures-only } }
 }
 
 # Flutter app.
@@ -56,7 +57,7 @@ $app = "$root\app"
 Step 'app: pub get' $app { flutter pub get | Out-Null }
 Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
 Step 'app: analyze' $app { flutter analyze --fatal-infos }
-if (Test-Path "$app\test") { Step 'app: test' $app { flutter test } }
+if (Test-Path "$app\test") { Step 'app: test' $app { flutter test -r failures-only } }
 
 if ($Release) {
   # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.
