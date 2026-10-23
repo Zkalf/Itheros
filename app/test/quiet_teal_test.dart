@@ -655,8 +655,14 @@ void criterion3() {
       final badges = find.byType(LevelBadge);
       expect(badges, findsWidgets);
       for (final e in badges.evaluate()) {
-        final rich = richIn(t, byElement(e));
-        // The skull band shows no number.
+        // The skull band shows no number: from plan 0017 M4 it shows the
+        // skull image and no text.
+        final texts = find.descendant(
+          of: byElement(e),
+          matching: find.byType(RichText),
+        );
+        if (texts.evaluate().isEmpty) continue;
+        final rich = t.widget<RichText>(texts.first);
         if (!rich.text.toPlainText().contains(RegExp(r'\d'))) continue;
         expectSpectralDigits(rich, 'the level badge ${nameOf(e)}');
       }
