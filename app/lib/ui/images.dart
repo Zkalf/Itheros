@@ -185,18 +185,10 @@ const phSpots = {
   'placeholders/gear_cloak': PhSpot(.42, .68, 0), // the front, above the hem
   'placeholders/gear_chest': PhSpot(.63, .43, -5), // right of the laces
   'placeholders/gear_bracer': PhSpot(.52, .47, -6), // between the two straps
-  'placeholders/gear_gloves': PhSpot(
-    .75,
-    .24,
-    -6,
-  ), // the cuff of the right glove
-  'placeholders/gear_belt': PhSpot(.62, .63, 0), // the strap by the buckle
+  'placeholders/gear_gloves': PhSpot(.68, .52, -6), // the back of a hand
+  'placeholders/gear_belt': PhSpot(.7, .62, 0), // the strap by the buckle
   'placeholders/gear_legs': PhSpot(.31, .47, 0), // the left shin plate
-  'placeholders/gear_boots': PhSpot(
-    .205,
-    .34,
-    -4,
-  ), // the shaft of the front boot
+  'placeholders/gear_boots': PhSpot(.25, .4, -4), // the front boot's shaft
   'placeholders/gear_ring': PhSpot(.56, .27, -14), // the top of the band
   'placeholders/gear_trinket': PhSpot(.27, .64, 0), // the face of the disc
   'placeholders/gear_mainHand': PhSpot(.585, .415, -41), // along the blade
