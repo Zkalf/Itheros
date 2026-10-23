@@ -37,8 +37,14 @@ class _HomeShellState extends State<HomeShell> {
   /// The app opens on Now.
   var _screen = _Screen.now;
 
-  /// The profession card Professions opens on, from a row in Now.
-  String? _focus;
+  /// The recipe filters, kept while the app runs (spec 0010 amendment 4).
+  final _filter = ValueNotifier(const RecipeFilter());
+
+  @override
+  void dispose() {
+    _filter.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,22 +114,29 @@ class _HomeShellState extends State<HomeShell> {
         child: switch (_screen) {
           _Screen.now => NowTab(
             onOpenWorld: () => setState(() => _screen = _Screen.world),
-            onOpenProfessions: ([profession]) => setState(() {
-              _focus = profession;
-              _screen = _Screen.professions;
-            }),
+            // Back from the profession's screen lands on Professions.
+            onOpenProfessions: ([profession]) {
+              setState(() => _screen = _Screen.professions);
+              if (profession != null) {
+                openProfession(
+                  context,
+                  profession,
+                  _filter,
+                  showNow: () {
+                    if (mounted) setState(() => _screen = _Screen.now);
+                  },
+                );
+              }
+            },
           ),
           _Screen.world => const WorldTab(),
-          _Screen.professions => ProfessionsTab(focus: _focus),
+          _Screen.professions => ProfessionsTab(filter: _filter),
           _Screen.character => const CharacterTab(),
         },
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: screens.indexOf(_screen),
-        onDestinationSelected: (i) => setState(() {
-          _focus = null;
-          _screen = screens[i];
-        }),
+        onDestinationSelected: (i) => setState(() => _screen = screens[i]),
         destinations: [
           for (final screen in screens)
             NavigationDestination(

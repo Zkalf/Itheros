@@ -117,6 +117,19 @@ Future<void> openTab(WidgetTester tester, String screen) async {
   await tester.pumpAndSettle();
 }
 
+/// Opens Professions, then [profession]'s own screen (spec 0010
+/// amendment 4).
+Future<void> openProfession(WidgetTester tester, String profession) async {
+  // From another profession's screen, back to the bottom bar first.
+  while (find.byType(BackButton).evaluate().isNotEmpty) {
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+  }
+  await openTab(tester, 'professions');
+  await tester.tap(find.byKey(ValueKey('profession-button-$profession')));
+  await tester.pumpAndSettle();
+}
+
 /// Opens the World map and taps [area] on it.
 Future<void> openArea(WidgetTester tester, String area) async {
   if (find.byKey(ValueKey('area-$area')).evaluate().isEmpty) {
@@ -185,7 +198,7 @@ void main() {
       expect(option('travel', 'grey_moor'), findsNothing);
       expect(find.textContaining('Thick fog'), findsOneWidget);
       await closeSheet(t);
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       // Spec 0010: the first recipes need Crafting 1, the rest more.
       final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(sword.enabled, isTrue);
@@ -227,7 +240,7 @@ void main() {
 
     testWidgets('level 3 can craft at camp', (t) async {
       await pumpGame(t, level: 3, inventory: {'copper_ore': 5});
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       final sword = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(sword.enabled, isTrue);
       final vest = t.widget<ListTile>(option('craft', 'hide_vest'));
@@ -688,7 +701,7 @@ void main() {
       t,
     ) async {
       await pumpGame(t, level: 5);
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       final tile = t.widget<ListTile>(option('craft', 'copper_sword'));
       expect(tile.enabled, isTrue);
     });
@@ -1059,7 +1072,7 @@ void moreScreens() {
 
     testWidgets('Professions holds crafting and the forge', (t) async {
       await pumpGame(t, level: 3);
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       expect(find.text('At the forge (Camp)'), findsOneWidget);
     });
 
@@ -1094,7 +1107,7 @@ void moreScreens() {
 
     testWidgets('criterion 8: craft until a quality from the sheet', (t) async {
       final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 50});
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       await t.tap(option('craft', 'copper_sword'));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('stop-untilQuality')));
@@ -1116,7 +1129,7 @@ void moreScreens() {
         location: 'goblin_woods',
         inventory: {'copper_ore': 2},
       );
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       expect(find.text('Nearest forge: Camp · 200 steps away'), findsOneWidget);
       // The copper sword, spear and mace (spec 0009 §4.1).
       expect(
@@ -2062,20 +2075,41 @@ void professionScreens() {
       c.state.explored.addAll(['copper_hills', 'iron_ridge', 'grey_moor']);
       await openTab(t, 'professions');
       for (final p in ['mining', 'woodcutting', 'crafting']) {
-        expect(find.byKey(ValueKey('profession-$p')), findsOneWidget);
+        expect(find.byKey(ValueKey('profession-button-$p')), findsOneWidget);
         expect(
-          within('profession-$p', find.byType(LinearProgressIndicator)),
+          within('profession-button-$p', find.byType(LinearProgressIndicator)),
           findsOneWidget,
         );
       }
       // In the order Mining, Woodcutting, Crafting.
       double top(String p) =>
-          t.getTopLeft(find.byKey(ValueKey('profession-$p'))).dy;
+          t.getTopLeft(find.byKey(ValueKey('profession-button-$p'))).dy;
       expect(top('mining'), lessThan(top('woodcutting')));
       expect(top('woodcutting'), lessThan(top('crafting')));
-      // Level, tier and tool with its step cost.
-      expect(within('profession-mining', find.text('Level 11')), findsOne);
-      expect(within('profession-mining', find.text('Iron')), findsOneWidget);
+      // Level and tier on the button; the tool with its step cost inside.
+      expect(
+        within('profession-button-mining', find.text('Level 11')),
+        findsOne,
+      );
+      expect(
+        within('profession-button-mining', find.text('Iron')),
+        findsOneWidget,
+      );
+      await openProfession(t, 'woodcutting');
+      expect(
+        within('profession-woodcutting', find.text('Ash tree · Grey Moor')),
+        findsOneWidget,
+      );
+      await openProfession(t, 'crafting');
+      expect(
+        within('profession-crafting', find.text('At the forge (Camp)')),
+        findsOneWidget,
+      );
+      expect(
+        within('profession-crafting', option('craft', 'copper_sword')),
+        findsOneWidget,
+      );
+      await openProfession(t, 'mining');
       expect(
         within('profession-mining', find.text("Hilde's old pick · 100% steps")),
         findsOneWidget,
@@ -2083,18 +2117,6 @@ void professionScreens() {
       // Where to practise: the best spot for the level, with Go there.
       expect(
         within('profession-mining', find.text('Iron vein · Iron Ridge')),
-        findsOneWidget,
-      );
-      expect(
-        within('profession-woodcutting', find.text('Ash tree · Grey Moor')),
-        findsOneWidget,
-      );
-      expect(
-        within('profession-crafting', find.text('At the forge (Camp)')),
-        findsOneWidget,
-      );
-      expect(
-        within('profession-crafting', option('craft', 'copper_sword')),
         findsOneWidget,
       );
       // Go there walks to the spot, then works it.
@@ -2107,7 +2129,7 @@ void professionScreens() {
 
     testWidgets('criterion 14: the tool line opens its card', (t) async {
       await pumpGame(t, level: 5);
-      await openTab(t, 'professions');
+      await openProfession(t, 'mining');
       await t.tap(within('profession-mining', find.textContaining('old pick')));
       await t.pumpAndSettle();
       expect(card(find.text("Hilde's old pick")), findsOneWidget);
@@ -2119,14 +2141,23 @@ void professionScreens() {
       await pumpGame(t, learned: false);
       await openTab(t, 'professions');
       expect(
-        within('profession-mining', find.text('Learn from Hilde in camp')),
+        within(
+          'profession-button-mining',
+          find.text('Learn from Hilde in camp'),
+        ),
         findsOneWidget,
       );
       expect(
-        within('profession-crafting', find.text('Learn from Garrow in camp')),
+        within(
+          'profession-button-crafting',
+          find.text('Learn from Garrow in camp'),
+        ),
         findsOneWidget,
       );
+      // Unlearned, a screen shows whom to learn from and nothing else.
+      await openProfession(t, 'crafting');
       expect(option('craft', 'copper_sword'), findsNothing);
+      await openProfession(t, 'mining');
       expect(find.byKey(const ValueKey('go-mining')), findsNothing);
     });
 
@@ -2202,13 +2233,19 @@ void professionScreens() {
       final crafting = c.game.professionLevel(c.state, 'crafting');
       expect(c.state.learned, {'mining', 'crafting', 'cooking'});
       await openTab(t, 'professions');
-      expect(within('profession-mining', find.text('Level $mining')), findsOne);
       expect(
-        within('profession-crafting', find.text('Level $crafting')),
+        within('profession-button-mining', find.text('Level $mining')),
+        findsOne,
+      );
+      expect(
+        within('profession-button-crafting', find.text('Level $crafting')),
         findsOneWidget,
       );
       expect(
-        within('profession-woodcutting', find.text('Learn from Bram in camp')),
+        within(
+          'profession-button-woodcutting',
+          find.text('Learn from Bram in camp'),
+        ),
         findsOneWidget,
       );
       // No level-up news for the catch-up (spec 0010 §10).
@@ -2390,9 +2427,9 @@ void lakeAndHunt() {
         'cooking',
       ];
       double top(String p) =>
-          t.getTopLeft(find.byKey(ValueKey('profession-$p'))).dy;
+          t.getTopLeft(find.byKey(ValueKey('profession-button-$p'))).dy;
       for (var i = 0; i < order.length; i++) {
-        expect(find.byKey(ValueKey('profession-${order[i]}')), findsOne);
+        expect(find.byKey(ValueKey('profession-button-${order[i]}')), findsOne);
         if (i > 0) expect(top(order[i - 1]), lessThan(top(order[i])));
       }
     });
@@ -2407,7 +2444,7 @@ void lakeAndHunt() {
         ('cooking', 'Marta'),
       ]) {
         expect(
-          within('profession-$p', find.text('Learn from $who in camp')),
+          within('profession-button-$p', find.text('Learn from $who in camp')),
           findsOneWidget,
         );
       }
@@ -2418,7 +2455,7 @@ void lakeAndHunt() {
     ) async {
       final (c, _) = await pumpGame(t, level: 5);
       c.state.records['pike'] = 63;
-      await openTab(t, 'professions');
+      await openProfession(t, 'fishing');
       expect(
         within('profession-fishing', find.text('Pike · 6.3 kg')),
         findsOneWidget,
@@ -2426,7 +2463,9 @@ void lakeAndHunt() {
       // Lake, river and tarn hold 4 species each; the cove is hidden.
       expect(within('profession-fishing', find.text('???')), findsNWidgets(11));
       c.state.revealed.add('smugglers_cove');
-      await redraw(t, 'professions');
+      await t.pageBack();
+      await t.pumpAndSettle();
+      await openProfession(t, 'fishing');
       expect(within('profession-fishing', find.text('???')), findsNWidgets(15));
     });
 
@@ -2436,14 +2475,10 @@ void lakeAndHunt() {
       c.state
         ..meal = ActiveMeal('venison_skewer', 1850)
         ..autoEat = const AutoEat('venison_skewer', 0);
-      await openTab(t, 'professions');
+      await openProfession(t, 'cooking');
       expect(
         within('profession-cooking', option('craft', 'grilled_perch')),
         findsOneWidget,
-      );
-      expect(
-        within('profession-crafting', option('craft', 'grilled_perch')),
-        findsNothing,
       );
       expect(
         within('profession-cooking', option('craft', 'copper_sword')),
@@ -2464,11 +2499,13 @@ void lakeAndHunt() {
         within('profession-cooking', find.textContaining('Auto-eat')),
         findsWidgets,
       );
+      await openProfession(t, 'crafting');
+      expect(option('craft', 'grilled_perch'), findsNothing);
     });
 
     testWidgets('criterion 15: Cooking says what its recipes need', (t) async {
       await pumpGame(t, level: 5);
-      await openTab(t, 'professions');
+      await openProfession(t, 'cooking');
       expect(
         within(
           'option-craft-smoked_trout',
@@ -2482,7 +2519,7 @@ void lakeAndHunt() {
       t,
     ) async {
       final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
-      await openTab(t, 'professions');
+      await openProfession(t, 'cooking');
       expect(
         within('profession-cooking', find.textContaining('Camp fire')),
         findsOneWidget,
@@ -2531,7 +2568,7 @@ void lakeAndHunt() {
       expect(find.text('Marta, the cook'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('here-fire')));
       await t.pumpAndSettle();
-      // Scrolled to the Cooking card, below Crafting's recipes.
+      // Cooking's own screen opens (spec 0010 amendment 4).
       final top = t.getTopLeft(
         find.byKey(const ValueKey('profession-cooking')),
       );
@@ -3025,7 +3062,7 @@ void playtest3() {
 
     testWidgets('starting an action from Professions goes to Now', (t) async {
       final (c, _) = await pumpGame(t, location: 'copper_hills');
-      await openTab(t, 'professions');
+      await openProfession(t, 'mining');
       await t.ensureVisible(find.byKey(const ValueKey('go-mining')));
       await tapAndStart(t, find.byKey(const ValueKey('go-mining')));
       expect(c.state.activity, isNotNull);
@@ -3059,76 +3096,121 @@ void playtest3() {
 }
 
 void professionFilters() {
-  group('profession buttons and filters (spec 0010 amendment 3)', () {
+  group('one screen per profession (spec 0010 amendment 4)', () {
     Finder recipe(String id) => find.byKey(ValueKey('option-craft-$id'));
-    Iterable<RecipeDef> lists(Game g) => g.data.recipes.values.where(
-      (r) => r.profession == 'crafting' || r.profession == 'cooking',
-    );
+    Finder button(String id) => find.byKey(ValueKey('profession-button-$id'));
+    Finder cardOf(String id) => find.byKey(ValueKey('profession-$id'));
     Future<void> chip(WidgetTester t, String id) async {
       await t.tap(find.byKey(ValueKey('filter-$id')));
+      await t.pumpAndSettle();
+    }
+
+    Future<void> back(WidgetTester t) async {
+      await t.pageBack();
       await t.pumpAndSettle();
     }
 
     bool selected(WidgetTester t, String id) =>
         t.widget<FilterChip>(find.byKey(ValueKey('filter-$id'))).selected;
 
-    testWidgets('criterion 1: a button brings its card into view', (t) async {
-      await pumpGame(t, level: 5);
+    testWidgets('criterion 1: six buttons and no profession card', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
       await openTab(t, 'professions');
-      t.view.physicalSize = const Size(1080, 2400);
-      await t.pumpAndSettle();
-      final card = find.byKey(const ValueKey('profession-cooking'));
-      expect(t.getTopLeft(card).dy, greaterThan(2400), reason: 'far down');
-      await t.tap(find.byKey(const ValueKey('jump-cooking')));
-      await t.pumpAndSettle();
-      expect(t.getTopLeft(card).dy, inInclusiveRange(0, 2400));
+      expect(c.game.data.professions, hasLength(6));
+      for (final p in c.game.data.professions.keys) {
+        expect(button(p), findsOneWidget, reason: p);
+        expect(cardOf(p), findsNothing, reason: p);
+      }
+      expect(find.byKey(const ValueKey('filter-mats')), findsNothing);
+      expect(
+        find.descendant(of: button('mining'), matching: find.text('Mining')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: button('mining'),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('criteria 2 and 4: each filter shows what its rule says', (
+    testWidgets('criterion 2: a button opens only its card; back returns', (
       t,
     ) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      for (final p in c.game.data.professions.keys) {
+        await openProfession(t, p);
+        expect(cardOf(p), findsOneWidget, reason: p);
+        for (final other in c.game.data.professions.keys) {
+          if (other != p) expect(cardOf(other), findsNothing, reason: other);
+        }
+        await back(t);
+        expect(button(p), findsOneWidget);
+      }
+    });
+
+    testWidgets('criterion 3: filters only where there are recipes', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      for (final p in c.game.data.professions.keys) {
+        await openProfession(t, p);
+        expect(
+          find.byKey(const ValueKey('filter-mats')),
+          p == 'crafting' || p == 'cooking' ? findsOneWidget : findsNothing,
+          reason: p,
+        );
+        await back(t);
+      }
+    });
+
+    testWidgets('criterion 3: each filter shows what its rule says', (t) async {
       final (c, _) = await pumpGame(
         t,
         level: 5,
         inventory: {'copper_ore': 50, 'oak_log': 20},
       );
-      await openTab(t, 'professions');
       final g = c.game;
       final s = c.state;
-      void expectShown(bool Function(RecipeDef r) rule, String why) {
-        for (final r in lists(g)) {
-          expect(
-            recipe(r.id),
-            rule(r) ? findsOneWidget : findsNothing,
-            reason: '$why: ${r.id}',
-          );
+      for (final p in ['crafting', 'cooking']) {
+        await openProfession(t, p);
+        void expectShown(bool Function(RecipeDef r) rule, String why) {
+          for (final r in g.data.recipes.values.where(
+            (r) => r.profession == p,
+          )) {
+            expect(
+              recipe(r.id),
+              rule(r) ? findsOneWidget : findsNothing,
+              reason: '$why: ${r.id}',
+            );
+          }
         }
-      }
 
-      expectShown((_) => true, 'no filter');
-      await chip(t, 'mats');
-      expectShown((r) => g.hasMaterials(s, r.id), 'have mats');
-      await chip(t, 'level');
-      expectShown(
-        (r) => g.hasMaterials(s, r.id) && g.recipeLevelMet(s, r.id),
-        'have mats and level',
-      );
-      await chip(t, 'mats');
-      expectShown((r) => g.recipeLevelMet(s, r.id), 'have level');
-      await chip(t, 'ahead');
-      expectShown(
-        (r) => r.craftingLevel <= g.professionLevel(s, r.profession) + 5,
-        'up to 5 levels ahead',
-      );
-      await chip(t, 'ahead');
-      expectShown((_) => true, 'all off again');
+        expectShown((_) => true, 'no filter');
+        await chip(t, 'mats');
+        expectShown((r) => g.hasMaterials(s, r.id), 'have mats');
+        await chip(t, 'level');
+        expectShown(
+          (r) => g.hasMaterials(s, r.id) && g.recipeLevelMet(s, r.id),
+          'have mats and level',
+        );
+        await chip(t, 'mats');
+        expectShown((r) => g.recipeLevelMet(s, r.id), 'have level');
+        await chip(t, 'ahead');
+        expectShown(
+          (r) => r.craftingLevel <= g.professionLevel(s, r.profession) + 5,
+          'up to 5 levels ahead',
+        );
+        await chip(t, 'ahead');
+        expectShown((_) => true, 'all off again');
+        await back(t);
+      }
     });
 
     testWidgets(
       'criterion 3: Have level and Up to 5 ahead exclude each other',
       (t) async {
         await pumpGame(t, level: 5);
-        await openTab(t, 'professions');
+        await openProfession(t, 'crafting');
         await chip(t, 'level');
         await chip(t, 'ahead');
         expect(selected(t, 'ahead'), isTrue);
@@ -3143,19 +3225,116 @@ void professionFilters() {
       },
     );
 
+    testWidgets('criterion 3: Crafting and Cooking share one filter choice', (
+      t,
+    ) async {
+      await pumpGame(t, level: 5);
+      await openProfession(t, 'crafting');
+      await chip(t, 'mats');
+      await back(t);
+      await openProfession(t, 'cooking');
+      expect(selected(t, 'mats'), isTrue);
+    });
+
     testWidgets('an empty list says nothing matches; the running craft stays', (
       t,
     ) async {
       final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 50});
-      final craft = lists(c.game).firstWhere(
+      final craft = c.game.data.recipes.values.firstWhere(
         (r) => c.game.hasMaterials(c.state, r.id) && r.profession == 'crafting',
       );
       await c.startActivity(Activity.craft(craft.id));
       c.state.inventory.clear();
-      await openTab(t, 'professions');
+      await openProfession(t, 'crafting');
       await chip(t, 'mats');
       expect(recipe(craft.id), findsOneWidget, reason: 'running');
+      await back(t);
+      await openProfession(t, 'cooking');
       expect(find.byKey(const ValueKey('no-match-cooking')), findsOneWidget);
     });
+
+    testWidgets('criterion 4: unlearned, button and screen name the teacher', (
+      t,
+    ) async {
+      await pumpGame(t, learned: false);
+      await openTab(t, 'professions');
+      expect(
+        find.descendant(
+          of: button('mining'),
+          matching: find.text('Learn from Hilde in camp'),
+        ),
+        findsOneWidget,
+      );
+      await openProfession(t, 'mining');
+      expect(
+        find.descendant(
+          of: cardOf('mining'),
+          matching: find.text('Learn from Hilde in camp'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'criterion 5: the Forge and Camp fire rows open their screens',
+      (t) async {
+        await pumpGame(t, level: 5);
+        for (final (row, p) in [
+          ('here-forge', 'crafting'),
+          ('here-fire', 'cooking'),
+        ]) {
+          await openTab(t, 'now');
+          await t.scrollUntilVisible(
+            find.byKey(ValueKey(row)),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await t.tap(find.byKey(ValueKey(row)));
+          await t.pumpAndSettle();
+          expect(cardOf(p), findsOneWidget, reason: row);
+          expect(find.byKey(const ValueKey('filter-mats')), findsOneWidget);
+          await back(t);
+          expect(button(p), findsOneWidget, reason: 'back lands on the list');
+        }
+      },
+    );
+
+    testWidgets('criterion 6: starting from a profession screen shows Now', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, location: 'copper_hills');
+      await openProfession(t, 'mining');
+      await tapAndStart(t, find.byKey(const ValueKey('go-mining')));
+      expect(c.state.activity, isNotNull);
+      expect(cardOf('mining'), findsNothing, reason: 'the screen closed');
+      final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.selectedIndex, 0, reason: 'Now');
+    });
+
+    testWidgets(
+      'criterion 6: a recipe from the Forge row\'s screen shows Now',
+      (t) async {
+        final (c, _) = await pumpGame(
+          t,
+          level: 5,
+          inventory: {'copper_ore': 5},
+        );
+        await t.scrollUntilVisible(
+          find.byKey(const ValueKey('here-forge')),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await t.tap(find.byKey(const ValueKey('here-forge')));
+        await t.pumpAndSettle();
+        await tapAndStart(t, recipe('copper_sword'));
+        expect(
+          c.state.activity!.activity,
+          const Activity.craft('copper_sword'),
+        );
+        expect(cardOf('crafting'), findsNothing, reason: 'the screen closed');
+        final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+        expect(bar.selectedIndex, 0, reason: 'Now');
+      },
+    );
   });
 }

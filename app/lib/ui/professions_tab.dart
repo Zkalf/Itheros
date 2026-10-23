@@ -10,136 +10,225 @@ import 'labels.dart';
 import 'level_badge.dart';
 import 'meals.dart';
 
-/// Professions (spec 0010 §8.1, spec 0011 §8.1): one card per profession
-/// with its level, progress, tier, tool and where to practise. Crafting's
-/// card holds the forge and every recipe, in tier order; Cooking's the camp
-/// fire, the meal running, auto-eat and the meal recipes; Fishing's the
-/// records.
-class ProfessionsTab extends StatefulWidget {
-  const ProfessionsTab({super.key, this.focus});
+/// "Have level" or "Up to 5 levels ahead": never both (spec 0010
+/// amendment 3).
+enum LevelFilter { level, ahead }
 
-  /// The profession whose card is scrolled into view on opening.
-  final String? focus;
+/// The recipe filters (spec 0010 amendment 3): a view setting, not saved,
+/// shared by the Crafting and Cooking screens (amendment 4).
+class RecipeFilter {
+  const RecipeFilter({this.mats = false, this.level});
 
-  @override
-  State<ProfessionsTab> createState() => _ProfessionsTabState();
+  final bool mats;
+  final LevelFilter? level;
 }
 
-class _ProfessionsTabState extends State<ProfessionsTab> {
-  /// Each card's key, to scroll it into view.
-  final _cards = <String, GlobalKey>{};
+/// Professions (spec 0010 §8.1 and amendment 4, spec 0011 §8.1): one
+/// button per profession with its level, progress and tier; a tap opens
+/// that profession's own screen.
+class ProfessionsTab extends StatelessWidget {
+  const ProfessionsTab({super.key, required this.filter});
 
-  /// The recipe filters (spec 0010 amendment 3): a view setting, not saved.
-  var _mats = false;
-  _LevelFilter? _level;
-
-  GlobalKey _card(String id) => _cards.putIfAbsent(id, GlobalKey.new);
-
-  void _show(String id) {
-    final at = _cards[id]?.currentContext;
-    if (at != null && at.mounted) Scrollable.ensureVisible(at);
-  }
+  final ValueNotifier<RecipeFilter> filter;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.focus case final focus?) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _show(focus));
-    }
+  Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    final game = c.game;
+    final text = Theme.of(context).textTheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (final p in game.data.professions.values)
+          Card(
+            key: ValueKey('profession-button-${p.id}'),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => openProfession(context, p.id, filter),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _Summary(controller: c, profession: p, text: text),
+              ),
+            ),
+          ),
+      ],
+    );
   }
+}
+
+/// Icon, name and level, then the tier and a bar to the next level; or
+/// whom to learn from.
+class _Summary extends StatelessWidget {
+  const _Summary({
+    required this.controller,
+    required this.profession,
+    required this.text,
+  });
+
+  final GameController controller;
+  final ProfessionDef profession;
+  final TextTheme text;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = controller.game;
+    final data = game.data;
+    final s = controller.state;
+    final p = profession;
+    final learned = s.learned.contains(p.id);
+    final level = game.professionLevel(s, p.id);
+    final xp = s.professions[p.id] ?? 0;
+    final floor = data.professionXpForLevel(level);
+    final next = data.professionXpForLevel(level + 1);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(professionIcon(p.icon)),
+            const SizedBox(width: 8),
+            Text(p.name, style: text.titleLarge),
+            const Spacer(),
+            if (learned) Text('Level $level', style: text.titleMedium),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (!learned)
+          Text('Learn from ${p.teacher.name} in camp')
+        else ...[
+          Row(
+            children: [
+              Text(p.tierAt(level).name, style: text.titleSmall),
+              const Spacer(),
+              Text('${fmt(xp)} / ${fmt(next)} XP', style: text.bodySmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: ((xp - floor) / (next - floor)).clamp(0, 1).toDouble(),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Opens [profession]'s own screen over the bottom bar (spec 0010
+/// amendment 4). Starting an action there closes it and shows Now, via
+/// [showNow] or else the one above [context].
+void openProfession(
+  BuildContext context,
+  String profession,
+  ValueNotifier<RecipeFilter> filter, {
+  VoidCallback? showNow,
+}) {
+  showNow ??= ShowNow.maybeOf(context);
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ProfessionScreen(
+        profession: profession,
+        filter: filter,
+        showNow: showNow,
+      ),
+    ),
+  );
+}
+
+/// One profession's card alone; Crafting and Cooking put the recipe
+/// filters on top.
+class ProfessionScreen extends StatelessWidget {
+  const ProfessionScreen({
+    super.key,
+    required this.profession,
+    required this.filter,
+    this.showNow,
+  });
+
+  final String profession;
+  final ValueNotifier<RecipeFilter> filter;
+  final VoidCallback? showNow;
 
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final game = c.game;
     final s = c.state;
-    final professions = game.data.professions.values;
-    // The running craft always shows, filter or not.
-    bool shows(String id) {
-      if (s.activity?.activity == Activity.craft(id)) return true;
-      if (_mats && !game.hasMaterials(s, id)) return false;
-      final r = game.data.recipes[id]!;
-      return switch (_level) {
-        null => true,
-        _LevelFilter.level => game.recipeLevelMet(s, id),
-        _LevelFilter.ahead =>
-          r.craftingLevel <= game.professionLevel(s, r.profession) + 5,
-      };
-    }
+    final p = game.data.professions[profession]!;
+    final recipes = game.data.recipes.values.any(
+      (r) => r.profession == profession,
+    );
+    final route = ModalRoute.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(p.name)),
+      body: ShowNow(
+        show: () {
+          if (route != null && route.isActive) {
+            Navigator.of(context).removeRoute(route);
+          }
+          showNow?.call();
+        },
+        child: SafeArea(
+          top: false,
+          child: ValueListenableBuilder(
+            valueListenable: filter,
+            builder: (context, f, _) {
+              // The running craft always shows, filter or not.
+              bool shows(String id) {
+                if (s.activity?.activity == Activity.craft(id)) return true;
+                if (f.mats && !game.hasMaterials(s, id)) return false;
+                final r = game.data.recipes[id]!;
+                return switch (f.level) {
+                  null => true,
+                  LevelFilter.level => game.recipeLevelMet(s, id),
+                  LevelFilter.ahead =>
+                    r.craftingLevel <=
+                        game.professionLevel(s, r.profession) + 5,
+                };
+              }
 
-    // Every card is built, so a card far down (Cooking, under Crafting's
-    // recipes) can be scrolled to.
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Six buttons share the width, so they fit a narrow phone.
-          Row(
-            children: [
-              for (final p in professions)
-                Expanded(
-                  child: Tooltip(
-                    message: p.name,
-                    child: TextButton(
-                      key: ValueKey('jump-${p.id}'),
-                      onPressed: () => _show(p.id),
-                      child: Column(
-                        children: [
-                          Icon(professionIcon(p.icon)),
-                          Text(
-                            s.learned.contains(p.id)
-                                ? '${game.professionLevel(s, p.id)}'
-                                : '–',
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (recipes) ...[
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilterChip(
+                          key: const ValueKey('filter-mats'),
+                          label: const Text('Have mats'),
+                          selected: f.mats,
+                          onSelected: (on) => filter.value = RecipeFilter(
+                            mats: on,
+                            level: f.level,
                           ),
-                        ],
-                      ),
+                        ),
+                        for (final (l, label) in const [
+                          (LevelFilter.level, 'Have level'),
+                          (LevelFilter.ahead, 'Up to 5 levels ahead'),
+                        ])
+                          FilterChip(
+                            key: ValueKey('filter-${l.name}'),
+                            label: Text(label),
+                            selected: f.level == l,
+                            onSelected: (on) => filter.value = RecipeFilter(
+                              mats: f.mats,
+                              level: on ? l : null,
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                ),
-            ],
+                    const SizedBox(height: 8),
+                  ],
+                  _ProfessionCard(controller: c, profession: p, shows: shows),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              FilterChip(
-                key: const ValueKey('filter-mats'),
-                label: const Text('Have mats'),
-                selected: _mats,
-                onSelected: (on) => setState(() => _mats = on),
-              ),
-              for (final (f, label) in const [
-                (_LevelFilter.level, 'Have level'),
-                (_LevelFilter.ahead, 'Up to 5 levels ahead'),
-              ])
-                FilterChip(
-                  key: ValueKey('filter-${f.name}'),
-                  label: Text(label),
-                  selected: _level == f,
-                  onSelected: (on) => setState(() => _level = on ? f : null),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final p in professions)
-            KeyedSubtree(
-              key: _card(p.id),
-              child: _ProfessionCard(
-                controller: c,
-                profession: p,
-                shows: shows,
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
-
-/// "Have level" or "Up to 5 levels ahead": never both (spec 0010
-/// amendment 3).
-enum _LevelFilter { level, ahead }
 
 class _ProfessionCard extends StatelessWidget {
   const _ProfessionCard({
