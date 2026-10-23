@@ -24,8 +24,11 @@ import 'package:walkingrpg/ui/away_summary_card.dart' show ReportBanner;
 import 'package:walkingrpg/ui/home_shell.dart';
 import 'package:walkingrpg/ui/level_badge.dart';
 import 'package:walkingrpg/ui/licences_screen.dart';
+import 'package:walkingrpg/ui/socket.dart' show PictureSocket;
 import 'package:walkingrpg/ui/world_tab.dart' show MapPainter;
 
+import 'images_test.dart'
+    show bagSquare, bareRing, diskImages, fillColour, markTexts, openBag;
 import 'quiet_teal_files_test.dart'
     show
         alegreya,
@@ -413,6 +416,53 @@ void criterion2() {
       expect(short, hasLength(1), reason: 'the input $name');
       expectRgb(short.single.$2.color, shortRgb, 'the short input $name');
     });
+
+    // Plan 0017 M2: the socket, the PH mark and the count badge. The plan
+    // names black as the neutral of the dark socket.
+    testWidgets('in the bag, each socket is black and paints only allowed '
+        'colours, the PH mark is steel at 85% with a black stroke, and the '
+        'count is in an allowed colour', (t) async {
+      final allowed = allowedRgb(game);
+      await openBagOfM2(t);
+      final sockets = find.descendant(
+        of: find.byKey(const ValueKey('bag')),
+        matching: find.byType(PictureSocket),
+      );
+      expect(sockets, findsNWidgets(2));
+      for (final e in sockets.evaluate()) {
+        final drawn = drawnUnder(e).where((d) => d.paints).toList();
+        expect(
+          drawn.any((d) => sameRgb(d.fill ?? d.gradient, 0x000000)),
+          isTrue,
+          reason: 'the socket ${nameOf(e)} is black: ${describeAll(drawn)}',
+        );
+        for (final c in [
+          for (final d in drawn) ...[
+            d.fill,
+            d.gradient,
+            for (final s in d.sides) s.color,
+          ],
+        ]) {
+          if (c == null || c.a == 0) continue;
+          expect(
+            allowed,
+            contains(rgb(c)),
+            reason: '${hex(rgb(c))} in ${nameOf(e)}',
+          );
+        }
+      }
+      final (:fill, :stroke) = markTexts(t, bagSquare(bareRing));
+      expectRgb(fillColour(fill), steelRgb, 'the fill of the PH mark');
+      expect(fillColour(fill)!.a, moreOrLessEquals(0.85, epsilon: 0.005));
+      expectRgb(stroke.style.foreground!.color, 0x000000, 'the stroke');
+      final count = find.descendant(
+        of: bagSquare('goblin_hide'),
+        matching: find.byKey(const ValueKey('count')),
+      );
+      for (final (text, style) in piecesOf(richIn(t, count))) {
+        expect(allowed, contains(rgb(style.color!)), reason: 'the count $text');
+      }
+    });
   });
 }
 
@@ -776,6 +826,29 @@ void criterion3() {
         );
       }
     });
+
+    testWidgets('the count badge is in Spectral 700, and the PH mark in '
+        'Alegreya Sans SC 800', (t) async {
+      await openBagOfM2(t);
+      final count = find.descendant(
+        of: bagSquare('goblin_hide'),
+        matching: find.byKey(const ValueKey('count')),
+      );
+      for (final (text, style) in piecesOf(richIn(t, count))) {
+        expect(
+          (style.fontFamily, style.fontWeight),
+          (spectral, FontWeight.w700),
+          reason: 'the count $text',
+        );
+      }
+      final (:fill, :stroke) = markTexts(t, bagSquare(bareRing));
+      for (final x in [fill, stroke]) {
+        expect(
+          (x.style.fontFamily, x.style.fontWeight),
+          (alegreyaSc, FontWeight.w800),
+        );
+      }
+    });
   });
 }
 
@@ -978,6 +1051,28 @@ void criterion4() {
             [],
           ),
       });
+    });
+
+    // M2 puts sockets on these screens. The tests above check them with no
+    // image files, with Gear open and with Set out disabled. This test checks
+    // them as M2 shows them: with the image files, the bag open, the card of
+    // an item with its image, and an origin picked.
+    testWidgets('the screens of M2 with their images: the bag, the card of '
+        'Hide vest, and "Who are you?" with an origin picked', (t) async {
+      await pumpGame(
+        t,
+        images: diskImages,
+        inventory: {'hide_vest': 1, 'goblin_hide': 3},
+      );
+      await openBag(t);
+      expectBordersOnScreen(t, 'Character with the bag open');
+      await openItem(t, 'hide_vest');
+      expectBordersOnScreen(t, 'the card of Hide vest');
+      await t.pumpWidget(const SizedBox());
+      await pumpGame(t, images: diskImages, character: null);
+      await t.tap(find.byKey(const ValueKey('origin-coast_fisher')));
+      await t.pump();
+      expectBordersOnScreen(t, '"Who are you?" with an origin picked');
     });
   });
 }
@@ -1369,6 +1464,17 @@ Future<void> openItem(WidgetTester t, String key) async {
   await t.pumpAndSettle();
   await t.tap(find.byKey(ValueKey('bag-$key')));
   await t.pumpAndSettle();
+}
+
+/// Opens the bag with the image files on disk (plan 0017 M2): a ring that
+/// shows its placeholder, and 3 Goblin hides with their count.
+Future<void> openBagOfM2(WidgetTester t) async {
+  await pumpGame(
+    t,
+    images: diskImages,
+    inventory: {bareRing: 1, 'goblin_hide': 3},
+  );
+  await openBag(t);
 }
 
 /// Opens the Licences page over Now, with a bundle that reads from disk.

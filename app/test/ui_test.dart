@@ -17,6 +17,7 @@ import 'package:walkingrpg/sync/day_key.dart';
 import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
+import 'package:walkingrpg/ui/images.dart';
 import 'package:walkingrpg/ui/item_square.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
@@ -56,6 +57,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   int? professionLevel,
   Game? withGame,
   Character? character = ada,
+  ImageIndex images = ImageIndex.empty,
 }) async {
   final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
@@ -105,7 +107,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
     testWalkAllowed: testWalkAllowed,
   );
   addTearDown(c.dispose);
-  await tester.pumpWidget(WalkingRpgApp(controller: c));
+  await tester.pumpWidget(WalkingRpgApp(controller: c, images: images));
   await c.start();
   await tester.pump();
   return (c, source);
@@ -1471,39 +1473,51 @@ void characterScreen() {
       ];
       // Gear in doll order (Chest before Main hand), then materials.
       expect(keys, ['hide_vest@rare', 'copper_sword', 'goblin_hide']);
+      // Spec 0014 line 7 overrides the icons and the corner count of spec
+      // 0008 §3.5, and lines 79-81 (§2.3) give the quality ring.
+      Finder inSquare(String key, Finder f) =>
+          find.descendant(of: find.byKey(ValueKey('bag-$key')), matching: f);
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('bag-goblin_hide')),
-          matching: find.text('3'),
-        ),
+        inSquare('goblin_hide', find.byKey(const ValueKey('count'))),
         findsOneWidget,
       );
-      Iterable<IconData?> icons(String key) => t
-          .widgetList<Icon>(
-            find.descendant(
-              of: find.byKey(ValueKey('bag-$key')),
-              matching: find.byType(Icon),
-            ),
-          )
-          .map((i) => i.icon);
-      expect(icons('goblin_hide'), [materialIcon]);
-      expect(icons('copper_sword'), isNot(contains(materialIcon)));
-      Color border(String key) =>
-          ((t
-                          .widget<Material>(
-                            find
-                                .descendant(
-                                  of: find.byKey(ValueKey('bag-$key')),
-                                  matching: find.byType(Material),
-                                )
-                                .first,
-                          )
-                          .shape!
-                      as RoundedRectangleBorder)
-                  .side)
-              .color;
-      expect(border('hide_vest@rare'), const Color(0xff42a5f5));
-      expect(border('goblin_hide'), Colors.transparent, reason: 'no border');
+      expect(inSquare('goblin_hide', find.text('×3')), findsOneWidget);
+      // The image of each square: the material placeholder on the material
+      // only.
+      String? picture(String key) => switch (t
+          .widget<Image>(inSquare(key, find.byType(Image)))
+          .image) {
+        AssetImage(:final assetName) => assetName,
+        ResizeImage(imageProvider: AssetImage(:final assetName)) => assetName,
+        _ => null,
+      };
+      const material = 'assets/images/placeholders/material.webp';
+      expect(picture('goblin_hide'), material);
+      expect(picture('hide_vest@rare'), isNot(material));
+      expect(picture('copper_sword'), isNot(material));
+      // The ring: 2 dp of the quality colour, Common included.
+      Border? ring(String key) => switch (t
+          .widgetList(inSquare(key, find.byKey(const ValueKey('ring'))))
+          .firstOrNull) {
+        Container(decoration: BoxDecoration(:final Border border)) ||
+        DecoratedBox(decoration: BoxDecoration(:final Border border)) => border,
+        _ => null,
+      };
+      for (final (key, colour) in [
+        ('hide_vest@rare', 0x42a5f5),
+        ('copper_sword', 0xe0e0e0),
+      ]) {
+        final b = ring(key);
+        expect(
+          [
+            for (final s in [b?.top, b?.right, b?.bottom, b?.left])
+              (s?.width, s == null ? null : s.color.toARGB32() & 0xffffff),
+          ],
+          List.filled(4, (2.0, colour)),
+          reason: key,
+        );
+      }
+      expect(ring('goblin_hide'), isNull, reason: 'no ring on a material');
     });
 
     testWidgets('criteria 9 and 10: the card for bag gear, then Equip', (

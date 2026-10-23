@@ -3,7 +3,9 @@ import 'package:game_core/game_core.dart';
 
 import 'actions.dart' show Heading;
 import 'controller_scope.dart';
+import 'images.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'teacher_sheet.dart';
 import 'theme.dart';
 
@@ -97,6 +99,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
             for (final o in game.data.origins.values)
               _OriginCard(
                 origin: o,
+                gender: _gender,
                 title: game.fill(o.title, who),
                 line: game.fill(o.line, who),
                 selected: _origin == o.id,
@@ -129,6 +132,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
 class _OriginCard extends StatelessWidget {
   const _OriginCard({
     required this.origin,
+    required this.gender,
     required this.title,
     required this.line,
     required this.selected,
@@ -136,6 +140,9 @@ class _OriginCard extends StatelessWidget {
   });
 
   final OriginDef origin;
+
+  /// The gender picked above: the portrait follows it (spec 0014 §3.1).
+  final Gender gender;
 
   /// Both filled for the gender picked (spec 0012 §2.3).
   final String title;
@@ -158,27 +165,46 @@ class _OriginCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(
-                '"$line"',
-                style: const TextStyle(fontStyle: FontStyle.italic),
+              // The portrait for this origin and the gender picked (spec
+              // 0014 §4.2).
+              PictureSocket(
+                key: ValueKey('portrait-${origin.id}'),
+                picture: ImageScope.of(context)
+                    .pictureOf(data, PlayerThing(origin.id, gender)),
+                size: 72,
               ),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextSpan(
-                      text: 'Starts with ${p.name} ${data.headStartLevel}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Text(title, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      '"$line"',
+                      style: const TextStyle(fontStyle: FontStyle.italic),
                     ),
-                    TextSpan(text: ' · ${teacherName(p)}, greets you as kin'),
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text:
+                                'Starts with ${p.name} ${data.headStartLevel}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: ' · ${teacherName(p)}, greets you as kin',
+                          ),
+                        ],
+                      ),
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ],
                 ),
-                style: theme.textTheme.bodySmall,
               ),
             ],
           ),

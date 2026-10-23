@@ -23,11 +23,20 @@ flutter:
   uses-material-design: true
 
   # The licences of the fonts below, shown from Settings (spec 0014 §2.2).
+  # Then the images of spec 0014 §3, one folder each: Flutter does not read
+  # subfolders. players/ has no portrait yet (its README says why it stays).
   assets:
     - assets/fonts/OFL-CormorantGaramond.txt
     - assets/fonts/OFL-AlegreyaSans.txt
     - assets/fonts/OFL-AlegreyaSansSC.txt
     - assets/fonts/OFL-Spectral.txt
+    - assets/images/monsters/
+    - assets/images/items/
+    - assets/images/achievements/
+    - assets/images/places/
+    - assets/images/players/
+    - assets/images/placeholders/
+    - assets/images/pictures/
 
   # Spec 0014 §2.2 and the font table of plan 0017, all SIL OFL 1.1.
   fonts:
