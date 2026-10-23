@@ -17,8 +17,6 @@ This principle comes before every rule below.
 - Incident records.
 - Release notes. They are for players, but they are outside the game.
 
-Accepted intents, specs and plans stay as they are. The rules apply to new text.
-
 **Words that players see in the game are out of scope.** Screen text and the lines in `data/*.json` are design
 decisions. The spec of each feature owns them. The owner accepts them with that spec. This file does not override
 them. A light touch is fine:
@@ -86,9 +84,9 @@ What changed:
 ## Where the rules come from
 The rules are a short set from ASD-STE100 Simplified Technical English, not the full standard. Give an AI assistant
 the rules in this file, not the name of the standard.
+
 ## Text that breaks the rules
 - Check your own text against the rules before you ask for a review.
 - A review (see [REVIEW.md](REVIEW.md)) names the rule by its number and gives a better version.
 - Most findings under these rules are **Nits**. `REVIEW.md` allows at most 3 Nits in each review.
 - A finding is **Important** when a reader can read the text in two ways, or when the text loses or changes a fact.
-- Accepted intents, specs and plans stay as they are. If their words can mean two things, an amendment fixes them.
