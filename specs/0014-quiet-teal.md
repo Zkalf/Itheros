@@ -13,8 +13,13 @@ Date: 2026-10-22
 The app gets one look: slate plates on a black case, one soft teal and a black border on each button. Monsters,
 items, achievements, places and the map get images. A thing without an image shows a placeholder with the mark "PH".
 Thus the style can ship before all images exist. The screens, rules and numbers do not change. The away report gets
-a route map. This is the one data change. All sizes are in dp. The kit in the pull request of this spec gives the
-exact sizes and gradients.
+a route map. This is the one data change. All sizes are in dp. The kit below gives the exact sizes and gradients.
+
+![The Quiet Teal kit: colours, buttons, sockets, the PH mark, the bars and the map ring](../docs/design/0014-quiet-teal-kit.webp)
+
+![Five screens in Quiet Teal: splash, Now, the bag, a boss sheet and the away report](../docs/design/0014-quiet-teal-screens.webp)
+
+The images show the look. If an image and this spec are different, the spec is correct.
 
 ## 1. Decisions
 
