@@ -317,6 +317,11 @@ class _QueueCard extends StatelessWidget {
       body = [
         Row(
           children: [
+            // Numbered like the queued rows below it (2, 3, ...).
+            if (slots > 1) ...[
+              const CircleAvatar(radius: 14, child: Text('1')),
+              const SizedBox(width: 16),
+            ],
             Expanded(
               child: Text(
                 labels.activity(run.activity),
