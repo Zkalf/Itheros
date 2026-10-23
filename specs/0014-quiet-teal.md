@@ -1,6 +1,6 @@
 # Spec 0014: Quiet Teal
 
-Status: draft
+Status: accepted
 Intent: [intent/0014-ui-style.md](../intent/0014-ui-style.md) (merged in #32 as 94bcdec, which accepts it; renumbered in 23b96db)
 Builds on: spec 0008 + amendments 1–3, spec 0009 + amendment 1, spec 0010 + amendments 1–4 (and erratum 1),
 spec 0011, spec 0012, spec 0004 amendments 2–3, spec 0005 amendment 3, spec 0006 amendment 2, spec 0002 §9.2
