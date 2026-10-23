@@ -26,7 +26,7 @@ import 'package:walkingrpg/ui/theme.dart' show quietTheme;
 
 import 'quiet_teal_files_test.dart' show fontTable;
 import 'quiet_teal_test.dart'
-    show byElement, drawnBy, expectRgb, openItem, piecesOf;
+    show byElement, drawnBy, drawnUnder, expectRgb, openItem, piecesOf;
 import 'ui_test.dart' show ada, closeSheet, game, openTab, pumpGame;
 
 void main() {
@@ -369,20 +369,70 @@ void expectBadge(WidgetTester t, Finder socket, String text, String what) {
   );
 }
 
-/// The border of the quality ring in [within], or null for no ring.
-Border? ringIn(WidgetTester t, Finder within) {
-  final ring = keyIn(within, 'ring');
-  if (ring.evaluate().isEmpty) return null;
-  expect(ring, findsOneWidget, reason: 'one ring');
-  final decoration = switch (t.widget(ring)) {
+/// The box decoration of the widget with the key [key] in [within], or null
+/// when [within] has no such widget.
+BoxDecoration? boxIn(WidgetTester t, Finder within, String key) {
+  final box = keyIn(within, key);
+  if (box.evaluate().isEmpty) return null;
+  expect(box, findsOneWidget, reason: 'one $key');
+  final decoration = switch (t.widget(box)) {
     Container(:final decoration) => decoration,
     DecoratedBox(:final decoration) => decoration,
     _ => null,
   };
-  expect(decoration, isA<BoxDecoration>(), reason: 'the ring is a box');
-  final border = (decoration! as BoxDecoration).border;
-  expect(border, isA<Border>(), reason: 'the ring has a border');
-  return border! as Border;
+  expect(decoration, isA<BoxDecoration>(), reason: 'the $key is a box');
+  return decoration! as BoxDecoration;
+}
+
+/// The border of the quality ring in [within], or null for no ring.
+Border? ringIn(WidgetTester t, Finder within) {
+  final box = boxIn(t, within, 'ring');
+  if (box == null) return null;
+  expect(box.border, isA<Border>(), reason: 'the ring has a border');
+  return box.border! as Border;
+}
+
+/// The inner edge of the ring in [socket]: the rect of the ring less the
+/// width of the ring on each side, with the radius of the ring less that
+/// width.
+RRect ringInside(WidgetTester t, Finder socket) {
+  final width = ringIn(t, socket)!.top.width;
+  final radius = boxIn(
+    t,
+    socket,
+    'ring',
+  )!.borderRadius?.resolve(TextDirection.ltr);
+  return RRect.fromRectAndRadius(
+    t.getRect(keyIn(socket, 'ring')).deflate(width),
+    Radius.circular(math.max(0, (radius?.topLeft.x ?? 0) - width)),
+  );
+}
+
+/// The wash of the quality in [within], as its gradient, or null for no
+/// wash.
+LinearGradient? washIn(WidgetTester t, Finder within) {
+  final box = boxIn(t, within, 'wash');
+  if (box == null) return null;
+  expect(box.gradient, isA<LinearGradient>(), reason: 'the wash is linear');
+  return box.gradient! as LinearGradient;
+}
+
+/// Expects [wash] to rise from the bottom in [colour] and fade out to the
+/// top. Returns its strength: the alpha at the bottom.
+double expectWash(LinearGradient? wash, int colour, String what) {
+  expect(wash, isNotNull, reason: '$what has no wash');
+  final (begin, end) = (
+    wash!.begin.resolve(TextDirection.ltr),
+    wash.end.resolve(TextDirection.ltr),
+  );
+  expect(begin.y, greaterThan(end.y), reason: '$what: the wash rises');
+  expectRgb(wash.colors.first, colour, '$what: the colour of the wash');
+  expect(
+    wash.colors.last.a,
+    lessThan(wash.colors.first.a),
+    reason: '$what: the wash fades to the top',
+  );
+  return wash.colors.first.a;
 }
 
 /// Expects the ring in [within] to be 2 dp of [colour] on each side.
@@ -547,7 +597,60 @@ void criterion9() {
         );
       }
     });
+
+    // The doll and the bag stay as today (spec 0014 §4.2): a press on a
+    // square shows its ink.
+    testWidgets('a square draws its ink above its socket, and a tap opens '
+        'the slot sheet or the item card', (t) async {
+      await pumpGame(
+        t,
+        equipment: {'chest': 'hide_vest'},
+        inventory: {'copper_sword': 1},
+      );
+      await openTab(t, 'character');
+      for (final slot in ['chest', 'head']) {
+        expectInkOnTop(t, find.byKey(ValueKey('slot-$slot')), 'slot $slot');
+      }
+      await t.tap(find.byKey(const ValueKey('slot-chest')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('slot-sheet')), findsOneWidget);
+      await closeSheet(t);
+      await t.tap(find.byKey(const ValueKey('tab-bag')));
+      await t.pumpAndSettle();
+      expectInkOnTop(t, bagSquare('copper_sword'), 'the bag square');
+      await t.tap(bagSquare('copper_sword'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('item-card')), findsOneWidget);
+    });
   });
+}
+
+/// Expects the InkWell of [square] to draw its ink on a Material inside the
+/// square. Nothing inside that Material paints, so nothing covers the ink:
+/// no socket and no fill.
+void expectInkOnTop(WidgetTester t, Finder square, String what) {
+  final well = find.descendant(of: square, matching: find.byType(InkWell));
+  expect(well, findsOneWidget, reason: '$what: one InkWell');
+  Element? ink;
+  t.element(well).visitAncestorElements((a) {
+    if (a.widget is Material) ink = a;
+    return ink == null;
+  });
+  expect(
+    find.descendant(of: square, matching: byElement(ink!)),
+    findsOneWidget,
+    reason: '$what: the ink lies on a Material outside the square',
+  );
+  expect(
+    find.descendant(of: byElement(ink!), matching: find.byType(PictureSocket)),
+    findsNothing,
+    reason: '$what: the socket covers the ink',
+  );
+  final over = [
+    for (final d in drawnUnder(ink!))
+      if (d.paints) d,
+  ];
+  expect(over, isEmpty, reason: '$what: $over covers the ink');
 }
 
 void criterion11() {
@@ -1047,8 +1150,8 @@ void criterion13() {
     });
 
     testWidgets('the mark is never on the ring or below the count badge: it '
-        'lies 2 dp inside the socket and the ring, and it does not meet the '
-        'badge of 14', (t) async {
+        'lies 2 dp inside the socket, inside the round inner edge of the '
+        'ring, and it does not meet the badge of 14', (t) async {
       final common = game.data.qualities.first;
       for (final MapEntry(key: key, value: picture)
           in placeholderPictures().entries) {
@@ -1064,17 +1167,19 @@ void criterion13() {
             );
             final (:fill, :stroke) = markTexts(t, socket);
             final mark = cornersOf(fill.box);
-            for (final edge in [
-              t.getRect(socket).deflate(2),
-              t.getRect(keyIn(socket, 'ring')).deflate(2),
-            ]) {
-              for (final corner in [...mark, ...cornersOf(stroke.box)]) {
-                expect(
-                  edge.inflate(0.01).contains(corner),
-                  isTrue,
-                  reason: '$what: the corner $corner of the mark lies in $edge',
-                );
-              }
+            // The ring has round corners, so a square inside it is not
+            // enough.
+            final edge = t.getRect(socket).deflate(2);
+            final inside = ringInside(t, socket);
+            for (final corner in [...mark, ...cornersOf(stroke.box)]) {
+              expect(
+                edge.inflate(0.01).contains(corner) &&
+                    inside.inflate(0.01).contains(corner),
+                isTrue,
+                reason:
+                    '$what: the corner $corner of the mark lies in $edge and '
+                    'in $inside',
+              );
             }
             if (count > 1) {
               final (_, badge) = badgeOf(t, socket);
@@ -1231,6 +1336,78 @@ void criterion17() {
       for (final key in ['goblin_hide', 'grilled_perch']) {
         expect(ringIn(t, bagSquare(key)), isNull, reason: '$key has no ring');
       }
+    });
+
+    testWidgets('from Uncommon up, gear and tools have a wash of their '
+        'quality from the bottom, stronger for each higher quality; Common, '
+        'a material and a meal have none', (t) async {
+      final qualities = game.data.qualities;
+      String vest(QualityDef q) =>
+          q == qualities.first ? 'hide_vest' : 'hide_vest@${q.id}';
+      await pumpGame(
+        t,
+        inventory: {
+          for (final q in qualities) vest(q): 1,
+          'copper_pickaxe@rare': 1,
+          'goblin_hide': 3,
+          'grilled_perch': 1,
+        },
+      );
+      await openBag(t);
+      final strengths = [
+        for (final q in qualities.skip(1))
+          expectWash(washIn(t, bagSquare(vest(q))), qualityRgb(q.id), q.name),
+      ];
+      // The steps of the kit of spec 0014, one for each quality.
+      expect(strengths, [
+        for (final a in [.14, .18, .22, .26])
+          moreOrLessEquals(a, epsilon: .005),
+      ]);
+      expectWash(
+        washIn(t, bagSquare('copper_pickaxe@rare')),
+        qualityRgb('rare'),
+        'a Rare tool',
+      );
+      for (final key in ['hide_vest', 'goblin_hide', 'grilled_perch']) {
+        expect(washIn(t, bagSquare(key)), isNull, reason: '$key has no wash');
+      }
+    });
+
+    testWidgets('a quality that the data adds after Legendary gets the ring '
+        'and the wash of Legendary in its own colour', (t) async {
+      const mythic = 0xE53935;
+      final copy = gameWith({
+        ('economy', 'qualities'): [
+          {
+            'id': 'mythic',
+            'name': 'Mythic',
+            'colour': '#e53935',
+            'bonus': 1.5,
+            'chance': 0,
+          },
+        ],
+        // Each quality has its dust.
+        ('items', 'items'): [
+          {'id': 'mythic_dust', 'name': 'Mythic dust'},
+        ],
+      });
+      await pumpGame(
+        t,
+        withGame: copy,
+        inventory: {'hide_vest@legendary': 1, 'hide_vest@mythic': 1},
+      );
+      await openBag(t);
+      expectRing(t, bagSquare('hide_vest@mythic'), mythic, 'Mythic');
+      expect(
+        expectWash(washIn(t, bagSquare('hide_vest@mythic')), mythic, 'Mythic'),
+        moreOrLessEquals(
+          expectWash(
+            washIn(t, bagSquare('hide_vest@legendary')),
+            qualityRgb('legendary'),
+            'Legendary',
+          ),
+        ),
+      );
     });
   });
 }
