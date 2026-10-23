@@ -5,9 +5,7 @@
 // Image; the order of the parts of a row; the texts that §4.1 keeps; the
 // skull band and its semantics.
 // - The index of the image files comes from the files on disk, with
-//   synchronous reads before the pump (images_test.dart). The skull picture
-//   has no file until the code of M4 adds it, so each test that shows the
-//   skull band fails until then.
+//   synchronous reads before the pump (images_test.dart).
 // - A "What's new" row of a recipe or a gathering spot does not show on a
 //   level-up card today (spec 0010 §2.2 moved them to profession levels). So
 //   the test of those rows shows NewsTile alone.
@@ -157,13 +155,16 @@ Finder expectSocketFirst(
 
 /// Expects the monster card in view to start with the picture of the boss
 /// [id] with [images]: one Image as wide as the card and at most 200 dp
-/// tall, and no socket of 72 dp (spec 0014 §4.2).
-void expectBossImage(
+/// tall, and no socket of 72 dp (spec 0014 §4.2). Only a placeholder has
+/// the PH mark and the semantics label "placeholder picture" (§3.2).
+Future<void> expectBossImage(
   WidgetTester t,
   String id,
   ImageIndex images,
   String what,
-) {
+) async {
+  final semantics = t.ensureSemantics();
+  await t.pump();
   final picture = images.pictureOf(game.data, MonsterThing(id));
   final image = inside(
     monsterCard,
@@ -200,6 +201,12 @@ void expectBossImage(
     picture.placeholder ? findsOneWidget : findsNothing,
     reason: '$what: a PH mark only on a placeholder',
   );
+  expect(
+    inside(monsterCard, find.bySemanticsLabel('placeholder picture')),
+    picture.placeholder ? findsOneWidget : findsNothing,
+    reason: '$what: the label "placeholder picture" only on a placeholder',
+  );
+  semantics.dispose();
 }
 
 // Screens.
@@ -777,7 +784,7 @@ void criterion19() {
       for (final size in const [Size(1080, 4000), Size(360, 780)]) {
         t.view.physicalSize = size;
         await t.pumpAndSettle();
-        expectBossImage(t, king, diskImages, 'at ${size.width} dp');
+        await expectBossImage(t, king, diskImages, 'at ${size.width} dp');
         expect(
           t.getSize(find.byType(BottomSheet)).width -
               t.getSize(monsterCard).width,
@@ -801,7 +808,7 @@ void criterion19() {
         if (e.firstKillDrops.isEmpty) {
           expectSocketFirst(t, monsterCard, MonsterThing(e.id), 72, e.id);
         } else {
-          expectBossImage(t, e.id, diskImages, e.id);
+          await expectBossImage(t, e.id, diskImages, e.id);
         }
       }
       await pumpAlone(
@@ -809,7 +816,7 @@ void criterion19() {
         c,
         BestiaryCard(controller: c, enemy: 'graveyard_king'),
       );
-      expectBossImage(
+      await expectBossImage(
         t,
         'graveyard_king',
         ImageIndex.empty,
@@ -914,6 +921,45 @@ void criterion20() {
         }
       }
       semantics.dispose();
+    });
+
+    // Level badges stay as today (§2.3): the skull takes the place of the
+    // number, so the band keeps the height of a band with a number, also
+    // at a larger text size of the phone.
+    testWidgets('the skull band is as tall as a band with a number, at the '
+        'text sizes 1.0 and 1.3', (t) async {
+      for (final scale in const [1.0, 1.3]) {
+        await t.pumpWidget(
+          MaterialApp(
+            theme: quietTheme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(scale)),
+                  // A column leaves the height of each band free, so each
+                  // band takes the height of its own content.
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LevelBadge(level: 16, colour: LevelColour.skull),
+                        LevelBadge(level: 16, colour: LevelColour.red),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        final badges = find.byType(LevelBadge);
+        expect(
+          t.getSize(badges.first).height,
+          moreOrLessEquals(t.getSize(badges.last).height, epsilon: .5),
+          reason: 'at the text size $scale',
+        );
+      }
     });
 
     testWidgets("on Now and on the area sheet, the Old Bear's row shows the "
