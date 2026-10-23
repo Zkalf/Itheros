@@ -557,7 +557,15 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('stop-untilHave')));
       await t.pump();
-      await t.tap(find.byKey(const ValueKey('add-to-queue')));
+      // Both are real buttons, side by side: Start now left, Add to queue
+      // right.
+      final startNow = find.byKey(const ValueKey('start-now'));
+      final addToQueue = find.byKey(const ValueKey('add-to-queue'));
+      expect(t.widget(startNow), isA<FilledButton>());
+      expect(t.widget(addToQueue), isA<FilledButton>());
+      expect(t.getCenter(startNow).dx, lessThan(t.getCenter(addToQueue).dx));
+      expect(t.getCenter(startNow).dy, t.getCenter(addToQueue).dy);
+      await t.tap(addToQueue);
       await settle(t, c);
       await t.pumpAndSettle();
       expect(

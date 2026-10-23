@@ -194,20 +194,24 @@ class _ActionSheetState extends State<ActionSheet> {
               ),
             ],
             const SizedBox(height: 16),
+            // Two equal buttons in the middle: Start now left, Add to queue
+            // right.
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TextButton(
+                FilledButton.icon(
                   key: const ValueKey('start-now'),
                   onPressed: () => Navigator.pop(context, (_stop, true)),
-                  child: Text(s.activity == null ? 'Start' : 'Start now'),
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(s.activity == null ? 'Start' : 'Start now'),
                 ),
                 if (room) ...[
-                  const SizedBox(width: 8),
-                  FilledButton(
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
                     key: const ValueKey('add-to-queue'),
                     onPressed: () => Navigator.pop(context, (_stop, false)),
-                    child: const Text('Add to queue'),
+                    icon: const Icon(Icons.playlist_add),
+                    label: const Text('Add to queue'),
                   ),
                 ],
               ],
