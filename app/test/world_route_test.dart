@@ -139,11 +139,17 @@ Offset markerCentre(
   );
 }
 
-/// The width of the one place ring in [within].
+/// The scale at which [finder] is drawn: 1, or less when a FittedBox draws
+/// it smaller than its layout.
+double scaleOf(WidgetTester t, Finder finder) =>
+    t.getRect(finder).width / t.getSize(finder).width;
+
+/// The width of the one place ring in [within], as drawn.
 double ringWidth(WidgetTester t, Finder within) {
   final border = boxIn(t, within, 'place-ring')?.border;
   expect(border, isA<Border>(), reason: 'one ring with a border in $within');
-  return (border! as Border).top.width;
+  return (border! as Border).top.width *
+      scaleOf(t, keyIn(within, 'place-ring'));
 }
 
 /// The text [text] in [within], on one line or on two.
@@ -208,10 +214,12 @@ void expectPlaceRing(
     expect((s.style, s.width), (BorderStyle.solid, width), reason: what);
     expectRgb(s.color, tealRgb, '$what: the ring');
   }
+  // The ring as drawn, also under a FittedBox.
+  final ring = keyIn(within, 'place-ring');
   final inner = outlineOf(
     box,
-    t.getRect(keyIn(within, 'place-ring')),
-  ).deflate(width);
+    t.getRect(ring),
+  ).deflate(width * scaleOf(t, ring));
   final face = faceOf(t, socket);
   expect(
     inner.outerRect,
@@ -255,8 +263,16 @@ List<Invocation> paintCalls(MapPainter painter, Size size) {
 /// The step plates that [painter] paints on [box], each with the two ends of
 /// its road, on the screen. A plate is the smallest filled rounded rect that
 /// holds a count. The counts come in the order of the labelled paths.
-List<(Rect, Offset, Offset)> platesOf(MapPainter painter, Rect box) {
-  final calls = paintCalls(painter, box.size);
+/// [box] is the rect of the CustomPaint as drawn, at [scale].
+List<(Rect, Offset, Offset)> platesOf(
+  MapPainter painter,
+  Rect box, [
+  double scale = 1,
+]) {
+  final calls = paintCalls(painter, box.size / scale);
+  Offset drawn(Offset p) => box.topLeft + p * scale;
+  Rect drawnRect(Rect r) =>
+      Rect.fromPoints(drawn(r.topLeft), drawn(r.bottomRight));
   final plates = [
     for (final c in calls)
       if (c.memberName == #drawRRect &&
@@ -277,9 +293,9 @@ List<(Rect, Offset, Offset)> platesOf(MapPainter painter, Rect box) {
   return [
     for (final (i, count) in counts.indexed)
       (
-        _holder(count, plates).shift(box.topLeft),
-        roads[i].$1 + box.topLeft,
-        roads[i].$2 + box.topLeft,
+        drawnRect(_holder(count, plates)),
+        drawn(roads[i].$1),
+        drawn(roads[i].$2),
       ),
   ];
 }
@@ -589,6 +605,10 @@ Finder routeSocket(Finder routeMap, String place) {
 /// width, cut to the strip of routeStrip; a marker at each place passed, and
 /// no other; the roads walked; the ring on the last place; and its names and
 /// plates by the rule of the map labels.
+/// - The route map may be drawn smaller than its layout, under a FittedBox.
+///   The strip is the strip at the width of its layout, at the scale of the
+///   drawing.
+/// - Each check reads the rects as drawn.
 void expectRouteMap(
   WidgetTester t,
   Finder routeMap,
@@ -596,6 +616,7 @@ void expectRouteMap(
   String what,
 ) {
   final box = t.getRect(routeMap);
+  final scale = scaleOf(t, routeMap);
   final map = mapIn(t, routeMap);
   expect(map.left, moreOrLessEquals(box.left, epsilon: .5), reason: what);
   expect(
@@ -607,15 +628,15 @@ void expectRouteMap(
     map.height,
     moreOrLessEquals(map.width * game.data.mapAspect, epsilon: .5),
   );
-  final strip = routeStrip(game.data, route, box.width);
+  final strip = routeStrip(game.data, route, t.getSize(routeMap).width);
   expect(
     box.height,
-    moreOrLessEquals(strip.height, epsilon: .5),
+    moreOrLessEquals(strip.height * scale, epsilon: .5),
     reason: '$what: the route map is as tall as its strip $strip',
   );
   expect(
     map.top,
-    moreOrLessEquals(box.top - strip.top, epsilon: .5),
+    moreOrLessEquals(box.top - strip.top * scale, epsilon: .5),
     reason: '$what: the route map shows the strip $strip of the image',
   );
   final above = <Element>{};
@@ -656,7 +677,7 @@ void expectRouteMap(
     final at = markerCentre(
       map,
       p,
-      size: t.getSize(routeSocket(routeMap, p)).width,
+      size: t.getRect(routeSocket(routeMap, p)).width,
       ring: ring,
     );
     expect(
@@ -673,8 +694,8 @@ void expectRouteMap(
   final drawn = [
     for (final (a, b, _) in painter.paths)
       road(
-        placeAt(centres, a + paint.topLeft),
-        placeAt(centres, b + paint.topLeft),
+        placeAt(centres, a * scale + paint.topLeft),
+        placeAt(centres, b * scale + paint.topLeft),
       ),
   ];
   expect(drawn.toSet(), walked, reason: '$what: the roads walked');
@@ -698,7 +719,7 @@ void expectRouteMap(
         ).evaluate().isNotEmpty)
           p: nameBox(t, routeMap, game.data.locations[p]!.name),
     },
-    plates: platesOf(painter, paint),
+    plates: platesOf(painter, paint, scale),
     what: what,
   );
 }
@@ -874,7 +895,7 @@ void criterion18() {
       final ring = ringWidth(t, _world);
       final far = <String>[];
       for (final p in places) {
-        final size = t.getSize(socketIn(area(p))).width;
+        final size = t.getRect(socketIn(area(p))).width;
         expect(
           centres[p],
           offsetMoreOrLessEquals(
