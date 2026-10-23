@@ -45,6 +45,10 @@ abstract final class Quiet {
   static const white = Colors.white;
   static const transparent = Colors.transparent;
 
+  /// The dark socket behind each image (spec 0014 §2.3, plan 0017): black,
+  /// with a shade of [slate] at its centre.
+  static const socket = black;
+
   /// The 1 dp teal hairline of a plate.
   static final hairline = teal.withValues(alpha: .24);
 }

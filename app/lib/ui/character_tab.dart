@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'bag_grid.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'paper_doll.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Who am I (spec 0008 §3.5): level, stats and rank above two small tabs,
@@ -29,6 +31,7 @@ class _CharacterTabState extends State<CharacterTab> {
     final level = game.level(s);
     final points = game.talentPoints(level);
     final text = Theme.of(context).textTheme;
+    final who = s.character;
 
     return ListView(
       padding: const EdgeInsets.all(gutter),
@@ -38,29 +41,51 @@ class _CharacterTabState extends State<CharacterTab> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Name, then rank · origin (spec 0012 §4.4).
-                if (s.character case final who?) ...[
-                  Text(
-                    who.name,
-                    key: const ValueKey('character-name'),
-                    style: text.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
-                    _RankTitle(game.rank(level).name),
-                    if (s.character case final who?)
-                      Text(
-                        '· ${game.fill(game.data.origins[who.origin]?.title ?? '', who)}',
-                        key: const ValueKey('character-origin'),
-                        style: text.titleMedium,
+                    // The portrait next to the name (spec 0014 §4.2).
+                    if (who != null) ...[
+                      PictureSocket(
+                        key: const ValueKey('character-portrait'),
+                        picture: ImageScope.of(context).pictureOf(
+                          game.data,
+                          PlayerThing(who.origin, who.gender),
+                        ),
+                        size: 72,
                       ),
+                      const SizedBox(width: 14),
+                    ],
+                    // Name, then rank · origin (spec 0012 §4.4).
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (who != null) ...[
+                            Text(
+                              who.name,
+                              key: const ValueKey('character-name'),
+                              style: text.headlineSmall,
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _RankTitle(game.rank(level).name),
+                              if (who != null)
+                                Text(
+                                  '· ${game.fill(game.data.origins[who.origin]?.title ?? '', who)}',
+                                  key: const ValueKey('character-origin'),
+                                  style: text.titleMedium,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const Divider(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [

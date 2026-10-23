@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:game_core/game_core.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -7,10 +8,15 @@ import 'game_data_loader.dart';
 import 'persistence/save_store.dart';
 import 'steps/health_connect_step_source.dart';
 import 'ui/app.dart';
+import 'ui/images.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final data = await loadBundledGameData();
+  // The keys that have an image file (plan 0017, choice 3). Without the
+  // index, each thing shows its placeholder.
+  final images = await ImageIndex.load(rootBundle)
+      .catchError((Object _) => ImageIndex.empty);
   final source = HealthConnectStepSource();
   final controller = GameController(
     game: Game(data),
@@ -20,6 +26,6 @@ Future<void> main() async {
     // Owner builds pass --dart-define=TEST_WALK=true; friends' builds don't.
     testWalkAllowed: const bool.fromEnvironment('TEST_WALK'),
   );
-  runApp(WalkingRpgApp(controller: controller));
+  runApp(WalkingRpgApp(controller: controller, images: images));
   await controller.start();
 }

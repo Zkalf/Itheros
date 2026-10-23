@@ -3,7 +3,9 @@ import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'away_summary_card.dart';
+import 'images.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Opens the card for [item] (spec 0008 §3.5). [wornIn] is set when it was
@@ -30,12 +32,12 @@ Future<void> showItemCard(
   );
 }
 
-/// The item's name in its quality colour, the quality and kind in words, its
-/// stats, how it compares with what is worn, and Equip / Swap / Unequip. A
-/// tool says what it serves and costs; at a forge gear and tools salvage
-/// and gear rerolls (spec 0010 §8.3). A meal says its buff and length, with
-/// Eat and Auto-eat (spec 0011 §8.3). A material says where it comes from
-/// and what uses it.
+/// The item's picture (spec 0014 §2.3), its name in its quality colour, the
+/// quality and kind in words, its stats, how it compares with what is worn,
+/// and Equip / Swap / Unequip. A tool says what it serves and costs; at a
+/// forge gear and tools salvage and gear rerolls (spec 0010 §8.3). A meal
+/// says its buff and length, with Eat and Auto-eat (spec 0011 §8.3). A
+/// material says where it comes from and what uses it.
 class ItemCard extends StatelessWidget {
   const ItemCard({
     super.key,
@@ -70,14 +72,38 @@ class ItemCard extends StatelessWidget {
     // A Legendary's bonus stats reroll one at a time at a forge (§7.3).
     final statRerolls = gear && legendary && pending == null && game.atForge(s);
 
+    final picture = ImageScope.of(context).pictureOf(data, ItemThing(item));
+
     final rows = <Widget>[
-      Text(
-        labels.plain(item),
-        key: const ValueKey('card-name'),
-        style: text.titleLarge?.copyWith(color: colour),
+      // The picture in a 72 dp socket, with the ring for gear and tools
+      // (spec 0014 §2.3), beside the name and the kind.
+      Row(
+        children: [
+          PictureSocket(
+            picture: picture,
+            size: 72,
+            quality: gear || def.tool != null ? data.qualityOf(item) : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  labels.plain(item),
+                  key: const ValueKey('card-name'),
+                  style: text.titleLarge?.copyWith(color: colour),
+                ),
+                const SizedBox(height: 4),
+                Text(labels.kind(item), key: const ValueKey('card-kind')),
+                // The line for a placeholder (spec 0014 §3.2).
+                if (picture.placeholder)
+                  Text('Picture coming later', style: text.bodySmall),
+              ],
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 4),
-      Text(labels.kind(item), key: const ValueKey('card-kind')),
       const SizedBox(height: 8),
       if (gear) ...[
         // Base stats, then type and hands (or armour), then each bonus stat

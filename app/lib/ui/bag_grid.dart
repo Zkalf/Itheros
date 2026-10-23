@@ -74,6 +74,8 @@ class BagGrid extends StatelessWidget {
             data: data,
             item: key,
             count: s.inventory[key]!,
+            // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
+            socket: 48,
             onTap: () => showItemCard(context, c, key),
           ),
       ],
