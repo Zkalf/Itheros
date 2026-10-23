@@ -6,10 +6,17 @@
 //   pubspec.yaml.
 // - Criteria 27 and 28 hold today. They guard the rules, the numbers, the
 //   packages and the manifest.
+// - Criterion 24 (plan 0017 M5): the launcher files. The adaptive icon, the
+//   PNG files of the emblem in each density, and the icon of the Android 12
+//   splash screen.
 // The widget tests of criteria 1 to 7 are in quiet_teal_test.dart. That file
-// uses the colours and the font names below.
+// uses the colours and the font names below. The widget tests of criterion 24
+// are in start_screens_test.dart.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data' show Uint8List;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter/services.dart' show rootBundle;
@@ -121,6 +128,17 @@ const licenceFiles = {
 
 const _res = 'android/app/src/main/res';
 const _manifest = 'android/app/src/main/AndroidManifest.xml';
+
+/// The five densities of the launcher files, each with the width of the
+/// adaptive icon in pixels: 108 dp at 1, 1.5, 2, 3 and 4 pixels for each dp.
+const _densities = {
+  'mdpi': 108,
+  'hdpi': 162,
+  'xhdpi': 216,
+  'xxhdpi': 324,
+  'xxxhdpi': 432,
+};
+
 String get _pubspec => File('pubspec.yaml').readAsStringSync();
 final _xmlComment = RegExp(r'<!--[\s\S]*?-->');
 
@@ -252,6 +270,111 @@ void main() {
           f.readAsStringSync(),
           contains('SIL OPEN FONT LICENSE Version 1.1'),
           reason: path,
+        );
+      }
+    });
+  });
+
+  group('spec 0014 criterion 24: the launcher shows the emblem on #060708', () {
+    test('the adaptive icon has the background #060708, the emblem as its '
+        'foreground and the one-colour emblem as its monochrome layer', () {
+      final manifest = File(_manifest).readAsStringSync();
+      for (final attribute in ['icon', 'roundIcon']) {
+        expect(manifest, contains('android:$attribute="@mipmap/ic_launcher"'));
+      }
+      final icon = File('$_res/mipmap-anydpi-v26/ic_launcher.xml')
+          .readAsStringSync()
+          .replaceAll(_xmlComment, '');
+      String? layer(String name) =>
+          RegExp('<$name\\b[^>]*\\bandroid:drawable="([^"]+)"')
+              .firstMatch(icon)?[1];
+      _expectCase(
+        layer('background'),
+        _colourResources(),
+        'the background of the adaptive icon',
+      );
+      expect(layer('foreground'), '@mipmap/ic_launcher_foreground');
+      expect(layer('monochrome'), '@mipmap/ic_launcher_monochrome');
+      expect(
+        File('$_res/drawable/ic_launcher_foreground.xml').existsSync(),
+        isFalse,
+        reason: 'the sword and the boot go',
+      );
+    });
+
+    // The safe zone of an adaptive icon is the centred circle of 66 dp in its
+    // 108 dp. A pixel shows when its alpha is above 0. It lies in the zone
+    // when its centre is at most half its diagonal (0.71 px) outside the
+    // circle.
+    test('in each density, the emblem and the one-colour emblem are PNG files '
+        'of 108 dp, transparent outside the safe zone', () async {
+      for (final MapEntry(key: density, value: px) in _densities.entries) {
+        for (final name in [
+          'ic_launcher_foreground',
+          'ic_launcher_monochrome',
+        ]) {
+          final path = '$_res/mipmap-$density/$name.png';
+          final rgba = await _png(path, px);
+          final zone = px * 33 / 108 + math.sqrt1_2;
+          final outside = <String>[];
+          var opaque = 0;
+          for (var y = 0; y < px; y++) {
+            for (var x = 0; x < px; x++) {
+              final alpha = rgba[(y * px + x) * 4 + 3];
+              if (alpha == 255) opaque++;
+              final d = ui.Offset(x + .5 - px / 2, y + .5 - px / 2).distance;
+              if (alpha > 0 && d > zone) outside.add('($x, $y)');
+            }
+          }
+          expect(
+            outside,
+            isEmpty,
+            reason:
+                '$path: the pixels outside the safe zone '
+                '(${outside.length}), for example ${outside.take(4)}',
+          );
+          expect(opaque, greaterThan(0), reason: '$path shows no emblem');
+        }
+      }
+    });
+
+    // Android draws the monochrome layer in a colour of its own, by its alpha.
+    // The test asks for one colour, so that the full-colour emblem does not
+    // pass for the one-colour emblem. It allows a little noise. A pixel with
+    // an alpha below 128 does not count, because its colour is less exact.
+    test('in each density, the one-colour emblem has one colour', () async {
+      for (final MapEntry(key: density, value: px) in _densities.entries) {
+        final path = '$_res/mipmap-$density/ic_launcher_monochrome.png';
+        final rgba = await _png(path, px);
+        final channels = [<int>[], <int>[], <int>[]];
+        for (var i = 0; i < rgba.length; i += 4) {
+          if (rgba[i + 3] < 128) continue;
+          for (final (c, values) in channels.indexed) {
+            values.add(rgba[i + c]);
+          }
+        }
+        expect(channels.first, isNotEmpty, reason: '$path shows no emblem');
+        for (final (c, values) in channels.indexed) {
+          expect(
+            values.reduce(math.max) - values.reduce(math.min),
+            lessThanOrEqualTo(16),
+            reason: '$path: ${['red', 'green', 'blue'][c]} varies',
+          );
+        }
+      }
+    });
+
+    test('both v31 styles show the emblem on the splash screen of Android 12 '
+        'and later', () {
+      final launch = RegExp(r'<activity\b[^>]*android:theme="@style/([^"]+)"')
+          .firstMatch(File(_manifest).readAsStringSync())![1]!;
+      for (final dir in ['values-v31', 'values-night-v31']) {
+        expect(
+          _styles(
+            File('$_res/$dir/styles.xml'),
+          )[launch]?.$2['android:windowSplashScreenAnimatedIcon'],
+          '@mipmap/ic_launcher_foreground',
+          reason: '$dir: $launch',
         );
       }
     });
@@ -459,6 +582,33 @@ Map<String, (String, Map<String, String>)> _darkStyles(
     );
   }
   return styles;
+}
+
+/// The pixels of the PNG file at [path], as straight RGBA: the alpha is not
+/// multiplied into the colour. Expects a PNG file of [size] x [size] pixels.
+Future<Uint8List> _png(String path, int size) async {
+  final file = File(path);
+  expect(file.existsSync(), isTrue, reason: path);
+  final bytes = file.readAsBytesSync();
+  expect(bytes.take(8).toList(), [
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+  ], reason: '$path is a PNG file');
+  final codec = await ui.instantiateImageCodec(bytes);
+  final image = (await codec.getNextFrame()).image;
+  expect((image.width, image.height), (size, size), reason: path);
+  final data = await image.toByteData(
+    format: ui.ImageByteFormat.rawStraightRgba,
+  );
+  image.dispose();
+  codec.dispose();
+  return data!.buffer.asUint8List();
 }
 
 /// Expects [value] to be #060708, as a literal or a `@color/` reference.
