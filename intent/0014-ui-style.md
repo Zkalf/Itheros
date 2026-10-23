@@ -1,6 +1,6 @@
 # Intent: Quiet Teal UI style
 
-Status: draft
+Status: accepted
 Product owner: Zkalf
 Date: 2026-10-22
 

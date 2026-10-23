@@ -23,6 +23,15 @@ A new rule or system starts as an **intent**: copy `intent/TEMPLATE.md` to the n
 player is missing and why it matters, and open a pull request with it (status `draft`). Once Zkalf accepts it, a
 spec and a plan follow, then the code. Accepted intent, spec and plan files are never edited.
 
+How a draft becomes accepted in a pull request:
+1. The pull request holds the file with `Status: draft`. The discussion and the review happen on the pull request.
+2. Only Zkalf accepts. Zkalf says "accepted" on the pull request.
+3. The author or Zkalf then changes the line to `Status: accepted` in one last commit.
+4. Zkalf merges. A draft never reaches `main`.
+
+A file that Zkalf accepted before the pull request opened is already `Status: accepted`, and the pull request
+carries it as it is.
+
 ## Ground rules
 - **Health data stays on the phone:** no internet permission, no network code, no analytics, no cloud backup.
 - **Saves load across versions:** never edit or delete `app/test/fixtures/saves/`.
