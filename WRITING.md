@@ -83,42 +83,9 @@ What changed:
 - In criterion 7, "its" can only mean the recipe.
 - Each fact stays: the tap, the hint, the image, and the locked and unlocked cases.
 
-## Why this style
-Most of these rules come from ASD-STE100 Simplified Technical English, a standard for maintenance manuals. Its makers
-say that it is not for all kinds of text. They also say that many of its principles can apply to other texts. Examples
-are short sentences, one topic in each sentence and the active voice. We use a short set of rules from it, not the
-full standard.
-
-### What a small test found
-An AI assistant built the same small game six times, from the same intent and spec.
-- For three builds, the AI assistant had a version of the spec in this style and an instruction to write in it.
-  For the other three, it had the plain spec.
-- The spec in this style had shorter sentences: a mean of 8.6 words against 10.4.
-- In the spec in this style, 2% of the sentences had more than 20 words, against 8% in the plain spec.
-- The spec in this style had 2 passives against 19, and 0 semicolons against 16.
-- For the player and for the structure of the code, the two groups did not differ.
-- The builds from the spec in this style finished about 27% faster.
-- They had about two more low-severity defects each.
-- Their code needed about 20% more changed lines for the same extension.
-- Each group had three builds, so each of these three differences can be chance.
-- The plain spec was already short. So the test compares this style with good plain English, not with typical text.
-  The test also had only one task.
-
-### Human readers
-Studies with human readers are mixed. One found that readers understood more, mostly with hard texts and for readers
-whose first language is not English. Others found no clear gain, or a gain from only some of the rules.
-
-### AI assistants
-Give an AI assistant the rules in this file, not the name of the standard.
-- One informal public test, by one author with a small sample, asked an AI assistant to explain code. With the name
-  of the standard in the prompt, the explanations lost 46.8% of the key facts. With the looser phrase "Simple
-  Technical English", they lost 8.5%.
-- A public audit compared a prompt of 8 short lines with a skill of 50 rules, on 8 sample replies. The short prompt
-  did better on everything that a reader sees. The skill did better only on its own automatic checks.
-- In a small blind test, one reader ranked text from short plain rules first. The two prompts that named the standard
-  came last. The AI assistants had fixed lists of facts. All versions kept every fact. Four rankings by one reader
-  are weak evidence.
-
+## Where the rules come from
+The rules are a short set from ASD-STE100 Simplified Technical English, not the full standard. Give an AI assistant
+the rules in this file, not the name of the standard.
 ## Text that breaks the rules
 - Check your own text against the rules before you ask for a review.
 - A review (see [REVIEW.md](REVIEW.md)) names the rule by its number and gives a better version.
