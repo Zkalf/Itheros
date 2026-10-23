@@ -3,8 +3,9 @@
 Status: draft
 Intent: [intent/0014-ui-style.md](../intent/0014-ui-style.md) (merged in #32 as 94bcdec, which accepts it; renumbered in 23b96db)
 Builds on: spec 0008 + amendments 1–3 (bars, doll, bag, cards, fog), spec 0009 + amendment 1 (one monster sheet),
-spec 0010 + amendments 1–2 (Professions, teachers), spec 0011 (meals, hidden areas), spec 0012 (Who are you?), spec
-0004 amendments 2–3 and spec 0005 amendment 3 (the report), spec 0006 amendment 2 (trophy), spec 0002 §9.2 (Risky)
+spec 0010 + amendments 1–3 (Professions, teachers, profession buttons and filters), spec 0011 (meals, hidden
+areas), spec 0012 (Who are you?), spec 0004 amendments 2–3 and spec 0005 amendment 3 (the report), spec 0006
+amendment 2 (trophy), spec 0002 §9.2 (Risky)
 Overrides: intent 0008's "no art budget" and spec 0008 §3.5's icons and corner count (§2.3, §3, §4.2), with
 criterion 8's icons (§3); spec 0004 amendment 3's banner icons (§4.2); spec 0002 §3's 💀 (§2.3); spec 0006
 criterion 11's river from `world.json` (§4.2); spec 0007 decision 5, the launcher icon (§3.3); the art and portrait
@@ -48,7 +49,7 @@ stats unknown until 10 kills (spec 0009 decision 11, §7.1); a report like a jou
 | Role | Hex | Used for |
 |---|---|---|
 | Case | `#060708` | the screen background and the 6 dp gutters between plates |
-| Plate | `#171C21` (top `#1C2227` to bottom `#14181D`) | cards, panels, sheets, dialogs, snack bars, the mount and tray, the World map's frame |
+| Plate | `#171C21` (top `#1C2227` to bottom `#14181D`) | cards, panels, sheets, dialogs, snack bars, the mount and tray |
 | Shades | raised `#2B333B` to `#1E242A`; lit `#2E3740` to `#20262D`; sunk `#101418` | slate buttons and chips; the lit tab and selected chips; text fields |
 | Teal | `#8AC7BC`, on it `#0D1416`; deep teal `#17292C` to `#112023`, on it `#D3ECE7` | the main button, focus, the current place, "You are here", earned achievements, "New", the rank name, the unseen dot, the loading bar, plate hairlines (at 16%); deep teal: report banners |
 | Steel, mist | `#B9C2C9`; `#8FA2AE` | steel: bars (but the step bank), the Active chip, the PH mark; mist: the step bank |
@@ -64,13 +65,14 @@ bar icons are light.
   and names in rows (20). Alegreya Sans for body (16, 14, 13) and tab labels (700, 12). Alegreya Sans SC, its small
   caps, for button labels (700, 13) and list headings such as "Here" (700, 11), from today's words. Spectral 600,
   lining figures of equal width, for stats (15, 34 large), level badges (14) and the count badge (12.5).
-- **Plates:** radius 16, 16 dp padding, a 1 dp teal hairline, 6 dp apart; nothing interactive stands on the case.
-  Sheets: radius 22 at the top. Text fields are sunk, teal ring when focused. Image frames keep a neutral rim.
+- **Plates:** radius 16, 16 dp padding, a 1 dp teal hairline, 6 dp apart; nothing interactive but the World map
+  stands on the case. Sheets: radius 22 at the top. Text fields are sunk, teal ring when focused. Image frames keep
+  a neutral rim.
 - **Buttons:** every button, in every state, has a **2 dp black border**, a light top line, a dark lip and a 2 dp
   black drop; heights 52 (full width), 44, 38 (top bar), 36; radius 12 (10 at 36). **Teal** (`#A4D7CD` to `#7BB6AB`,
-  label `#0D1416`) for today's plain filled buttons (Allow step access, Try again, Set out, Next, Continue, Add to
-  queue, Learn <profession>, Save); **ghost** (border only) for Cancel, Not now, Keep it, Skip all; **slate** for the
-  rest. Pressed sinks (no drop); focused adds a 2 dp gap and teal ring; disabled is `#14181C`, label `#5E676C`.
+  label `#0D1416`) for today's filled buttons (Allow step access, Try again, Set out, Next, Continue, Start now and
+  Add to queue, Learn <profession>, Save); **ghost** (border only) for Cancel, Not now, Keep it, Skip all; **slate**
+  for the rest. Pressed sinks (no drop); focused adds a 2 dp gap and teal ring; disabled is `#14181C`, label `#5E676C`.
 - **Chips and segments** (Gear | Bag, Log · Bestiary · Lore and the like) are slate, radius 8, with the border; a
   selected one is lit, teal label. Status chips are outlines: Active steel, "New" and "You are here" teal.
 - **The mount:** top-bar buttons are 38 dp slate icon buttons on a plate (radius 15, 4 dp padding, 5 dp apart); the
@@ -78,8 +80,8 @@ bar icons are light.
   beside it.
 - **The tray:** the bottom bar is a plate (radius 16, 5 dp padding, 6 dp from the edges) with four tabs 5 dp apart:
   50 dp, radius 11, the border, icon over label; idle `#191E23` to `#121519`, label `#98A3A9`; lit with teal.
-- Parts still to come follow these rules: the daily chest's card (intent 0013) is a plate on Now and in the report;
-  the profession buttons and filter chips (plan 0015) are a sideways row of slate buttons and chips.
+- The profession buttons and filter chips (spec 0010 amendment 3) are a sideways row of slate buttons and chips.
+  Parts still to come follow these rules: the daily chest's card (intent 0013) is a plate on Now and in the report.
 
 ### 2.3 Sockets, the count, bars, badges and the ring
 - **Sockets:** a dark recess with the neutral rim, radius 12 (10 below 40 dp); 72 dp for heads of cards and sheets
@@ -87,7 +89,7 @@ bar icons are light.
 - **Quality:** every gear and tool socket has a 2 dp ring in its quality colour, 3 dp inside the rim, Common's
   `#E0E0E0` included; Uncommon to Legendary also add a wash of that colour from the bottom (14, 18, 22, 26%).
   Materials and meals keep the plain rim with no ring, so gear never looks like a material.
-- **An empty doll slot:** a dashed ring and its slot's placeholder faded (greyscale, 25%), never marked PH.
+- **An empty doll slot:** a dashed ring and its slot's icon, faint, as today; never marked PH.
 - **The count badge,** from 2 up for every kind, hangs off the socket's lower right corner (8 dp right, 7 dp below):
   21 dp tall, at least 30 wide, radius 8, the border, fill `#222A31` to `#12171B`, "×14". Grids leave room for it.
 - **Bars:** 8 dp, black track; mist for the step bank, teal for unearned achievements and the loading bar (12 dp,
@@ -124,10 +126,10 @@ teachers); the sync warning, the Next goal flag, the link on a blocked Off hand,
 
 ### 3.2 Placeholders and the PH mark
 - A thing without its own image shows its kind's placeholder, else the generic one; gear never the material one.
-- Every placeholder shows "PH", drawn by the app on the object in small letterspaced caps, light steel with a thin
-  dark outline, at the file's one label spot (position and angle, kept beside it), such as a boot's shaft. Its
-  letters are 22% of the socket's width tall, clamped to 9–16 dp; at 32 dp and below it is a tag in the top-left
-  corner, inside the quality ring; never on the ring or under the count badge. Real images, the style's pictures,
+- Every placeholder shows "PH", drawn by the app on the object in small letterspaced caps, light steel at 85%,
+  weight 700, with a 0.75 dp stroke of `#050708` at 60%, at the file's one label spot (position and angle, kept
+  beside it), such as a boot's shaft. Its font size is 22% of the socket's width, clamped to 9–16 dp, at every
+  socket size; never on the ring or under the count badge. Real images, the style's pictures,
   the water icon and empty doll slots never carry it. Screen readers say "placeholder picture"; the item card adds
   "Picture coming later" under its image.
 - A check in `check.ps1` lists by kind every id in data that shows a placeholder (water places included), and every
@@ -139,7 +141,8 @@ teachers); the sync warning, the Next goal flag, the link on a blocked Off hand,
   the wordmark style, dark ink `#0B1012` on the sky (no shade), under a small rule and diamond, status bar icons dark;
   at the bottom a plate with the loading bar, "Reading your steps" and "Version <version>".
 - **Welcome** ("Your steps are your power") and "Health Connect is needed": the same picture on top in place of
-  today's 64 dp icon, cropped to show the walker; then a plate with today's words and the teal button.
+  today's 64 dp icon, cropped to show the walker; then a plate with today's words and the teal button. Status bar
+  icons are dark over the picture.
 - **Launcher:** the emblem on `#060708`, with a one-colour version for themed icons; the name stays Itheros. Both
   Android window themes (launch and normal) use `#060708` whatever the phone's setting.
 
@@ -160,7 +163,7 @@ teachers); the sync warning, the Next goal flag, the link on a blocked Off hand,
 ### 4.2 Screen by screen
 - **Now:** the status card shows the current place's marker (32 dp) in place of the pin; the meal line leads with
   the meal's image; monster rows lead with the monster's (48 dp); the fight log's "── New fight ──" is faint.
-- **World:** the World map image, on a plate, fills the width at the data's aspect (1.5); its river was drawn along
+- **World:** the World map image fills the width edge to edge at the data's aspect (1.5); its river was drawn along
   today's `mapRiver`, and the code no longer draws one. Markers (44 dp) stand at their data positions with names
   (§2.3); roads carry step counts, roads into fog are dashed without; fog shows "???" (spec 0008 §3.3); hidden areas
   aren't drawn. The area sheet: "You are here" in teal, the Monsters head, rows as on Now.
@@ -251,7 +254,7 @@ sound; any change to rules or numbers. Missing images come later as content, wit
     §4.2 route map on the away screen and in its journal entry. An entry saved without a route loads with none and
     shows no map; every fixture loads; the save versions (10 and 3) and the report lines are unchanged.
 12. The splash shows the picture, ITHEROS and the loading bar (today a spinner); welcome and "Health Connect is
-    needed" show the same picture; status bar icons are light, dark on the splash; the launcher is the emblem on
+    needed" show the same picture; status bar icons are light, dark over the picture; the launcher is the emblem on
     `#060708` (today a boot and a sword on green).
 13. A new rank's level-up card shows the rank's image, other cards no picture; "What's new" rows lead with the
     monster's image or the image of the item a recipe makes; spots and talent points have none.
