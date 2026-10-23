@@ -62,7 +62,9 @@ are dark on the splash picture.
   outlines.
 - **Top bar:** Trophies, Journal and Settings are slate icon buttons on a plate. A pushed page shows Back only.
 - **Bottom bar:** a plate with the four tabs. Each tab shows its icon above its label. The lit tab is teal.
-- New parts follow the same rules. Examples: the profession buttons and filters, the card of the daily chest.
+- New parts follow the same rules. Examples:
+  - the profession buttons and filters;
+  - the card of the daily chest.
 
 ### 2.3 Sockets, counts, bars and the ring
 - **Sockets:** each image sits in a dark socket. Sizes: 72 dp in heads and portraits, 48 dp in rows and the bag,
@@ -151,8 +153,15 @@ name and one line. Teal pips show the steps. A taken step is filled. The spend b
   stay at 10 and 3. Each fixture loads.
 
 ## 6. Out of scope
-A fight scene and animation. The talent rules. A separate boss screen. A light theme. An appearance editor. Images for
-professions, teachers and areas. Changes to rules or numbers. The missing images come later as content.
+- A fight scene and animation.
+- The talent rules.
+- A separate boss screen.
+- A light theme.
+- An appearance editor.
+- Images for professions, teachers and areas.
+- Changes to rules or numbers.
+
+The missing images come later as content.
 
 ## 7. Concerns
 1. **Many placeholders at first** (intended): three items in four, and all tools, meals and portraits.
@@ -160,22 +169,56 @@ professions, teachers and areas. Changes to rules or numbers. The missing images
 3. **Size:** with all images, the app is about 10 MB larger.
 
 ## 8. Acceptance criteria
-1. The app and its Android windows are dark for each phone setting. They use the colours of §2.1 and the four fonts.
-2. Each button, tab, chip and switch has the 2 dp black border in each state. Teal, ghost and slate buttons are as
-   §2.2 lists them.
-3. The top bar and the bottom bar stay as today. Tab screens have no title.
-4. Each repeat of §4.1 shows once.
-5. Each thing in §3.1 shows its image by its key. A thing without an image shows its placeholder. Gear never shows
-   the material placeholder.
-6. Only placeholders have the PH mark, as §3.2 says. The check of §3.2 passes when placeholders show.
-7. A socket shows the image and, for 2 or more, the count badge. Gear and tools have a quality ring. Materials and
-   meals have no ring.
-8. One teal ring marks the current place. At a width of 360 dp, nothing on the map overlaps, and each name stays
-   inside the map.
-9. A tap on a monster opens one sheet with its image. A boss shows its image across the full width. Stats stay
-   unknown until 10 kills. The skull band shows the skull image.
-10. Each banner shows text or an image, as §4.2 says.
-11. A report keeps its route across syncs and days and shows the route map. An older entry loads and shows no map.
-12. The splash, welcome, launcher and Licences row are as §3.3 and §4.2 say.
-13. Rules and numbers do not change. `.\scripts\check.ps1 -Release` passes. The app has no INTERNET permission and
-    no new package.
+
+**Look**
+1. The app is dark for each phone setting. The Android launch window and normal window are also dark (`#060708`).
+2. The app uses the colours of §2.1. It uses no other warm colour.
+3. The app bundles the four fonts and uses them as §2.2 says. Settings has a Licences row with their licence texts.
+4. Each button, tab, chip, segment and switch has the 2 dp black border in each state.
+5. Teal, ghost and slate buttons are as §2.2 says. Each button keeps its words from today.
+6. Back keeps its "Back" tooltip.
+
+**Structure that stays**
+7. The bottom bar has Now, World, Professions and Character. The top bar has Trophies with its dot, Journal and
+   Settings on each tab screen. Tab screens have no title.
+8. The Character header keeps the name, the rank and origin, the eight stats and the talent line. Seven taps on the
+   rank still turn on the test walk.
+9. The doll keeps 16 slots. The bag keeps 5 columns, with gear first.
+10. Each repeat of §4.1 shows once. The item card for an empty slot drops the change line only if the line repeats
+    the stats.
+
+**Images and placeholders**
+11. Each thing in §3.1 shows its image by its key. A thing without an image shows its placeholder. Gear never shows
+    the material placeholder.
+12. A fogged place shows the fog marker. A water place without a marker shows today's water icon. A locked
+    achievement shows the locked patch.
+13. Only placeholders have the PH mark. The mark is as §3.2 says. The water icon and empty doll slots have no mark.
+14. Screen readers say "placeholder picture" for a placeholder. The item card of a placeholder says "Picture coming
+    later".
+15. The check of §3.2 lists the placeholders and passes. Content without an image also passes.
+16. A socket shows the image. For 2 or more, it also shows the count badge outside the lower right corner.
+17. Gear and tools have a ring in their quality colour, Common included. Materials and meals have no ring.
+
+**Screens**
+18. One teal ring marks the current place. At a width of 360 dp, nothing on the map overlaps, and each name stays
+    inside the map.
+19. A tap on a monster opens one sheet with its image. A boss shows its image across the full width. Stats stay
+    unknown until 10 kills.
+20. The skull band shows the skull image. Screen readers still say "Level: far too strong".
+21. Each banner shows text or an image, as §4.2 says.
+22. The level-up card of a new rank shows the rank image. "What's new" rows start with the image of the monster, or
+    of the item that a recipe makes.
+23. "Who are you?" cards and the Character header show the portrait for the origin and gender. The portrait changes
+    when the player picks another gender.
+24. The splash shows the picture, ITHEROS and the loading bar. Welcome and "Health Connect is needed" show the same
+    picture. The launcher shows the emblem on `#060708`.
+
+**Route and save**
+25. A report keeps its route across syncs and days. With two or more places, it shows the route map on the away
+    screen and in its journal entry.
+26. An entry from before this spec loads and shows no map. The save versions stay at 10 and 3. Each fixture in
+    `app/test/fixtures/saves/` loads.
+
+**Rules and build**
+27. Rules and numbers do not change. The pacing test passes.
+28. `.\scripts\check.ps1 -Release` passes. The app has no INTERNET permission and no new package.
