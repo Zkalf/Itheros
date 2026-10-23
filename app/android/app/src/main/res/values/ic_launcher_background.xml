@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The background of the launcher icon. Plan 0017 M5 gives it #060708 with the emblem (spec 0014 §3.3). -->
-    <color name="ic_launcher_background">#3B7A3A</color>
+    <!-- The background of the launcher icon: the case of spec 0014 (§2.1), behind the emblem (§3.3). -->
+    <color name="ic_launcher_background">#060708</color>
 </resources>
