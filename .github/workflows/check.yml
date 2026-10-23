@@ -30,11 +30,13 @@ jobs:
       # scripts, the gate hook its test cases run, this workflow, or .gitattributes (line endings decide the format
       # check). Docs, design images, intent/specs/plans, evals, incidents and release notes pass in a minute.
       # A diff that can't be read builds as before. A new code folder must be added to this list.
+      # On a pull request, HEAD is the merge with today's main, and its first parent is today's main. GitHub's
+      # base.sha can be an older main, and a diff from it also shows main's newer changes (PR #48).
       - name: What changed
         id: scope
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = pull_request ]; then base=${{ github.event.pull_request.base.sha }}; else base=${{ github.event.before }}; fi
+          if [ "${{ github.event_name }}" = pull_request ]; then base=$(git rev-parse HEAD^1) || base=""; else base=${{ github.event.before }}; fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           code='^(app/|packages/|scripts/|\.github/|\.claude/hooks/production-gate\.ps1$|\.gitattributes$)'
           if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qE "$code"; then
