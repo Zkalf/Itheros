@@ -241,20 +241,24 @@ review per `REVIEW.md`; the owner merges.
 
 **Screens:**
 - World: the map image fills the width and has its own river. One teal ring marks the current place, in place of
-  today's colour and pin. One rule places the names and the step plates.
+  today's colour and pin. The ring sits flush around the marker of the place, with no gap. One rule places the names
+  and the step plates.
+- The map image gets water at Mirror Lake and Smugglers' Cove. nabriis redraws it before M3's pull request opens.
+  The water icon stays on both places (§3.1).
 - The away screen and the Journal's log: the route map, between the banners and the lines.
 - Achievements: each row starts with its image. A locked achievement shows the locked patch. The list stays a list.
 
 | Criterion | The test checks |
 |---|---|
 | 12 | A fogged place shows the fog marker. Mirror Lake and Smugglers' Cove show today's water icon. A locked achievement shows the locked patch. |
-| 18 | With the app's fonts and a width of 360 dp, the test puts the player at each of the 12 places in turn. One teal ring marks the current place. Nothing on the map overlaps. Each name stays inside the map. |
+| 18 | With the app's fonts and a width of 360 dp, the test puts the player at each of the 12 places in turn. One teal ring marks the current place, flush around its marker. Nothing on the map overlaps. Each name stays inside the map. |
 | 25 | A walk over two days and two syncs keeps one route in its report. With two or more places, the away screen and the journal entry show the route map. |
 | 26 | Each fixture in `app/test/fixtures/saves/` loads. Its journal entries have no route and show no route map. The save versions are 10 and 3. |
 
 **Old tests:** none.
 
-**Size:** about 1,015 added lines of code and tests. Images: the map image, about 0.6 MB.
+**Size:** about 1,015 added lines of code and tests. Images: the map image with water at Mirror Lake and Smugglers'
+Cove, about 0.6 MB.
 
 **Proof:** `.\scripts\check.ps1 -Release` green; the verifier checks the change against criteria 12, 18, 25 and 26,
 and that 2, 3, 4, 11, 27 and 28 stay green. The pull request shows screenshots of the route map. A phone install only
@@ -340,5 +344,5 @@ the player.
 | Names and step plates overlap on a small phone | A pure function places them. The criterion 18 test checks each rectangle at 360 dp, for each current place. |
 | The new placeholders are late | M2's pull request waits for them. |
 | The Android files are right, but the phone shows another colour | The `v31` styles set the splash screen of Android 12 and later. The M1 and M5 proofs install the app on the phone. |
-| The map image has no lake at Mirror Lake and Smugglers' Cove | The water icon marks both places (§3.1). A later map image changes only the image. |
+| The redrawn map image is late | M3's pull request waits for it. The water icon marks both places (§3.1). |
 | The app grows | The fonts add about 2.5 MB. The images of M2 to M5 add about 4 MB. Spec concern 3 expects about 10 MB with all images. |
