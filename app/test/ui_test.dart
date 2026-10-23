@@ -575,6 +575,28 @@ void main() {
       expect(find.byKey(const ValueKey('queued-0')), findsNothing);
     });
 
+    testWidgets('every planned action shows its number, the running one 1', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t);
+      await c.addAction(const Activity.fight('goblin'));
+      await c.addAction(const Activity.fight('goblin_brute'));
+      await c.addAction(const Activity.fight('goblin'));
+      await settle(t, c);
+      await openTab(t, 'now');
+      expect(find.text('3 of 3 actions planned'), findsOneWidget);
+      final numbers = t
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(CircleAvatar),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((w) => w.data)
+          .toList();
+      expect(numbers, ['1', '2', '3']);
+    });
+
     testWidgets('criterion 9: the report tells each action\'s story', (
       t,
     ) async {
