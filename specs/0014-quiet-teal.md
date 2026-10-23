@@ -2,8 +2,8 @@
 
 Status: draft
 Intent: [intent/0014-ui-style.md](../intent/0014-ui-style.md) (merged in #32 as 94bcdec, which accepts it; renumbered in 23b96db)
-Builds on: spec 0008 + amendments 1–3, spec 0009 + amendment 1, spec 0010 + amendments 1–3, spec 0011, spec 0012,
-spec 0004 amendments 2–3, spec 0005 amendment 3, spec 0006 amendment 2, spec 0002 §9.2
+Builds on: spec 0008 + amendments 1–3, spec 0009 + amendment 1, spec 0010 + amendments 1–4 (and erratum 1),
+spec 0011, spec 0012, spec 0004 amendments 2–3, spec 0005 amendment 3, spec 0006 amendment 2, spec 0002 §9.2
 Overrides: intent 0008's "no art budget"; spec 0008 §3.5's icons and corner count, and criterion 8's icons; spec 0004
 amendment 3's banner icons; spec 0002 §3's 💀; spec 0006 criterion 11's drawn river; spec 0007 decision 5 (launcher);
 the art and portrait lines out of scope in spec 0002 §10 and spec 0012 §7
@@ -170,7 +170,8 @@ The missing images come later as content.
 
 ## 8. Acceptance criteria
 
-**Look**
+### 8.1 Look
+
 1. The app is dark for each phone setting. The Android launch window and normal window are also dark (`#060708`).
 2. The app uses the colours of §2.1. It uses no other warm colour.
 3. The app bundles the four fonts and uses them as §2.2 says. Settings has a Licences row with their licence texts.
@@ -178,7 +179,8 @@ The missing images come later as content.
 5. Teal, ghost and slate buttons are as §2.2 says. Each button keeps its words from today.
 6. Back keeps its "Back" tooltip.
 
-**Structure that stays**
+### 8.2 Structure that stays
+
 7. The bottom bar has Now, World, Professions and Character. The top bar has Trophies with its dot, Journal and
    Settings on each tab screen. Tab screens have no title.
 8. The Character header keeps the name, the rank and origin, the eight stats and the talent line. Seven taps on the
@@ -187,7 +189,8 @@ The missing images come later as content.
 10. Each repeat of §4.1 shows once. The item card for an empty slot drops the change line only if the line repeats
     the stats.
 
-**Images and placeholders**
+### 8.3 Images and placeholders
+
 11. Each thing in §3.1 shows its image by its key. A thing without an image shows its placeholder. Gear never shows
     the material placeholder.
 12. A fogged place shows the fog marker. A water place without a marker shows today's water icon. A locked
@@ -199,7 +202,8 @@ The missing images come later as content.
 16. A socket shows the image. For 2 or more, it also shows the count badge outside the lower right corner.
 17. Gear and tools have a ring in their quality colour, Common included. Materials and meals have no ring.
 
-**Screens**
+### 8.4 Screens
+
 18. One teal ring marks the current place. At a width of 360 dp, nothing on the map overlaps, and each name stays
     inside the map.
 19. A tap on a monster opens one sheet with its image. A boss shows its image across the full width. Stats stay
@@ -213,12 +217,14 @@ The missing images come later as content.
 24. The splash shows the picture, ITHEROS and the loading bar. Welcome and "Health Connect is needed" show the same
     picture. The launcher shows the emblem on `#060708`.
 
-**Route and save**
+### 8.5 Route and save
+
 25. A report keeps its route across syncs and days. With two or more places, it shows the route map on the away
     screen and in its journal entry.
 26. An entry from before this spec loads and shows no map. The save versions stay at 10 and 3. Each fixture in
     `app/test/fixtures/saves/` loads.
 
-**Rules and build**
+### 8.6 Rules and build
+
 27. Rules and numbers do not change. The pacing test passes.
 28. `.\scripts\check.ps1 -Release` passes. The app has no INTERNET permission and no new package.
