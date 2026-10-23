@@ -427,7 +427,9 @@ class _ProfessionCard extends StatelessWidget {
             open: true,
           ),
         ),
+        // The title names the spot and its place.
         title: Text('${spot.name} · ${labels.location(area.id)}'),
+        titleTextStyle: nameStyle(context),
         subtitle: const Text('Where to practise'),
         trailing: FilledButton.tonal(
           key: ValueKey('go-${profession.id}'),
