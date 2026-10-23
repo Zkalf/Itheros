@@ -195,26 +195,29 @@ class _ActionSheetState extends State<ActionSheet> {
             ],
             const SizedBox(height: 16),
             // Two equal buttons in the middle: Start now left, Add to queue
-            // right.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FilledButton.icon(
-                  key: const ValueKey('start-now'),
-                  onPressed: () => Navigator.pop(context, (_stop, true)),
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(s.activity == null ? 'Start' : 'Start now'),
-                ),
-                if (room) ...[
-                  const SizedBox(width: 16),
+            // right. A Wrap, so big system text stacks them instead of
+            // overflowing.
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 8,
+                children: [
                   FilledButton.icon(
-                    key: const ValueKey('add-to-queue'),
-                    onPressed: () => Navigator.pop(context, (_stop, false)),
-                    icon: const Icon(Icons.playlist_add),
-                    label: const Text('Add to queue'),
+                    key: const ValueKey('start-now'),
+                    onPressed: () => Navigator.pop(context, (_stop, true)),
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(s.activity == null ? 'Start' : 'Start now'),
                   ),
+                  if (room)
+                    FilledButton.icon(
+                      key: const ValueKey('add-to-queue'),
+                      onPressed: () => Navigator.pop(context, (_stop, false)),
+                      icon: const Icon(Icons.playlist_add),
+                      label: const Text('Add to queue'),
+                    ),
                 ],
-              ],
+              ),
             ),
           ],
         ),
