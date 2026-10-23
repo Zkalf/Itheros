@@ -26,15 +26,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      # Only Markdown changed (intent, specs, plans, notes): the check passes without the build, so docs merge in
-      # a minute. Anything else, or a diff that can't be read, builds as before.
+      # Build only when something check.ps1 reads changed: the app, the packages (game rules and data/*.json), the
+      # scripts, the gate hook its test cases run, this workflow, or .gitattributes (line endings decide the format
+      # check). Docs, design images, intent/specs/plans, evals, incidents and release notes pass in a minute.
+      # A diff that can't be read builds as before. A new code folder must be added to this list.
       - name: What changed
         id: scope
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then base=${{ github.event.pull_request.base.sha }}; else base=${{ github.event.before }}; fi
-          if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qv '\.md$'; then
-            echo "Only Markdown changed; skipping the build."
+          code='^(app/|packages/|scripts/|\.github/|\.claude/hooks/production-gate\.ps1$|\.gitattributes$)'
+          if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qE "$code"; then
+            echo "No code changed; skipping the build."
             echo "build=false" >> "$GITHUB_OUTPUT"
           else
             echo "build=true" >> "$GITHUB_OUTPUT"
