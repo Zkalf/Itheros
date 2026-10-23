@@ -27,7 +27,7 @@ How a draft becomes accepted in a pull request:
 1. The pull request holds the file with `Status: draft`. The discussion and the review happen on the pull request.
 2. Only Zkalf accepts. Zkalf says "accepted" on the pull request.
 3. The author or Zkalf then changes the line to `Status: accepted` in one last commit.
-4. Zkalf merges. A draft never reaches `main`.
+4. Zkalf merges. A draft never reaches `main`: the `check` fails while a pull request holds a draft.
 
 A file that Zkalf accepted before the pull request opened is already `Status: accepted`, and the pull request
 carries it as it is.
