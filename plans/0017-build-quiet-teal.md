@@ -1,6 +1,6 @@
 # Plan 0017: Build "Quiet Teal"
 
-Status: draft
+Status: accepted
 Spec: `specs/0014-quiet-teal.md` (accepted, ee6b54b) · Intent: `intent/0014-ui-style.md` (accepted, ee6b54b)
 Product owner: Zkalf · Date: 2026-10-23
 
