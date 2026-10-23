@@ -7,6 +7,7 @@ import '../game_controller.dart';
 import 'action_sheet.dart';
 import 'level_badge.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// "Drops: Goblin hide, ??? · 1 of 2 found": only what the player has found,
 /// no chances (spec 0006 §2.2).
@@ -30,6 +31,7 @@ class ActionTile extends StatelessWidget {
     required this.subtitle,
     this.enabled = true,
     this.deadly = false,
+    this.titleIsName = true,
     this.startFrom,
   });
 
@@ -37,9 +39,13 @@ class ActionTile extends StatelessWidget {
   final Activity activity;
   final Widget leading;
   final String title;
-  final String subtitle;
+  final Widget subtitle;
   final bool enabled;
   final bool deadly;
+
+  /// The title names a monster or a spot; false for a label, such as
+  /// "Travel here".
+  final bool titleIsName;
 
   /// Set in a sheet: the sheet closes, and the action starts from this
   /// screen's context instead.
@@ -52,9 +58,10 @@ class ActionTile extends StatelessWidget {
       key: ValueKey('option-${activity.kind.name}-${activity.target}'),
       leading: leading,
       title: Text(title),
-      subtitle: Text(subtitle),
+      titleTextStyle: titleIsName ? nameStyle(context) : null,
+      subtitle: subtitle,
       enabled: enabled,
-      trailing: active ? const Chip(label: Text('Active')) : null,
+      trailing: active ? statusChip('Active', Quiet.steel) : null,
       onTap: active || !enabled
           ? null
           : () {
@@ -89,19 +96,34 @@ Widget enemyTile(
     activity: Activity.fight(enemy),
     leading: LevelBadge(level: e.level, colour: band.colour),
     title: Labels(game.data).enemy(enemy),
-    subtitle:
-        [
-          if (band.colour == LevelColour.orange) 'Risky',
-          if (known) ...[
-            'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
-            if (e.traits.isNotEmpty)
-              e.traits.map((t) => _traitName[t]).join(', '),
-          ] else
-            'Stats unknown',
-          '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
-          '${game.data.combatRoundSteps} steps per round',
-        ].join(' · ') +
-        (drops == null ? '' : '\n$drops'),
+    subtitle: Text.rich(
+      TextSpan(
+        children: [
+          // Only the word "Risky" is in its colour (spec 0014 §2.1).
+          if (band.colour == LevelColour.orange) ...const [
+            TextSpan(
+              text: 'Risky',
+              style: TextStyle(color: Quiet.risky),
+            ),
+            TextSpan(text: ' · '),
+          ],
+          TextSpan(
+            text:
+                [
+                  if (known) ...[
+                    'HP ${e.stats.hp} · Atk ${e.stats.attack} · Def ${e.stats.defense}',
+                    if (e.traits.isNotEmpty)
+                      e.traits.map((t) => _traitName[t]).join(', '),
+                  ] else
+                    'Stats unknown',
+                  '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
+                  '${game.data.combatRoundSteps} steps per round',
+                ].join(' · ') +
+                (drops == null ? '' : '\n$drops'),
+          ),
+        ],
+      ),
+    ),
     deadly: band.colour == LevelColour.red || band.colour == LevelColour.skull,
     startFrom: startFrom,
   );
@@ -137,16 +159,17 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     enabled: game.nodeLevelMet(c.state, node),
     // Spots pay profession XP (spec 0010 §2.2).
     // A water or trail rolls its catch (spec 0011 §3.2, §4).
-    subtitle:
-        game.lockedReason(c.state, Activity.gather(node)) ??
-        '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
-            '${n.catches.isEmpty
-                ? labels.item(n.item)
-                : n.profession == 'fishing'
-                ? 'cast'
-                : 'hunt'} · '
-            '${game.professionXpFor(c.state, n.profession, n.level, n.xp)} '
-            '${game.data.professions[n.profession]!.name} XP',
+    subtitle: Text(
+      game.lockedReason(c.state, Activity.gather(node)) ??
+          '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
+              '${n.catches.isEmpty
+                  ? labels.item(n.item)
+                  : n.profession == 'fishing'
+                  ? 'cast'
+                  : 'hunt'} · '
+              '${game.professionXpFor(c.state, n.profession, n.level, n.xp)} '
+              '${game.data.professions[n.profession]!.name} XP',
+    ),
     startFrom: startFrom,
   );
 }
@@ -184,6 +207,7 @@ Future<void> startAction(
         content: const Text('You will almost certainly lose.'),
         actions: [
           TextButton(
+            style: ghostButton,
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
@@ -234,7 +258,8 @@ class ShowNow extends InheritedWidget {
   bool updateShouldNotify(ShowNow oldWidget) => false;
 }
 
-/// A section heading in a screen's list.
+/// A section heading in a screen's list, in small caps with a hairline after
+/// it (spec 0014 §2.2).
 class Heading extends StatelessWidget {
   const Heading(this.text, {super.key});
 
@@ -242,7 +267,13 @@ class Heading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 20, 4, 4),
-    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+    padding: const EdgeInsets.fromLTRB(10, 14, 4, 0),
+    child: Row(
+      children: [
+        Text(text, style: headingStyle(context)),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider()),
+      ],
+    ),
   );
 }

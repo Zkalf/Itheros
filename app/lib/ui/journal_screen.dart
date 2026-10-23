@@ -8,6 +8,7 @@ import 'controller_scope.dart';
 import 'labels.dart';
 import 'level_badge.dart';
 import 'teacher_sheet.dart';
+import 'theme.dart';
 
 const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
@@ -49,16 +50,32 @@ class JournalScreen extends StatelessWidget {
     length: 3,
     child: Scaffold(
       appBar: AppBar(
+        leading: const BackPlate(),
         // "Zkalf's journal" (spec 0012 §4.5).
         title: Text(
           "${ControllerScope.of(context).state.character?.name ?? Game.defaultName}'s journal",
         ),
-        bottom: const TabBar(
-          tabs: [
-            Tab(text: 'Log'),
-            Tab(text: 'Bestiary'),
-            Tab(text: 'Lore'),
-          ],
+        // The tabs stand on a plate, each in its own box (spec 0014 §2.2).
+        // The TabBar stays.
+        bottom: PreferredSize(
+          // A tab of 40, the TabBar's 2 for its indicator, the plate's padding
+          // of 3 and border of 1 on each side, and the gutter below.
+          preferredSize: const Size.fromHeight(40 + 2 + 2 * (3 + 1) + gutter),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
+            padding: const EdgeInsets.all(3),
+            decoration: plateDecoration,
+            child: TabBar(
+              tabs: [
+                for (final (i, label) in const [
+                  'Log',
+                  'Bestiary',
+                  'Lore',
+                ].indexed)
+                  Tab(height: 40, child: _TabBox(i, label)),
+              ],
+            ),
+          ),
         ),
       ),
       body: const SafeArea(
@@ -66,6 +83,27 @@ class JournalScreen extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// A tab of the Journal: a box with the 2 dp black border, lit while its tab
+/// is open (spec 0014 §2.2).
+class _TabBox extends StatelessWidget {
+  const _TabBox(this.index, this.label);
+
+  final int index;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = DefaultTabController.of(context);
+    return ListenableBuilder(
+      listenable: tabs,
+      builder: (context, _) => ControlBox(
+        fill: tabs.index == index ? Quiet.lit : Quiet.slate,
+        child: SizedBox.expand(child: Center(child: Text(label))),
+      ),
+    );
+  }
 }
 
 class _Log extends StatelessWidget {
@@ -86,7 +124,7 @@ class _Log extends StatelessWidget {
       );
     }
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(gutter),
       children: [
         for (final e in c.journal)
           Card(
@@ -95,9 +133,11 @@ class _Log extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${journalTime(e.started, c.now)}'
-                    '${e.testWalk ? ' (test walk)' : ''}',
+                  Text.rich(
+                    numberSpan(
+                      '${journalTime(e.started, c.now)}'
+                      '${e.testWalk ? ' (test walk)' : ''}',
+                    ),
                     style: text.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -129,35 +169,46 @@ class _Bestiary extends StatelessWidget {
     final s = c.state;
     final labels = Labels(game.data);
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(gutter),
       children: [
         for (final l in game.data.locations.values)
           if (l.enemies.isNotEmpty && !game.isFogged(s, l.id)) ...[
             Heading(l.name),
-            for (final id in l.enemies)
-              Builder(
-                builder: (context) {
-                  final e = game.data.enemies[id]!;
-                  final k = game.knowledge(s, id);
-                  return ListTile(
-                    key: ValueKey('bestiary-$id'),
-                    leading: LevelBadge(
-                      level: e.level,
-                      colour: game.enemyBand(s, id).colour,
+            // The rows of an area stand on a plate (spec 0014 §2.2).
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (final id in l.enemies)
+                    Builder(
+                      builder: (context) {
+                        final e = game.data.enemies[id]!;
+                        final k = game.knowledge(s, id);
+                        return ListTile(
+                          key: ValueKey('bestiary-$id'),
+                          leading: LevelBadge(
+                            level: e.level,
+                            colour: game.enemyBand(s, id).colour,
+                          ),
+                          title: Text(labels.enemy(id)),
+                          titleTextStyle: nameStyle(context),
+                          subtitle: Text(
+                            [
+                              k.armour ? labels.armour(e.armour) : 'Armour ???',
+                              k.weakness ? 'weak to ${game.weakness(id)}' : '?',
+                              if (k.slayer) 'Slayer',
+                            ].join(' · '),
+                          ),
+                          trailing: k.slayer
+                              ? const Icon(Icons.gps_fixed)
+                              : null,
+                          onTap: () => showBestiaryCard(context, c, id),
+                        );
+                      },
                     ),
-                    title: Text(labels.enemy(id)),
-                    subtitle: Text(
-                      [
-                        k.armour ? labels.armour(e.armour) : 'Armour ???',
-                        k.weakness ? 'weak to ${game.weakness(id)}' : '?',
-                        if (k.slayer) 'Slayer',
-                      ].join(' · '),
-                    ),
-                    trailing: k.slayer ? const Icon(Icons.gps_fixed) : null,
-                    onTap: () => showBestiaryCard(context, c, id),
-                  );
-                },
+                ],
               ),
+            ),
           ],
       ],
     );
@@ -178,10 +229,10 @@ class _Lore extends StatelessWidget {
     final byId = {for (final n in data.loreNotes) n.id: n};
     final found = [for (final id in c.state.lore.toList().reversed) ?byId[id]];
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(gutter),
       children: [
-        Text(
-          '${found.length} of ${data.loreNotes.length} found',
+        Text.rich(
+          numberSpan('${found.length} of ${data.loreNotes.length} found'),
           style: text.titleMedium,
         ),
         const SizedBox(height: 8),

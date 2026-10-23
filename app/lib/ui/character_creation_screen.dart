@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'actions.dart' show Heading;
 import 'controller_scope.dart';
 import 'labels.dart';
 import 'teacher_sheet.dart';
+import 'theme.dart';
 
 /// "Who are you?" (spec 0012 §4.1): name, gender and origin before the
 /// first walk. Shown while the save has no character; only Set out leaves.
@@ -43,39 +45,55 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       body: SafeArea(
         child: ListView(
           key: const ValueKey('who-are-you'),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(gutter),
           children: [
-            Text('Who are you?', style: text.headlineSmall),
-            if (old) ...[
-              const SizedBox(height: 8),
-              const Text(
-                "Your progress stays. Your origin's profession rises to "
-                'level 5 if it is lower.',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+              child: Text('Who are you?', style: text.headlineSmall),
+            ),
+            if (old)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(10, 8, 10, 0),
+                child: Text(
+                  "Your progress stays. Your origin's profession rises to "
+                  'level 5 if it is lower.',
+                ),
               ),
-            ],
             const SizedBox(height: 16),
-            TextField(
-              key: const ValueKey('character-name-field'),
-              controller: _name,
-              maxLength: Game.maxNameLength,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: Game.defaultName,
+            // The name and the gender stand on a plate (spec 0014 §2.2).
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      key: const ValueKey('character-name-field'),
+                      controller: _name,
+                      maxLength: Game.maxNameLength,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        hintText: Game.defaultName,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<Gender>(
+                      expandedInsets: EdgeInsets.zero,
+                      segments: [
+                        for (final g in Gender.values)
+                          ButtonSegment(value: g, label: Text(genderName(g))),
+                      ],
+                      selected: {_gender},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (v) =>
+                          setState(() => _gender = v.single),
+                    ),
+                  ],
+                ),
               ),
             ),
+            const Heading('Origin'),
             const SizedBox(height: 8),
-            SegmentedButton<Gender>(
-              segments: [
-                for (final g in Gender.values)
-                  ButtonSegment(value: g, label: Text(genderName(g))),
-              ],
-              selected: {_gender},
-              showSelectedIcon: false,
-              onSelectionChanged: (v) => setState(() => _gender = v.single),
-            ),
-            const SizedBox(height: 16),
-            Text('Origin', style: text.titleMedium),
             for (final o in game.data.origins.values)
               _OriginCard(
                 origin: o,
@@ -84,17 +102,22 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                 selected: _origin == o.id,
                 onTap: () => setState(() => _origin = o.id),
               ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const ValueKey('set-out'),
-              onPressed: _origin == null
-                  ? null
-                  : () => c.setOut(
-                      name: _name.text,
-                      gender: _gender,
-                      origin: _origin!,
-                    ),
-              child: const Text('Set out'),
+            // Set out stands on a plate too.
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(gutter),
+                child: FilledButton(
+                  key: const ValueKey('set-out'),
+                  onPressed: _origin == null
+                      ? null
+                      : () => c.setOut(
+                          name: _name.text,
+                          gender: _gender,
+                          origin: _origin!,
+                        ),
+                  child: const Text('Set out'),
+                ),
+              ),
             ),
           ],
         ),
@@ -126,17 +149,12 @@ class _OriginCard extends StatelessWidget {
     final data = c.game.data;
     final p = data.professions[origin.profession]!;
     final theme = Theme.of(context);
+    // The picked card's outline is teal (spec 0012, spec 0014 §2.2).
     return Card(
       key: ValueKey('origin-${origin.id}'),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: selected ? theme.colorScheme.primary : Colors.transparent,
-          width: 2,
-        ),
-      ),
+      shape: plateShape(selected: selected),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),

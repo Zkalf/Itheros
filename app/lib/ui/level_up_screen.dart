@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'actions.dart' show Heading;
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// One card per level gained, before the away report (spec 0002 §9.1).
 /// With more than 3, all but the last are collapsed into one summary card.
@@ -37,43 +39,48 @@ class _LevelUpScreenState extends State<LevelUpScreen> {
           ];
     final last = _page >= groups.length - 1;
 
+    // The cards and their buttons stand on one plate (spec 0014 §2.2).
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _pages,
-                onPageChanged: (p) => setState(() => _page = p),
-                children: [for (final g in groups) _LevelCard(levels: g)],
+        child: Card(
+          margin: const EdgeInsets.all(gutter),
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _pages,
+                  onPageChanged: (p) => setState(() => _page = p),
+                  children: [for (final g in groups) _LevelCard(levels: g)],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  if (!last)
-                    TextButton(
-                      onPressed: c.dismissLevelCards,
-                      child: const Text('Skip all'),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    if (!last)
+                      TextButton(
+                        style: ghostButton,
+                        onPressed: c.dismissLevelCards,
+                        child: const Text('Skip all'),
+                      ),
+                    const Spacer(),
+                    if (groups.length > 1)
+                      Text.rich(numberSpan('${_page + 1} / ${groups.length}')),
+                    const SizedBox(width: 16),
+                    FilledButton(
+                      onPressed: last
+                          ? c.dismissLevelCards
+                          : () => _pages.nextPage(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            ),
+                      child: Text(last ? 'Continue' : 'Next'),
                     ),
-                  const Spacer(),
-                  if (groups.length > 1)
-                    Text('${_page + 1} / ${groups.length}'),
-                  const SizedBox(width: 16),
-                  FilledButton(
-                    onPressed: last
-                        ? c.dismissLevelCards
-                        : () => _pages.nextPage(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
-                          ),
-                    child: Text(last ? 'Continue' : 'Next'),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -113,7 +120,11 @@ class _LevelCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 8),
-        Text(title, style: text.displaySmall, textAlign: TextAlign.center),
+        Text.rich(
+          numberSpan(title),
+          style: text.displaySmall,
+          textAlign: TextAlign.center,
+        ),
         for (final r in ranks) ...[
           const SizedBox(height: 16),
           Text(r.id, style: text.headlineSmall, textAlign: TextAlign.center),
@@ -124,15 +135,17 @@ class _LevelCard extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        Text(
-          '+${gained.hp} HP · +${gained.attack} Attack · '
-          '+${gained.defense} Defense',
+        Text.rich(
+          numberSpan(
+            '+${gained.hp} HP · +${gained.attack} Attack · '
+            '+${gained.defense} Defense',
+          ),
           style: text.titleMedium,
           textAlign: TextAlign.center,
         ),
         if (rest.isNotEmpty || points > 0) ...[
-          const SizedBox(height: 24),
-          Text("What's new", style: text.titleLarge),
+          const SizedBox(height: 12),
+          const Heading("What's new"),
           const SizedBox(height: 8),
           for (final n in rest)
             ListTile(

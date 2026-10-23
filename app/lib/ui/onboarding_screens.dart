@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'controller_scope.dart';
+import 'theme.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
 
+  // The loading indicator is teal (spec 0014 §2.3).
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) => const Scaffold(
+    body: Center(child: CircularProgressIndicator(color: Quiet.teal)),
+  );
 }
 
 class _Message extends StatelessWidget {
@@ -28,26 +31,36 @@ class _Message extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    // The words and the button stand on a plate (spec 0014 §2.2).
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(icon, size: 64),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                style: text.headlineSmall,
-                textAlign: TextAlign.center,
+        child: Center(
+          child: Card(
+            margin: const EdgeInsets.all(gutter),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(icon, size: 64, color: Quiet.teal),
+                  const SizedBox(height: 24),
+                  Text(
+                    title,
+                    style: text.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    body,
+                    style: text.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  FilledButton(onPressed: onPressed, child: Text(button)),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(body, style: text.bodyLarge, textAlign: TextAlign.center),
-              const SizedBox(height: 32),
-              FilledButton(onPressed: onPressed, child: Text(button)),
-            ],
+            ),
           ),
         ),
       ),

@@ -7,6 +7,7 @@ import '../game_controller.dart';
 import 'actions.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// The world drawn as places joined by paths; tap a place to act there
 /// (spec 0006 §2.2, spec 0008 §3.3). Areas away from explored ones are fog.
@@ -23,7 +24,6 @@ class WorldTab extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final labels = Labels(game.data);
-    final scheme = Theme.of(context).colorScheme;
 
     return RefreshIndicator(
       onRefresh: c.syncNow,
@@ -67,10 +67,16 @@ class WorldTab extends StatelessWidget {
                                       : fmt(r.steps),
                                 ),
                           ],
-                          water: scheme.primaryContainer,
-                          road: scheme.outline,
-                          text: scheme.onSurfaceVariant,
-                          ground: scheme.surface,
+                          water: Quiet.deepTeal,
+                          road: Quiet.muted,
+                          // The step counts are numbers that stand alone
+                          // (spec 0014 §2.2), at today's size.
+                          stepStyle: const TextStyle(
+                            fontFamily: Fonts.number,
+                            fontSize: 11,
+                            color: Quiet.text,
+                          ),
+                          ground: Quiet.caseBlack,
                         ),
                       ),
                     ),
@@ -154,7 +160,6 @@ class _Place extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -171,18 +176,20 @@ class _Place extends StatelessWidget {
             foregroundColor: here
                 ? scheme.onPrimary
                 : fogged
-                ? scheme.outline
+                ? Quiet.faint
                 : scheme.onSecondaryContainer,
             child: Icon(here ? Icons.person_pin_circle : icon),
           ),
           const SizedBox(height: 2),
+          // Each place name is a name (spec 0014 §2.2), the current place
+          // too: its marker marks it. At 14 dp a name is as wide as on main,
+          // so that the map gets no new overlap before M3 places the names.
           Text(
             name,
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: (here ? text.labelLarge : text.labelMedium)?.copyWith(
-              color: fogged ? scheme.outline : null,
-            ),
+            style: nameStyle(context)
+                ?.copyWith(fontSize: 14, color: fogged ? Quiet.faint : null),
           ),
         ],
       ),
@@ -199,7 +206,7 @@ class MapPainter extends CustomPainter {
     required this.paths,
     required this.water,
     required this.road,
-    required this.text,
+    required this.stepStyle,
     required this.ground,
   });
 
@@ -209,7 +216,9 @@ class MapPainter extends CustomPainter {
   final List<(Offset, Offset, String?)> paths;
   final Color water;
   final Color road;
-  final Color text;
+
+  /// The style of each step count.
+  final TextStyle stepStyle;
 
   /// Behind each step count, so it reads where paths cross labels.
   final Color ground;
@@ -255,10 +264,7 @@ class MapPainter extends CustomPainter {
       }
       canvas.drawPath(line, pen);
       final label = TextPainter(
-        text: TextSpan(
-          text: steps,
-          style: TextStyle(color: text, fontSize: 11),
-        ),
+        text: TextSpan(text: steps, style: stepStyle),
         textDirection: TextDirection.ltr,
       )..layout();
       final mid = (a + b) / 2 - Offset(label.width / 2, label.height / 2);
@@ -275,7 +281,10 @@ class MapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(MapPainter old) =>
-      old.paths != paths || old.water != water || old.road != road;
+      old.paths != paths ||
+      old.water != water ||
+      old.road != road ||
+      old.stepStyle != stepStyle;
 }
 
 /// What a place holds: its monsters (with the drops found so far) and
@@ -368,7 +377,8 @@ class _AreaSheet extends StatelessWidget {
                 activity: Activity.travel(area),
                 leading: const Icon(Icons.signpost),
                 title: 'Travel here',
-                subtitle: '${fmt(steps)} steps',
+                titleIsName: false,
+                subtitle: Text('${fmt(steps)} steps'),
                 startFrom: host,
               ),
           ],

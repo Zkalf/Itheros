@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../game_controller.dart';
 import 'item_card.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// Opens the sheet for doll slot [slot] (spec 0008 amendment 3).
 Future<void> showSlotSheet(
@@ -54,8 +55,11 @@ class SlotSheet extends StatelessWidget {
           return byScore != 0 ? byScore : a.compareTo(b);
         });
 
-    Text name(String key) =>
-        Text(labels.plain(key), style: TextStyle(color: itemColour(data, key)));
+    // An item's name, in the style of a name (spec 0014 §2.2).
+    Text name(String key) => Text(
+      labels.plain(key),
+      style: nameStyle(context)?.copyWith(color: itemColour(data, key)),
+    );
 
     return SafeArea(
       child: ConstrainedBox(
@@ -95,7 +99,7 @@ class SlotSheet extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text('From your bag', style: text.titleSmall),
+              child: Text('From your bag', style: headingStyle(context)),
             ),
             if (fits.isEmpty)
               const ListTile(

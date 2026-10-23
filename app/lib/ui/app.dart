@@ -7,6 +7,7 @@ import 'controller_scope.dart';
 import 'home_shell.dart';
 import 'level_up_screen.dart';
 import 'onboarding_screens.dart';
+import 'theme.dart';
 
 class WalkingRpgApp extends StatefulWidget {
   const WalkingRpgApp({super.key, required this.controller});
@@ -37,18 +38,13 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
 
   @override
   Widget build(BuildContext context) {
-    ThemeData theme(Brightness b) => ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF3B7A3A),
-        brightness: b,
-      ),
-    );
     return ControllerScope(
       controller: widget.controller,
       child: MaterialApp(
         title: 'Walking RPG',
-        theme: theme(Brightness.light),
-        darkTheme: theme(Brightness.dark),
+        // Dark for each phone setting (spec 0014 decision 2): without a
+        // dark theme of its own, the app uses this one in dark mode too.
+        theme: quietTheme,
         home: ListenableBuilder(
           listenable: widget.controller,
           builder: (context, _) => switch (widget.controller.status) {

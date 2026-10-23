@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'away_summary_card.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// Opens the card for [item] (spec 0008 §3.5). [wornIn] is set when it was
 /// tapped on the doll, [toolWorn] when it is the tool in use (spec 0010
@@ -263,11 +264,12 @@ class ItemCard extends StatelessWidget {
       const SizedBox(height: 8),
       FilledButton.tonal(
         key: const ValueKey('card-eat'),
+        style: slateButton,
         onPressed: () => _close(context, () => _eat(labels)),
         child: const Text('Eat'),
       ),
       const SizedBox(height: 16),
-      Text('Auto-eat', style: Theme.of(context).textTheme.titleSmall),
+      Text('Auto-eat', style: headingStyle(context)),
       if (s.autoEat case final auto?
           when auto.meal != c.game.data.itemOf(item)!.id)
         Text(
@@ -293,6 +295,7 @@ class ItemCard extends StatelessWidget {
           ),
           actions: [
             TextButton(
+              style: ghostButton,
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Not now'),
             ),
@@ -366,6 +369,7 @@ class ItemCard extends StatelessWidget {
           content: const Text('It breaks down into dust for good.'),
           actions: [
             TextButton(
+              style: ghostButton,
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Keep it'),
             ),
@@ -490,14 +494,15 @@ class _AutoEatState extends State<_AutoEat> {
         ),
         if (keep != null && keep > 0)
           Row(
+            spacing: 8,
             children: [
               IconButton(
                 key: const ValueKey('keep-down'),
                 icon: const Icon(Icons.remove),
                 onPressed: keep > 1 ? () => _set(keep - 1) : null,
               ),
-              Text(
-                'Keep $keep',
+              Text.rich(
+                numberSpan('Keep $keep'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               IconButton(
@@ -533,6 +538,8 @@ Widget sheetButton(
   Future<void> Function() action,
 ) => FilledButton.tonal(
   key: key,
+  // A tonal button is slate (plan 0017, choice 6).
+  style: slateButton,
   onPressed: () async {
     final messenger = ScaffoldMessenger.of(host);
     Navigator.of(sheet).pop();

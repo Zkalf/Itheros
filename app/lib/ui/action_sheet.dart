@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'bestiary_card.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// Picks a stop condition for [activity] and whether to start it now or add
 /// it to the queue (spec 0003 §8). Pops `(StopCondition, bool now)`. For a
@@ -119,7 +120,8 @@ class _ActionSheetState extends State<ActionSheet> {
               Text(labels.short(a), style: text.titleLarge),
               const SizedBox(height: 12),
             ],
-            Text('Stop when', style: text.titleSmall),
+            Text('Stop when', style: headingStyle(context)),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 8,
               children: [
@@ -137,13 +139,28 @@ class _ActionSheetState extends State<ActionSheet> {
             ),
             if (_kind == StopKind.untilHave) ...[
               const SizedBox(height: 8),
-              DropdownButton<String>(
-                value: _item,
-                items: [
-                  for (final i in _items)
-                    DropdownMenuItem(value: i, child: Text(labels.item(i))),
-                ],
-                onChanged: (i) => setState(() => _item = i),
+              // The item list in a slate box with the border (spec 0014
+              // §2.2); the list stays a DropdownButton.
+              ControlBox(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _item,
+                      style: text.bodyLarge,
+                      dropdownColor: Quiet.slate,
+                      borderRadius: BorderRadius.circular(11),
+                      items: [
+                        for (final i in _items)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text(labels.item(i)),
+                          ),
+                      ],
+                      onChanged: (i) => setState(() => _item = i),
+                    ),
+                  ),
+                ),
               ),
             ],
             if (_kind == StopKind.untilQuality) ...[
@@ -164,6 +181,7 @@ class _ActionSheetState extends State<ActionSheet> {
             if (_kind == StopKind.untilHave ||
                 _kind == StopKind.untilCrafted) ...[
               Row(
+                spacing: 8,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.remove),
@@ -171,7 +189,10 @@ class _ActionSheetState extends State<ActionSheet> {
                         ? () => setState(() => _count--)
                         : null,
                   ),
-                  Text('$_count', style: text.titleMedium),
+                  Text(
+                    '$_count',
+                    style: text.titleMedium?.copyWith(fontFamily: Fonts.number),
+                  ),
                   IconButton(
                     key: const ValueKey('count-up'),
                     icon: const Icon(Icons.add),

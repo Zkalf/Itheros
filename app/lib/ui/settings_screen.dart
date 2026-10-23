@@ -5,6 +5,8 @@ import '../game_controller.dart';
 import '../version.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'licences_screen.dart';
+import 'theme.dart';
 
 /// Settings, opened from the top bar (spec 0008 decision 12), with the
 /// character's name, gender and origin on top (spec 0012 §4.2).
@@ -16,52 +18,76 @@ class SettingsScreen extends StatelessWidget {
     final c = ControllerScope.of(context);
     final text = Theme.of(context).textTheme;
     final who = c.state.character;
+    // The rows stand on plates (spec 0014 §2.2). A row of one line is 48 dp
+    // high, as the design of Settings shows, not the 56 dp of a ListTile.
+    Widget plate(List<Widget> rows) => Card(
+      clipBehavior: Clip.antiAlias,
+      child: ListTileTheme.merge(
+        minTileHeight: 48,
+        child: Column(children: rows),
+      ),
+    );
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(leading: const BackPlate(), title: const Text('Settings')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(gutter),
           children: [
-            if (who != null) ...[
-              ListTile(
-                key: const ValueKey('settings-name'),
-                title: const Text('Name'),
-                trailing: Text(who.name),
-                onTap: () => _rename(context, c, who.name),
+            if (who != null)
+              plate([
+                ListTile(
+                  key: const ValueKey('settings-name'),
+                  title: const Text('Name'),
+                  trailing: Text(who.name),
+                  onTap: () => _rename(context, c, who.name),
+                ),
+                ListTile(
+                  key: const ValueKey('settings-gender'),
+                  title: const Text('Gender'),
+                  trailing: Text(genderName(who.gender)),
+                  onTap: () => _pickGender(context, c, who.gender),
+                ),
+                ListTile(
+                  key: const ValueKey('settings-origin'),
+                  title: const Text('Origin'),
+                  subtitle: const Text('Chosen when you set out'),
+                  trailing: Text(
+                    c.game.fill(
+                      c.game.data.origins[who.origin]?.title ?? '',
+                      who,
+                    ),
+                  ),
+                ),
+              ]),
+            plate([
+              SwitchListTile(
+                key: const ValueKey('show-next-goal'),
+                title: const Text('Show "Next goal"'),
+                value: !c.nextGoalHidden,
+                onChanged: (show) => c.setNextGoalHidden(!show),
               ),
+              // Only the owner's build has a test walk (spec 0007 §4).
+              if (c.testWalkAllowed)
+                SwitchListTile(
+                  key: const ValueKey('test-walk-switch'),
+                  title: const Text('Test walk'),
+                  subtitle: const Text('Pretend steps for playtesting'),
+                  value: c.testWalkOn,
+                  onChanged: c.setTestWalk,
+                ),
+            ]),
+            // The licences of the four fonts (spec 0014 §4.2).
+            plate([
               ListTile(
-                key: const ValueKey('settings-gender'),
-                title: const Text('Gender'),
-                trailing: Text(genderName(who.gender)),
-                onTap: () => _pickGender(context, c, who.gender),
-              ),
-              ListTile(
-                key: const ValueKey('settings-origin'),
-                title: const Text('Origin'),
-                subtitle: const Text('Chosen when you set out'),
-                trailing: Text(
-                  c.game.fill(
-                    c.game.data.origins[who.origin]?.title ?? '',
-                    who,
+                key: const ValueKey('settings-licences'),
+                title: const Text('Licences'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LicencesScreen(),
                   ),
                 ),
               ),
-            ],
-            SwitchListTile(
-              key: const ValueKey('show-next-goal'),
-              title: const Text('Show "Next goal"'),
-              value: !c.nextGoalHidden,
-              onChanged: (show) => c.setNextGoalHidden(!show),
-            ),
-            // Only the owner's build has a test walk (spec 0007 §4).
-            if (c.testWalkAllowed)
-              SwitchListTile(
-                key: const ValueKey('test-walk-switch'),
-                title: const Text('Test walk'),
-                subtitle: const Text('Pretend steps for playtesting'),
-                value: c.testWalkOn,
-                onChanged: c.setTestWalk,
-              ),
+            ]),
             // Friends quote it when they report something (spec 0007 §7).
             ListTile(
               key: const ValueKey('version'),
@@ -95,14 +121,20 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) => SimpleDialog(
         title: const Text('Gender'),
         children: [
+          // Each option is a slate box with the border (spec 0014 §2.2).
           for (final g in Gender.values)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, g),
-              child: Text(
-                genderName(g),
-                style: g == gender
-                    ? const TextStyle(fontWeight: FontWeight.bold)
-                    : null,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ControlBox(
+                child: SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, g),
+                  child: Text(
+                    genderName(g),
+                    style: g == gender
+                        ? const TextStyle(fontWeight: FontWeight.bold)
+                        : null,
+                  ),
+                ),
               ),
             ),
         ],
@@ -144,6 +176,7 @@ class _NameDialogState extends State<_NameDialog> {
     ),
     actions: [
       TextButton(
+        style: ghostButton,
         onPressed: () => Navigator.pop(context),
         child: const Text('Cancel'),
       ),

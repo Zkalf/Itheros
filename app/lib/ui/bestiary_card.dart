@@ -4,6 +4,7 @@ import '../game_controller.dart';
 import 'actions.dart';
 import 'labels.dart';
 import 'level_badge.dart';
+import 'theme.dart';
 
 /// Opens [enemy]'s bestiary card on its own (from the Bestiary tab).
 Future<void> showBestiaryCard(
@@ -65,9 +66,10 @@ class BestiaryCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Text(labels.enemy(enemy), style: text.titleLarge)),
             if (k.slayer)
-              Chip(
+              statusChip(
+                'Slayer: +${c0.slayerHit}% Hit',
+                Quiet.teal,
                 avatar: const Icon(Icons.gps_fixed, size: 16),
-                label: Text('Slayer: +${c0.slayerHit}% Hit'),
               ),
           ],
         ),
