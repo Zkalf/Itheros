@@ -13,8 +13,9 @@ import 'ui/onboarding_screens.dart' show precacheSplash;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // The first frame of the splash shows its picture (spec 0014 §3.3). Until
-  // then the phone shows its own splash screen with the emblem.
+  // The first frame of the splash shows its picture (spec 0014 §3.3). From
+  // Android 12, the phone shows its own splash screen with the emblem until
+  // then.
   final splash = precacheSplash();
   final data = await loadBundledGameData();
   // The keys that have an image file (plan 0017, choice 3). Without the

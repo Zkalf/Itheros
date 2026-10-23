@@ -62,7 +62,7 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
           // splash picture, and a style stays on the phone until a screen
           // gives another one.
           builder: (context, screens) => AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
+            value: lightStatusBar,
             child: screens!,
           ),
           home: ListenableBuilder(

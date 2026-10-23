@@ -26,10 +26,12 @@ Future<void> precacheSplash() {
     if (!done.isCompleted) done.complete();
   }
 
-  listener = ImageStreamListener(
-    (_, _) => finish(),
-    onError: (_, _) => finish(),
-  );
+  // The image cache keeps the picture, so the listener disposes its own
+  // handle to it, as precacheImage does.
+  listener = ImageStreamListener((info, _) {
+    info.dispose();
+    finish();
+  }, onError: (_, _) => finish());
   stream.addListener(listener);
   return done.future;
 }
@@ -44,10 +46,8 @@ Widget _picture([Alignment alignment = Alignment.center]) => Image(
 
 /// [screen] with dark status bar icons, on the splash picture (spec 0014
 /// §2.1). The app gives each other screen the light icons.
-Widget _onPicture(Widget screen) => AnnotatedRegion<SystemUiOverlayStyle>(
-  value: SystemUiOverlayStyle.dark,
-  child: screen,
-);
+Widget _onPicture(Widget screen) =>
+    AnnotatedRegion<SystemUiOverlayStyle>(value: darkStatusBar, child: screen);
 
 /// The splash (spec 0014 §3.3): the splash picture fills the screen, behind
 /// both bars. ITHEROS is near the top. A plate at the bottom holds the teal
