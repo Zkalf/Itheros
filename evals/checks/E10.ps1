@@ -11,7 +11,7 @@ $mine = @($world.locations | Where-Object { $_.name -match 'old mine' })
 Expect ($mine.Count -eq 1) 'no Old Mine location'
 if ($mine.Count -eq 1) {
   $m = $mine[0]
-  Expect ($m.unlockLevel -eq 3) "Old Mine unlocks at level $($m.unlockLevel), expected 3"
+  Expect ($null -eq $m.unlockLevel) 'Old Mine has a level gate; spec 0008 opens every area from level 1'
   $ore = @($m.nodes | ForEach-Object { $id = $_; ($world.nodes | Where-Object { $_.id -eq $id }).item })
   Expect ($ore -contains 'copper_ore') 'Old Mine has no copper to mine'
   $route = @($world.routes | Where-Object { ($_.from -eq 'camp' -and $_.to -eq $m.id) -or ($_.to -eq 'camp' -and $_.from -eq $m.id) })
