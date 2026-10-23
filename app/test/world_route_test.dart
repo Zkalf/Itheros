@@ -122,6 +122,30 @@ Offset pointOn(Rect image, String place) {
   return image.topLeft + Offset(p.x * image.width, p.y * image.height);
 }
 
+/// The centre of the marker of [place] on [image]: its map point, moved
+/// inward on each axis just enough that the marker of [size] and a ring of
+/// [ring] around it lie inside the image. A marker never leaves the map.
+Offset markerCentre(
+  Rect image,
+  String place, {
+  required double size,
+  required double ring,
+}) {
+  final p = pointOn(image, place);
+  final r = size / 2 + ring;
+  return Offset(
+    p.dx.clamp(image.left + r, image.right - r),
+    p.dy.clamp(image.top + r, image.bottom - r),
+  );
+}
+
+/// The width of the one place ring in [within].
+double ringWidth(WidgetTester t, Finder within) {
+  final border = boxIn(t, within, 'place-ring')?.border;
+  expect(border, isA<Border>(), reason: 'one ring with a border in $within');
+  return (border! as Border).top.width;
+}
+
 /// The text [text] in [within], on one line or on two.
 Finder textIn(Finder within, String text) => find.descendant(
   of: within,
@@ -283,6 +307,12 @@ String road(String a, String b) => ([a, b]..sort()).join(' – ');
 
 // The rule of the map labels.
 
+bool _inside(Rect r, Rect map) =>
+    r.left >= map.left - .01 &&
+    r.top >= map.top - .01 &&
+    r.right <= map.right + .01 &&
+    r.bottom <= map.bottom + .01;
+
 bool _overlap(Rect a, Rect b) {
   final both = a.intersect(b);
   return both.width > .01 && both.height > .01;
@@ -352,10 +382,7 @@ void expectPlaced({
   );
   for (final MapEntry(key: place, value: name) in names.entries) {
     expect(
-      name.left >= map.left - .01 &&
-          name.top >= map.top - .01 &&
-          name.right <= map.right + .01 &&
-          name.bottom <= map.bottom + .01,
+      _inside(name, map),
       isTrue,
       reason: '$what: the name of $place $name lies outside the map $map',
     );
@@ -419,14 +446,12 @@ Size measure(String text, TextStyle style) {
 final _phone = Size(360, 360 * game.data.mapAspect);
 
 /// The labels of the real map at 360 dp with [here] as the current place:
-/// markers of 40 dp, a ring of 3 dp, names in Cormorant Garamond 600 at 14 dp
-/// on one line or wrapped at the first space, and the step counts in Spectral
-/// at 11 dp with 3 dp around them.
+/// markers of 40 dp at their centres inside the map, a ring of 3 dp, names in
+/// Cormorant Garamond 600 at 14 dp on one line or wrapped at the first space,
+/// and the step counts in Spectral at 11 dp with 3 dp around them.
 ({List<MapName> names, List<MapPlate> plates}) realLabels(String here) {
-  Offset at(String p) {
-    final m = game.data.locations[p]!.map!;
-    return Offset(m.x * _phone.width, m.y * _phone.height);
-  }
+  Offset at(String p) =>
+      markerCentre(Offset.zero & _phone, p, size: 40, ring: 3);
 
   const name = TextStyle(
     fontFamily: cormorant,
@@ -625,10 +650,18 @@ void expectRouteMap(
   final centres = {
     for (final p in places) p: t.getCenter(routeSocket(routeMap, p)),
   };
+  final ring = ringWidth(t, routeMap);
   for (final MapEntry(key: p, value: centre) in centres.entries) {
+    // As on the World map: at its map point, inside the whole image.
+    final at = markerCentre(
+      map,
+      p,
+      size: t.getSize(routeSocket(routeMap, p)).width,
+      ring: ring,
+    );
     expect(
       centre,
-      offsetMoreOrLessEquals(pointOn(map, p), epsilon: .5),
+      offsetMoreOrLessEquals(at, epsilon: .5),
       reason: '$what: the marker of $p sits at its place on the image',
     );
   }
@@ -822,8 +855,9 @@ void criterion18() {
   group('spec 0014 criterion 18: one teal ring marks the current place, and '
       'nothing on the map overlaps', () {
     testWidgets('the map image fills the width of the World tab; each marker '
-        'sits at its place on the image, the roads join the markers, and '
-        'MapPainter draws no river', (t) async {
+        'sits at its map point, moved inward only as far as the map edge '
+        'needs; the roads join the markers, and MapPainter draws no '
+        'river', (t) async {
       await pumpWorld(t, 'camp');
       final tab = t.getRect(_world);
       final map = mapIn(t, _world);
@@ -837,13 +871,34 @@ void criterion18() {
       final centres = {
         for (final p in places) p: t.getCenter(socketIn(area(p))),
       };
+      final ring = ringWidth(t, _world);
+      final far = <String>[];
       for (final p in places) {
+        final size = t.getSize(socketIn(area(p))).width;
         expect(
           centres[p],
-          offsetMoreOrLessEquals(pointOn(map, p), epsilon: .5),
-          reason: 'the marker of $p sits at its place on the image',
+          offsetMoreOrLessEquals(
+            markerCentre(map, p, size: size, ring: ring),
+            epsilon: .5,
+          ),
+          reason: 'the marker of $p sits at its map point, inside the map',
         );
+        // A map point far from the edges stays exactly where it is.
+        if (map.deflate(size / 2 + ring).contains(pointOn(map, p))) {
+          far.add(p);
+          expect(
+            centres[p],
+            offsetMoreOrLessEquals(pointOn(map, p), epsilon: .5),
+            reason: 'the marker of $p sits on its map point',
+          );
+        }
       }
+      expect(far, contains('camp'));
+      expect(
+        far,
+        isNot(contains('smugglers_cove')),
+        reason: 'the map point of the cove lies near the edge at 360 dp',
+      );
       final (painter, box) = painterIn(t, _world);
       expect(
         [
@@ -886,6 +941,40 @@ void criterion18() {
       await pumpGame(t);
       await openTab(t, 'world');
       expect(mapImage(_world), findsOneWidget, reason: 'with no image index');
+    });
+
+    testWidgets('at 360 dp, for each of the 12 places as the current place, '
+        'each marker and the ring lie inside the map, with Mirror Lake and '
+        'Smugglers\' Cove on it, and no marker moves when its place becomes '
+        'current', (t) async {
+      final centres = <String, Offset>{};
+      for (final here in places) {
+        await pumpWorld(t, here);
+        final what = 'at $here';
+        final map = mapIn(t, _world);
+        for (final p in ['mirror_lake', 'smugglers_cove']) {
+          expect(area(p), findsOneWidget, reason: '$what: $p is on the map');
+        }
+        for (final (thing, rect) in [
+          for (final p in places)
+            ('the marker of $p', t.getRect(socketIn(area(p)))),
+          ('the ring', t.getRect(keyIn(_world, 'place-ring'))),
+        ]) {
+          expect(
+            _inside(rect, map),
+            isTrue,
+            reason: '$what: $thing $rect reaches past the map $map',
+          );
+        }
+        for (final p in places) {
+          final centre = t.getCenter(socketIn(area(p)));
+          expect(
+            centre,
+            offsetMoreOrLessEquals(centres[p] ??= centre, epsilon: .5),
+            reason: '$what: the marker of $p moves with the current place',
+          );
+        }
+      }
     });
 
     testWidgets('for each of the 12 places as the current place, one teal ring '
