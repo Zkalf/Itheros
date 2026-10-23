@@ -24,14 +24,17 @@ class LevelBadge extends StatelessWidget {
   /// each image index.
   static const _skull = AssetImage('assets/images/pictures/skull.webp');
 
-  /// The number is body text in size, so that the badge keeps its size in
-  /// a row title too. The skull takes the line of the number and all but
-  /// 2 dp of the padding, so each band has the same height.
-  static const _size = 15.0;
-  static const _line = 1.35;
+  /// The level number stands alone, so it is Spectral (spec 0014 §2.2). It
+  /// is body text in size, so that the badge keeps its size in a row title
+  /// too.
+  static const _number = TextStyle(
+    fontFamily: Fonts.number,
+    fontSize: 15,
+    height: 1.35,
+    fontWeight: FontWeight.w600,
+  );
   static const _padding = 6.0;
   static const _skullPadding = 2.0;
-  static const _skullSize = _size * _line + 2 * (_padding - _skullPadding);
 
   @override
   Widget build(BuildContext context) {
@@ -45,31 +48,43 @@ class LevelBadge extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: skull
-          // Screen readers still say the words; the image adds nothing.
-          ? Semantics(
-              label: 'Level: far too strong',
-              child: const Image(
-                image: _skull,
-                width: _skullSize,
-                height: _skullSize,
-                excludeFromSemantics: true,
-              ),
-            )
+          ? _skullOf(context)
           : Text(
               '$level',
               semanticsLabel: 'Level $level',
-              // The level number stands alone, so it is Spectral (spec 0014
-              // §2.2).
-              style: TextStyle(
-                fontFamily: Fonts.number,
-                fontSize: _size,
-                height: _line,
-                fontWeight: FontWeight.w600,
+              style: _number.copyWith(
                 color: colour == LevelColour.yellow
                     ? Colors.black
                     : Colors.white,
               ),
             ),
+    );
+  }
+
+  /// The skull takes the line of the number and all but 2 dp of the
+  /// padding, so each band has the same height at each text size of the
+  /// phone. The line comes from a layout of the number, as a band with a
+  /// number lays it out. Screen readers still say the words; the image adds
+  /// nothing.
+  Widget _skullOf(BuildContext context) {
+    final number = TextPainter(
+      text: TextSpan(
+        text: '$level',
+        style: DefaultTextStyle.of(context).style.merge(_number),
+      ),
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final size = number.height + 2 * (_padding - _skullPadding);
+    number.dispose();
+    return Semantics(
+      label: 'Level: far too strong',
+      child: Image(
+        image: _skull,
+        width: size,
+        height: size,
+        excludeFromSemantics: true,
+      ),
     );
   }
 }

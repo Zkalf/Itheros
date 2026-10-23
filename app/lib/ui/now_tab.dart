@@ -266,8 +266,9 @@ class _StatusCard extends StatelessWidget {
               key: const ValueKey('walked-today'),
             ),
             // The meal running (spec 0011 §8.2); tap for its card. It
-            // starts with the meal in a 32 dp socket, the size of a line
-            // (spec 0014 §4.2).
+            // starts with the meal (spec 0014 §4.2). The socket is 32 dp,
+            // the banner size of §2.3, as the design phones 11 and 25 show
+            // for an item on one line.
             if (mealLine(game, s) case final line?)
               InkWell(
                 key: const ValueKey('meal-line'),

@@ -329,9 +329,10 @@ class _ProfessionCard extends StatelessWidget {
     );
   }
 
-  /// The worn tool: its picture with the ring of its quality in a 32 dp
-  /// socket, the size of a line (spec 0014 §3.1, plan 0017 choice 8), then
-  /// its name in its quality colour and its step cost; tap for its card.
+  /// The worn tool: its picture with the ring of its quality (spec 0014
+  /// §3.1, plan 0017 choice 8), then its name in its quality colour and its
+  /// step cost; tap for its card. The socket is 32 dp, the banner size of
+  /// §2.3, as the design phones 11 and 25 show for an item on one line.
   Widget _toolRow(BuildContext context) {
     final c = controller;
     final data = c.game.data;
@@ -499,8 +500,9 @@ class _ProfessionCard extends StatelessWidget {
   }
 
   /// The meal running, tap for its card, and the auto-eat choice (spec
-  /// 0011 §8.1). The meal row starts with the meal in a 32 dp socket, as on
-  /// Now (spec 0014 §4.2).
+  /// 0011 §8.1). The meal row starts with the meal (spec 0014 §4.2), in a
+  /// 32 dp socket as on Now: the banner size of §2.3, as the design phones
+  /// 11 and 25 show for an item on one line.
   List<Widget> _mealRows(BuildContext context) {
     final c = controller;
     final data = c.game.data;
