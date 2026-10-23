@@ -3,11 +3,12 @@
 //   picture (§3.3). The splash also shows ITHEROS, and a plate with the
 //   loading bar, "Reading your steps" and the version.
 // - The status bar icons are dark on the splash picture, and light on the
-//   screens after it (§2.1).
+//   screens after it (§2.1). Each of these styles makes the status bar
+//   transparent and gives the navigation bar no colour.
 // Each test reads what the player sees on a phone of 360 x 800 dp, with a
 // status bar, a gesture bar and the app's fonts: the Image of the picture by
 // its asset name and its place, the plates, the texts, and the style that the
-// app gives the status bar. No test decodes an image. The splash picture
+// app gives the system bars. No test decodes an image. The splash picture
 // comes with the code of M5.
 // quiet_teal_files_test.dart holds the launcher files of criterion 24, and
 // quiet_teal_test.dart the checks of criteria 2, 3 and 4 on these screens.
@@ -71,8 +72,8 @@ void main() {
     });
 
     testWidgets('the splash: ITHEROS near the top, and a plate at the bottom '
-        'with the teal loading bar, "Reading your steps" and the version, '
-        'both on the picture', (t) async {
+        'with the teal loading bar, "Reading your steps" and the version; '
+        'ITHEROS and the plate paint on the picture', (t) async {
       await pumpSplash(t);
       final picture = t.element(await expectPicture(t));
       final wordmark = find.text('ITHEROS');
@@ -169,20 +170,47 @@ void main() {
     // picture." A style stays on the phone until a screen gives another one.
     // So the screens that can follow with no top bar give the light style
     // themselves.
+    // Below Android 15, the phone puts a band of 25% black under the status
+    // bar until a style gives the status bar a colour. So each style makes
+    // the status bar transparent, and the picture shows behind it (§3.3).
+    // Plan 0017 does not change the navigation bar, so no style gives it a
+    // colour.
     testWidgets('the status bar icons are dark on the three screens, and '
-        'light on "Who are you?" and on a level-up card', (t) async {
+        'light on "Who are you?" and on a level-up card; each of these '
+        'screens makes the status bar transparent and gives the navigation '
+        'bar no colour', (t) async {
+      void expectBars(String screen, Brightness icons) {
+        final style = barStyle(t);
+        expect(style?.statusBarIconBrightness, icons, reason: screen);
+        expect(
+          style?.statusBarColor?.a,
+          0,
+          reason: '$screen: the status bar colour ${style?.statusBarColor}',
+        );
+        for (final (bar, s) in [
+          ('status bar', style),
+          ('gesture bar', barStyle(t, bottom: true)),
+        ]) {
+          expect(
+            s?.systemNavigationBarColor,
+            isNull,
+            reason: '$screen: the style at the $bar colours the navigation bar',
+          );
+        }
+      }
+
       for (final (screen, open) in startScreens) {
         await open(t);
-        expect(statusBarIcons(t), Brightness.dark, reason: screen);
+        expectBars(screen, Brightness.dark);
       }
       final c = await pumpWelcome(t);
       await t.tap(find.text('Allow step access'));
       await settle(t, c);
       expect(find.byType(CharacterCreationScreen), findsOneWidget);
-      expect(statusBarIcons(t), Brightness.light, reason: '"Who are you?"');
+      expectBars('"Who are you?"', Brightness.light);
       await walkAway(t, steps: 5000);
       expect(find.byType(LevelUpScreen), findsOneWidget);
-      expect(statusBarIcons(t), Brightness.light, reason: 'a level-up card');
+      expectBars('a level-up card', Brightness.light);
     });
   });
 }
@@ -315,15 +343,21 @@ void expectOnPicture(
   );
 }
 
-/// The brightness of the status bar icons that the app asks for: the style
-/// at the middle of the status bar in the layers of the screen. After each
-/// frame, RenderView finds it there and sends it to the phone. Null when the
-/// screen gives no style.
-Brightness? statusBarIcons(WidgetTester t) {
+/// The style that the app gives the system bars: the style at the middle of
+/// the status bar in the layers of the screen, or with [bottom] the style at
+/// the middle of the gesture bar. After each frame, RenderView finds them
+/// there and sends them to the phone: the status bar fields of the first,
+/// and the navigation bar fields of the second. Null when the screen gives
+/// no style there.
+SystemUiOverlayStyle? barStyle(WidgetTester t, {bool bottom = false}) {
   final view = t.binding.renderViews.single;
-  return view.debugLayer!
-      .find<SystemUiOverlayStyle>(
-        Offset(view.paintBounds.center.dx, t.view.padding.top / 2),
-      )
-      ?.statusBarIconBrightness;
+  final bounds = view.paintBounds;
+  return view.debugLayer!.find<SystemUiOverlayStyle>(
+    Offset(
+      bounds.center.dx,
+      bottom
+          ? bounds.bottom - t.view.padding.bottom / 2
+          : t.view.padding.top / 2,
+    ),
+  );
 }
