@@ -167,7 +167,7 @@ final class PlayerThing extends Thing {
 
 /// Where the PH mark sits on a placeholder (spec 0014 §3.2). [x] and [y] are
 /// parts of the image from its top left. A negative [angle] (in degrees)
-/// turns the mark to the left. The spec fixes the size of the mark, so a
+/// turns the mark anticlockwise. The spec fixes the size of the mark, so a
 /// spot has no scale.
 class PhSpot {
   const PhSpot(this.x, this.y, this.angle);
@@ -195,7 +195,7 @@ const phSpots = {
   'placeholders/gear_offHand': PhSpot(.5, .76, 0), // the planks under the boss
   'placeholders/tool_mining': PhSpot(.45, .63, -62), // the handle wrap
   'placeholders/tool_woodcutting': PhSpot(.43, .65, -56), // the handle wrap
-  'placeholders/tool_fishing': PhSpot(.17, .83, -48), // the cork grip
+  'placeholders/tool_fishing': PhSpot(.2, .8, -48), // the cork grip
   'placeholders/tool_hunting': PhSpot(.46, .38, -60), // the grip wrap
   'placeholders/tool_crafting': PhSpot(.5, .55, -57), // the handle wrap
   'placeholders/tool_cooking': PhSpot(.5, .62, 0), // the belly of the pot

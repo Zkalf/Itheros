@@ -73,17 +73,15 @@ class ItemSquare extends StatelessWidget {
     final key = item;
     return Opacity(
       opacity: dimmed ? 0.35 : 1,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: LayoutBuilder(
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
+          children: [
+            LayoutBuilder(
               builder: (context, box) {
                 final size = socket ?? box.maxWidth;
-                final def = key == null ? null : data.itemOf(key);
                 return Center(
                   child: key == null
                       ? DecoratedBox(
@@ -97,19 +95,26 @@ class ItemSquare extends StatelessWidget {
                             ),
                           ),
                         )
-                      : PictureSocket(
+                      : PictureSocket.item(
+                          data,
+                          key,
                           picture: ImageScope.of(context)
                               .pictureOf(data, ItemThing(key)),
                           size: size,
-                          quality: def?.slot != null || def?.tool != null
-                              ? data.qualityOf(key)
-                              : null,
                           count: count,
                         ),
                 );
               },
             ),
-          ),
+            // The ink lies above the socket, so a press shows on it.
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onTap,
+              ),
+            ),
+          ],
         ),
       ),
     );

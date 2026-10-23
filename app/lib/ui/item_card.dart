@@ -79,11 +79,7 @@ class ItemCard extends StatelessWidget {
       // (spec 0014 §2.3), beside the name and the kind.
       Row(
         children: [
-          PictureSocket(
-            picture: picture,
-            size: 72,
-            quality: gear || def.tool != null ? data.qualityOf(item) : null,
-          ),
+          PictureSocket.item(data, item, picture: picture, size: 72),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

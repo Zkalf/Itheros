@@ -22,18 +22,43 @@ class PictureSocket extends StatelessWidget {
     required this.size,
     this.quality,
     this.count = 1,
+    this.qualities = const [],
   });
+
+  /// The socket of the item key [item]: gear and tools have the ring and the
+  /// wash of its quality.
+  PictureSocket.item(
+    GameData data,
+    String item, {
+    super.key,
+    required this.picture,
+    required this.size,
+    this.count = 1,
+  }) : quality = switch (data.itemOf(item)) {
+         ItemDef(slot: != null) ||
+         ItemDef(tool: != null) => data.qualityOf(item),
+         _ => null,
+       },
+       qualities = data.qualities;
 
   final Picture picture;
   final double size;
   final QualityDef? quality;
   final int count;
 
+  /// The qualities of the data in their order. The place of [quality] among
+  /// them sets the strength of the wash; without them, the socket has no
+  /// wash.
+  final List<QualityDef> qualities;
+
   @override
   Widget build(BuildContext context) {
     final q = quality;
     final radius = socketRadius(size);
-    final wash = _wash[q?.id];
+    // None for the first quality, then the steps of the kit, and the last
+    // step for each quality after them.
+    final place = q == null ? -1 : qualities.indexOf(q);
+    final wash = place < 1 ? null : _wash[math.min(place, _wash.length) - 1];
     final spot = picture.placeholder
         ? phSpots[picture.key] ?? const PhSpot(.5, .5, 0)
         : null;
@@ -57,6 +82,7 @@ class PictureSocket extends StatelessWidget {
                   ),
                   if (q != null && wash != null)
                     DecoratedBox(
+                      key: const ValueKey('wash'),
                       decoration: BoxDecoration(
                         borderRadius: radius,
                         gradient: LinearGradient(
@@ -143,9 +169,9 @@ final _shade = RadialGradient(
 /// (the kit). The PH spots are parts of the image, not of the socket.
 const _inset = .09;
 
-/// The strength of the wash of each quality (the kit of spec 0014). Common
-/// has no wash.
-const _wash = {'uncommon': .14, 'rare': .18, 'epic': .22, 'legendary': .26};
+/// The strength of the wash from the second quality up (the kit of spec
+/// 0014: Uncommon to Legendary).
+const _wash = [.14, .18, .22, .26];
 
 enum _Part { face, ring, mark, badge }
 
@@ -180,10 +206,13 @@ class _SocketLayout extends MultiChildLayoutDelegate {
         ),
         mark: mark,
         angle: spot.angle,
-        // Off the 2 dp ring, and clear of the badge. In a socket of 32 dp
-        // with a count, a steep mark has less than 1 dp to spare above the
-        // badge.
-        bounds: whole.deflate(2),
+        // Inside the round inner edge of the 2 dp ring, and clear of the
+        // badge. In a socket of 32 dp with a count, a steep mark has less
+        // than 1 dp to spare above the badge.
+        bounds: RRect.fromRectAndRadius(
+          whole.deflate(2),
+          socketRadius(size.width).topLeft - const Radius.circular(2),
+        ),
         avoid: badge?.inflate(.5),
       );
       positionChild(_Part.mark, centre - mark.center(Offset.zero));
@@ -197,12 +226,12 @@ class _SocketLayout extends MultiChildLayoutDelegate {
 /// The centre of a PH mark of the size [mark], turned by [angle] degrees
 /// about its centre: [spot] if the mark fits there, else the closest point
 /// where each corner lies inside [bounds] and no part on [avoid] (spec 0014
-/// §3.2). A mark too large for [bounds] goes to its centre.
+/// §3.2). A mark that fits nowhere goes to the centre of [bounds].
 Offset markCentre({
   required Offset spot,
   required Size mark,
   required double angle,
-  required Rect bounds,
+  required RRect bounds,
   Rect? avoid,
 }) {
   final a = angle * math.pi / 180;
@@ -212,29 +241,20 @@ Offset markCentre({
     for (final (x, y) in const [(-1, -1), (1, -1), (1, 1), (-1, 1)])
       along * (x * mark.width / 2) + across * (y * mark.height / 2),
   ];
-  double dot(Offset p, Offset q) => p.dx * q.dx + p.dy * q.dy;
   double reach(Iterable<Offset> points, Offset axis, bool far) =>
-      points.map((p) => dot(p, axis)).reduce(far ? math.max : math.min);
+      points.map((p) => _dot(p, axis)).reduce(far ? math.max : math.min);
 
-  // The centres where the mark stays inside the bounds.
-  final xs = reach(corners, const Offset(1, 0), true);
-  final ys = reach(corners, const Offset(0, 1), true);
-  final room = Rect.fromLTRB(
-    bounds.left + xs,
-    bounds.top + ys,
-    bounds.right - xs,
-    bounds.bottom - ys,
-  );
-  if (room.width < 0 || room.height < 0) return bounds.center;
-  final inRoom = Offset(
-    spot.dx.clamp(room.left, room.right),
-    spot.dy.clamp(room.top, room.bottom),
-  );
-  if (avoid == null) return inRoom;
+  // Each side of the bounds holds the corner of the mark that reaches
+  // furthest towards it.
+  final inside = [
+    for (final (normal, limit) in _sidesOf(bounds))
+      (normal, limit - reach(corners, normal, true)),
+  ];
+  if (avoid == null) return _closest(spot, inside) ?? bounds.center;
 
   // The mark misses [avoid] when one of four axes keeps them apart: across
   // the screen, down it, along the letters or across them. On each axis the
-  // mark lies before [avoid] or after it: a half plane of centres.
+  // mark lies before [avoid] or after it.
   final box = [
     avoid.topLeft,
     avoid.topRight,
@@ -243,52 +263,68 @@ Offset markCentre({
   ];
   Offset? best;
   for (final axis in [const Offset(1, 0), const Offset(0, 1), along, across]) {
-    for (final (normal, limit) in [
+    for (final side in [
       (axis, reach(box, axis, false) - reach(corners, axis, true)),
       (-axis, reach(corners, axis, false) - reach(box, axis, true)),
     ]) {
-      final p = _closestInSide(spot, inRoom, room, normal, limit);
+      final p = _closest(spot, [...inside, side]);
       if (p != null &&
           (best == null || (p - spot).distance < (best - spot).distance)) {
         best = p;
       }
     }
   }
-  return best ?? inRoom;
+  return best ?? bounds.center;
 }
 
-/// The point of [room] closest to [spot] with `normal · p <= limit`, or
-/// null if [room] has none. [inRoom] is [spot] moved into [room]; [normal]
-/// has the length 1.
-Offset? _closestInSide(
-  Offset spot,
-  Offset inRoom,
-  Rect room,
-  Offset normal,
-  double limit,
-) {
-  double side(Offset p) => p.dx * normal.dx + p.dy * normal.dy;
-  if (side(inRoom) <= limit) return inRoom;
-  // Else the closest point lies on the edge of the half plane.
-  final foot = spot - normal * (side(spot) - limit);
-  final dir = Offset(-normal.dy, normal.dx);
-  var lo = double.negativeInfinity;
-  var hi = double.infinity;
-  for (final (from, step, min, max) in [
-    (foot.dx, dir.dx, room.left, room.right),
-    (foot.dy, dir.dy, room.top, room.bottom),
-  ]) {
-    if (step.abs() < 1e-9) {
-      if (from < min - 1e-9 || from > max + 1e-9) return null;
-      continue;
-    }
-    final t1 = (min - from) / step;
-    final t2 = (max - from) / step;
-    lo = math.max(lo, math.min(t1, t2));
-    hi = math.min(hi, math.max(t1, t2));
+double _dot(Offset p, Offset q) => p.dx * q.dx + p.dy * q.dy;
+
+/// The sides of a polygon inside [r], with two chords for each round corner.
+/// Each side is (normal, limit): a point p lies inside when
+/// `normal · p <= limit`.
+List<(Offset, double)> _sidesOf(RRect r) {
+  final radius = r.tlRadiusX;
+  final points = [
+    for (final (centre, start) in [
+      (Offset(r.left + radius, r.top + radius), 180),
+      (Offset(r.right - radius, r.top + radius), 270),
+      (Offset(r.right - radius, r.bottom - radius), 0),
+      (Offset(r.left + radius, r.bottom - radius), 90),
+    ])
+      for (final turn in const [0, 45, 90])
+        centre + Offset.fromDirection((start + turn) * math.pi / 180, radius),
+  ];
+  final sides = <(Offset, double)>[];
+  for (final (i, p) in points.indexed) {
+    final edge = points[(i + 1) % points.length] - p;
+    if (edge.distance < 1e-9) continue;
+    // The points run clockwise on the screen, so this normal points out.
+    final normal = Offset(edge.dy, -edge.dx) / edge.distance;
+    sides.add((normal, _dot(normal, p)));
   }
-  if (lo > hi) return null;
-  return foot + dir * 0.0.clamp(lo, hi);
+  return sides;
+}
+
+/// The point closest to [spot] that lies inside each of [sides], or null if
+/// none does. The closest point is [spot] itself, its foot on one side, or
+/// a corner where two sides meet.
+Offset? _closest(Offset spot, List<(Offset, double)> sides) {
+  bool fits(Offset p) => sides.every((s) => _dot(s.$1, p) <= s.$2 + 1e-9);
+  final points = [
+    spot,
+    for (final (n, d) in sides) spot - n * (_dot(n, spot) - d),
+    for (final (i, (n, d)) in sides.indexed)
+      for (final (m, e) in sides.skip(i + 1))
+        if (n.dx * m.dy - n.dy * m.dx case final det when det.abs() > 1e-9)
+          Offset((d * m.dy - e * n.dy) / det, (n.dx * e - m.dx * d) / det),
+  ];
+  Offset? best;
+  for (final p in points.where(fits)) {
+    if (best == null || (p - spot).distance < (best - spot).distance) {
+      best = p;
+    }
+  }
+  return best;
 }
 
 /// "PH" on a placeholder (spec 0014 §3.2): small caps in light steel at 85%,
