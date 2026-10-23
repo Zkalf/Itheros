@@ -1,7 +1,7 @@
 {
     "id":  "E06",
     "title":  "Tuning: XP curve in data",
-    "prompt":  "Level 10 should need 22,000 XP.",
+    "prompt":  "Level 10 should need 21,800 XP.",
     "check":  "checks/E06.ps1",
     "timeoutMinutes":  20
 }
