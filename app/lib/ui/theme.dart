@@ -71,6 +71,10 @@ const gutter = 6.0;
 /// The 2 dp black border of each button, tab, chip, segment and switch.
 const _border = BorderSide(width: 2);
 
+/// The font of a number that stands alone (spec 0014 §2.2). The size and the
+/// weight come from the text around it.
+const numberStyle = TextStyle(fontFamily: Fonts.number);
+
 /// [text] with each number in Spectral (spec 0014 §2.2): the words keep the
 /// font of the text, and the digits of each number are a span of their own.
 TextSpan numberSpan(String text, {TextStyle? style}) {
@@ -78,12 +82,7 @@ TextSpan numberSpan(String text, {TextStyle? style}) {
   var at = 0;
   for (final m in RegExp(r'\d+(?:[.,]\d+)*%?').allMatches(text)) {
     if (m.start > at) spans.add(TextSpan(text: text.substring(at, m.start)));
-    spans.add(
-      TextSpan(
-        text: m[0],
-        style: const TextStyle(fontFamily: Fonts.number),
-      ),
-    );
+    spans.add(TextSpan(text: m[0], style: numberStyle));
     at = m.end;
   }
   if (at < text.length) spans.add(TextSpan(text: text.substring(at)));
@@ -94,6 +93,13 @@ TextSpan numberSpan(String text, {TextStyle? style}) {
 TextStyle headingStyle(BuildContext context) =>
     Theme.of(context).textTheme.labelLarge!.copyWith(color: Quiet.muted);
 
+/// The style of the title of a row that names a thing of the game, such as
+/// a monster, a spot, a teacher, an item or an achievement: Cormorant
+/// Garamond (spec 0014 §2.2). A row with a label as its title keeps the body
+/// text.
+TextStyle? nameStyle(BuildContext context) =>
+    Theme.of(context).textTheme.titleMedium;
+
 /// The shape of a plate: radius 16 and a 1 dp teal hairline (spec 0014
 /// §2.2). A [selected] plate has a 2 dp teal edge.
 ShapeBorder plateShape({bool selected = false}) => RoundedRectangleBorder(
@@ -103,12 +109,11 @@ ShapeBorder plateShape({bool selected = false}) => RoundedRectangleBorder(
       : BorderSide(color: Quiet.hairline),
 );
 
-/// A plate drawn as a box, for the bars and the parts of a screen that are no
-/// Card.
-final plateDecoration = BoxDecoration(
+/// A plate drawn as a box, for the bars and the parts of a screen that are not
+/// a Card.
+final plateDecoration = ShapeDecoration(
   color: Quiet.plate,
-  borderRadius: BorderRadius.circular(16),
-  border: Border.all(color: Quiet.hairline),
+  shape: plateShape(),
 );
 
 /// The look of each kind of button (spec 0014 §2.2, plan 0017): teal for
@@ -126,13 +131,26 @@ final tealButton = _button(
     Quiet.white.withValues(alpha: .06),
   ],
 );
-final slateButton = _button(
+final slateButton = _slate();
+final ghostButton = _button(fill: Quiet.transparent, label: Quiet.text);
+
+/// A slate button: the gradient from slate down to slate low, which turns
+/// over while the button is pressed (spec 0014 §2.1).
+ButtonStyle _slate({
+  double radius = 12,
+  EdgeInsets padding = _padding,
+  Size minimumSize = const Size(64, 44),
+}) => _button(
   fill: Quiet.slate,
   label: Quiet.text,
   shade: const [Quiet.slate, Quiet.slateLow],
   pressed: const [Quiet.slateLow, Quiet.slate],
+  radius: radius,
+  padding: padding,
+  minimumSize: minimumSize,
 );
-final ghostButton = _button(fill: Quiet.transparent, label: Quiet.text);
+
+const _padding = EdgeInsets.symmetric(horizontal: 18, vertical: 8);
 
 /// Padding that moves the label of a pressed button 1 dp down, so that the
 /// button sinks (spec 0014 §2.2).
@@ -149,7 +167,7 @@ ButtonStyle _button({
   List<Color>? shade,
   List<Color>? pressed,
   double radius = 12,
-  EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+  EdgeInsets padding = _padding,
   Size minimumSize = const Size(64, 44),
 }) {
   bool off(Set<WidgetState> s) => s.contains(WidgetState.disabled);
@@ -464,11 +482,7 @@ ThemeData _quietTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(style: slateButton),
     textButtonTheme: TextButtonThemeData(style: slateButton),
     iconButtonTheme: IconButtonThemeData(
-      style: _button(
-        fill: Quiet.slate,
-        label: Quiet.text,
-        shade: const [Quiet.slate, Quiet.slateLow],
-        pressed: const [Quiet.slateLow, Quiet.slate],
+      style: _slate(
         radius: 11,
         padding: const EdgeInsets.all(8),
         minimumSize: const Size(44, 40),

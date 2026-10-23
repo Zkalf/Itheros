@@ -18,10 +18,14 @@ class SettingsScreen extends StatelessWidget {
     final c = ControllerScope.of(context);
     final text = Theme.of(context).textTheme;
     final who = c.state.character;
-    // The rows stand on plates (spec 0014 §2.2).
+    // The rows stand on plates (spec 0014 §2.2). A row of one line is 48 dp
+    // high, as the design of Settings shows, not the 56 dp of a ListTile.
     Widget plate(List<Widget> rows) => Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(children: rows),
+      child: ListTileTheme.merge(
+        minTileHeight: 48,
+        child: Column(children: rows),
+      ),
     );
     return Scaffold(
       appBar: AppBar(leading: const BackPlate(), title: const Text('Settings')),

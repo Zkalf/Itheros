@@ -55,8 +55,11 @@ class SlotSheet extends StatelessWidget {
           return byScore != 0 ? byScore : a.compareTo(b);
         });
 
-    Text name(String key) =>
-        Text(labels.plain(key), style: TextStyle(color: itemColour(data, key)));
+    // An item's name, in the style of a name (spec 0014 §2.2).
+    Text name(String key) => Text(
+      labels.plain(key),
+      style: nameStyle(context)?.copyWith(color: itemColour(data, key)),
+    );
 
     return SafeArea(
       child: ConstrainedBox(

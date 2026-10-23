@@ -58,8 +58,9 @@ class JournalScreen extends StatelessWidget {
         // The tabs stand on a plate, each in its own box (spec 0014 §2.2).
         // The TabBar stays.
         bottom: PreferredSize(
-          // A tab of 40, the TabBar's 2 for its indicator, and the plate.
-          preferredSize: const Size.fromHeight(40 + 2 + 6 + gutter),
+          // A tab of 40, the TabBar's 2 for its indicator, the plate's padding
+          // of 3 and border of 1 on each side, and the gutter below.
+          preferredSize: const Size.fromHeight(40 + 2 + 2 * (3 + 1) + gutter),
           child: Container(
             margin: const EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
             padding: const EdgeInsets.all(3),
@@ -190,6 +191,7 @@ class _Bestiary extends StatelessWidget {
                             colour: game.enemyBand(s, id).colour,
                           ),
                           title: Text(labels.enemy(id)),
+                          titleTextStyle: nameStyle(context),
                           subtitle: Text(
                             [
                               k.armour ? labels.armour(e.armour) : 'Armour ???',

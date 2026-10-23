@@ -567,6 +567,7 @@ class _RecipeTile extends StatelessWidget {
       ),
       enabled: levelMet,
       title: Text(labels.recipe(recipe)),
+      titleTextStyle: nameStyle(context),
       subtitle: Text.rich(
         TextSpan(
           children: [

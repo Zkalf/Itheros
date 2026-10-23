@@ -160,7 +160,6 @@ class _Place extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -182,13 +181,15 @@ class _Place extends StatelessWidget {
             child: Icon(here ? Icons.person_pin_circle : icon),
           ),
           const SizedBox(height: 2),
+          // Each place name is a name (spec 0014 §2.2), the current place
+          // too: its marker marks it. Smaller than in rows, so that names fit
+          // the map.
           Text(
             name,
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: (here ? text.labelLarge : text.labelMedium)?.copyWith(
-              color: fogged ? Quiet.faint : null,
-            ),
+            style: nameStyle(context)
+                ?.copyWith(fontSize: 16, color: fogged ? Quiet.faint : null),
           ),
         ],
       ),
@@ -376,6 +377,7 @@ class _AreaSheet extends StatelessWidget {
                 activity: Activity.travel(area),
                 leading: const Icon(Icons.signpost),
                 title: 'Travel here',
+                titleIsName: false,
                 subtitle: Text('${fmt(steps)} steps'),
                 startFrom: host,
               ),

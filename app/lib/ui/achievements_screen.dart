@@ -68,6 +68,7 @@ class _AchievementTile extends StatelessWidget {
           color: unlocked ? Theme.of(context).colorScheme.primary : null,
         ),
         title: Text(a.name),
+        titleTextStyle: nameStyle(context),
         // "New" is a teal outline (spec 0014 §2.1, §2.2).
         trailing: fresh
             ? statusChip(

@@ -31,6 +31,7 @@ class ActionTile extends StatelessWidget {
     required this.subtitle,
     this.enabled = true,
     this.deadly = false,
+    this.titleIsName = true,
     this.startFrom,
   });
 
@@ -41,6 +42,10 @@ class ActionTile extends StatelessWidget {
   final Widget subtitle;
   final bool enabled;
   final bool deadly;
+
+  /// The title names a monster or a spot; false for a label, such as
+  /// "Travel here".
+  final bool titleIsName;
 
   /// Set in a sheet: the sheet closes, and the action starts from this
   /// screen's context instead.
@@ -53,6 +58,7 @@ class ActionTile extends StatelessWidget {
       key: ValueKey('option-${activity.kind.name}-${activity.target}'),
       leading: leading,
       title: Text(title),
+      titleTextStyle: titleIsName ? nameStyle(context) : null,
       subtitle: subtitle,
       enabled: enabled,
       trailing: active ? statusChip('Active', Quiet.steel) : null,

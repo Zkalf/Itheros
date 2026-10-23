@@ -176,9 +176,9 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// A tab of the bottom bar in a box with the 2 dp black border; the lit tab
-/// is lit (spec 0014 §2.2). It stays a NavigationDestination, so the bar
-/// stays a NavigationBar (plan 0017).
+/// A tab of the bottom bar in a box with the 2 dp black border; the open tab
+/// has the lit fill (spec 0014 §2.2). It stays a NavigationDestination, so
+/// the bar stays a NavigationBar (plan 0017).
 class _Tab extends NavigationDestination {
   const _Tab({
     super.key,

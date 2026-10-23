@@ -322,9 +322,13 @@ class _QueueCard extends StatelessWidget {
       body = [
         Row(
           children: [
-            // Numbered like the queued rows below it (2, 3, ...).
+            // Numbered like the queued rows below it (2, 3, ...), in
+            // Spectral: the number stands alone (spec 0014 §2.2).
             if (slots > 1) ...[
-              const CircleAvatar(radius: 14, child: Text('1', style: _number)),
+              const CircleAvatar(
+                radius: 14,
+                child: Text('1', style: numberStyle),
+              ),
               const SizedBox(width: 16),
             ],
             Expanded(
@@ -426,7 +430,7 @@ class _QueueCard extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
               radius: 14,
-              child: Text('${i + 2}', style: _number),
+              child: Text('${i + 2}', style: numberStyle),
             ),
             title: Text(labels.short(s.queue[i].activity)),
             subtitle: Text(
@@ -549,6 +553,7 @@ class _Here extends StatelessWidget {
             key: ValueKey('teacher-${p.id}'),
             leading: Icon(professionIcon(p.icon)),
             title: Text(teacherName(p)),
+            titleTextStyle: nameStyle(context),
             subtitle: Text(
               s.learned.contains(p.id)
                   ? '${p.name} ${game.professionLevel(s, p.id)}'
@@ -587,9 +592,6 @@ class _Here extends StatelessWidget {
     ];
   }
 }
-
-/// The number of an action in the queue stands alone (spec 0014 §2.2).
-const _number = TextStyle(fontFamily: Fonts.number);
 
 /// A bar with its number in Spectral (spec 0014 §2.2, §2.3).
 class _Bar extends StatelessWidget {
