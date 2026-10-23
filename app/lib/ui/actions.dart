@@ -5,8 +5,10 @@ import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'action_sheet.dart';
+import 'images.dart';
 import 'level_badge.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// "Drops: Goblin hide, ??? · 1 of 2 found": only what the player has found,
@@ -29,6 +31,7 @@ class ActionTile extends StatelessWidget {
     required this.leading,
     required this.title,
     required this.subtitle,
+    this.badge,
     this.enabled = true,
     this.deadly = false,
     this.titleIsName = true,
@@ -40,6 +43,10 @@ class ActionTile extends StatelessWidget {
   final Widget leading;
   final String title;
   final Widget subtitle;
+
+  /// Shown before [title] on its line: the level badge of a monster, when
+  /// its picture leads the row.
+  final Widget? badge;
   final bool enabled;
   final bool deadly;
 
@@ -57,7 +64,16 @@ class ActionTile extends StatelessWidget {
     return ListTile(
       key: ValueKey('option-${activity.kind.name}-${activity.target}'),
       leading: leading,
-      title: Text(title),
+      title: switch (badge) {
+        final badge? => Row(
+          children: [
+            badge,
+            const SizedBox(width: 10),
+            Flexible(child: Text(title)),
+          ],
+        ),
+        null => Text(title),
+      },
       titleTextStyle: titleIsName ? nameStyle(context) : null,
       subtitle: subtitle,
       enabled: enabled,
@@ -78,9 +94,10 @@ class ActionTile extends StatelessWidget {
   }
 }
 
-/// A row for fighting [enemy]: level badge, stats once learned (spec 0009
-/// §7.1), XP, and for red or skull monsters a warning first (spec 0002
-/// §9.2).
+/// A row for fighting [enemy]: its picture, then its level badge and name,
+/// stats once learned (spec 0009 §7.1), XP, and for red or skull monsters a
+/// warning first (spec 0002 §9.2). The steps of a round stand in the
+/// heading above the rows (spec 0014 §4.1).
 Widget enemyTile(
   GameController c,
   String enemy, {
@@ -94,7 +111,16 @@ Widget enemyTile(
   return ActionTile(
     controller: c,
     activity: Activity.fight(enemy),
-    leading: LevelBadge(level: e.level, colour: band.colour),
+    // The row starts with the monster in a 48 dp socket (spec 0014 §2.3,
+    // §4.2).
+    leading: Builder(
+      builder: (context) => PictureSocket(
+        picture: ImageScope.of(context)
+            .pictureOf(game.data, MonsterThing(enemy)),
+        size: 48,
+      ),
+    ),
+    badge: LevelBadge(level: e.level, colour: band.colour),
     title: Labels(game.data).enemy(enemy),
     subtitle: Text.rich(
       TextSpan(
@@ -117,7 +143,6 @@ Widget enemyTile(
                   ] else
                     'Stats unknown',
                   '${math.max(1, e.xp * band.xpPercent ~/ 100)} XP',
-                  '${game.data.combatRoundSteps} steps per round',
                 ].join(' · ') +
                 (drops == null ? '' : '\n$drops'),
           ),
@@ -274,6 +299,24 @@ class Heading extends StatelessWidget {
         const SizedBox(width: 12),
         const Expanded(child: Divider()),
       ],
+    ),
+  );
+}
+
+/// The one heading above the monster rows, on Now and on the area sheet:
+/// "Monsters · 10 steps per round" (spec 0014 §4.1). It is a list heading,
+/// so its number keeps the font of the phrase.
+class MonstersHeading extends StatelessWidget {
+  const MonstersHeading({super.key, required this.data});
+
+  final GameData data;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+    child: Text(
+      'Monsters · ${data.combatRoundSteps} steps per round',
+      style: headingStyle(context),
     ),
   );
 }

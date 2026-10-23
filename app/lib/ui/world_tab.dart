@@ -358,6 +358,8 @@ class _AreaSheet extends StatelessWidget {
                   style: const TextStyle(fontStyle: FontStyle.italic),
                 ),
               ),
+            // One heading above the monster rows (spec 0014 §4.1).
+            if (enemies.isNotEmpty) MonstersHeading(data: game.data),
             for (final id in enemies)
               enemyTile(
                 c,

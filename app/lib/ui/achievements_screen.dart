@@ -61,7 +61,10 @@ class _AchievementTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = achievement;
     final shown = progress.clamp(0, a.atLeast);
+    // An earned achievement shows its goal and a teal rim, not a full bar
+    // and "100 / 100" (spec 0014 §4.1).
     return Card(
+      shape: plateShape(selected: unlocked),
       child: ListTile(
         leading: Icon(
           unlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
@@ -83,13 +86,15 @@ class _AchievementTile extends StatelessWidget {
             Text(_goal(a)),
             if (a.bankCapReward > 0)
               Text('Reward: +${fmt(a.bankCapReward)} step bank cap'),
-            const SizedBox(height: 6),
-            // The bar of an achievement is teal (spec 0014 §2.3).
-            LinearProgressIndicator(
-              value: shown / a.atLeast,
-              color: Quiet.teal,
-            ),
-            Text.rich(numberSpan('${fmt(shown)} / ${fmt(a.atLeast)}')),
+            if (!unlocked) ...[
+              const SizedBox(height: 6),
+              // The bar of an achievement is teal (spec 0014 §2.3).
+              LinearProgressIndicator(
+                value: shown / a.atLeast,
+                color: Quiet.teal,
+              ),
+              Text.rich(numberSpan('${fmt(shown)} / ${fmt(a.atLeast)}')),
+            ],
           ],
         ),
       ),

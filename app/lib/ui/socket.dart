@@ -142,6 +142,101 @@ class PictureSocket extends StatelessWidget {
   }
 }
 
+/// A picture across the full width and [height] dp tall, in the dark
+/// socket: the image of a boss on its sheet (spec 0014 §4.2). The image
+/// covers the box from its top, so the head of the monster shows. A
+/// placeholder keeps its PH mark and its semantics label (§3.2).
+class WidePicture extends StatelessWidget {
+  const WidePicture({super.key, required this.picture, required this.height});
+
+  final Picture picture;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final spot = picture.placeholder
+        ? phSpots[picture.key] ?? const PhSpot(.5, .5, 0)
+        : null;
+    final radius = socketRadius(height);
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: DecoratedBox(
+        decoration: socketDecoration(height),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              DecoratedBox(decoration: BoxDecoration(gradient: _shade)),
+              Image(
+                image: AssetImage(picture.asset!),
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                semanticLabel: picture.placeholder
+                    ? 'placeholder picture'
+                    : null,
+                excludeFromSemantics: !picture.placeholder,
+                // The mark is a part of the picture, so the frame of the
+                // image holds it.
+                frameBuilder: spot == null
+                    ? null
+                    : (context, image, _, _) => Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          image,
+                          CustomSingleChildLayout(
+                            delegate: _WideMarkLayout(spot, radius.topLeft),
+                            // At the height of a boss image the mark has
+                            // its largest size, 16 dp.
+                            child: _PhMark(size: height, angle: spot.angle),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Places the PH mark on a [WidePicture] at its spot in the image, or else
+/// at the closest place inside the box.
+class _WideMarkLayout extends SingleChildLayoutDelegate {
+  _WideMarkLayout(this.spot, this.corner);
+
+  final PhSpot spot;
+  final Radius corner;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      const BoxConstraints();
+
+  @override
+  Offset getPositionForChild(Size size, Size mark) {
+    // The images of monsters are square (plan 0017), so the image covers
+    // the box at the larger side, centred across and from the top.
+    final side = math.max(size.width, size.height);
+    final centre = markCentre(
+      spot: Offset((size.width - side) / 2 + spot.x * side, spot.y * side),
+      mark: mark,
+      angle: spot.angle,
+      // 2 dp inside the edge, as in a socket.
+      bounds: RRect.fromRectAndRadius(
+        (Offset.zero & size).deflate(2),
+        corner - const Radius.circular(2),
+      ),
+    );
+    return centre - mark.center(Offset.zero);
+  }
+
+  @override
+  bool shouldRelayout(_WideMarkLayout oldDelegate) =>
+      oldDelegate.spot != spot || oldDelegate.corner != corner;
+}
+
 /// The corners of a socket (the kit of spec 0014): radius 12, and 10 for a
 /// small socket of 32 dp.
 BorderRadius socketRadius(double size) =>

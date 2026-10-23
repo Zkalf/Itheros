@@ -4,11 +4,13 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'actions.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'item_card.dart';
 import 'item_square.dart';
 import 'labels.dart';
 import 'level_badge.dart';
 import 'meals.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// "Have level" or "Up to 5 levels ahead": never both (spec 0010
@@ -327,22 +329,40 @@ class _ProfessionCard extends StatelessWidget {
     );
   }
 
-  /// The worn tool in its quality colour and its step cost; tap for its
-  /// card.
+  /// The worn tool: its picture with the ring of its quality in a 32 dp
+  /// socket, the size of a line (spec 0014 §3.1, plan 0017 choice 8), then
+  /// its name in its quality colour and its step cost; tap for its card.
   Widget _toolRow(BuildContext context) {
     final c = controller;
-    final labels = Labels(c.game.data);
+    final data = c.game.data;
+    final labels = Labels(data);
     final tool = c.state.tools[profession.id];
     if (tool == null) {
       return Text('No ${profession.toolName.toLowerCase()}');
     }
     return InkWell(
+      key: ValueKey('tool-${profession.id}'),
       onTap: () => showItemCard(context, c, tool, toolWorn: true),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(
-          '${labels.plain(tool)} · ${labels.stepShare(tool)}% steps',
-          style: TextStyle(color: itemColour(c.game.data, tool)),
+        child: Row(
+          children: [
+            PictureSocket.item(
+              data,
+              tool,
+              picture: ImageScope.of(context).pictureOf(data, ItemThing(tool)),
+              size: 32,
+            ),
+            // The text starts 40 dp in, as the title of a row with an icon
+            // does: an icon of 24 dp and a gap of 16.
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${labels.plain(tool)} · ${labels.stepShare(tool)}% steps',
+                style: TextStyle(color: itemColour(data, tool)),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -479,19 +499,30 @@ class _ProfessionCard extends StatelessWidget {
   }
 
   /// The meal running, tap for its card, and the auto-eat choice (spec
-  /// 0011 §8.1).
+  /// 0011 §8.1). The meal row starts with the meal in a 32 dp socket, as on
+  /// Now (spec 0014 §4.2).
   List<Widget> _mealRows(BuildContext context) {
     final c = controller;
+    final data = c.game.data;
+    final meal = c.state.meal;
     final line = mealLine(c.game, c.state, withAuto: false);
     return [
       ListTile(
         key: const ValueKey('cooking-meal'),
         contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.restaurant),
+        leading: meal == null
+            ? const Icon(Icons.restaurant)
+            : PictureSocket.item(
+                data,
+                meal.key,
+                picture: ImageScope.of(context)
+                    .pictureOf(data, ItemThing(meal.key)),
+                size: 32,
+              ),
+        // The title starts 40 dp in, as beside the icon and in the tool line.
+        horizontalTitleGap: meal == null ? null : 8,
         title: Text(line ?? 'No meal running'),
-        onTap: line == null
-            ? null
-            : () => showItemCard(context, c, c.state.meal!.key),
+        onTap: meal == null ? null : () => showItemCard(context, c, meal.key),
       ),
       Padding(
         key: const ValueKey('cooking-auto'),
