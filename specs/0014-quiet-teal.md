@@ -15,6 +15,8 @@ items, achievements, places and the map get images. A thing without an image sho
 Thus the style can ship before all images exist. The screens, rules and numbers do not change. The away report gets
 a route map. This is the one data change. All sizes are in dp. The kit below gives the exact sizes and gradients.
 
+![The Quiet Teal board from intent 0014: the idea, the colours and four screens](../docs/design/0014-quiet-teal-board.webp)
+
 ![The Quiet Teal kit: colours, buttons, sockets, the PH mark, the bars and the map ring](../docs/design/0014-quiet-teal-kit.webp)
 
 ![Five screens in Quiet Teal: splash, Now, the bag, a boss sheet and the away report](../docs/design/0014-quiet-teal-screens.webp)
