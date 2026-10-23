@@ -205,14 +205,16 @@ class ProfessionScreen extends StatelessWidget {
               return ListView(
                 padding: const EdgeInsets.all(gutter),
                 children: [
-                  // The filters stand on a plate (spec 0014 §2.2).
+                  // The filters stand on a plate (spec 0014 §2.2). The
+                  // gutter as padding and spacing keeps the three filters on
+                  // one line at 360 dp.
                   if (recipes)
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(gutter),
                         child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: gutter,
+                          runSpacing: gutter,
                           children: [
                             FilterChip(
                               key: const ValueKey('filter-mats'),

@@ -182,14 +182,14 @@ class _Place extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           // Each place name is a name (spec 0014 §2.2), the current place
-          // too: its marker marks it. Smaller than in rows, so that names fit
-          // the map.
+          // too: its marker marks it. At 14 dp a name is as wide as on main,
+          // so that the map gets no new overlap before M3 places the names.
           Text(
             name,
             textAlign: TextAlign.center,
             maxLines: 2,
             style: nameStyle(context)
-                ?.copyWith(fontSize: 16, color: fogged ? Quiet.faint : null),
+                ?.copyWith(fontSize: 14, color: fogged ? Quiet.faint : null),
           ),
         ],
       ),
