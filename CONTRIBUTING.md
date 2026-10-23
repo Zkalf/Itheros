@@ -31,3 +31,4 @@ spec and a plan follow, then the code. Accepted intent, spec and plan files are 
   and version tags and published releases are locked to the owner.
 - Project rules for the AI assistant (and good guidance for people) are in [CLAUDE.md](CLAUDE.md); reviews follow
   [REVIEW.md](REVIEW.md).
+- Specs, plans, pull requests and other project texts follow the rules in [WRITING.md](WRITING.md).
