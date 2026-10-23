@@ -5,6 +5,7 @@ import '../sync/away_summary.dart';
 import 'controller_scope.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
 Color qualityColour(QualityDef q) =>
@@ -68,7 +69,7 @@ List<Widget> reportBanners(AwaySummary s, Labels labels) => [
     ReportBanner(icon: icon, text: text),
 ];
 
-/// A highlighted line with an icon, in the theme's highlight colour.
+/// A highlighted line with an icon, on deep teal (spec 0014 §2.1).
 class ReportBanner extends StatelessWidget {
   const ReportBanner({super.key, required this.icon, required this.text});
 
@@ -76,31 +77,29 @@ class ReportBanner extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      key: const ValueKey('report-banner'),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: scheme.onTertiaryContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(color: scheme.onTertiaryContainer),
-            ),
+  Widget build(BuildContext context) => Container(
+    key: const ValueKey('report-banner'),
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: Quiet.deepTeal,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Quiet.teal.withValues(alpha: .4)),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: Quiet.teal),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
 /// The lines of one report, as the card and the journal show them.
@@ -137,7 +136,7 @@ class AwayScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(gutter),
           children: [
             Card(
               child: Padding(
@@ -146,8 +145,8 @@ class AwayScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (c.journal.isNotEmpty)
-                      Text(
-                        journalTime(c.journal.first.started, c.now),
+                      Text.rich(
+                        numberSpan(journalTime(c.journal.first.started, c.now)),
                         style: text.titleMedium,
                       ),
                     const SizedBox(height: 8),
@@ -162,18 +161,28 @@ class AwayScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Steps can reach Health Connect a minute late, so this report '
-              'keeps updating for a couple of minutes. It stays in your '
-              'journal.',
-              style: text.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const ValueKey('away-continue'),
-              onPressed: c.dismissAwaySummary,
-              child: const Text('Continue'),
+            // The footnote and Continue stand on a plate (spec 0014 §2.2).
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Steps can reach Health Connect a minute late, so this '
+                      'report keeps updating for a couple of minutes. It '
+                      'stays in your journal.',
+                      style: text.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      key: const ValueKey('away-continue'),
+                      onPressed: c.dismissAwaySummary,
+                      child: const Text('Continue'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

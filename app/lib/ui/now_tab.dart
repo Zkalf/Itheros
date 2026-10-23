@@ -10,6 +10,7 @@ import 'item_card.dart';
 import 'item_square.dart';
 import 'meals.dart';
 import 'teacher_sheet.dart';
+import 'theme.dart';
 
 /// What am I doing, and what can I do here (spec 0008 §3.2): the running
 /// action, the queue, the step bank, then what the player's place offers.
@@ -30,7 +31,7 @@ class NowTab extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: c.syncNow,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(gutter),
         children: [
           if (c.syncError != null)
             const Card(
@@ -182,6 +183,7 @@ class _TestWalkCard extends StatelessWidget {
             children: [
               for (final n in const [100, 1000, 5000])
                 FilledButton.tonal(
+                  style: slateButton,
                   onPressed: () => controller.testWalk(n),
                   child: Text('+${fmt(n)}'),
                 ),
@@ -220,7 +222,7 @@ class _StatusCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(labels.location(s.location), style: text.titleLarge),
                 const Spacer(),
-                Text('Level $level', style: text.titleLarge),
+                Text.rich(numberSpan('Level $level'), style: text.titleLarge),
               ],
             ),
             const SizedBox(height: 12),
@@ -229,9 +231,11 @@ class _StatusCard extends StatelessWidget {
               value: (s.xp - floor) / (next - floor),
             ),
             const SizedBox(height: 12),
+            // The step bank is mist; other bars are steel (spec 0014 §2.3).
             _Bar(
               label: 'Step bank ${fmt(s.bank)} / ${fmt(cap)}',
               value: s.bank / cap,
+              colour: Quiet.mist,
             ),
             const SizedBox(height: 4),
             Text(
@@ -303,6 +307,7 @@ class _QueueCard extends StatelessWidget {
         if (onOpenWorld != null)
           FilledButton.tonalIcon(
             key: const ValueKey('open-world'),
+            style: slateButton,
             onPressed: onOpenWorld,
             icon: const Icon(Icons.map),
             label: const Text('Open the World map'),
@@ -319,7 +324,7 @@ class _QueueCard extends StatelessWidget {
           children: [
             // Numbered like the queued rows below it (2, 3, ...).
             if (slots > 1) ...[
-              const CircleAvatar(radius: 14, child: Text('1')),
+              const CircleAvatar(radius: 14, child: Text('1', style: _number)),
               const SizedBox(width: 16),
             ],
             Expanded(
@@ -394,7 +399,7 @@ class _QueueCard extends StatelessWidget {
         ],
         if (run.won + run.lost > 0 || run.gained.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text('So far', style: text.titleSmall),
+          Text('So far', style: headingStyle(context)),
           if (run.won + run.lost > 0)
             Text(
               '${fmt(run.won)} won · ${fmt(run.lost)} lost',
@@ -419,7 +424,10 @@ class _QueueCard extends StatelessWidget {
           ListTile(
             key: ValueKey('queued-$i'),
             contentPadding: EdgeInsets.zero,
-            leading: CircleAvatar(radius: 14, child: Text('${i + 2}')),
+            leading: CircleAvatar(
+              radius: 14,
+              child: Text('${i + 2}', style: _number),
+            ),
             title: Text(labels.short(s.queue[i].activity)),
             subtitle: Text(
               labels.stop(
@@ -510,81 +518,99 @@ class _Here extends StatelessWidget {
   final void Function([String? profession])? onOpenProfessions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Column(
+    key: const ValueKey('here'),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Heading('Here: ${labels.location(controller.state.location)}'),
+      // The rows stand on a plate (spec 0014 §2.2).
+      Card(
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: _rows(context)),
+      ),
+    ],
+  );
+
+  List<Widget> _rows(BuildContext context) {
     final c = controller;
     final game = c.game;
     final s = c.state;
     final place = game.data.locations[s.location]!;
     final enemies = game.availableEnemies(s);
     final nodes = game.availableNodes(s);
-    return Column(
-      key: const ValueKey('here'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Heading('Here: ${labels.location(s.location)}'),
-        for (final id in enemies)
-          enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
-        for (final id in nodes) nodeTile(c, id),
-        // The teachers here (spec 0010 §6.1), a dot when a tip waits.
-        for (final p in game.data.professions.values)
-          if (p.teacher.location == s.location)
-            ListTile(
-              key: ValueKey('teacher-${p.id}'),
-              leading: Icon(professionIcon(p.icon)),
-              title: Text(teacherName(p)),
-              subtitle: Text(
-                s.learned.contains(p.id)
-                    ? '${p.name} ${game.professionLevel(s, p.id)}'
-                    : 'Teaches ${p.name}',
-              ),
-              trailing: game.tipsWaiting(s, p.id).isEmpty
-                  ? null
-                  : Badge(key: ValueKey('teacher-dot-${p.id}')),
-              onTap: () => showTeacher(context, c, p.id),
+    return [
+      for (final id in enemies)
+        enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
+      for (final id in nodes) nodeTile(c, id),
+      // The teachers here (spec 0010 §6.1), a dot when a tip waits.
+      for (final p in game.data.professions.values)
+        if (p.teacher.location == s.location)
+          ListTile(
+            key: ValueKey('teacher-${p.id}'),
+            leading: Icon(professionIcon(p.icon)),
+            title: Text(teacherName(p)),
+            subtitle: Text(
+              s.learned.contains(p.id)
+                  ? '${p.name} ${game.professionLevel(s, p.id)}'
+                  : 'Teaches ${p.name}',
             ),
-        if (place.crafting && onOpenProfessions != null)
-          ListTile(
-            key: const ValueKey('here-forge'),
-            leading: const Icon(Icons.local_fire_department),
-            title: const Text('Forge'),
-            subtitle: const Text('Craft gear in Professions'),
-            onTap: () => onOpenProfessions!('crafting'),
+            trailing: game.tipsWaiting(s, p.id).isEmpty
+                ? null
+                : Badge(key: ValueKey('teacher-dot-${p.id}')),
+            onTap: () => showTeacher(context, c, p.id),
           ),
-        // The camp fire opens Cooking (spec 0011 §5.1).
-        if (place.fire && onOpenProfessions != null)
-          ListTile(
-            key: const ValueKey('here-fire'),
-            leading: const Icon(Icons.outdoor_grill),
-            title: const Text('Camp fire'),
-            subtitle: const Text('Cook meals in Professions'),
-            onTap: () => onOpenProfessions!('cooking'),
-          ),
-        if (enemies.isEmpty &&
-            nodes.isEmpty &&
-            !place.crafting &&
-            !place.fire &&
-            !game.data.professions.values.any(
-              (p) => p.teacher.location == s.location,
-            ))
-          const ListTile(title: Text('Nothing to do here. Try the World map.')),
-      ],
-    );
+      if (place.crafting && onOpenProfessions != null)
+        ListTile(
+          key: const ValueKey('here-forge'),
+          leading: const Icon(Icons.local_fire_department),
+          title: const Text('Forge'),
+          subtitle: const Text('Craft gear in Professions'),
+          onTap: () => onOpenProfessions!('crafting'),
+        ),
+      // The camp fire opens Cooking (spec 0011 §5.1).
+      if (place.fire && onOpenProfessions != null)
+        ListTile(
+          key: const ValueKey('here-fire'),
+          leading: const Icon(Icons.outdoor_grill),
+          title: const Text('Camp fire'),
+          subtitle: const Text('Cook meals in Professions'),
+          onTap: () => onOpenProfessions!('cooking'),
+        ),
+      if (enemies.isEmpty &&
+          nodes.isEmpty &&
+          !place.crafting &&
+          !place.fire &&
+          !game.data.professions.values.any(
+            (p) => p.teacher.location == s.location,
+          ))
+        const ListTile(title: Text('Nothing to do here. Try the World map.')),
+    ];
   }
 }
 
+/// The number of an action in the queue stands alone (spec 0014 §2.2).
+const _number = TextStyle(fontFamily: Fonts.number);
+
+/// A bar with its number in Spectral (spec 0014 §2.2, §2.3).
 class _Bar extends StatelessWidget {
-  const _Bar({required this.label, required this.value});
+  const _Bar({required this.label, required this.value, this.colour});
 
   final String label;
   final double value;
+
+  /// Null for the steel of the theme.
+  final Color? colour;
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label),
+      Text.rich(numberSpan(label)),
       const SizedBox(height: 4),
-      LinearProgressIndicator(value: value.clamp(0, 1).toDouble()),
+      LinearProgressIndicator(
+        value: value.clamp(0, 1).toDouble(),
+        color: colour,
+      ),
     ],
   );
 }

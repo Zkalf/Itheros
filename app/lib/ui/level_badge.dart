@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'theme.dart';
+
 /// A monster's level in its colour, or a skull when far above the player
 /// (spec 0002 §3, §9.2).
 class LevelBadge extends StatelessWidget {
@@ -32,8 +34,11 @@ class LevelBadge extends StatelessWidget {
       child: Text(
         skull ? '💀' : '$level',
         semanticsLabel: skull ? 'Level: far too strong' : 'Level $level',
+        // The level number stands alone, so it is Spectral (spec 0014
+        // §2.2).
         style: TextStyle(
-          fontWeight: FontWeight.bold,
+          fontFamily: Fonts.number,
+          fontWeight: FontWeight.w600,
           color: colour == LevelColour.yellow ? Colors.black : Colors.white,
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../game_controller.dart';
 import 'item_card.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// Opens the sheet for doll slot [slot] (spec 0008 amendment 3).
 Future<void> showSlotSheet(
@@ -95,7 +96,7 @@ class SlotSheet extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text('From your bag', style: text.titleSmall),
+              child: Text('From your bag', style: headingStyle(context)),
             ),
             if (fits.isEmpty)
               const ListTile(

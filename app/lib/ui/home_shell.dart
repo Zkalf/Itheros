@@ -10,6 +10,7 @@ import 'labels.dart';
 import 'now_tab.dart';
 import 'professions_tab.dart';
 import 'settings_screen.dart';
+import 'theme.dart';
 import 'world_tab.dart';
 
 class HomeShell extends StatefulWidget {
@@ -65,45 +66,55 @@ class _HomeShellState extends State<HomeShell> {
       });
     }
     return Scaffold(
+      // No title: the lit tab names the screen (spec 0014 §4.1). The three
+      // buttons stand on one plate (§2.2).
       appBar: AppBar(
-        title: Text(_screen.title),
         actions: [
-          IconButton(
-            key: const ValueKey('achievements-button'),
-            icon: Badge(
-              key: const ValueKey('achievements-dot'),
-              isLabelVisible: c.unseenAchievements.isNotEmpty,
-              child: const Icon(Icons.emoji_events),
-            ),
-            tooltip: 'Achievements',
-            onPressed: () {
-              final unseen = c.unseenAchievements;
-              c.markSeen(unseen);
-              final fresh = {
-                for (final id in unseen) id.substring('achievement.'.length),
-              };
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => AchievementsScreen(fresh: fresh),
+          BarPlate(
+            children: [
+              IconButton(
+                key: const ValueKey('achievements-button'),
+                icon: Badge(
+                  key: const ValueKey('achievements-dot'),
+                  isLabelVisible: c.unseenAchievements.isNotEmpty,
+                  child: const Icon(Icons.emoji_events),
                 ),
-              );
-            },
-          ),
-          IconButton(
-            key: const ValueKey('journal-button'),
-            icon: const Icon(Icons.menu_book),
-            tooltip: 'Journal',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const JournalScreen()),
-            ),
-          ),
-          IconButton(
-            key: const ValueKey('settings-button'),
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-            ),
+                tooltip: 'Achievements',
+                onPressed: () {
+                  final unseen = c.unseenAchievements;
+                  c.markSeen(unseen);
+                  final fresh = {
+                    for (final id in unseen)
+                      id.substring('achievement.'.length),
+                  };
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => AchievementsScreen(fresh: fresh),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                key: const ValueKey('journal-button'),
+                icon: const Icon(Icons.menu_book),
+                tooltip: 'Journal',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const JournalScreen(),
+                  ),
+                ),
+              ),
+              IconButton(
+                key: const ValueKey('settings-button'),
+                icon: const Icon(Icons.settings),
+                tooltip: 'Settings',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -134,18 +145,56 @@ class _HomeShellState extends State<HomeShell> {
           _Screen.character => const CharacterTab(),
         },
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: screens.indexOf(_screen),
-        onDestinationSelected: (i) => setState(() => _screen = screens[i]),
-        destinations: [
-          for (final screen in screens)
-            NavigationDestination(
-              key: ValueKey('tab-${screen.name}'),
-              icon: Icon(screen.icon),
-              label: screen.title,
+      // The bottom bar is a plate with the four tabs (spec 0014 §2.2).
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
+          child: DecoratedBox(
+            decoration: plateDecoration,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: NavigationBar(
+                selectedIndex: screens.indexOf(_screen),
+                onDestinationSelected: (i) =>
+                    setState(() => _screen = screens[i]),
+                destinations: [
+                  for (final screen in screens)
+                    _Tab(
+                      key: ValueKey('tab-${screen.name}'),
+                      icon: Icon(screen.icon),
+                      label: screen.title,
+                      lit: screen == _screen,
+                    ),
+                ],
+              ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
+}
+
+/// A tab of the bottom bar in a box with the 2 dp black border; the lit tab
+/// is lit (spec 0014 §2.2). It stays a NavigationDestination, so the bar
+/// stays a NavigationBar (plan 0017).
+class _Tab extends NavigationDestination {
+  const _Tab({
+    super.key,
+    required super.icon,
+    required super.label,
+    required this.lit,
+  });
+
+  final bool lit;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(3),
+    child: ControlBox(
+      fill: lit ? Quiet.lit : Quiet.transparent,
+      child: super.build(context),
+    ),
+  );
 }

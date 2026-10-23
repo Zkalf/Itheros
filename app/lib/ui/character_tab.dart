@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'bag_grid.dart';
 import 'controller_scope.dart';
 import 'paper_doll.dart';
+import 'theme.dart';
 
 /// Who am I (spec 0008 §3.5): level, stats and rank above two small tabs,
 /// Gear (the paper doll) and Bag. Talents join them with their spec.
@@ -30,7 +31,7 @@ class _CharacterTabState extends State<CharacterTab> {
     final text = Theme.of(context).textTheme;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(gutter),
       children: [
         Card(
           child: Padding(
@@ -92,26 +93,37 @@ class _CharacterTabState extends State<CharacterTab> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(
-              value: false,
-              label: Text('Gear', key: ValueKey('tab-gear')),
-              icon: Icon(Icons.accessibility_new),
+        // The segments, the doll and the bag stand on plates (spec 0014
+        // §2.2).
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(gutter),
+            child: SegmentedButton<bool>(
+              expandedInsets: EdgeInsets.zero,
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('Gear', key: ValueKey('tab-gear')),
+                  icon: Icon(Icons.accessibility_new),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Bag', key: ValueKey('tab-bag')),
+                  icon: Icon(Icons.backpack),
+                ),
+              ],
+              selected: {_bag},
+              showSelectedIcon: false,
+              onSelectionChanged: (v) => setState(() => _bag = v.single),
             ),
-            ButtonSegment(
-              value: true,
-              label: Text('Bag', key: ValueKey('tab-bag')),
-              icon: Icon(Icons.backpack),
-            ),
-          ],
-          selected: {_bag},
-          showSelectedIcon: false,
-          onSelectionChanged: (v) => setState(() => _bag = v.single),
+          ),
         ),
-        const SizedBox(height: 16),
-        if (_bag) BagGrid(controller: c) else PaperDoll(controller: c),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: _bag ? BagGrid(controller: c) : PaperDoll(controller: c),
+          ),
+        ),
       ],
     );
   }
@@ -156,7 +168,12 @@ class _RankTitleState extends State<_RankTitle> {
     onTap: _tap,
     child: Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: Text(widget.name, style: Theme.of(context).textTheme.titleMedium),
+      // The rank is teal (spec 0014 §2.1).
+      child: Text(
+        widget.name,
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(color: Quiet.teal),
+      ),
     ),
   );
 }
@@ -176,8 +193,12 @@ class _Stat extends StatelessWidget {
     return Column(
       key: ValueKey('stat-$label'),
       children: [
-        Text(value, style: text.headlineSmall),
-        Text(label, style: text.bodySmall),
+        // A stat value is a number that stands alone (spec 0014 §2.2).
+        Text(
+          value,
+          style: text.headlineSmall?.copyWith(fontFamily: Fonts.number),
+        ),
+        Text(label, style: text.labelSmall?.copyWith(color: Quiet.muted)),
         if (meal > 0) Text('(+$meal meal)', style: text.bodySmall),
       ],
     );

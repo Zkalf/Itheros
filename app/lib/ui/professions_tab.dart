@@ -9,6 +9,7 @@ import 'item_square.dart';
 import 'labels.dart';
 import 'level_badge.dart';
 import 'meals.dart';
+import 'theme.dart';
 
 /// "Have level" or "Up to 5 levels ahead": never both (spec 0010
 /// amendment 3).
@@ -36,21 +37,32 @@ class ProfessionsTab extends StatelessWidget {
     final c = ControllerScope.of(context);
     final game = c.game;
     final text = Theme.of(context).textTheme;
+    // Slate buttons with the border, on one plate (spec 0014 §2.2).
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(gutter),
       children: [
-        for (final p in game.data.professions.values)
-          Card(
-            key: ValueKey('profession-button-${p.id}'),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () => openProfession(context, p.id, filter),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: _Summary(controller: c, profession: p, text: text),
-              ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(gutter),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: gutter,
+              children: [
+                for (final p in game.data.professions.values)
+                  TextButton(
+                    key: ValueKey('profession-button-${p.id}'),
+                    style: ButtonStyle(
+                      padding: sinkingPadding(const EdgeInsets.all(14)),
+                      alignment: Alignment.centerLeft,
+                      textStyle: WidgetStatePropertyAll(text.bodyMedium),
+                    ),
+                    onPressed: () => openProfession(context, p.id, filter),
+                    child: _Summary(controller: c, profession: p, text: text),
+                  ),
+              ],
             ),
           ),
+        ),
       ],
     );
   }
@@ -89,7 +101,8 @@ class _Summary extends StatelessWidget {
             const SizedBox(width: 8),
             Text(p.name, style: text.titleLarge),
             const Spacer(),
-            if (learned) Text('Level $level', style: text.titleMedium),
+            if (learned)
+              Text.rich(numberSpan('Level $level'), style: text.titleMedium),
           ],
         ),
         const SizedBox(height: 8),
@@ -100,7 +113,10 @@ class _Summary extends StatelessWidget {
             children: [
               Text(p.tierAt(level).name, style: text.titleSmall),
               const Spacer(),
-              Text('${fmt(xp)} / ${fmt(next)} XP', style: text.bodySmall),
+              Text.rich(
+                numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
+                style: text.bodySmall,
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -159,7 +175,7 @@ class ProfessionScreen extends StatelessWidget {
     );
     final route = ModalRoute.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(p.name)),
+      appBar: AppBar(leading: const BackPlate(), title: Text(p.name)),
       body: ShowNow(
         show: () {
           if (route != null && route.isActive) {
@@ -187,38 +203,43 @@ class ProfessionScreen extends StatelessWidget {
               }
 
               return ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(gutter),
                 children: [
-                  if (recipes) ...[
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        FilterChip(
-                          key: const ValueKey('filter-mats'),
-                          label: const Text('Have mats'),
-                          selected: f.mats,
-                          onSelected: (on) => filter.value = RecipeFilter(
-                            mats: on,
-                            level: f.level,
-                          ),
-                        ),
-                        for (final (l, label) in const [
-                          (LevelFilter.level, 'Have level'),
-                          (LevelFilter.ahead, 'Up to 5 levels ahead'),
-                        ])
-                          FilterChip(
-                            key: ValueKey('filter-${l.name}'),
-                            label: Text(label),
-                            selected: f.level == l,
-                            onSelected: (on) => filter.value = RecipeFilter(
-                              mats: f.mats,
-                              level: on ? l : null,
+                  // The filters stand on a plate (spec 0014 §2.2).
+                  if (recipes)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilterChip(
+                              key: const ValueKey('filter-mats'),
+                              label: const Text('Have mats'),
+                              selected: f.mats,
+                              onSelected: (on) => filter.value = RecipeFilter(
+                                mats: on,
+                                level: f.level,
+                              ),
                             ),
-                          ),
-                      ],
+                            for (final (l, label) in const [
+                              (LevelFilter.level, 'Have level'),
+                              (LevelFilter.ahead, 'Up to 5 levels ahead'),
+                            ])
+                              FilterChip(
+                                key: ValueKey('filter-${l.name}'),
+                                label: Text(label),
+                                selected: f.level == l,
+                                onSelected: (on) => filter.value = RecipeFilter(
+                                  mats: f.mats,
+                                  level: on ? l : null,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                  ],
                   _ProfessionCard(controller: c, profession: p, shows: shows),
                 ],
               );
@@ -264,7 +285,8 @@ class _ProfessionCard extends StatelessWidget {
           const SizedBox(width: 8),
           Text(p.name, style: text.titleLarge),
           const Spacer(),
-          if (learned) Text('Level $level', style: text.titleMedium),
+          if (learned)
+            Text.rich(numberSpan('Level $level'), style: text.titleMedium),
         ],
       ),
       const SizedBox(height: 8),
@@ -275,7 +297,10 @@ class _ProfessionCard extends StatelessWidget {
           children: [
             Text(p.tierAt(level).name, style: text.titleSmall),
             const Spacer(),
-            Text('${fmt(xp)} / ${fmt(next)} XP', style: text.bodySmall),
+            Text.rich(
+              numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
+              style: text.bodySmall,
+            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -404,6 +429,7 @@ class _ProfessionCard extends StatelessWidget {
         subtitle: const Text('Where to practise'),
         trailing: FilledButton.tonal(
           key: ValueKey('go-${profession.id}'),
+          style: slateButton,
           onPressed: () => startAction(context, c, Activity.gather(spot.id)),
           child: const Text('Go there'),
         ),
@@ -440,6 +466,7 @@ class _ProfessionCard extends StatelessWidget {
           ? null
           : FilledButton.tonal(
               key: const ValueKey('go-cooking'),
+              style: slateButton,
               onPressed: () =>
                   startAction(context, c, Activity.travel(fire.key)),
               child: const Text('Go there'),
@@ -489,7 +516,7 @@ class _ProfessionCard extends StatelessWidget {
     ];
     return [
       const SizedBox(height: 8),
-      Text('Records', style: Theme.of(context).textTheme.titleSmall),
+      Text('Records', style: headingStyle(context)),
       for (final f in fish)
         Text(switch (s.records[f]) {
           final w? => '${labels.plain(f)} · ${labels.kg(w)}',
@@ -513,7 +540,6 @@ class _RecipeTile extends StatelessWidget {
     final labels = Labels(game.data);
     final r = game.data.recipes[recipe]!;
     final out = game.data.items[r.output]!;
-    final short = Theme.of(context).colorScheme.error;
     final active = s.activity?.activity == Activity.craft(recipe);
     // With 3 queue slots a craft can always be queued before its materials
     // are gathered (spec 0003 §4, spec 0008 decision 7); only its Crafting
@@ -551,7 +577,7 @@ class _RecipeTile extends StatelessWidget {
                 text:
                     '${labels.item(e.key)} ${s.inventory[e.key] ?? 0}/${e.value}',
                 style: (s.inventory[e.key] ?? 0) < e.value
-                    ? TextStyle(color: short)
+                    ? const TextStyle(color: Quiet.short)
                     : null,
               ),
             ],
@@ -566,7 +592,7 @@ class _RecipeTile extends StatelessWidget {
           ],
         ),
       ),
-      trailing: active ? const Chip(label: Text('Active')) : null,
+      trailing: active ? statusChip('Active', Quiet.steel) : null,
       onTap: active || !levelMet
           ? null
           : () => startAction(context, c, Activity.craft(recipe)),

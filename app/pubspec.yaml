@@ -21,3 +21,40 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # The licences of the fonts below, shown from Settings (spec 0014 §2.2).
+  assets:
+    - assets/fonts/OFL-CormorantGaramond.txt
+    - assets/fonts/OFL-AlegreyaSans.txt
+    - assets/fonts/OFL-AlegreyaSansSC.txt
+    - assets/fonts/OFL-Spectral.txt
+
+  # Spec 0014 §2.2 and the font table of plan 0017, all SIL OFL 1.1.
+  fonts:
+    - family: Cormorant Garamond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond-SemiBold.ttf
+          weight: 600
+    - family: Alegreya Sans
+      fonts:
+        - asset: assets/fonts/AlegreyaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AlegreyaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AlegreyaSans-Italic.ttf
+          weight: 400
+          style: italic
+    - family: Alegreya Sans SC
+      fonts:
+        - asset: assets/fonts/AlegreyaSansSC-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AlegreyaSansSC-ExtraBold.ttf
+          weight: 800
+    - family: Spectral
+      fonts:
+        - asset: assets/fonts/Spectral-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Spectral-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Spectral-Bold.ttf
+          weight: 700

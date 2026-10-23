@@ -3,6 +3,7 @@ import 'package:game_core/game_core.dart';
 
 import 'controller_scope.dart';
 import 'labels.dart';
+import 'theme.dart';
 
 /// Opens from the trophy button in the top bar (spec 0006 amendment 2).
 class AchievementsScreen extends StatelessWidget {
@@ -18,10 +19,13 @@ class AchievementsScreen extends StatelessWidget {
     final labels = Labels(c.game.data);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Achievements')),
+      appBar: AppBar(
+        leading: const BackPlate(),
+        title: const Text('Achievements'),
+      ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(gutter),
           children: [
             for (final a in c.game.data.achievements.values)
               _AchievementTile(
@@ -64,10 +68,12 @@ class _AchievementTile extends StatelessWidget {
           color: unlocked ? Theme.of(context).colorScheme.primary : null,
         ),
         title: Text(a.name),
+        // "New" is a teal outline (spec 0014 §2.1, §2.2).
         trailing: fresh
-            ? Chip(
+            ? statusChip(
+                'New',
+                Quiet.teal,
                 key: ValueKey('achievement-new-${a.id}'),
-                label: const Text('New'),
               )
             : null,
         subtitle: Column(
@@ -77,8 +83,12 @@ class _AchievementTile extends StatelessWidget {
             if (a.bankCapReward > 0)
               Text('Reward: +${fmt(a.bankCapReward)} step bank cap'),
             const SizedBox(height: 6),
-            LinearProgressIndicator(value: shown / a.atLeast),
-            Text('${fmt(shown)} / ${fmt(a.atLeast)}'),
+            // The bar of an achievement is teal (spec 0014 §2.3).
+            LinearProgressIndicator(
+              value: shown / a.atLeast,
+              color: Quiet.teal,
+            ),
+            Text.rich(numberSpan('${fmt(shown)} / ${fmt(a.atLeast)}')),
           ],
         ),
       ),
