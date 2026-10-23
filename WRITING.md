@@ -15,7 +15,12 @@ This principle comes before every rule below.
 - Commit messages. The owner squash-merges each pull request, so its title becomes the commit title on `main`.
 - Code comments.
 - Incident records.
-- Release notes. They are for players, but they are outside the game.
+- Release notes. They are for players, so they get the light touch below, like the words in the game. They keep
+  their voice.
+
+The rules apply to new texts. Accepted intents, specs and plans are never edited (see `CLAUDE.md`). A clearer
+version of one comes as a new clean edition that the owner accepts. The clean edition keeps every fact and every
+section and criterion number.
 
 **Words that players see in the game are out of scope.** Screen text and the lines in `data/*.json` are design
 decisions. The spec of each feature owns them. The owner accepts them with that spec. This file does not override
