@@ -478,12 +478,24 @@ String _withoutComments(String code) => code
 /// spec 0014 allows it. These pass:
 /// - a `Color(0x...)` literal whose RGB is allowed;
 /// - `Colors.black`, `Colors.white` and `Colors.transparent`;
-/// - a `Color(...)` made from a colour of the game data (`.colour`): the
-///   quality colours.
+/// - a `Color(...)` made from a colour of the game data (`.colour` inside
+///   its parentheses): the quality colours.
 /// Each other colour expression fails: each other `Colors` name, each named
 /// constructor or static of Color (`fromARGB`, `fromRGBO`, `from`, `lerp`),
-/// a swatch or an HSV or HSL colour, and each other `Color(...)`.
+/// a swatch or an HSV or HSL colour, each other `Color(...)` (also as
+/// `ui.Color`), and a change of the red, green or blue of a colour
+/// (`withRed`, `withGreen`, `withBlue`, `withValues` with a channel).
 Iterable<(int, String, bool)> _colours(String code, Set<int> allowed) sync* {
+  // The text between the parenthesis at [open] and the one that closes it.
+  String inside(int open) {
+    var depth = 0;
+    for (var i = open; i < code.length; i++) {
+      if (code[i] == '(') depth++;
+      if (code[i] == ')' && --depth == 0) return code.substring(open + 1, i);
+    }
+    return code.substring(open + 1);
+  }
+
   for (final m in RegExp(r'(?<![\w.])Colors\.(\w+)').allMatches(code)) {
     yield (m.start, m[0]!, {'black', 'white', 'transparent'}.contains(m[1]));
   }
@@ -493,18 +505,28 @@ Iterable<(int, String, bool)> _colours(String code, Set<int> allowed) sync* {
   ).allMatches(code)) {
     yield (m.start, m[0]!, false);
   }
-  for (final m in RegExp(r'(?<![\w.])Color(\.\w+|\()').allMatches(code)) {
-    final literal = RegExp(r'\(\s*0x([0-9A-Fa-f]{1,8})\s*\)')
-        .matchAsPrefix(code, m.end - 1);
-    final end = code.indexOf(';', m.start);
-    final statement = code.substring(m.start, end < 0 ? code.length : end);
+  for (final m in RegExp(
+    r'(?<![\w.])(?:ui\.)?Color(\.\w+|\()',
+  ).allMatches(code)) {
+    if (m[1] != '(') {
+      yield (m.start, m[0]!, false);
+      continue;
+    }
+    final arg = inside(m.end - 1).trim();
+    final literal = RegExp(r'^0x([0-9A-Fa-f]{1,8})$').firstMatch(arg);
     yield (
       m.start,
-      literal == null ? statement : 'Color${literal[0]}',
+      '${m[0]}$arg)',
       literal != null
           ? allowed.contains(int.parse(literal[1]!, radix: 16) & 0xFFFFFF)
-          : m[1] == '(' && statement.contains('.colour'),
+          : arg.contains('.colour'),
     );
+  }
+  for (final m in RegExp(r'\.with(Red|Green|Blue|Values)\(').allMatches(code)) {
+    final arg = inside(m.end - 1);
+    if (m[1] != 'Values' || RegExp(r'\b(?:red|green|blue)\s*:').hasMatch(arg)) {
+      yield (m.start, '${m[0]}$arg)', false);
+    }
   }
 }
 

@@ -534,6 +534,20 @@ void criterion3() {
             ],
           ),
           (
+            'the gathering spot and its place in the row "Where to practise" '
+                'on a profession screen',
+            (t) => openProfession(t, 'mining'),
+            [
+              for (final name in [
+                game.data.nodes['copper_vein']!.name,
+                game.data.locations.values
+                    .firstWhere((l) => l.nodes.contains('copper_vein'))
+                    .name,
+              ])
+                (find.byKey(const ValueKey('profession-mining')), name),
+            ],
+          ),
+          (
             'an achievement',
             openAchievements,
             [(null, game.data.achievements.values.first.name)],
@@ -566,11 +580,9 @@ void criterion3() {
         await pumpGame(t);
         await open(t);
         for (final (within, name) in names) {
-          expect(
-            styleOf(t, name, within: within).fontFamily,
-            cormorant,
-            reason: '"$name" in $where',
-          );
+          for (final (_, style) in piecesWith(t, name, within: within)) {
+            expect(style.fontFamily, cormorant, reason: '"$name" in $where');
+          }
         }
       });
     }
