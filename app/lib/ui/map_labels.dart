@@ -40,7 +40,16 @@ class MapPlate {
 /// places the label with the fewest free spots first. If no placement
 /// keeps each rule, each label takes the spot that overlaps least. The same
 /// input gives the same rects.
-({Map<String, Rect> names, List<Rect> plates}) placeMapLabels({
+/// - [sizes] gives the index in [MapName.sizes] of the size of each name.
+/// - [clean] is false when the search found no placement that keeps each
+///   rule, so that the labels overlap.
+({
+  Map<String, Rect> names,
+  Map<String, int> sizes,
+  List<Rect> plates,
+  bool clean,
+})
+placeMapLabels({
   required Size map,
   required List<MapName> names,
   required List<MapPlate> plates,
@@ -49,21 +58,29 @@ class MapPlate {
   final markers = [for (final n in names) n.marker];
   final spots = [
     for (final n in names) _nameSpots(n, area).toList(),
-    for (final p in plates) _plateSpots(p, area).toList(),
+    for (final p in plates)
+      [for (final rect in _plateSpots(p, area)) (rect: rect, size: 0)],
   ];
   final free = [
     for (final s in spots)
       [
-        for (final r in s)
-          if (!markers.any((m) => _overlap(r, m))) r,
+        for (final spot in s)
+          if (!markers.any((m) => _overlap(spot.rect, m))) spot,
       ],
   ];
-  final placed = _search(free) ?? _leastOverlap(spots, markers);
+  final found = _search(free);
+  final placed = found ?? _leastOverlap(spots, markers);
   return (
-    names: {for (final (i, n) in names.indexed) n.place: placed[i]},
-    plates: placed.sublist(names.length),
+    names: {for (final (i, n) in names.indexed) n.place: placed[i].rect},
+    sizes: {for (final (i, n) in names.indexed) n.place: placed[i].size},
+    plates: [for (final spot in placed.skip(names.length)) spot.rect],
+    clean: found != null,
   );
 }
+
+/// A place where a label can stand, and the index of the size that it has
+/// there.
+typedef _Spot = ({Rect rect, int size});
 
 /// The room between a name and its marker, and the most that a name may
 /// lie from its marker.
@@ -73,9 +90,9 @@ const _near = 8.0;
 /// Each place where [name] can stand, the best look first: centred below,
 /// above, right of and left of its marker; then moved along each side; then
 /// the same on two lines. A spot at the edge of [area] moves inside it.
-Iterable<Rect> _nameSpots(MapName name, Rect area) sync* {
+Iterable<_Spot> _nameSpots(MapName name, Rect area) sync* {
   final m = name.marker;
-  for (final s in name.sizes) {
+  for (final (size, s) in name.sizes.indexed) {
     if (s.width > area.width || s.height > area.height) continue;
     // From the centre of a side to its corners, by parts of the room that
     // the name has along that side.
@@ -89,7 +106,7 @@ Iterable<Rect> _nameSpots(MapName name, Rect area) sync* {
         (m.left - _gap - s.width, y),
       ]) {
         final r = _into(Rect.fromLTWH(left, top, s.width, s.height), area);
-        if (_distance(r, m) <= _near) yield r;
+        if (_distance(r, m) <= _near) yield (rect: r, size: size);
       }
     }
   }
@@ -121,10 +138,10 @@ Iterable<Rect> _plateSpots(MapPlate plate, Rect area) sync* {
 /// or null. The label with the fewest spots left goes first; each label
 /// tries its spots in their order. The search stops after a fixed number of
 /// tries, so that a crowded map does not hold up the screen.
-List<Rect>? _search(List<List<Rect>> spots) {
-  final placed = List<Rect?>.filled(spots.length, null);
+List<_Spot>? _search(List<List<_Spot>> spots) {
+  final placed = List<_Spot?>.filled(spots.length, null);
   var tries = 4000;
-  bool place(List<List<Rect>> left) {
+  bool place(List<List<_Spot>> left) {
     int? next;
     for (var i = 0; i < left.length; i++) {
       if (placed[i] == null &&
@@ -141,8 +158,8 @@ List<Rect>? _search(List<List<Rect>> spots) {
           placed[i] != null
               ? left[i]
               : [
-                  for (final r in left[i])
-                    if (!_overlap(r, spot)) r,
+                  for (final s in left[i])
+                    if (!_overlap(s.rect, spot.rect)) s,
                 ],
       ];
       if (rest.every((s) => s.isNotEmpty) && place(rest)) return true;
@@ -151,36 +168,38 @@ List<Rect>? _search(List<List<Rect>> spots) {
     return false;
   }
 
-  return place(spots) ? [for (final r in placed) r!] : null;
+  return place(spots) ? [for (final s in placed) s!] : null;
 }
 
 /// For a map where no placement keeps each rule, for example on a narrow
 /// phone: each label in turn takes the spot that overlaps the markers and
 /// the labels before it least. Then each label moves to the spot that
 /// overlaps all others least, for a few rounds.
-List<Rect> _leastOverlap(List<List<Rect>> spots, List<Rect> markers) {
-  double cost(Rect r, Iterable<Rect> others) => others.fold(0, (sum, o) {
-    final both = r.intersect(o);
+List<_Spot> _leastOverlap(List<List<_Spot>> spots, List<Rect> markers) {
+  double cost(_Spot s, Iterable<Rect> others) => others.fold(0, (sum, o) {
+    final both = s.rect.intersect(o);
     return both.width > 0 && both.height > 0
         ? sum + both.width * both.height
         : sum;
   });
-  Rect best(List<Rect> s, Iterable<Rect> others, Rect start) =>
+  _Spot best(List<_Spot> s, Iterable<Rect> others, _Spot start) =>
       s.fold(start, (a, b) => cost(b, others) < cost(a, others) ? b : a);
 
-  final placed = <Rect>[];
+  final placed = <_Spot>[];
   for (final s in spots) {
     // A label without a spot is too big for the map: it takes no room.
     placed.add(
-      s.isEmpty ? Rect.zero : best(s, [...markers, ...placed], s.first),
+      s.isEmpty
+          ? (rect: Rect.zero, size: 0)
+          : best(s, [...markers, for (final p in placed) p.rect], s.first),
     );
   }
   for (var round = 0; round < 3; round++) {
     for (final (i, s) in spots.indexed) {
       final others = [
         ...markers,
-        for (final (j, r) in placed.indexed)
-          if (j != i) r,
+        for (final (j, p) in placed.indexed)
+          if (j != i) p.rect,
       ];
       placed[i] = best(s, others, placed[i]);
     }

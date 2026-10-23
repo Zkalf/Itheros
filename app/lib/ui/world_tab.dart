@@ -30,55 +30,52 @@ class WorldTab extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: c.syncNow,
       child: LayoutBuilder(
-        builder: (context, box) {
-          // Below 360 dp the map keeps the layout of 360 dp, drawn smaller,
-          // so that nothing overlaps there either (spec 0014 criterion 18).
-          final width = math.max(box.maxWidth, 360.0);
-          final map = MapView(
-            width: width,
-            places: [
-              for (final area in game.data.locations.keys)
-                if (!game.isHidden(s, area))
-                  MapSpot(
-                    area,
-                    key: ValueKey('area-$area'),
-                    name: game.isFogged(s, area)
-                        ? '???'
-                        : labels.location(area),
-                    fogged: game.isFogged(s, area),
-                    onTap: () => _open(context, c, area),
-                  ),
-            ],
-            roads: [
-              // A hidden area's roads aren't drawn either (spec 0011
-              // §6.2).
-              for (final r in game.data.routes)
-                if (!game.isHidden(s, r.from) && !game.isHidden(s, r.to))
-                  (
-                    r.from,
-                    r.to,
-                    game.isFogged(s, r.from) || game.isFogged(s, r.to)
-                        ? null
-                        : fmt(r.steps),
-                  ),
-            ],
-            here: s.location,
-          );
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              if (width > box.maxWidth) FittedBox(child: map) else map,
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Tap a place to see what lives there.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
+        builder: (context, box) => ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            fitMap(
+              box.maxWidth,
+              (width) => MapView(
+                width: width,
+                places: [
+                  for (final area in game.data.locations.keys)
+                    if (!game.isHidden(s, area))
+                      MapSpot(
+                        area,
+                        key: ValueKey('area-$area'),
+                        name: game.isFogged(s, area)
+                            ? '???'
+                            : labels.location(area),
+                        fogged: game.isFogged(s, area),
+                        onTap: () => _open(context, c, area),
+                      ),
+                ],
+                roads: [
+                  // A hidden area's roads aren't drawn either (spec 0011
+                  // §6.2).
+                  for (final r in game.data.routes)
+                    if (!game.isHidden(s, r.from) && !game.isHidden(s, r.to))
+                      (
+                        r.from,
+                        r.to,
+                        game.isFogged(s, r.from) || game.isFogged(s, r.to)
+                            ? null
+                            : fmt(r.steps),
+                      ),
+                ],
+                here: s.location,
               ),
-            ],
-          );
-        },
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Tap a place to see what lives there.',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -181,14 +178,11 @@ class MapView extends StatelessWidget {
         p.id: placeCentre(data, p.id, whole, _room) - shown.topLeft,
     };
     // A name on one line, and on two lines if it has a space.
-    final texts = {
+    final lines = {
       for (final p in places)
         p.id: [
-          for (final text in [
-            p.name,
-            if (p.name.contains(' ')) p.name.replaceFirst(' ', '\n'),
-          ])
-            (text, _namePad.inflateSize(_measure(text, styleOf(p)))),
+          p.name,
+          if (p.name.contains(' ')) p.name.replaceFirst(' ', '\n'),
         ],
     };
     final placed = placeMapLabels(
@@ -198,7 +192,10 @@ class MapView extends StatelessWidget {
           MapName(
             place: p.id,
             marker: Rect.fromCircle(center: centres[p.id]!, radius: _room),
-            sizes: [for (final (_, size) in texts[p.id]!) size],
+            sizes: [
+              for (final text in lines[p.id]!)
+                _namePad.inflateSize(_measure(text, styleOf(p))),
+            ],
           ),
       ],
       plates: [
@@ -245,7 +242,8 @@ class MapView extends StatelessWidget {
               p,
               centre: centres[p.id]!,
               name: placed.names[p.id]!,
-              texts: texts[p.id]!,
+              // The text of the size that the placement gave the name.
+              text: lines[p.id]![placed.sizes[p.id]!],
               style: styleOf(p),
               picture: images.pictureOf(
                 data,
@@ -264,7 +262,7 @@ class MapView extends StatelessWidget {
     MapSpot spot, {
     required Offset centre,
     required Rect name,
-    required List<(String, Size)> texts,
+    required String text,
     required TextStyle style,
     required Picture picture,
   }) {
@@ -278,11 +276,6 @@ class MapView extends StatelessWidget {
     final face = Rect.fromCircle(
       center: centre - box.topLeft,
       radius: marker / 2,
-    );
-    // The text of the size that the placement gave the name.
-    final (text, _) = texts.firstWhere(
-      (t) => (t.$2.height - name.height).abs() < .01,
-      orElse: () => texts.first,
     );
     return Positioned.fromRect(
       rect: box,
@@ -352,6 +345,14 @@ Offset placeCentre(GameData data, String place, Size size, double reach) {
   );
 }
 
+/// The map that [build] makes at a width, for a screen [width] wide. Below
+/// 360 dp a map keeps the layout of 360 dp and is drawn smaller, so that
+/// nothing on it overlaps there either (spec 0014 §2.3).
+Widget fitMap(double width, Widget Function(double width) build) =>
+    width < _least ? FittedBox(child: build(_least)) : build(width);
+
+const _least = 360.0;
+
 /// The one teal ring of the current place, flush around its marker (spec
 /// 0014 §2.3), with a black edge outside it and a soft teal glow.
 class _Ring extends StatelessWidget {
@@ -391,6 +392,18 @@ class MapPainter extends CustomPainter {
   /// The style of each step count.
   final TextStyle stepStyle;
 
+  /// Each step count, laid out once for this painter and not on each paint.
+  /// The painter keeps them while it lives: a canvas that records the
+  /// paint, such as the one of a test, reads its paragraphs afterwards.
+  late final _counts = [
+    for (final (_, _, steps) in paths)
+      if (steps != null)
+        TextPainter(
+          text: TextSpan(text: steps, style: stepStyle),
+          textDirection: TextDirection.ltr,
+        )..layout(),
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
     Paint pen(Color colour, double width) => Paint()
@@ -419,16 +432,11 @@ class MapPainter extends CustomPainter {
       }
     }
     // The plates stand on the roads, each with its count in the middle.
-    final counts = [for (final (_, _, steps) in paths) ?steps];
-    for (final (i, steps) in counts.indexed) {
+    for (final (i, label) in _counts.indexed) {
       final plate = RRect.fromRectAndRadius(
         plates[i],
         const Radius.circular(6),
       );
-      final label = TextPainter(
-        text: TextSpan(text: steps, style: stepStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
       canvas
         ..drawRRect(
           plate,

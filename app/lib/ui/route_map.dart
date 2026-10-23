@@ -5,7 +5,7 @@ import 'package:game_core/game_core.dart';
 
 import 'controller_scope.dart';
 import 'labels.dart';
-import 'world_tab.dart' show MapSpot, MapView;
+import 'world_tab.dart' show MapSpot, MapView, fitMap;
 
 /// The room of the route map above the highest place of a route and below
 /// the lowest, and its least height (plan 0017, M3).
@@ -74,22 +74,28 @@ class RouteMap extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
+      // As the World map, the route map keeps the layout of 360 dp in a
+      // narrower card, drawn smaller.
       child: LayoutBuilder(
-        builder: (context, box) => ClipRRect(
-          key: const ValueKey('route-map'),
-          borderRadius: BorderRadius.circular(12),
-          child: MapView(
-            width: box.maxWidth,
-            strip: routeStrip(data, route, box.maxWidth),
-            places: [
-              for (final p in route.toSet())
-                MapSpot(p, key: ValueKey('route-$p'), name: labels.location(p)),
-            ],
-            roads: roads.values.toList(),
-            here: route.last,
-            // Smaller than on the World map, as the kit has them: the strip
-            // is narrower, and the places of a route lie close together.
-            marker: 36,
+        builder: (context, box) => fitMap(
+          box.maxWidth,
+          (width) => ClipRRect(
+            key: const ValueKey('route-map'),
+            borderRadius: BorderRadius.circular(12),
+            child: MapView(
+              width: width,
+              strip: routeStrip(data, route, width),
+              places: [
+                for (final p in route.toSet())
+                  MapSpot(
+                    p,
+                    key: ValueKey('route-$p'),
+                    name: labels.location(p),
+                  ),
+              ],
+              roads: roads.values.toList(),
+              here: route.last,
+            ),
           ),
         ),
       ),
