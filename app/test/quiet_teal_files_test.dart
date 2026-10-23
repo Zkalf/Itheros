@@ -11,7 +11,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart' show Color, ColorSwatch, Colors;
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
@@ -184,28 +184,24 @@ void main() {
   });
 
   group('spec 0014 criterion 2: the colours of §2.1, no other warm colour', () {
-    test('each colour literal in lib/ has the RGB of an allowed colour', () {
+    test('each colour in lib/ is a literal of an allowed colour, black, '
+        'white or transparent', () {
       final allowed = allowedRgb(game);
       final outside = <String>[];
-      var literals = 0;
+      var colours = 0;
       final files = Directory('lib')
           .listSync(recursive: true)
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart'));
       for (final f in files) {
         final code = _withoutComments(f.readAsStringSync());
-        for (final (at, text, colour) in _colourLiterals(code)) {
-          literals++;
-          if (colour == null || !allowed.contains(colour)) {
-            final line = '\n'.allMatches(code.substring(0, at)).length + 1;
-            outside.add(
-              '${f.path}:$line: $text '
-              '(${colour == null ? 'the scan cannot read it' : hex(colour)})',
-            );
-          }
+        for (final (at, text, ok) in _colours(code, allowed)) {
+          colours++;
+          final line = '\n'.allMatches(code.substring(0, at)).length + 1;
+          if (!ok) outside.add('${f.path}:$line: $text');
         }
       }
-      expect(literals, greaterThan(0), reason: 'the scan finds no colour');
+      expect(colours, greaterThan(0), reason: 'the scan finds no colour');
       expect(
         outside,
         isEmpty,
@@ -218,7 +214,7 @@ void main() {
 
   group('spec 0014 criterion 3: the four fonts and their licences', () {
     test('pubspec.yaml declares the four families with the nine files', () {
-      expect(_flutterSection(_pubspec).fonts, {
+      expect(_fonts(), {
         for (final MapEntry(key: family, value: files) in fontTable.entries)
           family: {
             for (final (file, weight, style) in files)
@@ -241,7 +237,7 @@ void main() {
     });
 
     test('the four licence texts are assets and hold the SIL OFL 1.1', () {
-      final assets = _flutterSection(_pubspec).assets;
+      final assets = _assets();
       for (final file in licenceFiles.values) {
         final path = 'assets/fonts/$file';
         final f = File(path);
@@ -478,195 +474,94 @@ String _withoutComments(String code) => code
     )
     .replaceAllMapped(RegExp(r'//[^\n]*'), (m) => ' ' * m[0]!.length);
 
-/// Each colour literal of [code]: its offset, its text and its RGB, or null
-/// when the scan cannot read the RGB.
-Iterable<(int, String, int?)> _colourLiterals(String code) sync* {
-  int? ints(List<String> parts) {
-    final n = [for (final p in parts) int.tryParse(p.trim())];
-    if (n.length != 3 || n.contains(null)) return null;
-    return n[0]! << 16 | n[1]! << 8 | n[2]!;
-  }
-
-  for (final m in RegExp(
-    r'(?<![\w.])Color\(\s*0x([0-9A-Fa-f]+)\)?',
-  ).allMatches(code)) {
-    yield (m.start, m[0]!, int.parse(m[1]!, radix: 16) & 0xFFFFFF);
-  }
-  for (final m in RegExp(
-    r'(?<![\w.])Color\.fromARGB\(([^)]*)\)',
-  ).allMatches(code)) {
-    final parts = m[1]!.split(',');
-    yield (m.start, m[0]!, parts.length == 4 ? ints(parts.sublist(1)) : null);
+/// Each colour expression of [code], with its offset, its text and whether
+/// spec 0014 allows it. These pass:
+/// - a `Color(0x...)` literal whose RGB is allowed;
+/// - `Colors.black`, `Colors.white` and `Colors.transparent`;
+/// - a `Color(...)` made from a colour of the game data (`.colour`): the
+///   quality colours.
+/// Each other colour expression fails: each other `Colors` name, each named
+/// constructor or static of Color (`fromARGB`, `fromRGBO`, `from`, `lerp`),
+/// a swatch or an HSV or HSL colour, and each other `Color(...)`.
+Iterable<(int, String, bool)> _colours(String code, Set<int> allowed) sync* {
+  for (final m in RegExp(r'(?<![\w.])Colors\.(\w+)').allMatches(code)) {
+    yield (m.start, m[0]!, {'black', 'white', 'transparent'}.contains(m[1]));
   }
   for (final m in RegExp(
-    r'(?<![\w.])Color\.fromRGBO\(([^)]*)\)',
+    r'(?<![\w.])(?:MaterialColor|MaterialAccentColor|ColorSwatch|HSVColor'
+    r'|HSLColor)\b',
   ).allMatches(code)) {
-    final parts = m[1]!.split(',');
+    yield (m.start, m[0]!, false);
+  }
+  for (final m in RegExp(r'(?<![\w.])Color(\.\w+|\()').allMatches(code)) {
+    final literal = RegExp(r'\(\s*0x([0-9A-Fa-f]{1,8})\s*\)')
+        .matchAsPrefix(code, m.end - 1);
+    final end = code.indexOf(';', m.start);
+    final statement = code.substring(m.start, end < 0 ? code.length : end);
     yield (
       m.start,
-      m[0]!,
-      parts.length == 4 ? ints(parts.sublist(0, 3)) : null,
+      literal == null ? statement : 'Color${literal[0]}',
+      literal != null
+          ? allowed.contains(int.parse(literal[1]!, radix: 16) & 0xFFFFFF)
+          : m[1] == '(' && statement.contains('.colour'),
     );
-  }
-  for (final m in RegExp(
-    r'(?<![\w.])Color\.from\(([^)]*)\)',
-  ).allMatches(code)) {
-    int? channel(String name) {
-      final v = double.tryParse(
-        RegExp('$name:\\s*([0-9.]+)').firstMatch(m[1]!)?[1] ?? '',
-      );
-      return v == null ? null : (v * 255).round();
-    }
-
-    final (r, g, b) = (channel('red'), channel('green'), channel('blue'));
-    yield (
-      m.start,
-      m[0]!,
-      r == null || g == null || b == null ? null : r << 16 | g << 8 | b,
-    );
-  }
-  for (final m in RegExp(
-    r'(?<![\w.])Colors\.(\w+)(?:\[(\d+)\]|\.shade(\d+))?',
-  ).allMatches(code)) {
-    final shade = int.tryParse(m[2] ?? m[3] ?? '');
-    final plain = _plainColours[m[1]!];
-    final swatch = _swatches[m[1]!];
-    final Color? colour = plain != null
-        ? (shade == null ? plain : null)
-        : (shade == null ? swatch : swatch?[shade]);
-    yield (m.start, m[0]!, colour == null ? null : rgb(colour));
   }
 }
 
-const _plainColours = {
-  'transparent': Colors.transparent,
-  'black': Colors.black,
-  'black87': Colors.black87,
-  'black54': Colors.black54,
-  'black45': Colors.black45,
-  'black38': Colors.black38,
-  'black26': Colors.black26,
-  'black12': Colors.black12,
-  'white': Colors.white,
-  'white70': Colors.white70,
-  'white60': Colors.white60,
-  'white54': Colors.white54,
-  'white38': Colors.white38,
-  'white30': Colors.white30,
-  'white24': Colors.white24,
-  'white12': Colors.white12,
-  'white10': Colors.white10,
-};
-
-const Map<String, ColorSwatch<int>> _swatches = {
-  'red': Colors.red,
-  'pink': Colors.pink,
-  'purple': Colors.purple,
-  'deepPurple': Colors.deepPurple,
-  'indigo': Colors.indigo,
-  'blue': Colors.blue,
-  'lightBlue': Colors.lightBlue,
-  'cyan': Colors.cyan,
-  'teal': Colors.teal,
-  'green': Colors.green,
-  'lightGreen': Colors.lightGreen,
-  'lime': Colors.lime,
-  'yellow': Colors.yellow,
-  'amber': Colors.amber,
-  'orange': Colors.orange,
-  'deepOrange': Colors.deepOrange,
-  'brown': Colors.brown,
-  'grey': Colors.grey,
-  'blueGrey': Colors.blueGrey,
-  'redAccent': Colors.redAccent,
-  'pinkAccent': Colors.pinkAccent,
-  'purpleAccent': Colors.purpleAccent,
-  'deepPurpleAccent': Colors.deepPurpleAccent,
-  'indigoAccent': Colors.indigoAccent,
-  'blueAccent': Colors.blueAccent,
-  'lightBlueAccent': Colors.lightBlueAccent,
-  'cyanAccent': Colors.cyanAccent,
-  'tealAccent': Colors.tealAccent,
-  'greenAccent': Colors.greenAccent,
-  'lightGreenAccent': Colors.lightGreenAccent,
-  'limeAccent': Colors.limeAccent,
-  'yellowAccent': Colors.yellowAccent,
-  'amberAccent': Colors.amberAccent,
-  'orangeAccent': Colors.orangeAccent,
-  'deepOrangeAccent': Colors.deepOrangeAccent,
-};
-
-/// The `flutter:` section of pubspec.yaml: its `assets:` list and its font
-/// families, each with its files as (asset, weight, style). A file without a
-/// weight has weight 400, and a file without a style is normal.
-({List<String> assets, Map<String, Set<(String, int, String)>> fonts})
-_flutterSection(String yaml) {
-  final assets = <String>[];
-  final fonts = <String, Set<(String, int, String)>>{};
-  var inFlutter = false;
-  String? key;
-  String? family;
-  String? asset;
-  var weight = 400;
-  var style = 'normal';
-  void flush() {
-    if (family != null && asset != null) {
-      fonts[family]!.add((asset!, weight, style));
-    }
-    asset = null;
-  }
-
-  String value(String s) {
-    var v = s.trim();
-    final comment = v.indexOf(' #');
-    if (comment >= 0) v = v.substring(0, comment).trim();
-    final quoted =
-        v.length >= 2 &&
-        (v.startsWith('"') && v.endsWith('"') ||
-            v.startsWith("'") && v.endsWith("'"));
-    return quoted ? v.substring(1, v.length - 1) : v;
-  }
-
-  for (final raw in yaml.split('\n')) {
-    final line = raw.replaceAll('\r', '');
-    final text = line.trim();
-    if (text.isEmpty || text.startsWith('#')) continue;
-    final indent = line.length - line.trimLeft().length;
-    if (indent == 0) {
-      flush();
-      inFlutter = text == 'flutter:';
-      key = null;
-      continue;
-    }
-    if (!inFlutter) continue;
-    if (indent == 2 && !text.startsWith('-')) {
-      flush();
-      key = text.split(':').first.trim();
-      family = null;
-      continue;
-    }
-    final item = text.startsWith('- ') ? text.substring(2).trim() : text;
-    if (key == 'assets' && text.startsWith('- ')) {
-      assets.add(value(item));
-    } else if (key == 'fonts') {
-      if (item.startsWith('family:')) {
-        flush();
-        family = value(item.substring('family:'.length));
-        fonts[family] = {};
-      } else if (item.startsWith('asset:')) {
-        flush();
-        asset = value(item.substring('asset:'.length));
-        weight = 400;
-        style = 'normal';
-      } else if (item.startsWith('weight:')) {
-        weight = int.tryParse(value(item.substring('weight:'.length))) ?? -1;
-      } else if (item.startsWith('style:')) {
-        style = value(item.substring('style:'.length));
-      }
+/// The lines of the block under `  [key]:` in the `flutter:` section of
+/// pubspec.yaml, trimmed, without comments and empty lines.
+List<String> _flutterBlock(String key) {
+  final out = <String>[];
+  var section = '';
+  var block = '';
+  for (final raw in _pubspec.split('\n')) {
+    final line = raw.replaceAll(RegExp(r'\r|\s*#.*$'), '');
+    if (line.trim().isEmpty) continue;
+    if (!line.startsWith(' ')) {
+      section = line;
+    } else if (!line.startsWith('   ')) {
+      block = line.trim();
+    } else if (section == 'flutter:' && block == '$key:') {
+      out.add(line.trim());
     }
   }
-  flush();
-  return (assets: assets, fonts: fonts);
+  return out;
+}
+
+/// The assets of pubspec.yaml.
+List<String> _assets() => [
+  for (final line in _flutterBlock('assets'))
+    if (RegExp(r'''^- ["']?(.+?)["']?$''').firstMatch(line) case final m?)
+      m[1]!,
+];
+
+/// The font families of pubspec.yaml, each with its files as (asset,
+/// weight, style). A file without a weight has weight 400, and a file
+/// without a style is normal.
+Map<String, Set<(String, int, String)>> _fonts() {
+  final files = <(String, String, int, String)>[];
+  var family = '';
+  for (final line in _flutterBlock('fonts')) {
+    if (RegExp(r'''^- family: ["']?(.+?)["']?$''').firstMatch(line)
+        case final m?) {
+      family = m[1]!;
+    } else if (RegExp(r'^- asset: (\S+)$').firstMatch(line) case final m?) {
+      files.add((family, m[1]!, 400, 'normal'));
+    } else if (RegExp(r'^weight: (\d+)$').firstMatch(line) case final m?) {
+      final (f, a, _, s) = files.removeLast();
+      files.add((f, a, int.parse(m[1]!), s));
+    } else if (RegExp(r'^style: (\w+)$').firstMatch(line) case final m?) {
+      final (f, a, w, _) = files.removeLast();
+      files.add((f, a, w, m[1]!));
+    }
+  }
+  return {
+    for (final (name, _, _, _) in files)
+      name: {
+        for (final (f, asset, weight, style) in files)
+          if (f == name) (asset, weight, style),
+      },
+  };
 }
 
 /// The packages under the top-level [key] of pubspec.yaml.

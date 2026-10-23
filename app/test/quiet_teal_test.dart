@@ -151,34 +151,28 @@ void criterion1() {
 
 void criterion2() {
   group('spec 0014 criterion 2: the colours of §2.1', () {
+    // The only warm colours that the spec allows are short, Risky, the
+    // quality colours and the band colours. So this test also guards "no
+    // other warm colour".
     testWidgets('each colour of the theme is a colour that the spec allows', (
       t,
     ) async {
+      final allowed = allowedRgb(game);
       for (final phone in Brightness.values) {
+        setPhone(t, phone);
+        await pumpGame(t);
+        final theme = Theme.of(t.element(find.byType(HomeShell)));
         expect(
-          await coloursOutside(t, phone),
+          {
+            for (final MapEntry(key: name, value: c) in themeColours(
+              theme,
+            ).entries)
+              if (!allowed.contains(rgb(c))) name: hex(rgb(c)),
+          },
           isEmpty,
           reason:
               'with a ${phone.name} phone setting, these theme colours are '
               'not in §2.1, the quality or band colours or the neutrals',
-        );
-      }
-    });
-
-    testWidgets('no theme colour outside the allowed colours is warm', (
-      t,
-    ) async {
-      for (final phone in Brightness.values) {
-        final outside = await coloursOutside(t, phone);
-        expect(
-          {
-            for (final MapEntry(key: name, value: c) in outside.entries)
-              if (isWarm(c)) name: hex(rgb(c)),
-          },
-          isEmpty,
-          reason:
-              'a hue of 0° to 70° or 330° to 360° with a saturation above '
-              '0.15 is warm; §2.1 allows no other warm colour',
         );
       }
     });
@@ -498,6 +492,100 @@ void criterion3() {
       expect(style.fontStyle, FontStyle.italic);
     });
 
+    // §2.2: "Cormorant Garamond for the wordmark, titles and names." The
+    // name of a thing of the game is a name, also as the title of a row and
+    // on the map. The places come from a new game at Camp, as pumpGame
+    // makes it: each place out of the fog shows its name.
+    final fresh = game.newGame(seed: 1);
+    final hilde = game.data.professions['mining']!.teacher;
+    for (final (where, open, names)
+        in <
+          (String, Future<void> Function(WidgetTester), List<(Finder?, String)>)
+        >[
+          (
+            'a monster row and a gathering spot row on an area sheet',
+            (t) => openArea(t, 'goblin_woods'),
+            [
+              (option('fight', 'goblin'), game.data.enemies['goblin']!.name),
+              (option('gather', 'oak_tree'), game.data.nodes['oak_tree']!.name),
+            ],
+          ),
+          (
+            'a teacher row on Now',
+            (t) async {},
+            [
+              (
+                find.byKey(const ValueKey('teacher-mining')),
+                '${hilde.name}, ${hilde.title}',
+              ),
+            ],
+          ),
+          (
+            'a recipe row on a profession screen',
+            (t) => openProfession(t, 'crafting'),
+            [
+              (
+                option('craft', 'copper_sword'),
+                game
+                    .data
+                    .items[game.data.recipes['copper_sword']!.output]!
+                    .name,
+              ),
+            ],
+          ),
+          (
+            'an achievement',
+            openAchievements,
+            [(null, game.data.achievements.values.first.name)],
+          ),
+          (
+            'a Bestiary row',
+            (t) async {
+              await openJournal(t);
+              await t.tap(find.text('Bestiary'));
+              await t.pumpAndSettle();
+            },
+            [
+              (
+                find.byKey(const ValueKey('bestiary-goblin')),
+                game.data.enemies['goblin']!.name,
+              ),
+            ],
+          ),
+          (
+            'each place name on the World map, the current place included',
+            (t) => openTab(t, 'world'),
+            [
+              for (final l in game.data.locations.values)
+                if (!game.isHidden(fresh, l.id) && !game.isFogged(fresh, l.id))
+                  (find.byKey(ValueKey('area-${l.id}')), l.name),
+            ],
+          ),
+        ]) {
+      testWidgets('a name is in Cormorant Garamond: $where', (t) async {
+        await pumpGame(t);
+        await open(t);
+        for (final (within, name) in names) {
+          expect(
+            styleOf(t, name, within: within).fontFamily,
+            cormorant,
+            reason: '"$name" in $where',
+          );
+        }
+      });
+    }
+
+    // A label row is no name: the rows of Settings stay body text, as the
+    // design phone of Settings (31) shows.
+    testWidgets('a label row is no name: the rows of Settings stay in '
+        'Alegreya Sans', (t) async {
+      await pumpGame(t);
+      await openSettings(t);
+      for (final label in ['Name', 'Gender', 'Show "Next goal"', 'Licences']) {
+        expect(styleOf(t, label).fontFamily, alegreya, reason: label);
+      }
+    });
+
     testWidgets('the stat values of the Character header and the level '
         'numbers of the badges are in Spectral', (t) async {
       await pumpGame(t, location: 'goblin_woods');
@@ -591,25 +679,30 @@ void criterion3() {
       );
       final painter = t.widget<CustomPaint>(map).painter! as MapPainter;
       // MapPainter paints the step counts on a canvas, so no widget holds
-      // their style. The test reads the public field `stepStyle`, the
-      // TextStyle that MapPainter gives each count. A paint on a canvas that
-      // keeps each paragraph then shows that each count has the size of that
-      // style.
-      final style = (painter as dynamic).stepStyle as TextStyle;
+      // their style. The test reads MapPainter.stepStyle. A recording canvas
+      // then shows that each count has the size of that style.
+      final style = painter.stepStyle;
       expect(style.fontFamily, spectral);
-
-      final canvas = _ParagraphRecorder();
+      final canvas = TestRecordingCanvas();
       painter.paint(canvas, t.getSize(map));
+      final drawn = [
+        for (final call in canvas.invocations)
+          if (call.invocation.memberName == #drawParagraph)
+            call.invocation.positionalArguments.first as ui.Paragraph,
+      ];
       final counts = [for (final p in painter.paths) ?p.$3];
-      expect(canvas.paragraphs, hasLength(counts.length));
+      expect(drawn, hasLength(counts.length));
       for (final (i, count) in counts.indexed) {
         final expected = TextPainter(
           text: TextSpan(text: count, style: style),
           textDirection: TextDirection.ltr,
         )..layout();
         addTearDown(expected.dispose);
-        expect(canvas.paragraphs[i].height, expected.height, reason: count);
-        expect(canvas.paragraphs[i].longestLine, expected.width, reason: count);
+        expect(
+          (drawn[i].height, drawn[i].longestLine),
+          (expected.height, expected.width),
+          reason: count,
+        );
       }
     });
 
@@ -1086,6 +1179,29 @@ void criterion5() {
       await openProfession(t, 'mining');
       expectSlate(t, buttonWith('Go there'), 'Go there');
     });
+
+    // §2.2: "A pressed button sinks. A focused button gets a teal ring." The
+    // slate button is on Now, and the teal one on the sheet of a fight.
+    for (final (what, expectLook) in [
+      (
+        'a pressed teal or slate button sinks: no drop shadow, and its label '
+            '1 dp lower',
+        expectSinks,
+      ),
+      (
+        'a focused teal or slate button gets a teal ring outside its border',
+        expectRing,
+      ),
+    ]) {
+      testWidgets(what, (t) async {
+        await pumpGame(t, location: 'goblin_woods');
+        await expectLook(t, 'Open the World map');
+        await openArea(t, 'goblin_woods');
+        await t.tap(option('fight', 'goblin'));
+        await t.pumpAndSettle();
+        await expectLook(t, 'Start');
+      });
+    }
   });
 }
 
@@ -1318,18 +1434,6 @@ Future<List<(double, String)>> readPage(WidgetTester t, Finder page) async {
 
 String squash(String s) => s.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-/// A canvas that keeps each paragraph that a painter draws.
-class _ParagraphRecorder implements Canvas {
-  final paragraphs = <ui.Paragraph>[];
-
-  @override
-  void drawParagraph(ui.Paragraph paragraph, Offset offset) =>
-      paragraphs.add(paragraph);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
-
 // Colours.
 
 /// Expects [c] to have the RGB [expected], at any alpha above 0.
@@ -1341,30 +1445,6 @@ void expectRgb(Color? c, int expected, String what) {
 
 bool sameRgb(Color? c, int expected) =>
     c != null && c.a > 0 && rgb(c) == expected;
-
-/// Whether [c] is warm: a hue from 0° to 70° or from 330° to 360°, with an
-/// HSV saturation above 0.15.
-bool isWarm(Color c) {
-  final hsv = HSVColor.fromColor(c.withValues(alpha: 1));
-  return hsv.saturation > 0.15 && (hsv.hue <= 70 || hsv.hue >= 330);
-}
-
-/// The colours of the app's theme, with [phone] as the phone setting, that
-/// the spec does not allow, by name.
-Future<Map<String, Color>> coloursOutside(
-  WidgetTester t,
-  Brightness phone,
-) async {
-  setPhone(t, phone);
-  await pumpGame(t);
-  final allowed = allowedRgb(game);
-  return {
-    for (final MapEntry(key: name, value: c) in themeColours(
-      Theme.of(t.element(find.byType(HomeShell))),
-    ).entries)
-      if (!allowed.contains(rgb(c))) name: c,
-  };
-}
 
 /// Each colour field of [theme] that a widget can paint: the colour
 /// scheme, the colours of ThemeData that are not deprecated, and the text
@@ -1890,6 +1970,76 @@ void expectTeal(WidgetTester t, Finder button, String name) {
 void expectSlate(WidgetTester t, Finder button, String name) {
   expectRgb(materialOf(t.element(button)).color, slateRgb, '$name: background');
   expectRgb(labelColour(t, button), textRgb, '$name: label');
+}
+
+/// Presses the button with the label [words] and expects it to sink: no
+/// drop shadow, and the label 1 dp lower than at rest. Then it lets go
+/// without a tap.
+Future<void> expectSinks(WidgetTester t, String words) async {
+  final button = buttonWith(words);
+  final label = find.descendant(of: button, matching: find.text(words));
+  final rest = t.getTopLeft(label).dy;
+  final gesture = await t.startGesture(t.getCenter(button));
+  // A button in a list waits for the press timeout.
+  await t.pump(const Duration(milliseconds: 200));
+  expect(
+    materialOf(t.element(button)).elevation,
+    0,
+    reason: '"$words", pressed, has a drop shadow',
+  );
+  expect(
+    t.getTopLeft(label).dy - rest,
+    moreOrLessEquals(1),
+    reason: 'the label of "$words", pressed, is 1 dp lower',
+  );
+  await gesture.cancel();
+  await t.pump();
+}
+
+/// Expects no teal ring around the button with the label [words] at rest,
+/// and a teal ring outside its black border when it has the focus. The ring
+/// is looked for in what the Material of the button paints: its shape, its
+/// background and its foreground.
+Future<void> expectRing(WidgetTester t, String words) async {
+  final button = buttonWith(words);
+  final material = t.renderObject<RenderBox>(
+    find.descendant(of: button, matching: find.byType(Material)).first,
+  );
+  // The Material paints its face from its own origin.
+  final face = Offset.zero & material.size;
+  // A teal line (a stroke, or the band between two rounded rectangles) whose
+  // inner edge lies on or outside the face, and so outside the border.
+  PaintPattern ring() => paints
+    ..something((method, args) {
+      final (inner, paint) = switch (method) {
+        #drawRRect => (
+          (args[0] as RRect).outerRect.deflate(
+            (args[1] as Paint).strokeWidth / 2,
+          ),
+          args[1] as Paint,
+        ),
+        #drawDRRect => ((args[1] as RRect).outerRect, args[2] as Paint),
+        _ => (null, null),
+      };
+      if (inner == null || paint == null) return false;
+      if (method == #drawRRect && paint.style != PaintingStyle.stroke) {
+        return false;
+      }
+      return sameRgb(paint.color, tealRgb) &&
+          inner.left <= face.left &&
+          inner.top <= face.top &&
+          inner.right >= face.right &&
+          inner.bottom >= face.bottom;
+    });
+
+  expect(material, isNot(ring()), reason: '"$words" at rest has a teal ring');
+  Focus.of(t.element(find.descendant(of: button, matching: find.text(words))))
+      .requestFocus();
+  // The focus changes the state of the button, and the next frame its look.
+  await t.pumpAndSettle();
+  expect(material, ring(), reason: '"$words" with the focus has no teal ring');
+  FocusManager.instance.primaryFocus?.unfocus();
+  await t.pumpAndSettle();
 }
 
 /// A ghost button: no fill, and the 2 dp black border.
