@@ -19,9 +19,10 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
 
 ## Findings
 - **Important**: must be fixed before the merge. A wrong result, a broken acceptance criterion, a privacy or
-  save-compatibility risk, a missing test for new behaviour. Each says what goes wrong and how to see it.
-- **Nit**: small and optional (naming, a clearer comment, a simpler line). **At most 3 per review**; the rest are
-  dropped.
+  save-compatibility risk, a missing test for new behaviour, a text that can be read two ways or that loses or
+  changes a fact (`WRITING.md`). Each says what goes wrong and how to see it.
+- **Nit**: small and optional (naming, a clearer comment, a simpler line, wording per `WRITING.md` with its rule
+  number). **At most 3 per review**; the rest are dropped.
 - No findings is a fine result: say so in one line.
 
 ## Never changed, so any change is Important

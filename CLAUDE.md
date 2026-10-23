@@ -7,6 +7,8 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - `intent/`, `specs/`, `plans/`: numbered markdown with a `Status:` line. **Accepted files are immutable**
   (a PreToolUse hook blocks edits). Changes go through a new numbered file or an amendment file the owner accepts.
 - No code before an accepted plan. Each plan milestone ends with its proof, then a commit.
+- Project texts (intents, specs, plans, PRs, reviews, commits, code comments, incidents, release notes) follow
+  `WRITING.md`: read it before drafting one. Accepted files keep their wording (see WRITING.md for clean editions).
 
 ## Commands (Windows, PowerShell 5.1)
 Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -File …`: a nested interpreter can't be
