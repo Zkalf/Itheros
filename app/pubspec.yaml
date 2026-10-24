@@ -37,6 +37,7 @@ flutter:
     - assets/images/players/
     - assets/images/placeholders/
     - assets/images/pictures/
+    - assets/images/spots/
 
   # Spec 0014 §2.2 and the font table of plan 0017, all SIL OFL 1.1.
   fonts:

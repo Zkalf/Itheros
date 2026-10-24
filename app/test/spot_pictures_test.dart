@@ -5,7 +5,6 @@
 // in placeholders_test.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/actions.dart' show professionColour;
 import 'package:walkingrpg/ui/images.dart';
 import 'package:walkingrpg/ui/level_badge.dart';
@@ -64,6 +63,8 @@ void main() {
       for (final MapEntry(key: place, value: spots) in places.entries) {
         await t.pumpWidget(const SizedBox());
         final (c, _) = await pumpGame(t, images: diskImages, location: place);
+        // A hidden place, such as the cove, is on the map once revealed.
+        if (game.data.locations[place]!.hidden) c.state.revealed.add(place);
         for (final (where, within) in [
           ('Now', (Finder f) => inside(hereList, f)),
           ('the area sheet', inSheet),
