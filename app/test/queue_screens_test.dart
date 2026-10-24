@@ -98,6 +98,33 @@ void main() {
       );
       expect(c.state.queue, hasLength(2));
     });
+
+    testWidgets('taps on a needed walk show one message, none once it is '
+        'gone', (t) async {
+      const message = 'Copper vein needs this walk. Remove Copper vein first.';
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await c.addAction(goblins, stop: someHides);
+      await c.addAction(mining, stop: someOre);
+      await settle(t, c);
+      await openTab(t, 'now');
+      for (var i = 0; i < 3; i++) {
+        await t.tap(find.byKey(const ValueKey('remove-1')));
+        await settle(t, c);
+        await t.pump();
+      }
+      expect(find.text(message), findsOneWidget);
+      // The player clears the queue: Copper vein, then its walk.
+      await t.tap(find.byKey(const ValueKey('remove-2')));
+      await settle(t, c);
+      await t.tap(find.byKey(const ValueKey('remove-1')));
+      await settle(t, c);
+      expect(c.state.queue, isEmpty);
+      // No message left over from the earlier taps.
+      for (var i = 0; i < 4; i++) {
+        await t.pump(const Duration(seconds: 5));
+        expect(find.text(message), findsNothing);
+      }
+    });
   });
 
   group('the action sheet', () {
