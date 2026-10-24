@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
 import 'actions.dart';
+import 'images.dart';
 import 'labels.dart';
 import 'level_badge.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Opens [enemy]'s bestiary card on its own (from the Bestiary tab).
@@ -23,9 +25,10 @@ Future<void> showBestiaryCard(
 );
 
 /// What the player knows about [enemy] (spec 0009 §7.1, §8.3): always its
-/// name, level, area, flavour and found drops; its armour after the first
-/// fight, its weakness and stats after 10 kills (or from a lore note), the
-/// Slayer mark at 50. What isn't known yet shows "???". Never drop chances.
+/// image, name, level, area, flavour and found drops; its armour after the
+/// first fight, its weakness and stats after 10 kills (or from a lore note),
+/// the Slayer mark at 50. What isn't known yet shows "???". Never drop
+/// chances.
 class BestiaryCard extends StatelessWidget {
   const BestiaryCard({
     super.key,
@@ -55,9 +58,9 @@ class BestiaryCard extends StatelessWidget {
       final n => '${plural(n, 'more kill')} for Slayer',
     };
 
-    return Column(
-      key: const ValueKey('bestiary-card'),
-      mainAxisSize: MainAxisSize.min,
+    final picture = ImageScope.of(context)
+        .pictureOf(game.data, MonsterThing(enemy));
+    final head = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -65,16 +68,41 @@ class BestiaryCard extends StatelessWidget {
             LevelBadge(level: e.level, colour: game.enemyBand(s, enemy).colour),
             const SizedBox(width: 12),
             Expanded(child: Text(labels.enemy(enemy), style: text.titleLarge)),
-            if (k.slayer)
-              statusChip(
-                'Slayer: +${c0.slayerHit}% Hit',
-                Quiet.teal,
-                avatar: const Icon(Icons.gps_fixed, size: 16),
-              ),
           ],
         ),
         const SizedBox(height: 4),
         Text(labels.homeOf(enemy), style: text.bodySmall),
+        if (k.slayer) ...[
+          const SizedBox(height: 6),
+          statusChip(
+            'Slayer: +${c0.slayerHit}% Hit',
+            Quiet.teal,
+            avatar: const Icon(Icons.gps_fixed, size: 16),
+          ),
+        ],
+      ],
+    );
+
+    // The card starts with the image of the monster (spec 0014 §4.2). A
+    // boss, a monster with first-kill drops, shows it across the full
+    // width, 200 dp tall; each other monster in a 72 dp socket (§2.3).
+    return Column(
+      key: const ValueKey('bestiary-card'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (e.firstKillDrops.isNotEmpty) ...[
+          WidePicture(picture: picture, height: 200),
+          const SizedBox(height: 12),
+          head,
+        ] else
+          Row(
+            children: [
+              PictureSocket(picture: picture, size: 72),
+              const SizedBox(width: 14),
+              Expanded(child: head),
+            ],
+          ),
         if (e.flavour case final f?) ...[
           const SizedBox(height: 8),
           Text(f, style: const TextStyle(fontStyle: FontStyle.italic)),

@@ -195,6 +195,8 @@ class _Bestiary extends StatelessWidget {
                           ),
                           title: Text(labels.enemy(id)),
                           titleTextStyle: nameStyle(context),
+                          // The word "Slayer" is the mark, with no icon
+                          // (spec 0014 §4.1).
                           subtitle: Text(
                             [
                               k.armour ? labels.armour(e.armour) : 'Armour ???',
@@ -202,9 +204,6 @@ class _Bestiary extends StatelessWidget {
                               if (k.slayer) 'Slayer',
                             ].join(' · '),
                           ),
-                          trailing: k.slayer
-                              ? const Icon(Icons.gps_fixed)
-                              : null,
                           onTap: () => showBestiaryCard(context, c, id),
                         );
                       },
