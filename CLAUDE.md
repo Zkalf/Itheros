@@ -10,7 +10,8 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - Project texts (intents, specs, plans, PRs, reviews, commits, code comments, incidents, release notes) follow
   `WRITING.md`: read it before drafting one. Accepted files keep their wording (see WRITING.md for clean editions).
 - Ideas, parked topics, small fixes and bugs live in GitHub Issues (labels `idea`, `parked`, `nit`, `bug`), not in
-  local notes. `docs/game-direction.md` holds the owner's direction for the game: read it before proposing a design.
+  local notes. A new issue follows its template in `.github/ISSUE_TEMPLATE/` and `WRITING.md`.
+  `docs/game-direction.md` holds the owner's direction for the game: read it before proposing a design.
 
 ## Commands (Windows, PowerShell 5.1)
 Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -File …`: a nested interpreter can't be

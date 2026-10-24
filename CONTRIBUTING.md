@@ -22,6 +22,8 @@ data-only changes in `data/*.json`; the pacing tests in `check.ps1` must stay gr
 - Ideas, parked topics, small fixes and bugs live in GitHub Issues.
 - The labels are `idea` (not decided yet), `parked` (decided or started, waiting for later), `nit` (small, optional)
   and `bug`.
+- A new issue starts from a template in `.github/ISSUE_TEMPLATE/`: Idea, Bug or Small fix.
+- An issue gets the `parked` label when it waits for later.
 - A pull request that finishes an issue says `Closes #<number>` in its description.
 - `docs/game-direction.md` holds the owner's direction for the game. Read it before you propose a design.
 
