@@ -12,6 +12,7 @@ import 'images.dart';
 import 'labels.dart';
 import 'map_labels.dart';
 import 'socket.dart';
+import 'text_size.dart';
 import 'theme.dart';
 
 /// The world drawn as places joined by paths; tap a place to act there
@@ -36,6 +37,7 @@ class WorldTab extends StatelessWidget {
             fitMap(
               box.maxWidth,
               (width) => MapView(
+                data: game.data,
                 width: width,
                 places: [
                   for (final area in game.data.locations.keys)
@@ -121,9 +123,10 @@ class MapSpot {
 /// - [roads] are the two places of each road and its step count; null for a
 ///   road into the fog.
 /// - With [fog], the painted fog lies over the image and under the marks.
-class MapView extends StatelessWidget {
+class MapView extends StatefulWidget {
   const MapView({
     super.key,
+    required this.data,
     required this.width,
     required this.places,
     required this.roads,
@@ -133,6 +136,7 @@ class MapView extends StatelessWidget {
     this.fog = false,
   });
 
+  final GameData data;
   final double width;
   final List<MapSpot> places;
   final List<(String, String, String?)> roads;
@@ -168,55 +172,139 @@ class MapView extends StatelessWidget {
   /// How far a marker and its ring reach from its centre.
   double get _room => marker / 2 + _ring;
 
-  @override
-  Widget build(BuildContext context) {
-    final data = ControllerScope.of(context).game.data;
-    final images = ImageScope.of(context);
-    final whole = Size(width, width * data.mapAspect);
-    final shown = strip ?? Offset.zero & whole;
-    // Each name is a name (spec 0014 §2.2), at the size of main.
-    final name = nameStyle(context)!.copyWith(fontSize: 14);
-    TextStyle styleOf(MapSpot p) =>
-        p.fogged ? name.copyWith(color: Quiet.faint) : name;
+  /// The size of the whole map image, and the part of it that shows.
+  Size get _whole => Size(width, width * data.mapAspect);
+  Rect get _shown => strip ?? Offset.zero & _whole;
 
-    // Each marker in the coordinates of the strip. Each marker gets the
-    // room of the ring, so that no name moves when the player moves.
-    final centres = {
-      for (final p in places)
-        p.id: placeCentre(data, p.id, whole, _room) - shown.topLeft,
+  /// The step counts of the roads, in their order.
+  List<String> get _counts => [for (final (_, _, count) in roads) ?count];
+
+  /// Whether [other] places its labels as this map does.
+  bool _placesAs(MapView other) =>
+      identical(data, other.data) &&
+      width == other.width &&
+      strip == other.strip &&
+      marker == other.marker &&
+      listEquals(roads, other.roads) &&
+      listEquals(
+        [for (final p in places) (p.id, p.name, p.fogged)],
+        [for (final p in other.places) (p.id, p.name, p.fogged)],
+      );
+
+  @override
+  State<MapView> createState() => _MapViewState();
+}
+
+/// The state of a map keeps what costs time to make: the laid-out step
+/// counts and the placement of the labels. A rebuild with the same roads,
+/// places and size keeps them.
+class _MapViewState extends State<MapView> {
+  late List<TextPainter> _counts = _layOut(widget._counts);
+  MapLabels? _labels;
+
+  /// The centre of each marker in the coordinates of the strip. Each marker
+  /// gets the room of the ring, so that no name moves when the player
+  /// moves.
+  late Map<String, Offset> _centres;
+
+  static List<TextPainter> _layOut(List<String> counts) => [
+    for (final count in counts)
+      TextPainter(
+        text: TextSpan(text: count, style: MapView._stepStyle),
+        textDirection: TextDirection.ltr,
+      )..layout(),
+  ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The style of the names, the bold text or the images changed.
+    _labels = null;
+  }
+
+  @override
+  void didUpdateWidget(MapView old) {
+    super.didUpdateWidget(old);
+    if (!listEquals(old._counts, widget._counts)) {
+      _dispose(_counts);
+      _counts = _layOut(widget._counts);
+    }
+    if (!widget._placesAs(old)) _labels = null;
+  }
+
+  @override
+  void dispose() {
+    _dispose(_counts);
+    super.dispose();
+  }
+
+  static void _dispose(List<TextPainter> painters) {
+    for (final p in painters) {
+      p.dispose();
+    }
+  }
+
+  /// A name on one line, and on two lines if it has a space.
+  static List<String> _lines(MapSpot p) => [
+    p.name,
+    if (p.name.contains(' ')) p.name.replaceFirst(' ', '\n'),
+  ];
+
+  /// Each name is a name (spec 0014 §2.2), at the size of main.
+  TextStyle _styleOf(MapSpot p) {
+    final name = nameStyle(context)!.copyWith(fontSize: 14);
+    return p.fogged ? name.copyWith(color: Quiet.faint) : name;
+  }
+
+  MapLabels _place() {
+    final w = widget;
+    _centres = {
+      for (final p in w.places)
+        p.id: placeCentre(w.data, p.id, w._whole, w._room) - w._shown.topLeft,
     };
-    // A name on one line, and on two lines if it has a space.
-    final lines = {
-      for (final p in places)
-        p.id: [
-          p.name,
-          if (p.name.contains(' ')) p.name.replaceFirst(' ', '\n'),
-        ],
-    };
-    final placed = placeMapLabels(
-      map: shown.size,
+    return placeMapLabels(
+      map: w._shown.size,
       names: [
-        for (final p in places)
+        for (final p in w.places)
           MapName(
             place: p.id,
-            marker: Rect.fromCircle(center: centres[p.id]!, radius: _room),
+            marker: Rect.fromCircle(center: _centres[p.id]!, radius: w._room),
             sizes: [
-              for (final text in lines[p.id]!)
-                _namePad.inflateSize(_measure(text, styleOf(p))),
+              for (final text in _lines(p))
+                MapView._namePad.inflateSize(
+                  // The labels keep their size at each text size of the
+                  // phone, so that the placement holds.
+                  textSizeOf(
+                    context,
+                    text,
+                    _styleOf(p),
+                    textScaler: TextScaler.noScaling,
+                  ),
+                ),
             ],
           ),
       ],
       plates: [
-        for (final (a, b, count) in roads)
-          if (count != null)
-            MapPlate(
-              from: centres[a]!,
-              to: centres[b]!,
-              size:
-                  _measure(count, _stepStyle) + const Offset(2, 2) * _countPad,
-            ),
+        for (final (i, (a, b, _)) in [
+          for (final road in w.roads)
+            if (road.$3 != null) road,
+        ].indexed)
+          MapPlate(
+            from: _centres[a]!,
+            to: _centres[b]!,
+            size: _counts[i].size + const Offset(2, 2) * MapView._countPad,
+          ),
       ],
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = widget;
+    final labels = _labels ??= _place();
+    final whole = w._whole;
+    final shown = w._shown;
+    final images = ImageScope.of(context);
 
     // The image and the fog cover the whole map. The strip shows a part.
     Widget onImage(Widget child) => Positioned(
@@ -230,21 +318,21 @@ class MapView extends StatelessWidget {
       size: shown.size,
       child: Stack(
         children: [
-          onImage(_image),
-          if (fog)
+          onImage(MapView._image),
+          if (w.fog)
             onImage(
               _Fog(
                 key: const ValueKey('map-fog'),
                 painter: FogPainter(
                   holes: [
-                    for (final p in places)
-                      if (!p.fogged) _mapPoint(data, p.id, whole),
+                    for (final p in w.places)
+                      if (!p.fogged) _mapPoint(w.data, p.id, whole),
                   ],
                   clouds: [
-                    for (final p in places)
-                      if (p.fogged) _mapPoint(data, p.id, whole),
+                    for (final p in w.places)
+                      if (p.fogged) _mapPoint(w.data, p.id, whole),
                   ],
-                  scale: width / 360,
+                  scale: w.width / 360,
                 ),
               ),
             ),
@@ -252,24 +340,25 @@ class MapView extends StatelessWidget {
             child: CustomPaint(
               painter: MapPainter(
                 paths: [
-                  for (final (a, b, count) in roads)
-                    (centres[a]!, centres[b]!, count),
+                  for (final (a, b, count) in w.roads)
+                    (_centres[a]!, _centres[b]!, count),
                 ],
-                plates: placed.plates,
-                stepStyle: _stepStyle,
+                plates: labels.plates,
+                counts: _counts,
+                stepStyle: MapView._stepStyle,
               ),
             ),
           ),
-          for (final p in places)
-            _place(
+          for (final p in w.places)
+            _spot(
               p,
-              centre: centres[p.id]!,
-              name: placed.names[p.id]!,
+              centre: _centres[p.id]!,
+              name: labels.names[p.id]!,
               // The text of the size that the placement gave the name.
-              text: lines[p.id]![placed.sizes[p.id]!],
-              style: styleOf(p),
+              text: _lines(p)[labels.sizes[p.id]!],
+              style: _styleOf(p),
               picture: images.pictureOf(
-                data,
+                w.data,
                 PlaceThing(p.id, fogged: p.fogged),
               ),
             ),
@@ -281,7 +370,7 @@ class MapView extends StatelessWidget {
   /// The widget of [spot]: a box centred on its marker that holds the
   /// marker and the name at [name]. A tap on the middle of the box lands on
   /// the marker, and the empty part of the box lets taps through.
-  Widget _place(
+  Widget _spot(
     MapSpot spot, {
     required Offset centre,
     required Rect name,
@@ -289,16 +378,18 @@ class MapView extends StatelessWidget {
     required TextStyle style,
     required Picture picture,
   }) {
+    final w = widget;
     double reach(List<double> ends, double middle) =>
         ends.map((e) => (e - middle).abs()).reduce(math.max);
     final box = Rect.fromCenter(
       center: centre,
-      width: 2 * reach([name.left, name.right, centre.dx + _room], centre.dx),
-      height: 2 * reach([name.top, name.bottom, centre.dy + _room], centre.dy),
+      width: 2 * reach([name.left, name.right, centre.dx + w._room], centre.dx),
+      height:
+          2 * reach([name.top, name.bottom, centre.dy + w._room], centre.dy),
     );
     final face = Rect.fromCircle(
       center: centre - box.topLeft,
-      radius: marker / 2,
+      radius: w.marker / 2,
     );
     return Positioned.fromRect(
       rect: box,
@@ -309,20 +400,25 @@ class MapView extends StatelessWidget {
         child: Stack(
           children: [
             // Under the marker, so that its glow shows only around it.
-            if (spot.id == here)
+            if (spot.id == w.here)
               Positioned.fromRect(
-                rect: face.inflate(_ring),
+                rect: face.inflate(MapView._ring),
                 child: const _Ring(),
               ),
             Positioned.fromRect(
               rect: face,
-              child: PictureSocket(picture: picture, size: marker, round: true),
+              child: PictureSocket(
+                picture: picture,
+                size: w.marker,
+                round: true,
+              ),
             ),
             Positioned.fromRect(
               rect: name.shift(-box.topLeft),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Quiet.caseBlack.withValues(alpha: .8),
+                  // Dark on the painting and on the fog (the design: 92%).
+                  color: Quiet.caseBlack.withValues(alpha: .92),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Quiet.teal.withValues(alpha: .4)),
                 ),
@@ -332,8 +428,6 @@ class MapView extends StatelessWidget {
                     style: style,
                     textAlign: TextAlign.center,
                     softWrap: false,
-                    // The sizes of the placement hold at each text size of
-                    // the phone.
                     textScaler: TextScaler.noScaling,
                   ),
                 ),
@@ -343,17 +437,6 @@ class MapView extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// The size of [text] in [style], on the lines of its "\n".
-  static Size _measure(String text, TextStyle style) {
-    final p = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final size = p.size;
-    p.dispose();
-    return size;
   }
 }
 
@@ -412,27 +495,41 @@ class _Fog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => RepaintBoundary(
-    // The layer of the colour filter holds the blurred map and the veil.
-    // Thus the holes of the painter clear them, and not the map under them.
+    // A layer of its own holds the blurred map and the veil. Thus the holes
+    // of the painter clear them, and not the map under them.
     child: ColorFiltered(
-      colorFilter: ColorFilter.matrix(_mist),
+      colorFilter: _ownLayer,
       child: CustomPaint(
         foregroundPainter: painter,
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(
-            sigmaX: 2.4 * painter.scale,
-            sigmaY: 2.4 * painter.scale,
-            tileMode: TileMode.clamp,
+        // Only the map turns pale; the veil and the clouds keep the text
+        // colour (the design's filter acts on the map behind the veil).
+        child: ColorFiltered(
+          colorFilter: _mist,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(
+              sigmaX: 2.4 * painter.scale,
+              sigmaY: 2.4 * painter.scale,
+              tileMode: TileMode.clamp,
+            ),
+            child: MapView._image,
           ),
-          child: MapView._image,
         ),
       ),
     ),
   );
 }
 
-/// Saturation 0.45 and brightness 1.04: the paler map under the veil.
-final _mist = _saturation(.45, 1.04);
+/// The filter of the layer of the fog: it changes no colour.
+const _ownLayer = ColorFilter.matrix([
+  1, 0, 0, 0, 0, //
+  0, 1, 0, 0, 0, //
+  0, 0, 1, 0, 0, //
+  0, 0, 0, 1, 0, //
+]);
+
+/// The filter of the map under the veil: a saturation of 0.45 and a
+/// brightness of 1.04.
+final _mist = ColorFilter.matrix(_saturation(.45, 1.04));
 
 List<double> _saturation(double s, double brightness) {
   // The weights of red, green and blue in the brightness of a colour.
@@ -551,6 +648,7 @@ class MapPainter extends CustomPainter {
   MapPainter({
     required this.paths,
     required this.plates,
+    required this.counts,
     required this.stepStyle,
   });
 
@@ -560,20 +658,12 @@ class MapPainter extends CustomPainter {
   /// The step plate of each path with a count, in the order of [paths].
   final List<Rect> plates;
 
+  /// Each step count laid out in [stepStyle], in the order of [plates]. The
+  /// map keeps them, and disposes of them when they change.
+  final List<TextPainter> counts;
+
   /// The style of each step count.
   final TextStyle stepStyle;
-
-  /// Each step count, laid out once for this painter and not on each paint.
-  /// The painter keeps them while it lives: a canvas that records the
-  /// paint, such as the one of a test, reads its paragraphs afterwards.
-  late final _counts = [
-    for (final (_, _, steps) in paths)
-      if (steps != null)
-        TextPainter(
-          text: TextSpan(text: steps, style: stepStyle),
-          textDirection: TextDirection.ltr,
-        )..layout(),
-  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -582,10 +672,13 @@ class MapPainter extends CustomPainter {
       ..strokeWidth = width
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    // A dark edge under each road, so that it reads on the painting.
+    // A dark edge under each road and each dash, so that it reads on the
+    // painting and on the light fog. The edge of a dash is a soft shadow.
     final edge = pen(Quiet.caseBlack.withValues(alpha: .6), 4.5);
     final road = pen(Quiet.text.withValues(alpha: .9), 2.5);
-    final fog = pen(Quiet.text.withValues(alpha: .8), 2);
+    final dashEdge = pen(Quiet.caseBlack.withValues(alpha: .5), 4.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+    final fog = pen(Quiet.text.withValues(alpha: .9), 2.5);
     for (final (a, b, steps) in paths) {
       final line = Path()
         ..moveTo(a.dx, a.dy)
@@ -598,12 +691,15 @@ class MapPainter extends CustomPainter {
       }
       for (final PathMetric m in line.computeMetrics()) {
         for (var d = 0.0; d < m.length; d += 12) {
-          canvas.drawPath(m.extractPath(d, d + 6), fog);
+          final dash = m.extractPath(d, d + 6);
+          canvas
+            ..drawPath(dash, dashEdge)
+            ..drawPath(dash, fog);
         }
       }
     }
     // The plates stand on the roads, each with its count in the middle.
-    for (final (i, label) in _counts.indexed) {
+    for (final (i, label) in counts.indexed) {
       final plate = RRect.fromRectAndRadius(
         plates[i],
         const Radius.circular(6),
@@ -627,6 +723,7 @@ class MapPainter extends CustomPainter {
   bool shouldRepaint(MapPainter old) =>
       !listEquals(old.paths, paths) ||
       !listEquals(old.plates, plates) ||
+      old.counts != counts ||
       old.stepStyle != stepStyle;
 }
 

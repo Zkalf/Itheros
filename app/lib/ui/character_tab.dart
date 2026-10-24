@@ -5,6 +5,7 @@ import 'controller_scope.dart';
 import 'images.dart';
 import 'paper_doll.dart';
 import 'socket.dart';
+import 'text_size.dart';
 import 'theme.dart';
 
 /// Who am I (spec 0008 §3.5): level, stats and rank above two small tabs,
@@ -169,9 +170,9 @@ class _RankAndOrigin extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, box) {
         final fits =
-            _widthOf(context, rank, _RankTitle.styleOf(context)) +
+            textSizeOf(context, rank, _RankTitle.styleOf(context)).width +
                 _RankTitle.gap +
-                _widthOf(context, line, style) <=
+                textSizeOf(context, line, style).width <=
             box.maxWidth;
         final title = _RankTitle(rank);
         final shown = Text(
@@ -191,23 +192,6 @@ class _RankAndOrigin extends StatelessWidget {
       },
     );
   }
-}
-
-/// The width of [text] in [style], as a Text in [context] draws it: with the
-/// default text style, the bold text setting and the text scale of the phone.
-double _widthOf(BuildContext context, String text, TextStyle? style) {
-  var drawn = DefaultTextStyle.of(context).style.merge(style);
-  if (MediaQuery.boldTextOf(context)) {
-    drawn = drawn.merge(const TextStyle(fontWeight: FontWeight.bold));
-  }
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: drawn),
-    textDirection: Directionality.of(context),
-    textScaler: MediaQuery.textScalerOf(context),
-  )..layout();
-  final width = painter.width;
-  painter.dispose();
-  return width;
 }
 
 /// The rank name. Seven quick taps switch test walk on or off (spec 0004

@@ -28,6 +28,19 @@ class MapPlate {
   final Size size;
 }
 
+/// The placement of the labels of a map:
+/// - [names] gives the rect of each name, by its place;
+/// - [sizes] gives the index in [MapName.sizes] of the size of each name;
+/// - [plates] gives the rect of each step plate, in the order of the plates;
+/// - [clean] is false when the search found no placement that keeps each
+///   rule, so that the labels overlap.
+typedef MapLabels = ({
+  Map<String, Rect> names,
+  Map<String, int> sizes,
+  List<Rect> plates,
+  bool clean,
+});
+
 /// The rects of the names and the step plates of a map of size [map] (spec
 /// 0014 §2.3): each name by its place, each plate in the order of [plates].
 /// - No two of the names, the plates and the markers overlap.
@@ -40,16 +53,7 @@ class MapPlate {
 /// places the label with the fewest free spots first. If no placement
 /// keeps each rule, each label takes the spot that overlaps least. The same
 /// input gives the same rects.
-/// - [sizes] gives the index in [MapName.sizes] of the size of each name.
-/// - [clean] is false when the search found no placement that keeps each
-///   rule, so that the labels overlap.
-({
-  Map<String, Rect> names,
-  Map<String, int> sizes,
-  List<Rect> plates,
-  bool clean,
-})
-placeMapLabels({
+MapLabels placeMapLabels({
   required Size map,
   required List<MapName> names,
   required List<MapPlate> plates,
