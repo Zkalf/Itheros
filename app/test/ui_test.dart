@@ -935,11 +935,13 @@ void main() {
       await pumpGame(t);
       await openAchievements(t);
       for (final a in game.data.achievements.values) {
-        expect(
-          find.textContaining(a.counter),
-          findsNothing,
-          reason: '${a.id} shows "${a.counter}"',
-        );
+        if (a.criterion case CounterCriterion(:final counter)) {
+          expect(
+            find.textContaining(counter),
+            findsNothing,
+            reason: '${a.id} shows "$counter"',
+          );
+        }
       }
     });
   });
