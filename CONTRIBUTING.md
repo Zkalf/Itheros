@@ -18,6 +18,13 @@ licensed the same way.
 Content and tuning that fit existing systems (enemies, locations, items, gear slots, achievements, numbers) are
 data-only changes in `data/*.json`; the pacing tests in `check.ps1` must stay green.
 
+## Ideas and small fixes
+- Ideas, parked topics, small fixes and bugs live in GitHub Issues.
+- The labels are `idea` (not decided yet), `parked` (decided or started, waiting for later), `nit` (small, optional)
+  and `bug`.
+- A pull request that finishes an issue says `Closes #<number>` in its description.
+- `docs/game-direction.md` holds the owner's direction for the game. Read it before you propose a design.
+
 ## New features
 A new rule or system starts as an **intent**: copy `intent/TEMPLATE.md` to the next free number, describe what the
 player is missing and why it matters, and open a pull request with it (status `draft`). Once Zkalf accepts it, a
