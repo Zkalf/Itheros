@@ -736,6 +736,8 @@ class Game {
   /// hidden, the new professions unlearned (spec 0011 §10).
   /// Saves before version 10 need nothing: no character yet, so "Who are
   /// you?" shows once (spec 0012 §6).
+  /// Saves before version 11 get the walks their queue needs (spec 0016
+  /// §6).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {
@@ -745,7 +747,41 @@ class Game {
     if (s.loadedVersion < 6) n = _migrateLayout(n.copy());
     if (s.loadedVersion < 7) n = _migrateBonus(n.copy());
     if (s.loadedVersion < 8) n = _migrateProfessions(n.copy());
+    if (s.loadedVersion < 11) n = _migrateWalks(n.copy());
     return _freeOffHand(n);
+  }
+
+  /// A running action that walks becomes a walk with the action after it,
+  /// and each waiting action that can't happen where the queue stands gets
+  /// a walk to its nearest place first. The queue may then hold more than
+  /// [queueSlots] actions.
+  GameState _migrateWalks(GameState s) {
+    final run = s.activity;
+    final waiting = [...s.queue];
+    s.queue.clear();
+    if (run != null &&
+        run.activity.kind != ActivityKind.travel &&
+        run.leg != null) {
+      if (_placeFor(s, run.activity) case final place?) {
+        s.activity = RunningActivity(
+          Activity.travel(place),
+          progress: run.progress,
+          leg: run.leg,
+        );
+        waiting.insert(0, PlannedAction(run.activity, run.stop));
+      }
+    }
+    for (final p in waiting) {
+      final end = queuePlaces(s).last;
+      if (!_happensAt(end, p.activity)) {
+        if (_placeFor(s, p.activity, from: end) case final place?) {
+          final walk = Activity.travel(place);
+          s.queue.add(PlannedAction(walk, StopCondition.defaultFor(walk)));
+        }
+      }
+      s.queue.add(p);
+    }
+    return s;
   }
 
   /// Every vein mined and item crafted counts its profession XP, unfaded;
@@ -1055,8 +1091,8 @@ class Game {
     return n;
   }
 
-  /// How many actions the queue holds at the player's level, the running
-  /// one included (spec 0003 §2).
+  /// How many actions the queue holds, the running one and walks included
+  /// (spec 0016 §2).
   int queueSlots(GameState s) => data.queueSlots;
 
   /// The conditions [a] may stop on; "never" may still be refused by its
@@ -1112,18 +1148,15 @@ class Game {
   // Player actions. Free: they cost no steps.
 
   /// Adds [a] to the end of the queue with [stop] (default: until grey for
-  /// fights, never otherwise). With nothing running, or a 1-slot queue, it
-  /// starts now instead (spec 0003 §2). Throws [ActivityError] if the rules
-  /// don't allow it.
+  /// fights, never otherwise), after a walk to its nearest place if it can't
+  /// happen where the queue ends (spec 0016 §3.2). With nothing running it
+  /// starts now instead. Throws [ActivityError] if the rules don't allow it.
   GameState addAction(GameState s, Activity a, {StopCondition? stop}) {
     final st = stop ?? StopCondition.defaultFor(a);
-    if (s.activity == null || queueSlots(s) == 1) {
-      return startActivity(s, a, stop: st);
-    }
+    if (s.activity == null) return startActivity(s, a, stop: st);
     _checkStop(s, a, st);
-    if (1 + s.queue.length >= queueSlots(s)) {
-      throw ActivityError('The queue is full.');
-    }
+    final free = queueSlots(s) - 1 - s.queue.length;
+    if (free < 1) throw ActivityError('The queue is full.');
     if (lastNeverStops(s)) {
       throw ActivityError(
         'The last action never stops. Change its stop condition first.',
@@ -1133,31 +1166,105 @@ class Game {
     if (why == SkipReason.locked || why == SkipReason.noRoute) {
       throw ActivityError(_explain(s, a, st, why!));
     }
-    return s.copy()..queue.add(PlannedAction(a, st));
+    final end = queuePlaces(s).last;
+    if (a.kind == ActivityKind.travel && a.target == end) {
+      throw ActivityError(
+        'The queue already ends at ${data.locations[end]!.name}.',
+      );
+    }
+    if (_happensAt(end, a)) return s.copy()..queue.add(PlannedAction(a, st));
+    final place = _placeFor(s, a, from: end);
+    if (place == null) {
+      throw ActivityError(_explain(s, a, st, SkipReason.noRoute));
+    }
+    if (free < 2) {
+      throw ActivityError(
+        'The queue is full. The walk to ${data.locations[place]!.name} '
+        'needs a slot too.',
+      );
+    }
+    final walk = Activity.travel(place);
+    return s.copy()
+      ..queue.addAll([
+        PlannedAction(walk, StopCondition.defaultFor(walk)),
+        PlannedAction(a, st),
+      ]);
+  }
+
+  /// Where the queue stands before each waiting action, then where it ends:
+  /// a walk moves the place, any other action happens where it stands
+  /// (spec 0016 §3.1).
+  List<String> queuePlaces(GameState s) {
+    var at = switch (s.activity?.activity) {
+      Activity(kind: ActivityKind.travel, :final target) => target,
+      _ => s.location,
+    };
+    final places = <String>[];
+    for (final p in s.queue) {
+      places.add(at);
+      if (p.activity.kind == ActivityKind.travel) at = p.activity.target;
+    }
+    return places..add(at);
+  }
+
+  /// Whether the walk at [index] (0: the running one) is still needed: the
+  /// action after it can't happen where the queue stands before it (spec
+  /// 0016 §4.2).
+  bool walkNeeded(GameState s, int index) {
+    final walk = index == 0
+        ? s.activity?.activity
+        : s.queue.elementAtOrNull(index - 1)?.activity;
+    if (walk?.kind != ActivityKind.travel) return false;
+    final next = s.queue.elementAtOrNull(index)?.activity;
+    if (next == null || next.kind == ActivityKind.travel) return false;
+    final before = index == 0 ? s.location : queuePlaces(s)[index - 1];
+    return !_happensAt(before, next);
+  }
+
+  /// Throws if the walk at [index] is still needed (spec 0016 §4.3).
+  void _keepNeededWalk(GameState s, int index) {
+    if (!walkNeeded(s, index)) return;
+    final name = _nameOf(s.queue[index].activity);
+    throw ActivityError('$name needs this walk. Remove $name first.');
+  }
+
+  /// Whether [a] can happen at [place]. A walk can start anywhere.
+  bool _happensAt(String place, Activity a) {
+    final l = data.locations[place]!;
+    return switch (a.kind) {
+      ActivityKind.travel => true,
+      ActivityKind.fight => l.enemies.contains(a.target),
+      ActivityKind.gather => l.nodes.contains(a.target),
+      ActivityKind.craft => switch (data.recipes[a.target]) {
+        final r? => _makesHere(l, r),
+        null => false,
+      },
+      ActivityKind.reroll => l.crafting,
+    };
   }
 
   /// Starts [a] now with [stop], replacing (and refunding the progress of)
-  /// the running action; the rest of the queue stays. If [a] happens
-  /// elsewhere, the character walks there first. Throws [ActivityError] if
-  /// it can't start.
+  /// the running action and clearing the queue (spec 0016 §5). If [a]
+  /// happens elsewhere, a walk there runs first and [a] waits after it.
+  /// Throws [ActivityError] if it can't start.
   GameState startActivity(GameState s, Activity a, {StopCondition? stop}) {
     // A reroll is one roll; everything else runs until stopped.
     stop ??= a.kind == ActivityKind.reroll
         ? StopCondition.defaultFor(a)
         : const StopCondition.never();
     _checkStop(s, a, stop);
-    if (s.queue.isNotEmpty &&
-        stop.kind == StopKind.never &&
-        a.kind != ActivityKind.travel) {
-      throw ActivityError(
-        'Actions are waiting after this one, so it needs a stop condition.',
-      );
-    }
     final why = _cannotStart(s, a, stop);
     if (why != null) throw ActivityError(_explain(s, a, stop, why));
-    final n = _refundProgress(s.copy())
-      ..activity = RunningActivity(a, stop: stop);
-    n.activity!.leg = _nextLeg(n, a);
+    final n = _refundProgress(s.copy())..queue.clear();
+    if (_happensAt(n.location, a)) {
+      n.activity = RunningActivity(a, stop: stop);
+    } else {
+      final walk = Activity.travel(_placeFor(n, a)!);
+      n
+        ..activity = RunningActivity(walk)
+        ..queue.add(PlannedAction(a, stop));
+    }
+    n.activity!.leg = _nextLeg(n, n.activity!.activity);
     return n;
   }
 
@@ -1167,6 +1274,7 @@ class Game {
   /// to [events].
   GameState stopActivity(GameState s, {List<GameEvent>? events}) {
     if (s.activity == null) throw ActivityError('Nothing to stop');
+    _keepNeededWalk(s, 0);
     final n = _refundProgress(s.copy())..activity = null;
     _startNext(n, events);
     return n;
@@ -1179,6 +1287,7 @@ class Game {
     if (index < 1 || index > s.queue.length) {
       throw ActivityError('No action $index in the queue');
     }
+    _keepNeededWalk(s, index);
     return s.copy()..queue.removeAt(index - 1);
   }
 
@@ -1229,17 +1338,19 @@ class Game {
     return null;
   }
 
+  /// The name of [a]'s place, monster, spot, crafted item or rerolled item.
+  String _nameOf(Activity a) =>
+      switch (a.kind) {
+        ActivityKind.travel => data.locations[a.target]?.name,
+        ActivityKind.fight => data.enemies[a.target]?.name,
+        ActivityKind.gather => data.nodes[a.target]?.name,
+        ActivityKind.craft => data.items[data.recipes[a.target]?.output]?.name,
+        ActivityKind.reroll => data.itemOf(a.rerollKey)?.name,
+      } ??
+      a.target;
+
   String _explain(GameState s, Activity a, StopCondition stop, SkipReason r) {
-    final name =
-        switch (a.kind) {
-          ActivityKind.travel => data.locations[a.target]?.name,
-          ActivityKind.fight => data.enemies[a.target]?.name,
-          ActivityKind.gather => data.nodes[a.target]?.name,
-          ActivityKind.craft =>
-            data.items[data.recipes[a.target]?.output]?.name,
-          ActivityKind.reroll => data.itemOf(a.rerollKey)?.name,
-        } ??
-        a.target;
+    final name = _nameOf(a);
     return switch (r) {
       SkipReason.locked when a.kind == ActivityKind.reroll => _rerollLock(s, a),
       SkipReason.locked => switch (a.kind) {
@@ -1258,6 +1369,7 @@ class Game {
         _ => '$name is locked',
       },
       SkipReason.noRoute => 'The way there is in the fog',
+      SkipReason.notThere => 'You are not where $name is',
       SkipReason.noMaterials when a.kind == ActivityKind.reroll =>
         'Not enough ${data.items[_rerollDust(a)]?.name ?? 'dust'} for $name',
       SkipReason.noMaterials => 'Not enough materials for $name',
@@ -1361,10 +1473,10 @@ class Game {
   int _tier(String? id) => data.qualities.indexWhere((q) => q.id == id);
 
   /// Where [a] happens: its monster's or spot's location, the nearest
-  /// crafting place, or the travel target. Null if no open route leads
-  /// there.
-  String? _placeFor(GameState s, Activity a) {
-    final dist = _paths(s).$1;
+  /// crafting place, or the travel target, from [from] (default: here).
+  /// Null if no open route leads there.
+  String? _placeFor(GameState s, Activity a, {String? from}) {
+    final dist = _paths(s, from: from).$1;
     final candidates = switch (a.kind) {
       ActivityKind.travel => [a.target],
       ActivityKind.fight => [
@@ -1402,10 +1514,11 @@ class Game {
 
   /// Shortest walking distances from here to every open location, and the
   /// previous stop on each shortest route.
-  (Map<String, int>, Map<String, String>) _paths(GameState s) {
-    final dist = {s.location: 0};
+  (Map<String, int>, Map<String, String>) _paths(GameState s, {String? from}) {
+    final start = from ?? s.location;
+    final dist = {start: 0};
     final previous = <String, String>{};
-    final todo = {s.location};
+    final todo = {start};
     while (todo.isNotEmpty) {
       final at = todo.reduce((a, b) => dist[a]! <= dist[b]! ? a : b);
       todo.remove(at);
@@ -1427,7 +1540,10 @@ class Game {
   void _startNext(GameState s, List<GameEvent>? events) {
     while (s.queue.isNotEmpty) {
       final p = s.queue.removeAt(0);
-      final why = _cannotStart(s, p.activity, p.stop);
+      // An action never walks on its own (spec 0016 §3.5).
+      final why = _happensAt(s.location, p.activity)
+          ? _cannotStart(s, p.activity, p.stop)
+          : SkipReason.notThere;
       if (why != null) {
         events?.add(
           ActionSkipped(

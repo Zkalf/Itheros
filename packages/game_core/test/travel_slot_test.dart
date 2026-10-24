@@ -122,6 +122,40 @@ void main() {
       expect(planned(s), hasLength(4));
     });
 
+    test('an action behind the fog is refused', () {
+      // Grey Moor: no explored area next to it.
+      expect(
+        () => game.addAction(fightThenMine(), const Activity.fight('wolf')),
+        refused('The way there is in the fog'),
+      );
+    });
+
+    test('a walk behind a "never" action is refused', () {
+      var s = stateAt(game, location: 'goblin_woods');
+      s = game.addAction(s, goblins, stop: someHides);
+      s = game.addAction(s, mining);
+      expect(
+        () => game.addAction(s, travel('camp')),
+        refused(
+          'The last action never stops. Change its stop condition first.',
+        ),
+      );
+    });
+
+    test('a monster in two areas is fought where the queue ends', () {
+      final world = dataJson('world');
+      final hills = (world['locations'] as List)
+          .cast<Map<String, Object?>>()
+          .firstWhere((l) => l['id'] == 'copper_hills');
+      hills['enemies'] = ['goblin'];
+      final g = newTestGame(overrides: {'world': world});
+      var s = stateAt(g, location: 'goblin_woods');
+      s = g.addAction(s, brutes, stop: someHides);
+      s = g.addAction(s, mining, stop: someOre);
+      s = g.addAction(s, goblins);
+      expect(planned(s), [brutes, travel('copper_hills'), mining, goblins]);
+    });
+
     test('a full queue refuses with "The queue is full."', () {
       var s = fightThenMine();
       s = game.addAction(s, travel('camp'));

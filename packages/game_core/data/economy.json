@@ -1,6 +1,6 @@
 {
   "bankCap": { "base": 9500, "perLevel": 500 },
-  "queueSlots": 3,
+  "queueSlots": 5,
   "headStartLevel": 5,
   "lossXpShare": 0.75,
   "lossesToGiveUp": 3,
