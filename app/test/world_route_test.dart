@@ -102,13 +102,28 @@ Future<GameController> pumpWorld(
   return c;
 }
 
-/// The map image in [within].
+/// The map image in [within]. The painted fog of the World map holds a
+/// blurred copy of it, which is not the map.
 Finder mapImage(Finder within) => find.descendant(
   of: within,
-  matching: find.byWidgetPredicate(
-    (w) => w is Image && assetName(w.image) == assetOf('pictures/world_map'),
+  matching: find.byElementPredicate(
+    (e) =>
+        e.widget is Image &&
+        assetName((e.widget as Image).image) == assetOf('pictures/world_map') &&
+        !inFog(e),
   ),
 );
+
+/// Whether [e] lies in the painted fog of the World map, the widget with the
+/// key `map-fog`.
+bool inFog(Element e) {
+  var inside = false;
+  e.visitAncestorElements((a) {
+    inside = a.widget.key == const ValueKey('map-fog');
+    return !inside;
+  });
+  return inside;
+}
 
 /// The rect of the one map image in [within]: the map.
 Rect mapIn(WidgetTester t, Finder within) {
