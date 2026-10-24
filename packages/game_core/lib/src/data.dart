@@ -826,7 +826,24 @@ sealed class Reward {
     {'bankCap': final int n} => BankCapReward(n),
     {'item': final String item} => ItemReward(item, _str(j, 'quality')),
     {'queueSlot': 1} => const QueueSlotReward(),
-    _ => BonusReward(Stats.fromJson(j)),
+    // A bonus names only stats, and at least one: a misspelt reward must
+    // not load as a bonus of nothing.
+    _
+        when j.isNotEmpty &&
+            j.keys.every(_statNames.contains) &&
+            Stats.fromJson(j) != const Stats() =>
+      BonusReward(Stats.fromJson(j)),
+    _ => throw FormatException('Invalid game data: unknown reward $j'),
+  };
+
+  static const _statNames = {
+    'hp',
+    'attack',
+    'defense',
+    'crit',
+    'hit',
+    'dodge',
+    'block',
   };
 }
 
