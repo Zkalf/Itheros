@@ -16,9 +16,11 @@ sealed class GameEvent {
   const GameEvent();
 }
 
+/// One leg of a walk ends at [location]; the leg cost [steps].
 class Arrived extends GameEvent {
-  const Arrived(this.location);
+  const Arrived(this.location, {this.steps = 0});
   final String location;
+  final int steps;
 }
 
 class FightWon extends GameEvent {

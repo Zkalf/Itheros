@@ -412,9 +412,23 @@ class Labels {
     },
   };
 
-  /// "Skipped the Bone shield: not enough Bones (needs 2 more)."
-  String skipLine(Activity a, SkipReason r, Map<String, int> missing) =>
-      'Skipped the ${short(a)}: ${skipReason(a, r, missing: missing)}.';
+  /// "Skipped the Bone shield: not enough Bones (needs 2 more)." An action
+  /// at the wrong place: "Copper vein: you are not at Copper Hills." (spec
+  /// 0016 §3.5).
+  String skipLine(Activity a, SkipReason r, Map<String, int> missing) {
+    if (r != SkipReason.notThere) {
+      return 'Skipped the ${short(a)}: ${skipReason(a, r, missing: missing)}.';
+    }
+    final name = short(a);
+    final where = switch (a.kind) {
+      ActivityKind.fight || ActivityKind.gather => homeOf(a.target),
+      ActivityKind.craft when _cooks(a.target) => 'a fire',
+      ActivityKind.craft || ActivityKind.reroll => 'a forge',
+      ActivityKind.travel => location(a.target),
+    };
+    return '${name[0].toUpperCase()}${name.substring(1)}: '
+        'you are not at $where.';
+  }
 
   /// A short name for an action: "Skeleton", "Copper vein", "Bone sword".
   String short(Activity a) => switch (a.kind) {
@@ -448,6 +462,8 @@ class Labels {
               _ => '${_cooks(a.target) ? 'Cooked' : 'Crafted'} the ${recipe(a.target)}',
             }}${gains.isEmpty ? '' : ': ${gains.join(', ')}'}.'
             '${ended == null ? '' : ' ${endReason(a, ended)}.'}$then'
+      else if (ended == EndReason.arrived && log.walkSteps > 0)
+        'Walked to ${location(a.target)} (${fmt(log.walkSteps)} steps).$then'
       else if (ended == EndReason.arrived)
         'Arrived at ${location(a.target)}.$then',
       for (final l in log.losses.take(3))

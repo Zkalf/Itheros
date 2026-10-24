@@ -247,14 +247,8 @@ Future<void> startAction(
   }
   if (!context.mounted) return;
   try {
-    // One slot: it starts at once, as before level 5 (spec 0003
-    // decision 1). Otherwise the player picks a stop condition and
-    // whether to start now or queue it.
-    if (c.game.queueSlots(c.state) == 1) {
-      await c.addAction(a);
-      showNow?.call();
-      return;
-    }
+    // The player picks a stop condition and whether to start now or
+    // queue it (the queue has at least 2 slots: spec 0016 §2).
     final choice = await showModalBottomSheet<(StopCondition, bool)>(
       context: context,
       isScrollControlled: true,

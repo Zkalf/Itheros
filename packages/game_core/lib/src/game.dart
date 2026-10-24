@@ -1207,6 +1207,22 @@ class Game {
     return places..add(at);
   }
 
+  /// The walk that [a] needs first if the player adds it now, from where
+  /// the queue ends, or null if it needs none (spec 0016 §7.2).
+  ({String place, int steps})? walkFirst(GameState s, Activity a) {
+    if (a.kind == ActivityKind.travel) return null;
+    final end = queuePlaces(s).last;
+    if (_happensAt(end, a)) return null;
+    final place = _placeFor(s, a, from: end);
+    if (place == null) return null;
+    return (place: place, steps: walkSteps(s, end, place)!);
+  }
+
+  /// The steps of the shortest open route from [from] to [to], or null if
+  /// none leads there.
+  int? walkSteps(GameState s, String from, String to) =>
+      _paths(s, from: from).$1[to];
+
   /// Whether the walk at [index] (0: the running one) is still needed: the
   /// action after it can't happen where the queue stands before it (spec
   /// 0016 §4.2).
@@ -1772,9 +1788,10 @@ class _Run {
   }
 
   void _arrive(String area) {
+    final steps = game.data.route(s.location, area)?.steps ?? 0;
     s.location = area;
     game._visit(s, area);
-    events.add(Arrived(area));
+    events.add(Arrived(area, steps: steps));
   }
 
   bool _canStartNext(Activity a) =>
