@@ -451,7 +451,25 @@ void main() {
     testWidgets('a skull or red fight asks first', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
       await openArea(t, 'goblin_woods');
-      expect(find.text('💀'), findsOneWidget, reason: 'the Old Bear');
+      // Spec 0014 line 85 (§2.3): the skull band shows a skull image in
+      // place of 💀.
+      String? asset(Image i) => switch (i.image) {
+        AssetImage(:final assetName) => assetName,
+        ResizeImage(imageProvider: AssetImage(:final assetName)) => assetName,
+        _ => null,
+      };
+      expect(find.text('💀'), findsNothing);
+      expect(
+        find.descendant(
+          of: option('fight', 'old_bear'),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Image && asset(w) == 'assets/images/pictures/skull.webp',
+          ),
+        ),
+        findsOneWidget,
+        reason: 'the Old Bear',
+      );
 
       await t.tap(option('fight', 'old_bear'));
       await t.pumpAndSettle();
@@ -976,7 +994,11 @@ void main() {
     testWidgets('on the screen and in the journal, not as plain lines', (
       t,
     ) async {
-      final (c, source) = await pumpGame(t, location: 'goblin_woods');
+      final (c, source) = await pumpGame(
+        t,
+        location: 'goblin_woods',
+        images: const ImageIndex({'achievements/first_steps'}),
+      );
       await c.startActivity(const Activity.fight('goblin'));
       c.pause();
       source.walk(DateTime(2026, 10, 18, 10), 300);
@@ -995,9 +1017,31 @@ void main() {
           find.descendant(of: banners, matching: find.text(text));
       expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
       expect(banner('Reached level 2!'), findsOneWidget);
+      // Spec 0014 lines 8 and 146 (§4.2): the banner of an achievement shows
+      // the image of the achievement, not an icon.
+      expect(
+        [
+          for (final i in t.widgetList<Image>(
+            find.descendant(
+              of: find.ancestor(
+                of: banner('Achievement unlocked: First Steps'),
+                matching: banners,
+              ),
+              matching: find.byType(Image),
+            ),
+          ))
+            switch (i.image) {
+              AssetImage(:final assetName) => assetName,
+              ResizeImage(imageProvider: AssetImage(:final assetName)) =>
+                assetName,
+              _ => null,
+            },
+        ],
+        ['assets/images/achievements/first_steps.webp'],
+      );
       expect(
         find.descendant(of: banners, matching: find.byIcon(Icons.emoji_events)),
-        findsWidgets,
+        findsNothing,
       );
       expect(find.textContaining('Achievement:'), findsNothing);
 
@@ -1360,7 +1404,8 @@ void layoutScreens() {
 
     testWidgets('Now lists what this place offers, and starts it', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      expect(find.text('Here: Goblin Woods'), findsOneWidget);
+      // Spec 0014 line 131 (§4.1): the list heading is "Here".
+      expect(find.text('Here'), findsOneWidget);
       for (final e in ['goblin', 'goblin_brute', 'old_bear']) {
         expect(here(option('fight', e)), findsOneWidget, reason: e);
       }
@@ -1379,7 +1424,8 @@ void layoutScreens() {
 
     testWidgets('at a forge a Forge row opens Professions', (t) async {
       await pumpGame(t);
-      expect(find.text('Here: Camp'), findsOneWidget);
+      // Spec 0014 line 131 (§4.1): the list heading is "Here".
+      expect(find.text('Here'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('here-forge')));
       await t.pumpAndSettle();
       expect(find.text('At the forge (Camp)'), findsOneWidget);
@@ -1532,14 +1578,15 @@ void characterScreen() {
       );
       expect(name.style?.color, const Color(0xff42a5f5));
       expect(cardText(t, 'card-kind'), 'Rare chest armour · Chest');
-      // Its stats, and the same again as the change to an empty slot.
-      // Light armour carries base Dodge (spec 0009 §6).
+      // Its stats once: the change to the empty slot repeats them, so the
+      // card drops it (spec 0014 line 133, §4.1). Light armour carries base
+      // Dodge (spec 0009 §6).
       expect(
         card(find.text('+4 Defense · +14 HP · +2% Dodge')),
-        findsNWidgets(2),
+        findsOneWidget,
       );
       expect(card(find.text('Chest is empty')), findsOneWidget);
-      expect(cardText(t, 'compare-chest'), '+4 Defense · +14 HP · +2% Dodge');
+      expect(card(find.byKey(const ValueKey('compare-chest'))), findsNothing);
 
       await t.tap(card(find.byKey(const ValueKey('card-equip'))));
       await settle(t, c);
@@ -1911,7 +1958,8 @@ void fightsWithDepth() {
       await t.tap(find.byKey(const ValueKey('bag-hide_vest')));
       await t.pumpAndSettle();
       expect(find.text('Light armour · Chest'), findsOneWidget);
-      // On the base line and in the comparison with the empty slot.
+      // On the base line. The card drops the change to the empty slot, which
+      // repeats it (spec 0014 §4.1).
       expect(find.textContaining('+2% Dodge'), findsWidgets);
       await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('tab-gear')));

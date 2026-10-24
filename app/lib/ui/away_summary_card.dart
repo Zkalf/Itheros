@@ -3,9 +3,11 @@ import 'package:game_core/game_core.dart';
 
 import '../sync/away_summary.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
 import 'route_map.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
@@ -45,62 +47,86 @@ Widget reportLine(String line, Labels labels) =>
 /// The big moments of a report, shown as banners above its lines (spec 0004
 /// amendment 3): levels reached, achievements, what was learned about
 /// monsters (spec 0009 §7), then profession news and the lake's (spec 0011
-/// §3.2, §4, §6).
-List<(IconData, String)> reportNews(AwaySummary s, Labels labels) => [
-  for (final l in s.levelsReached) (Icons.military_tech, 'Reached level $l!'),
+/// §3.2, §4, §6). Each comes with the thing that it names, or null for news
+/// of text only: levels, lore notes, profession levels and the sea chart
+/// (spec 0014 §4.2).
+List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
+  for (final l in s.levelsReached) (null, 'Reached level $l!'),
   for (final a in s.achievements)
-    (Icons.emoji_events, 'Achievement unlocked: ${labels.achievement(a)}'),
-  for (final n in s.lore) (Icons.menu_book, labels.loreFound(n)),
-  for (final e in s.learned) (Icons.visibility, labels.weaknessLearned(e)),
-  for (final e in s.slayers) (Icons.gps_fixed, labels.slayerEarned(e)),
+    (
+      AchievementThing(a, earned: true),
+      'Achievement unlocked: ${labels.achievement(a)}',
+    ),
+  for (final n in s.lore) (null, labels.loreFound(n)),
+  for (final e in s.learned) (MonsterThing(e), labels.weaknessLearned(e)),
+  for (final e in s.slayers) (MonsterThing(e), labels.slayerEarned(e)),
   // Profession news (spec 0010 §2.2, §5.1, §7.2-7.3).
-  for (final (p, l) in s.professionLevels)
-    (Icons.construction, labels.professionLevel(p, l)),
-  for (final f in s.finds) (Icons.diamond, labels.rareFound(f)),
+  for (final (p, l) in s.professionLevels) (null, labels.professionLevel(p, l)),
+  for (final f in s.finds) (ItemThing(f), labels.rareFound(f)),
   for (final (f, weight) in s.trophyFish)
-    (Icons.set_meal, labels.rareFound(f, weight: weight)),
-  for (final (a, b) in s.rerolls) (Icons.autorenew, labels.rerollNews(a, b)),
-  for (final area in s.charts) (Icons.map, labels.bottle(revealed: area)),
-  for (final item in s.bottleItems) (Icons.mail, labels.bottle(item: item)),
-  for (final key in s.chests) (Icons.inventory_2, labels.chest(key)),
+    (ItemThing(f), labels.rareFound(f, weight: weight)),
+  // A reroll shows the item as it is now.
+  for (final (a, b) in s.rerolls) (ItemThing(b), labels.rerollNews(a, b)),
+  for (final area in s.charts) (null, labels.bottle(revealed: area)),
+  for (final item in s.bottleItems)
+    (ItemThing(item), labels.bottle(item: item)),
+  for (final key in s.chests) (ItemThing(key), labels.chest(key)),
 ];
 
 List<Widget> reportBanners(AwaySummary s, Labels labels) => [
-  for (final (icon, text) in reportNews(s, labels))
-    ReportBanner(icon: icon, text: text),
+  for (final (thing, text) in reportNews(s, labels))
+    ReportBanner(text: text, thing: thing),
 ];
 
-/// A highlighted line with an icon, on deep teal (spec 0014 §2.1).
+/// A highlighted line on deep teal (spec 0014 §2.1). With a [thing], it
+/// starts with its picture in a 32 dp socket (§2.3, §4.2); gear keeps the
+/// ring of its quality.
 class ReportBanner extends StatelessWidget {
-  const ReportBanner({super.key, required this.icon, required this.text});
+  const ReportBanner({super.key, required this.text, this.thing});
 
-  final IconData icon;
   final String text;
+  final Thing? thing;
 
   @override
-  Widget build(BuildContext context) => Container(
-    key: const ValueKey('report-banner'),
-    margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(
-      color: Quiet.deepTeal,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Quiet.teal.withValues(alpha: .4)),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, color: Quiet.teal),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
+  Widget build(BuildContext context) {
+    final data = ControllerScope.of(context).game.data;
+    final thing = this.thing;
+    final picture = thing == null
+        ? null
+        : ImageScope.of(context).pictureOf(data, thing);
+    return Container(
+      key: const ValueKey('report-banner'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.fromLTRB(picture == null ? 12 : 6, 6, 12, 6),
+      decoration: BoxDecoration(
+        color: Quiet.deepTeal,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Quiet.teal.withValues(alpha: .4)),
+      ),
+      child: ConstrainedBox(
+        // A banner of text only is as tall as a banner with a socket.
+        constraints: const BoxConstraints(minHeight: 32),
+        child: Row(
+          children: [
+            if (picture != null) ...[
+              if (thing case ItemThing(key: final item))
+                PictureSocket.item(data, item, picture: picture, size: 32)
+              else
+                PictureSocket(picture: picture, size: 32),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 /// The lines of one report, as the card and the journal show them.

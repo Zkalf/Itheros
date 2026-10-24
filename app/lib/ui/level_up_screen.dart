@@ -3,7 +3,9 @@ import 'package:game_core/game_core.dart';
 
 import 'actions.dart' show Heading;
 import 'controller_scope.dart';
+import 'images.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// One card per level gained, before the away report (spec 0002 §9.1).
@@ -114,11 +116,22 @@ class _LevelCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 24),
-        Icon(
-          ranks.isEmpty ? Icons.arrow_circle_up : Icons.military_tech,
-          size: 72,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        // A new rank shows its image in a 72 dp socket (spec 0014 §2.3,
+        // §4.2): the newest rank, if the card holds several levels.
+        if (ranks.lastOrNull case final rank?)
+          Center(
+            child: PictureSocket(
+              picture: ImageScope.of(context)
+                  .pictureOf(game.data, RankThing(rank.id)),
+              size: 72,
+            ),
+          )
+        else
+          Icon(
+            Icons.arrow_circle_up,
+            size: 72,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         const SizedBox(height: 8),
         Text.rich(
           numberSpan(title),
@@ -147,16 +160,11 @@ class _LevelCard extends StatelessWidget {
           const SizedBox(height: 12),
           const Heading("What's new"),
           const SizedBox(height: 8),
-          for (final n in rest)
-            ListTile(
-              dense: true,
-              leading: Icon(_icon(n.kind)),
-              title: Text(labels.news(n)),
-            ),
+          for (final n in rest) NewsTile(news: n),
           if (points > 0)
             ListTile(
               dense: true,
-              leading: const Icon(Icons.auto_awesome),
+              leading: _newsIcon(Icons.auto_awesome),
               title: Text(
                 points == 1
                     ? labels.news(const LevelNews(NewsKind.talentPoint, ''))
@@ -168,12 +176,42 @@ class _LevelCard extends StatelessWidget {
       ],
     );
   }
-
-  static IconData _icon(NewsKind k) => switch (k) {
-    NewsKind.yourLevel => Icons.sports_kabaddi,
-    NewsKind.gatheringSpot => Icons.landscape,
-    NewsKind.recipe => Icons.handyman,
-    NewsKind.turnedGrey => Icons.trending_down,
-    NewsKind.rank || NewsKind.talentPoint => Icons.auto_awesome,
-  };
 }
+
+/// One "What's new" row of a level-up card (spec 0014 §4.2). A row of a
+/// monster or a recipe starts with its picture in a 48 dp socket; a row of a
+/// gathering spot or a talent point keeps its icon.
+class NewsTile extends StatelessWidget {
+  const NewsTile({super.key, required this.news});
+
+  final LevelNews news;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    final data = c.game.data;
+    final images = ImageScope.of(context);
+    Widget socket(Thing thing) =>
+        PictureSocket(picture: images.pictureOf(data, thing), size: 48);
+    return ListTile(
+      dense: true,
+      // Room above and below a socket, so that two sockets do not touch.
+      minTileHeight: 56,
+      leading: switch (news.kind) {
+        NewsKind.yourLevel ||
+        NewsKind.turnedGrey => socket(MonsterThing(news.id)),
+        // The item that the recipe makes. Its quality rolls when it is
+        // made, so the socket has no ring.
+        NewsKind.recipe => socket(ItemThing(data.recipes[news.id]!.output)),
+        NewsKind.rank => socket(RankThing(news.id)),
+        NewsKind.gatheringSpot => _newsIcon(Icons.landscape),
+        NewsKind.talentPoint => _newsIcon(Icons.auto_awesome),
+      },
+      title: Text(Labels(data, c.state.character).news(news)),
+    );
+  }
+}
+
+/// The icon of a "What's new" row, in the middle of the place of a socket,
+/// so that the text of each row starts at the same place.
+Widget _newsIcon(IconData icon) => SizedBox(width: 48, child: Icon(icon));

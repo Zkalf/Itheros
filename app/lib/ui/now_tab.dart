@@ -5,10 +5,12 @@ import '../game_controller.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'labels.dart';
 import 'item_card.dart';
 import 'item_square.dart';
 import 'meals.dart';
+import 'socket.dart';
 import 'teacher_sheet.dart';
 import 'theme.dart';
 
@@ -210,6 +212,7 @@ class _StatusCard extends StatelessWidget {
     final next = game.xpForNextLevel(s);
     final cap = game.bankCap(s);
     final text = Theme.of(context).textTheme;
+    final images = ImageScope.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -218,10 +221,23 @@ class _StatusCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.place),
-                const SizedBox(width: 8),
-                Text(labels.location(s.location), style: text.titleLarge),
-                const Spacer(),
+                // The marker of the place in a 48 dp socket (spec 0014
+                // §4.2, plan 0017 choice 9).
+                PictureSocket(
+                  key: const ValueKey('status-place'),
+                  picture: images.pictureOf(
+                    game.data,
+                    PlaceThing(s.location, fogged: false),
+                  ),
+                  size: 48,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    labels.location(s.location),
+                    style: text.titleLarge,
+                  ),
+                ),
                 Text.rich(numberSpan('Level $level'), style: text.titleLarge),
               ],
             ),
@@ -249,7 +265,10 @@ class _StatusCard extends StatelessWidget {
               'Walked today: ${fmt(controller.stepsToday)}',
               key: const ValueKey('walked-today'),
             ),
-            // The meal running (spec 0011 §8.2); tap for its card.
+            // The meal running (spec 0011 §8.2); tap for its card. It
+            // starts with the meal (spec 0014 §4.2). The socket is 32 dp,
+            // the banner size of §2.3, as the design phones 11 and 25 show
+            // for an item on one line.
             if (mealLine(game, s) case final line?)
               InkWell(
                 key: const ValueKey('meal-line'),
@@ -258,7 +277,15 @@ class _StatusCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     children: [
-                      const Icon(Icons.restaurant, size: 18),
+                      PictureSocket.item(
+                        game.data,
+                        s.meal!.key,
+                        picture: images.pictureOf(
+                          game.data,
+                          ItemThing(s.meal!.key),
+                        ),
+                        size: 32,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(line)),
                     ],
@@ -522,29 +549,48 @@ class _Here extends StatelessWidget {
   final void Function([String? profession])? onOpenProfessions;
 
   @override
-  Widget build(BuildContext context) => Column(
-    key: const ValueKey('here'),
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Heading('Here: ${labels.location(controller.state.location)}'),
-      // The rows stand on a plate (spec 0014 §2.2).
-      Card(
-        clipBehavior: Clip.antiAlias,
-        child: Column(children: _rows(context)),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final c = controller;
+    final game = c.game;
+    final enemies = game.availableEnemies(c.state);
+    final rest = _rows(context, enemies);
+    // The status card names the place, so the heading is "Here" (spec 0014
+    // §4.1). The rows stand on plates (§2.2): the monsters under their one
+    // heading, then the rest.
+    return Column(
+      key: const ValueKey('here'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Heading('Here'),
+        if (enemies.isNotEmpty)
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MonstersHeading(data: game.data),
+                for (final id in enemies)
+                  enemyTile(c, id, drops: dropsLine(game, c.state, labels, id)),
+              ],
+            ),
+          ),
+        if (rest.isNotEmpty)
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(children: rest),
+          ),
+      ],
+    );
+  }
 
-  List<Widget> _rows(BuildContext context) {
+  /// The rows after the monsters.
+  List<Widget> _rows(BuildContext context, List<String> enemies) {
     final c = controller;
     final game = c.game;
     final s = c.state;
     final place = game.data.locations[s.location]!;
-    final enemies = game.availableEnemies(s);
     final nodes = game.availableNodes(s);
     return [
-      for (final id in enemies)
-        enemyTile(c, id, drops: dropsLine(game, s, labels, id)),
       for (final id in nodes) nodeTile(c, id),
       // The teachers here (spec 0010 §6.1), a dot when a tip waits.
       for (final p in game.data.professions.values)

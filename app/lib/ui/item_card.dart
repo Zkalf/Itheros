@@ -209,6 +209,7 @@ class ItemCard extends StatelessWidget {
     // An empty slot first (spec 0008 decision 11); otherwise a swap with each
     // slot it fits.
     final targets = free.isNotEmpty ? [free.first] : slots;
+    final stats = labels.delta(game.data.bonusOf(item));
     return [
       for (final slot in targets) ...[
         // Everything it takes off: the worn item, a two-hander's off hand,
@@ -221,10 +222,11 @@ class ItemCard extends StatelessWidget {
           final off => 'Instead of your ${off.join(' and ')}',
         }, style: Theme.of(context).textTheme.bodySmall),
         // The change counts everything it takes off (a two-hander's shield).
-        Text(
-          labels.delta(game.compare(s, item, slot)),
-          key: ValueKey('compare-$slot'),
-        ),
+        // For an empty slot it shows only if it differs from the stats of
+        // the item, base stats and bonus rolls together (spec 0014 §4.1).
+        if (labels.delta(game.compare(s, item, slot)) case final change
+            when free.isEmpty || change != stats)
+          Text(change, key: ValueKey('compare-$slot')),
         const SizedBox(height: 8),
         _button(
           context,
