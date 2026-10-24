@@ -51,7 +51,7 @@ class ActionTile extends StatelessWidget {
   final bool deadly;
 
   /// The title names a monster or a spot; false for a label, such as
-  /// "Travel here".
+  /// "Walk here".
   final bool titleIsName;
 
   /// Set in a sheet: the sheet closes, and the action starts from this

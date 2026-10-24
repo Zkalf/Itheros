@@ -818,7 +818,7 @@ class _AreaSheet extends StatelessWidget {
                 controller: c,
                 activity: Activity.travel(area),
                 leading: const Icon(Icons.signpost),
-                title: 'Travel here',
+                title: 'Walk here',
                 titleIsName: false,
                 subtitle: Text('${fmt(steps)} steps'),
                 startFrom: host,

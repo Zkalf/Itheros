@@ -67,8 +67,18 @@ void main() {
       await c.addAction(mining, stop: someOre);
       await settle(t, c);
       await openTab(t, 'now');
-      expect(find.text('Travel to Copper Hills · 300 steps'), findsOneWidget);
+      // Amendment 1, criteria 3 and 4: one word for a walk.
+      expect(find.text('Walk to Copper Hills · 300 steps'), findsOneWidget);
+      expect(find.textContaining('Travel to'), findsNothing);
       expect(find.text('3 of 5 actions planned'), findsOneWidget);
+    });
+
+    testWidgets('amendment 1, criteria 1 and 2: the World map says "Walk '
+        'here"', (t) async {
+      await pumpGame(t);
+      await openArea(t, 'goblin_woods');
+      expect(find.text('Walk here'), findsOneWidget);
+      expect(find.text('Travel here'), findsNothing);
     });
 
     testWidgets('the remove button of a needed walk says why it stays', (
