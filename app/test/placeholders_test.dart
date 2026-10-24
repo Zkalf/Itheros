@@ -18,7 +18,8 @@ void main() {
       final data = loadTestGame().data;
       final things = thingsOf(data);
       // Each thing of §3.1 once: each monster, item, achievement, rank and
-      // place, and each origin with each gender.
+      // place, each origin with each gender, and each gathering spot
+      // (amendment 1).
       expect(
         {for (final (kind, _, _) in things) kind: count(things, kind)},
         {
@@ -31,6 +32,7 @@ void main() {
           'rank': data.ranks.length,
           'place': data.locations.length,
           'player': data.origins.length * Gender.values.length,
+          'spot': data.nodes.length,
         },
       );
       final list = placeholdersOf(data, diskImages);
@@ -64,6 +66,18 @@ void main() {
         contains(('material', 'test_lantern', 'placeholders/material')),
       );
     });
+
+    test('amendment 1 criterion 9: the list holds each spot with the tool '
+        'placeholder of its profession', () {
+      final data = loadTestGame().data;
+      final list = placeholdersOf(data, diskImages);
+      for (final n in data.nodes.values) {
+        expect(
+          list,
+          contains(('spot', n.id, 'placeholders/tool_${n.profession}')),
+        );
+      }
+    });
   });
 }
 
@@ -78,6 +92,7 @@ const kinds = [
   'rank',
   'place',
   'player',
+  'spot',
 ];
 
 bool isMaterial(ItemDef i) =>
@@ -108,6 +123,7 @@ List<(String, String, Thing)> thingsOf(GameData data) => [
   for (final o in data.origins.keys)
     for (final g in Gender.values)
       ('player', '${o}_${g.name}', PlayerThing(o, g)),
+  for (final id in data.nodes.keys) ('spot', id, SpotThing(id)),
 ];
 
 int count(List<(String, String, Thing)> things, String kind) =>

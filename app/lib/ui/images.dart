@@ -50,6 +50,12 @@ class ImageIndex {
       'players/${origin}_${gender.name}',
       'player',
     ),
+    // A spot shows the tool of its profession until it has an image (spec
+    // 0014 amendment 1).
+    SpotThing(:final id) => _image(
+      'spots/$id',
+      'tool_${data.nodes[id]?.profession}',
+    ),
   };
 
   Picture _image(String key, String placeholder) =>
@@ -163,6 +169,12 @@ final class PlayerThing extends Thing {
   const PlayerThing(this.origin, this.gender);
   final String origin;
   final Gender gender;
+}
+
+/// A gathering spot, such as `copper_vein` (spec 0014 amendment 1).
+final class SpotThing extends Thing {
+  const SpotThing(this.id);
+  final String id;
 }
 
 /// Where the PH mark sits on a placeholder (spec 0014 §3.2). [x] and [y] are

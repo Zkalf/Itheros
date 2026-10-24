@@ -161,7 +161,8 @@ const _traitName = {
   Trait.regenerates: 'Regenerates',
 };
 
-/// A row for mining [node].
+/// A row for gathering at [node]: its picture, then its level badge and
+/// name.
 Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
   final game = c.game;
   final n = game.data.nodes[node]!;
@@ -169,7 +170,15 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
   return ActionTile(
     controller: c,
     activity: Activity.gather(node),
-    leading: LevelBadge(
+    // The row starts with the spot in a 48 dp socket, as a monster row
+    // (spec 0014 amendment 1).
+    leading: Builder(
+      builder: (context) => PictureSocket(
+        picture: ImageScope.of(context).pictureOf(game.data, SpotThing(node)),
+        size: 48,
+      ),
+    ),
+    badge: LevelBadge(
       key: ValueKey('spot-level-$node'),
       level: n.level,
       colour: professionColour(
