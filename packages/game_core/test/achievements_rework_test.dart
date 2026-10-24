@@ -43,7 +43,6 @@ void main() {
       AchievementStage.mid: [
         ('marathon', AchievementKind.milestone),
         ('seasoned', AchievementKind.milestone),
-        ('master_smith', AchievementKind.milestone),
         ('rare_find', AchievementKind.milestone),
         ('smugglers_secret', AchievementKind.milestone),
         ('chieftains_bane', AchievementKind.feat),
@@ -56,6 +55,8 @@ void main() {
         ('the_long_road', AchievementKind.milestone),
         ('champion', AchievementKind.milestone),
         ('epic_find', AchievementKind.milestone),
+        // Amendment 3: after level 20, so its helm comes late.
+        ('master_smith', AchievementKind.milestone),
         ('dragonslayer', AchievementKind.feat),
         ('golem_breaker', AchievementKind.feat),
         ('troll_slayer', AchievementKind.feat),
@@ -66,8 +67,10 @@ void main() {
       ],
     };
 
-    test('30 achievements: 10 early, 9 mid and 11 late, with their kinds', () {
+    test('30 achievements: 10 early, 8 mid and 12 late (amendment 3), with '
+        'their kinds', () {
       expect(data.achievements, hasLength(30));
+      expect([for (final l in stages.values) l.length], [10, 8, 12]);
       stages.forEach((stage, list) {
         for (final (id, kind) in list) {
           expect(a(id).stage, stage, reason: id);
@@ -98,11 +101,12 @@ void main() {
           CounterCriterion('kills.$enemy', 0);
       final criteria = <String, Object>{
         'first_steps': const CounterCriterion('steps.walked', 10000),
-        'prospector': const CounterCriterion('gathered.copper_ore', 50),
-        'smith': const CounterCriterion('crafted.total', 20),
+        // Amendment 3: milestones that come on the way.
+        'prospector': const CounterCriterion('gathered.copper_ore', 30),
+        'smith': const CounterCriterion('crafted.total', 15),
         'kings_bane': const CounterCriterion('kills.graveyard_king', 1),
         'adventurer': const LevelCriterion(10),
-        'angler': const ProfessionCriterion('fishing', 10),
+        'angler': const CounterCriterion('gathered.lake_scale', 5),
         'lucky_find': const QualityCriterion('uncommon'),
         'goblin_slayer_1': kills('goblin'),
         'brute_force': kills('goblin_brute'),
@@ -117,7 +121,7 @@ void main() {
         'wolf_pack': kills('wolf'),
         'ghost_hunter': kills('ghost'),
         'travelling_salesman': const CounterCriterion('areas.visited', 11),
-        'the_long_road': const CounterCriterion('steps.walked', 1000000),
+        'the_long_road': const CounterCriterion('steps.walked', 350000),
         'champion': const LevelCriterion(30),
         'epic_find': const QualityCriterion('epic'),
         'dragonslayer': kills('young_dragon'),
@@ -132,7 +136,8 @@ void main() {
           'fishing',
           'hunting',
         ], 30),
-        'deep_waters': const ProfessionCriterion('fishing', 25),
+        // Spec 0017 amendment 2: catches at Cold tarn, one tarn scale each.
+        'deep_waters': const CounterCriterion('gathered.tarn_scale', 0),
       };
       criteria.forEach((id, c) {
         final got = a(id).criterion;
@@ -149,7 +154,7 @@ void main() {
       final rewards = <String, Reward>{
         'first_steps': const BankCapReward(250),
         'prospector': const BankCapReward(250),
-        'smith': const ItemReward('iron_shield', 'uncommon'),
+        'smith': const BankCapReward(500),
         'kings_bane': const BankCapReward(500),
         'adventurer': const BankCapReward(500),
         'angler': const BankCapReward(250),
@@ -198,11 +203,35 @@ void main() {
       expect(unlocked(step(s)), contains('adventurer'));
     });
 
+    // Amendment 3 made Angler a count, so the data has no profession
+    // criterion now: a test achievement has one.
     test('criterion 6: a profession criterion at its level', () {
-      final s = stateAt(game, professionLevel: 9);
-      expect(unlocked(step(s)), isNot(contains('angler')));
+      final withOne = newTestGame(
+        overrides: {
+          'achievements': {
+            'achievements': [
+              ...dataJson('achievements')['achievements']! as List,
+              {
+                'id': 'test_fisher',
+                'name': 'Test Fisher',
+                'stage': 'early',
+                'kind': 'milestone',
+                'criterion': {'profession': 'fishing', 'level': 10},
+                'reward': {'bankCap': 1},
+              },
+            ],
+          },
+        },
+      );
+      final s = stateAt(withOne, professionLevel: 9);
+      Iterable<String> earned(GameState s) => withOne
+          .applySteps(s, 1)
+          .events
+          .whereType<AchievementUnlocked>()
+          .map((e) => e.id);
+      expect(earned(s), isNot(contains('test_fisher')));
       s.professions['fishing'] = data.professionXpForLevel(10);
-      expect(unlocked(step(s)), contains('angler'));
+      expect(earned(s), contains('test_fisher'));
     });
 
     test('criterion 7 (amendment 1): each profession of the list at its '
@@ -257,12 +286,13 @@ void main() {
 
     test('criterion 9: an item from an achievement does not count for a '
         'quality criterion', () {
-      final s = stateAt(game)..counters['crafted.total'] = need('smith');
+      final s = stateAt(game)..counters['crafted.total'] = need('master_smith');
       final r = step(s);
-      expect(r.state.achievements, contains('smith'));
-      expect(r.state.inventory[data.keyFor('iron_shield', 'uncommon')], 1);
+      expect(r.state.achievements, contains('master_smith'));
+      expect(r.state.inventory[data.keyFor('mithril_helm', 'rare')], 1);
       expect(r.state.counters[Game.foundQualityCounter], isNull);
       expect(r.state.achievements, isNot(contains('lucky_find')));
+      expect(r.state.achievements, isNot(contains('rare_find')));
     });
   });
 
@@ -277,11 +307,8 @@ void main() {
     });
 
     test('criterion 11: an item reward goes into the bag at its quality', () {
-      final s = stateAt(game)..counters['crafted.total'] = need('smith');
-      expect(
-        step(s).state.inventory[data.keyFor('iron_shield', 'uncommon')],
-        1,
-      );
+      final s = stateAt(game)..counters['crafted.total'] = need('master_smith');
+      expect(step(s).state.inventory[data.keyFor('mithril_helm', 'rare')], 1);
     });
 
     test('criterion 12: a bonus raises its stat, and two bonuses to one '
@@ -390,12 +417,12 @@ void main() {
     test('criterion 17: an earned achievement that meets its criterion stays '
         'earned, and its reward comes no second time', () {
       final s = stateAt(game)
-        ..counters['crafted.total'] = need('smith')
-        ..achievements.add('smith');
+        ..counters['crafted.total'] = need('master_smith')
+        ..achievements.addAll(['smith', 'master_smith']);
       final loaded = game.load(saved(s));
-      expect(loaded.state.achievements, contains('smith'));
+      expect(loaded.state.achievements, contains('master_smith'));
       expect(
-        loaded.state.inventory[data.keyFor('iron_shield', 'uncommon')],
+        loaded.state.inventory[data.keyFor('mithril_helm', 'rare')],
         isNull,
       );
       expect(loaded.events.whereType<AchievementUnlocked>(), isEmpty);
@@ -526,5 +553,23 @@ void main() {
     expect(game.achievementProgress(s, 'adventurer'), (have: 7, need: 10));
     expect(game.achievementProgress(s, 'lucky_find'), (have: 0, need: 1));
     expect(counter('goblin_slayer_1'), 'kills.goblin');
+  });
+
+  // Amendments 2 and 3: a scale for each catch, from one spot only.
+  test('only Cold tarn gives tarn scales, and only Lake shore gives lake '
+      'scales', () {
+    for (final (id, item, spot) in [
+      ('deep_waters', 'tarn_scale', 'cold_tarn'),
+      ('angler', 'lake_scale', 'lake_shore'),
+    ]) {
+      expect(counter(id), 'gathered.$item');
+      expect(
+        [
+          for (final n in data.nodes.values)
+            if (n.item == item || n.catches.any((c) => c.item == item)) n.id,
+        ],
+        [spot],
+      );
+    }
   });
 }

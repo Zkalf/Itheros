@@ -167,9 +167,9 @@ void main() {
       expect(game.bankCap(r.state), before + 500);
     });
 
-    test('Smith unlocks on the 20th crafted item', () {
+    test('Smith unlocks on the 15th crafted item', () {
       var s = stateAt(game, level: 3, inventory: {'goblin_hide': 4})
-        ..counters['crafted.total'] = 19;
+        ..counters['crafted.total'] = 14;
       s = game.startActivity(s, const Activity.craft('hide_vest'));
       final r = game.applySteps(s, 150);
       expect(r.state.achievements, contains('smith'));
