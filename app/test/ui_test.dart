@@ -318,7 +318,8 @@ void main() {
     expect(find.text('While you were away'), findsOneWidget);
     expect(find.text('Today 11:00'), findsOneWidget);
     expect(find.text('You walked 300 steps.'), findsOneWidget);
-    expect(find.text('Arrived at Goblin Woods.'), findsOneWidget);
+    // Spec 0016 §7.3: a walk reads "Walked to", with its steps.
+    expect(find.text('Walked to Goblin Woods (200 steps).'), findsOneWidget);
     expect(find.text('Saved 100 steps in your step bank.'), findsOneWidget);
     expect(find.byType(HomeShell), findsNothing, reason: 'own screen');
 

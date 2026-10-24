@@ -88,10 +88,18 @@ class _ActionSheetState extends State<ActionSheet> {
     final labels = Labels(_game.data);
     final text = Theme.of(context).textTheme;
     final kinds = _kinds;
-    final slots =
-        s.activity != null && 1 + s.queue.length < _game.queueSlots(s);
-    final blocked = slots && _game.lastNeverStops(s);
-    final room = slots && !blocked;
+    final blocked = s.activity != null && _game.lastNeverStops(s);
+    // Why "Add to queue" can't take it (spec 0016 §7.2), or null.
+    String? refusal;
+    if (s.activity != null && !blocked) {
+      try {
+        _game.addAction(s, a, stop: _stop);
+      } on ActivityError catch (e) {
+        refusal = e.message;
+      }
+    }
+    final room = s.activity != null && !blocked && refusal == null;
+    final walk = _game.walkFirst(s, a);
 
     String kindName(StopKind k) => switch (k) {
       StopKind.untilGrey => 'Until grey',
@@ -206,6 +214,17 @@ class _ActionSheetState extends State<ActionSheet> {
                 ],
               ),
             ],
+            if (walk != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Walk to ${labels.location(walk.place)} first: '
+                '${fmt(walk.steps)} steps, one more slot.',
+              ),
+            ],
+            if (refusal != null) ...[
+              const SizedBox(height: 8),
+              Text(refusal, style: text.bodySmall),
+            ],
             if (blocked) ...[
               const SizedBox(height: 8),
               Text(
@@ -228,7 +247,12 @@ class _ActionSheetState extends State<ActionSheet> {
                     key: const ValueKey('start-now'),
                     onPressed: () => Navigator.pop(context, (_stop, true)),
                     icon: const Icon(Icons.play_arrow),
-                    label: Text(s.activity == null ? 'Start' : 'Start now'),
+                    // Start now clears the queue (spec 0016 §5).
+                    label: Text(switch (s) {
+                      GameState(activity: null) => 'Start',
+                      GameState(queue: []) => 'Start now',
+                      _ => 'Start now, clear queue',
+                    }),
                   ),
                   if (room)
                     FilledButton.icon(

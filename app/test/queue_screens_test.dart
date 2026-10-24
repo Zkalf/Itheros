@@ -107,6 +107,34 @@ void main() {
       expect(find.byKey(const ValueKey('add-to-queue')), findsOneWidget);
     });
 
+    testWidgets('a full queue shows "The queue is full."', (t) async {
+      final (c, _) = await pumpGame(t, level: 10, location: 'goblin_woods');
+      await c.addAction(goblins, stop: someHides);
+      await c.addAction(mining, stop: someOre);
+      await c.addAction(const Activity.travel('camp'));
+      await c.addAction(const Activity.travel('mirror_lake'));
+      await settle(t, c);
+      await openArea(t, 'goblin_woods');
+      await t.tap(option('fight', 'goblin_brute'));
+      await t.pumpAndSettle();
+      expect(find.text('The queue is full.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
+    });
+
+    testWidgets('a walk to where the queue ends shows why it is refused', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await c.addAction(goblins, stop: someHides);
+      await c.addAction(const Activity.travel('camp'));
+      await settle(t, c);
+      await openArea(t, 'camp');
+      await t.tap(option('travel', 'camp'));
+      await t.pumpAndSettle();
+      expect(find.text('The queue already ends at Camp.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
+    });
+
     testWidgets('with no room for the walk, it shows the refusal', (t) async {
       // Level 10: the skeleton is not deadly, so its sheet opens at once.
       final (c, _) = await pumpGame(t, level: 10, location: 'goblin_woods');

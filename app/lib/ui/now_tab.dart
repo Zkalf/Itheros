@@ -318,6 +318,7 @@ class _QueueCard extends StatelessWidget {
     final run = s.activity;
     final text = Theme.of(context).textTheme;
     final slots = game.queueSlots(s);
+    final places = game.queuePlaces(s);
 
     final List<Widget> body;
     if (run == null) {
@@ -459,16 +460,25 @@ class _QueueCard extends StatelessWidget {
               radius: 14,
               child: Text('${i + 2}', style: numberStyle),
             ),
-            title: Text(labels.short(s.queue[i].activity)),
-            subtitle: Text(
-              labels.stop(
-                s.queue[i].stop,
-                s.queue[i].activity,
-                owned: s.queue[i].stop.item == null
-                    ? 0
-                    : game.owned(s, s.queue[i].stop.item!),
-              ),
-            ),
+            // A walk: its place and its steps from where the queue stands
+            // before it (spec 0016 §7.1).
+            title: Text(switch (s.queue[i].activity) {
+              Activity(kind: ActivityKind.travel, :final target) =>
+                'Travel to ${labels.location(target)} · '
+                    '${fmt(game.walkSteps(s, places[i], target) ?? 0)} steps',
+              final a => labels.short(a),
+            }),
+            subtitle: s.queue[i].activity.kind == ActivityKind.travel
+                ? null
+                : Text(
+                    labels.stop(
+                      s.queue[i].stop,
+                      s.queue[i].activity,
+                      owned: s.queue[i].stop.item == null
+                          ? 0
+                          : game.owned(s, s.queue[i].stop.item!),
+                    ),
+                  ),
             trailing: IconButton(
               key: ValueKey('remove-${i + 1}'),
               tooltip: 'Remove',
@@ -520,7 +530,14 @@ class _QueueCard extends StatelessWidget {
   /// couldn't start after it.
   Future<void> _stop(BuildContext context, int index) async {
     final messenger = ScaffoldMessenger.of(context);
-    final skipped = await controller.removeAction(index);
+    final List<ActionSkipped> skipped;
+    try {
+      skipped = await controller.removeAction(index);
+    } on ActivityError catch (e) {
+      // A walk that the next action needs stays (spec 0016 §4.3).
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
     if (skipped.isEmpty) return;
     messenger.showSnackBar(
       SnackBar(

@@ -12,6 +12,7 @@ class ActionLog {
     this.skipped,
     this.missing = const {},
     this.next,
+    this.walkSteps = 0,
   });
 
   final Activity activity;
@@ -31,6 +32,9 @@ class ActionLog {
 
   /// The action that started after this one ended (skipped ones aside).
   final Activity? next;
+
+  /// The steps of the legs a walk finished (spec 0016 §7.3).
+  final int walkSteps;
 
   bool get isOpen => ended == null && skipped == null;
 
@@ -61,6 +65,8 @@ class ActionLog {
       final Map<String, Object?> a => Activity.fromJson(a),
       _ => null,
     },
+    // Journal entries before spec 0016 have none.
+    walkSteps: j['walkSteps'] as int? ?? 0,
   );
 
   Map<String, Object?> toJson() => {
@@ -75,6 +81,7 @@ class ActionLog {
     'skipped': skipped?.name,
     'missing': missing,
     'next': next?.toJson(),
+    if (walkSteps > 0) 'walkSteps': walkSteps,
   };
 
   ActionLog withNext(Activity a) => ActionLog(
@@ -87,6 +94,7 @@ class ActionLog {
     skipped: skipped,
     missing: missing,
     next: a,
+    walkSteps: walkSteps,
   );
 
   ActionLog operator +(ActionLog o) => ActionLog(
@@ -99,6 +107,7 @@ class ActionLog {
     skipped: o.skipped,
     missing: o.missing,
     next: o.next,
+    walkSteps: walkSteps + o.walkSteps,
   );
 }
 
@@ -149,13 +158,18 @@ class AwaySummary {
     final mealsEaten = <(String, int)>[];
     final mealsOut = <String>[];
     final route = <String>[];
-    var wins = 0, xp = 0;
+    var wins = 0, xp = 0, walkSteps = 0;
     var items = <String, int>{};
     var losses = <FightLost>[];
     Activity? started;
 
     void close(Activity a, EndReason? ended) {
-      final empty = wins == 0 && xp == 0 && items.isEmpty && losses.isEmpty;
+      final empty =
+          wins == 0 &&
+          xp == 0 &&
+          items.isEmpty &&
+          losses.isEmpty &&
+          walkSteps == 0;
       if (empty && ended == null) return;
       logs.add(
         ActionLog(
@@ -165,9 +179,10 @@ class AwaySummary {
           items: items,
           losses: losses,
           ended: ended,
+          walkSteps: walkSteps,
         ),
       );
-      (wins, xp, items, losses) = (0, 0, {}, []);
+      (wins, xp, items, losses, walkSteps) = (0, 0, {}, [], 0);
     }
 
     // Counted by item and quality: report rows show no bonus stats (spec
@@ -227,8 +242,9 @@ class AwaySummary {
         case ActionSkipped(:final activity, :final reason, :final missing):
           logs.add(ActionLog(activity, skipped: reason, missing: missing));
         // Each leg of a walk ends with an arrival (spec 0014 §5).
-        case Arrived(:final location):
+        case Arrived(:final location, :final steps):
           route.add(location);
+          walkSteps += steps;
         // Spec 0011's news: records, bottles, the chest, meals.
         case RecordBeaten(:final item, :final weight, :final was):
           records.add((item, weight, was));
@@ -316,9 +332,12 @@ class AwaySummary {
 
   /// Something happened beyond steps going to the bank or toward an
   /// unfinished unit: worth its own screen (spec 0004 amendment 2). A route
-  /// alone is not news (plan 0017, M3).
+  /// alone is not news (plan 0017, M3), nor a walk that has not arrived: it
+  /// is open only to add up its steps (spec 0016 §7.3).
   bool get isEventful =>
-      actions.isNotEmpty ||
+      actions.any(
+        (a) => !(a.isOpen && a.activity.kind == ActivityKind.travel),
+      ) ||
       levelsReached.isNotEmpty ||
       achievements.isNotEmpty ||
       lore.isNotEmpty ||
