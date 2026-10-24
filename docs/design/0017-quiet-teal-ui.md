@@ -74,7 +74,9 @@ Notes:
   in its card, so its names are about 12 dp high on a phone of 360 dp.
 - With Smugglers' Cove revealed, the only free spot for the name "Mirror Lake" is under Camp. It keeps the rules, but
   it can read as the name of Camp.
-- The map shows no painted fog, unlike the design phones: spec 0014 §4.2 keeps the fog as today.
+- The map paints fog, as the design phones do: a soft veil over the land past the explored places, with a clear hole
+  around each explored place and a cloud on each place in the fog. The fog markers, "???" and the dashed roads stay as
+  today (spec 0014 §4.2). The route map has no fog.
 - These renders come before M4, so the banners and the earned achievements keep their earlier look.
 
 ## Seen in the renders, outside plan 0017

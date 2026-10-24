@@ -83,6 +83,7 @@ class RouteMap extends StatelessWidget {
             key: const ValueKey('route-map'),
             borderRadius: BorderRadius.circular(12),
             child: MapView(
+              data: data,
               width: width,
               strip: routeStrip(data, route, width),
               places: [
