@@ -127,6 +127,7 @@ class AwaySummary {
     this.chests = const [],
     this.mealsEaten = const [],
     this.mealsOut = const [],
+    this.route = const [],
   });
 
   factory AwaySummary.fromReports(Iterable<StepReport> reports) =>
@@ -147,6 +148,7 @@ class AwaySummary {
     final charts = <String>[], bottleItems = <String>[], chests = <String>[];
     final mealsEaten = <(String, int)>[];
     final mealsOut = <String>[];
+    final route = <String>[];
     var wins = 0, xp = 0;
     var items = <String, int>{};
     var losses = <FightLost>[];
@@ -224,8 +226,9 @@ class AwaySummary {
           }
         case ActionSkipped(:final activity, :final reason, :final missing):
           logs.add(ActionLog(activity, skipped: reason, missing: missing));
-        case Arrived():
-          break;
+        // Each leg of a walk ends with an arrival (spec 0014 §5).
+        case Arrived(:final location):
+          route.add(location);
         // Spec 0011's news: records, bottles, the chest, meals.
         case RecordBeaten(:final item, :final weight, :final was):
           records.add((item, weight, was));
@@ -265,6 +268,7 @@ class AwaySummary {
       chests: chests,
       mealsEaten: mealsEaten,
       mealsOut: mealsOut,
+      route: route,
     );
   }
 
@@ -303,10 +307,16 @@ class AwaySummary {
   final List<(String, int)> mealsEaten;
   final List<String> mealsOut;
 
+  /// The route as place ids: the place where the player was, then each
+  /// place where the player arrived (spec 0014 §5). The controller puts the
+  /// start place first. A report alone holds only its arrivals.
+  final List<String> route;
+
   bool get isEmpty => walked == 0;
 
   /// Something happened beyond steps going to the bank or toward an
-  /// unfinished unit: worth its own screen (spec 0004 amendment 2).
+  /// unfinished unit: worth its own screen (spec 0004 amendment 2). A route
+  /// alone is not news (plan 0017, M3).
   bool get isEventful =>
       actions.isNotEmpty ||
       levelsReached.isNotEmpty ||
@@ -369,6 +379,8 @@ class AwaySummary {
         if (m case [final String key, final int left]) (key, left),
     ],
     mealsOut: _strings(j['mealsOut']),
+    // Entries from before spec 0014 have none, and show no route map.
+    route: _strings(j['route']),
   );
 
   Map<String, Object?> toJson() => {
@@ -403,6 +415,7 @@ class AwaySummary {
       for (final (key, left) in mealsEaten) [key, left],
     ],
     'mealsOut': mealsOut,
+    'route': route,
   };
 
   AwaySummary operator +(AwaySummary o) {
@@ -438,6 +451,13 @@ class AwaySummary {
       chests: [...chests, ...o.chests],
       mealsEaten: [...mealsEaten, ...o.mealsEaten],
       mealsOut: [...mealsOut, ...o.mealsOut],
+      // The place where one route ends and the next starts shows once.
+      route: [
+        ...route,
+        ...(route.isNotEmpty && o.route.firstOrNull == route.last
+            ? o.route.skip(1)
+            : o.route),
+      ],
     );
   }
 

@@ -29,6 +29,7 @@ class _CharacterTabState extends State<CharacterTab> {
     // The meal's share, marked on its stats (spec 0011 §8.3).
     final meal = game.mealBonus(s);
     final level = game.level(s);
+    final rank = game.rank(level).name;
     final points = game.talentPoints(level);
     final text = Theme.of(context).textTheme;
     final who = s.character;
@@ -68,18 +69,16 @@ class _CharacterTabState extends State<CharacterTab> {
                             ),
                             const SizedBox(height: 4),
                           ],
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              _RankTitle(game.rank(level).name),
-                              if (who != null)
-                                Text(
-                                  '· ${game.fill(game.data.origins[who.origin]?.title ?? '', who)}',
-                                  key: const ValueKey('character-origin'),
-                                  style: text.titleMedium,
-                                ),
-                            ],
-                          ),
+                          if (who == null)
+                            _RankTitle(rank)
+                          else
+                            _RankAndOrigin(
+                              rank,
+                              game.fill(
+                                game.data.origins[who.origin]?.title ?? '',
+                                who,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -154,12 +153,76 @@ class _CharacterTabState extends State<CharacterTab> {
   }
 }
 
+/// The rank, then "· origin" on the same line (spec 0012 §4.4). If the line
+/// is too narrow for both, the origin shows on a line of its own below the
+/// rank, without the dot. The origin is body text (spec 0014 §2.2).
+class _RankAndOrigin extends StatelessWidget {
+  const _RankAndOrigin(this.rank, this.origin);
+
+  final String rank;
+  final String origin;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final line = '· $origin';
+    return LayoutBuilder(
+      builder: (context, box) {
+        final fits =
+            _widthOf(context, rank, _RankTitle.styleOf(context)) +
+                _RankTitle.gap +
+                _widthOf(context, line, style) <=
+            box.maxWidth;
+        final title = _RankTitle(rank);
+        final shown = Text(
+          fits ? line : origin,
+          key: const ValueKey('character-origin'),
+          style: style,
+        );
+        return fits
+            ? Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [title, shown],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [title, shown],
+              );
+      },
+    );
+  }
+}
+
+/// The width of [text] in [style], as a Text in [context] draws it: with the
+/// default text style, the bold text setting and the text scale of the phone.
+double _widthOf(BuildContext context, String text, TextStyle? style) {
+  var drawn = DefaultTextStyle.of(context).style.merge(style);
+  if (MediaQuery.boldTextOf(context)) {
+    drawn = drawn.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: drawn),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
 /// The rank name. Seven quick taps switch test walk on or off (spec 0004
 /// decision 5), in owner builds only (spec 0007 §4).
 class _RankTitle extends StatefulWidget {
   const _RankTitle(this.name);
 
   final String name;
+
+  /// The space after the rank, before "· origin".
+  static const gap = 6.0;
+
+  /// The rank is teal (spec 0014 §2.1).
+  static TextStyle? styleOf(BuildContext context) =>
+      Theme.of(context).textTheme.titleMedium?.copyWith(color: Quiet.teal);
 
   @override
   State<_RankTitle> createState() => _RankTitleState();
@@ -192,13 +255,8 @@ class _RankTitleState extends State<_RankTitle> {
   Widget build(BuildContext context) => GestureDetector(
     onTap: _tap,
     child: Padding(
-      padding: const EdgeInsets.only(right: 6),
-      // The rank is teal (spec 0014 §2.1).
-      child: Text(
-        widget.name,
-        style: Theme.of(context).textTheme.titleMedium
-            ?.copyWith(color: Quiet.teal),
-      ),
+      padding: const EdgeInsets.only(right: _RankTitle.gap),
+      child: Text(widget.name, style: _RankTitle.styleOf(context)),
     ),
   );
 }

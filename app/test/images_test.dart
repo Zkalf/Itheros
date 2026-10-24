@@ -24,9 +24,18 @@ import 'package:walkingrpg/ui/labels.dart' show genderName;
 import 'package:walkingrpg/ui/socket.dart';
 import 'package:walkingrpg/ui/theme.dart' show quietTheme;
 
-import 'quiet_teal_files_test.dart' show fontTable;
+import 'quiet_teal_files_test.dart' show alegreya, cormorant, fontTable;
 import 'quiet_teal_test.dart'
-    show byElement, drawnBy, drawnUnder, expectRgb, openItem, piecesOf;
+    show
+        byElement,
+        drawnBy,
+        drawnUnder,
+        expectRgb,
+        openItem,
+        piecesOf,
+        richIn,
+        rootStyle,
+        styleOf;
 import 'ui_test.dart' show ada, closeSheet, game, openTab, pumpGame;
 
 void main() {
@@ -188,6 +197,26 @@ Future<void> openBag(WidgetTester t) async {
   await openTab(t, 'character');
   await t.tap(find.byKey(const ValueKey('tab-bag')));
   await t.pumpAndSettle();
+}
+
+/// The rank and the origin in the Character header of [who], at the rank
+/// Adventurer, on a phone 360 dp wide: the width of the design phone. The
+/// header shows the portrait beside them.
+Future<({Rect rank, Rect origin, String text})> headerAt360(
+  WidgetTester t,
+  Character who,
+) async {
+  final adventurer = game.data.ranks.firstWhere((r) => r.name == 'Adventurer');
+  await pumpGame(t, level: adventurer.level, character: who);
+  t.view.physicalSize = const Size(360, 4000);
+  await t.pumpAndSettle();
+  await openTab(t, 'character');
+  final origin = find.byKey(const ValueKey('character-origin'));
+  return (
+    rank: t.getRect(find.text(adventurer.name)),
+    origin: t.getRect(origin),
+    text: t.widget<Text>(origin).data!,
+  );
 }
 
 /// Expects [where] to show the picture of [thing] with the files on disk: the
@@ -518,6 +547,80 @@ void criterion8() {
       await t.pumpAndSettle();
       expect(c.testWalkOn, isTrue);
       expect(find.text('Test walk on'), findsOneWidget);
+    });
+
+    // §2.2: "Alegreya Sans for body text". The design phone (20) shows the
+    // origin as body text after the teal rank.
+    testWidgets('the origin is body text in Alegreya Sans; the rank stays in '
+        'Cormorant Garamond', (t) async {
+      const level = 12;
+      await pumpGame(t, level: level);
+      await openTab(t, 'character');
+      final body = quietTheme.textTheme.bodyMedium!;
+      final origin = rootStyle(
+        richIn(t, find.byKey(const ValueKey('character-origin'))),
+      );
+      expect(
+        (origin.fontFamily, origin.fontSize),
+        (alegreya, body.fontSize),
+        reason: 'the origin is body text',
+      );
+      expect(
+        styleOf(t, game.rank(level).name).fontFamily,
+        cormorant,
+        reason: 'the rank',
+      );
+    });
+
+    // With the portrait beside them, the rank and the origin share about
+    // 230 dp. "Adventurer" and "· Woodcutter's daughter" need more.
+    testWidgets('on a phone 360 dp wide, an origin that does not fit after '
+        'the rank shows on a line of its own below the rank, without the '
+        'dot', (t) async {
+      final h = await headerAt360(
+        t,
+        const Character(
+          name: 'Ada',
+          gender: Gender.female,
+          origin: 'woodcutters_child',
+        ),
+      );
+      expect(h.text, "Woodcutter's daughter");
+      expect(
+        h.origin.top,
+        greaterThanOrEqualTo(h.rank.bottom - 0.5),
+        reason: 'the origin ${h.origin} is below the rank ${h.rank}',
+      );
+      expect(
+        h.origin.left,
+        moreOrLessEquals(h.rank.left, epsilon: 0.5),
+        reason: 'the origin ${h.origin} starts under the rank ${h.rank}',
+      );
+    });
+
+    // "Adventurer · Fisher from the coast" fits in one line, as on the
+    // design phone (20).
+    testWidgets('on a phone 360 dp wide, an origin that fits after the rank '
+        'shows on the line of the rank, after the dot', (t) async {
+      final h = await headerAt360(
+        t,
+        const Character(
+          name: 'Ada',
+          gender: Gender.neither,
+          origin: 'coast_fisher',
+        ),
+      );
+      expect(h.text, '· Fisher from the coast');
+      expect(
+        h.origin.center.dy,
+        moreOrLessEquals(h.rank.center.dy, epsilon: 1),
+        reason: 'the origin ${h.origin} is on the line of the rank ${h.rank}',
+      );
+      expect(
+        h.origin.left,
+        greaterThanOrEqualTo(h.rank.right - 0.5),
+        reason: 'the origin ${h.origin} follows the rank ${h.rank}',
+      );
     });
   });
 }

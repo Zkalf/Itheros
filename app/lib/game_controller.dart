@@ -159,8 +159,9 @@ class GameController extends ChangeNotifier {
   /// alone, so later real syncs are unchanged (spec 0004 §3).
   Future<void> testWalk(int steps) => _serial(() async {
     await _syncNow(away: false);
+    final start = state.location;
     final report = game.applySteps(state, steps);
-    final summary = AwaySummary.fromReports([report]);
+    final summary = _from(start, AwaySummary.fromReports([report]));
     _levelCards.addAll(summary.levelsReached);
     _save = _addEntry(
       _save!.withGame(report.state),
@@ -329,6 +330,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> _syncNow({required bool away}) async {
+    final start = state.location;
     final SyncResult result;
     try {
       result = await _sync.sync(_save!);
@@ -338,16 +340,22 @@ class GameController extends ChangeNotifier {
       return;
     }
     syncError = null;
-    _levelCards.addAll(result.summary.levelsReached);
+    final summary = _from(start, result.summary);
+    _levelCards.addAll(summary.levelsReached);
     // Also saves when old days were pruned from the credit.
     var changed =
-        !result.summary.isEmpty ||
+        !summary.isEmpty ||
         result.save.credited.length != _save!.credited.length;
     if (changed) _save = result.save;
-    if (_report(result.summary, away: away)) changed = true;
+    if (_report(summary, away: away)) changed = true;
     if (changed) await store.save(_save!);
     notifyListeners();
   }
+
+  /// [summary] with its route from [start], the place where the player was
+  /// before its steps (spec 0014 §5).
+  static AwaySummary _from(String start, AwaySummary summary) =>
+      AwaySummary(route: [start]) + summary;
 
   SaveData _addEntry(SaveData save, JournalEntry entry) => save.copyWith(
     journal: [entry, ...save.journal].take(game.data.journalEntries).toList(),
