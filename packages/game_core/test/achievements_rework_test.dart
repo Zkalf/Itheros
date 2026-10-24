@@ -125,7 +125,13 @@ void main() {
         'troll_slayer': kills('troll'),
         'wyvern_hunter': kills('wyvern'),
         'legendary_find': const QualityCriterion('legendary'),
-        'master_of_a_trade': const AnyProfessionCriterion(30),
+        // Spec 0017 amendment 1: the four gathering professions.
+        'master_of_a_trade': const EachProfessionCriterion([
+          'mining',
+          'woodcutting',
+          'fishing',
+          'hunting',
+        ], 30),
         'deep_waters': const ProfessionCriterion('fishing', 25),
       };
       criteria.forEach((id, c) {
@@ -199,10 +205,14 @@ void main() {
       expect(unlocked(step(s)), contains('angler'));
     });
 
-    test('criterion 7: any profession at its level', () {
+    test('criterion 7 (amendment 1): each profession of the list at its '
+        'level', () {
       final s = stateAt(game, professionLevel: 29);
+      for (final p in ['mining', 'woodcutting', 'fishing', 'cooking']) {
+        s.professions[p] = data.professionXpForLevel(30);
+      }
       expect(unlocked(step(s)), isNot(contains('master_of_a_trade')));
-      s.professions['cooking'] = data.professionXpForLevel(30);
+      s.professions['hunting'] = data.professionXpForLevel(30);
       expect(unlocked(step(s)), contains('master_of_a_trade'));
     });
 

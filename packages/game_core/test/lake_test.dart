@@ -734,7 +734,9 @@ void main() {
       expect(s.revealed, isEmpty);
       expect(s.bottles, 0);
       expect(game.isHidden(s, 'smugglers_cove'), isTrue);
-      expect(s.toJson(), old.toJson());
+      // The quality counter is new in version 12 (spec 0017 §3.2).
+      final kept = s.copy()..counters.remove(Game.foundQualityCounter);
+      expect(kept.toJson(), old.toJson());
     });
 
     test('a version 9 save keeps the new fields', () {
