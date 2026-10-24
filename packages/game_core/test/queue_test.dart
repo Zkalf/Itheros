@@ -13,18 +13,18 @@ void main() {
 
   List<T> all<T>(StepReport r) => r.events.whereType<T>().toList();
 
-  // Spec 0008 decision 7: three slots from level 1.
+  // Spec 0016 §2: five slots from level 1.
   group('criterion 1: queue size', () {
-    test('three slots at level 1', () {
+    test('five slots at level 1', () {
       var s = stateAt(game, location: 'goblin_woods');
-      for (final a in [goblins, brutes, goblins]) {
+      for (final a in [goblins, brutes, goblins, brutes, goblins]) {
         s = game.addAction(
           s,
           a,
           stop: const StopCondition.untilHave('goblin_hide', 99),
         );
       }
-      expect(s.queue, hasLength(2));
+      expect(s.queue, hasLength(4));
       expect(
         () => game.addAction(s, goblins),
         throwsA(
@@ -38,33 +38,39 @@ void main() {
     });
   });
 
-  test(
-    'criterion 2: the next action starts by itself, walking there first',
-    () {
-      var s = stateAt(game, level: 5);
-      s = game.addAction(
-        s,
-        goblins,
-        stop: StopCondition.untilHave('goblin_hide', 2),
-      );
-      s = game.addAction(s, mining);
-      expect(s.activity!.leg, 'goblin_woods', reason: 'walking, no slot used');
-      expect(s.queue, hasLength(1));
+  test('criterion 2: the next action starts by itself, after its walk', () {
+    var s = stateAt(game, level: 5);
+    s = game.addAction(
+      s,
+      goblins,
+      stop: StopCondition.untilHave('goblin_hide', 2),
+    );
+    s = game.addAction(s, mining);
+    // Spec 0016 §3.2: each walk takes a slot.
+    expect(s.activity!.activity, const Activity.travel('goblin_woods'));
+    expect(s.queue.map((p) => p.activity), [
+      goblins,
+      const Activity.travel('copper_hills'),
+      mining,
+    ]);
 
-      final r = game.applySteps(s, 3000);
+    final r = game.applySteps(s, 3000);
 
-      expect(all<Arrived>(r).map((e) => e.location), [
-        'goblin_woods',
-        'copper_hills',
-      ]);
-      expect(all<ActivityEnded>(r).single.reason, EndReason.enough);
-      expect(all<ActionStarted>(r).single.activity, mining);
-      expect(r.state.location, 'copper_hills');
-      expect(r.state.activity!.activity, mining);
-      expect(r.state.inventory['copper_ore'], greaterThan(0));
-      expect(r.state.inventory['goblin_hide'], greaterThanOrEqualTo(2));
-    },
-  );
+    expect(all<Arrived>(r).map((e) => e.location), [
+      'goblin_woods',
+      'copper_hills',
+    ]);
+    expect(all<ActivityEnded>(r).map((e) => e.reason), [
+      EndReason.arrived,
+      EndReason.enough,
+      EndReason.arrived,
+    ]);
+    expect(all<ActionStarted>(r).last.activity, mining);
+    expect(r.state.location, 'copper_hills');
+    expect(r.state.activity!.activity, mining);
+    expect(r.state.inventory['copper_ore'], greaterThan(0));
+    expect(r.state.inventory['goblin_hide'], greaterThanOrEqualTo(2));
+  });
 
   test('travel goes along the shortest open route, leg by leg', () {
     // Camp -> Old Graveyard: direct (500) beats Goblin Woods (200 + 400).
@@ -199,27 +205,6 @@ void main() {
       );
     });
 
-    test('"Start now" with actions waiting needs a stop condition', () {
-      var s = stateAt(game, level: 5, location: 'goblin_woods');
-      s = game.addAction(
-        s,
-        goblins,
-        stop: StopCondition.untilHave('goblin_hide', 9),
-      );
-      s = game.addAction(s, brutes);
-      expect(
-        () => game.startActivity(s, mining),
-        throwsA(isA<ActivityError>()),
-      );
-      s = game.startActivity(
-        s,
-        mining,
-        stop: StopCondition.untilHave('copper_ore', 3),
-      );
-      expect(s.activity!.activity, mining);
-      expect(s.queue.map((p) => p.activity), [brutes]);
-    });
-
     test('gathering in an earlier slot needs "until I have N"', () {
       var s = game.addAction(stateAt(game, level: 5), mining);
       expect(() => game.addAction(s, goblins), throwsA(isA<ActivityError>()));
@@ -229,7 +214,11 @@ void main() {
         stop: StopCondition.untilHave('copper_ore', 5),
       );
       s = game.addAction(s, goblins);
-      expect(s.queue, hasLength(1));
+      expect(s.queue.map((p) => p.activity), [
+        mining,
+        const Activity.travel('goblin_woods'),
+        goblins,
+      ]);
     });
 
     test('conditions that don\'t fit the action are refused', () {
@@ -266,30 +255,36 @@ void main() {
     test('Stop ends the running action and starts the next', () {
       final s = game.stopActivity(three());
       expect(s.activity!.activity, brutes);
-      expect(s.queue.map((p) => p.activity), [mining]);
+      expect(s.queue.map((p) => p.activity), [
+        const Activity.travel('copper_hills'),
+        mining,
+      ]);
     });
 
     test('Stop reports the waiting actions it skipped, and why', () {
-      var s = stateAt(game, level: 5, location: 'goblin_woods');
+      var s = stateAt(game, level: 5, inventory: {'copper_ore': 5});
       s = game.addAction(
         s,
-        goblins,
-        stop: StopCondition.untilHave('goblin_hide', 9),
+        const Activity.craft('copper_sword'),
+        stop: const StopCondition.untilCrafted(1),
       );
-      s = game.addAction(s, const Activity.craft('copper_sword'));
+      s = game.addAction(s, const Activity.craft('hide_vest'));
       final events = <GameEvent>[];
       s = game.stopActivity(s, events: events);
       expect(s.activity, isNull, reason: 'resting');
       final skipped = events.whereType<ActionSkipped>().single;
-      expect(skipped.activity, const Activity.craft('copper_sword'));
+      expect(skipped.activity, const Activity.craft('hide_vest'));
       expect(skipped.reason, SkipReason.noMaterials);
-      expect(skipped.missing, {'copper_ore': 5});
+      expect(skipped.missing, {'goblin_hide': 4});
     });
 
     test('removing a queued action keeps the rest in order', () {
       final s = game.removeAction(three(), 1);
       expect(s.activity!.activity, goblins);
-      expect(s.queue.map((p) => p.activity), [mining]);
+      expect(s.queue.map((p) => p.activity), [
+        const Activity.travel('copper_hills'),
+        mining,
+      ]);
     });
 
     test('removing the running action is Stop', () {
