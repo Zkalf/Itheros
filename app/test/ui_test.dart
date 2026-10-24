@@ -257,7 +257,61 @@ void main() {
     await settle(t, c);
     await openTab(t, 'now');
     expect(find.text('Walking to Goblin Woods'), findsOneWidget);
-    expect(find.text('Walking to Goblin Woods: 0 / 200 steps'), findsOneWidget);
+    // The title names the place; the bar shows only the steps (playtest of
+    // the queue rework, 2026-10-24).
+    expect(find.text('0 / 200 steps'), findsOneWidget);
+    expect(find.textContaining('Walking to Goblin Woods:'), findsNothing);
+  });
+
+  testWidgets('a walk of two stages names the first stage on its bar', (
+    t,
+  ) async {
+    // Copper Hills -> Old Graveyard: via Goblin Woods (300 + 400).
+    final (c, _) = await pumpGame(t, location: 'copper_hills');
+    await c.startActivity(const Activity.travel('old_graveyard'));
+    await settle(t, c);
+    await openTab(t, 'now');
+    expect(find.text('Walking to Old Graveyard'), findsOneWidget);
+    expect(find.text('Goblin Woods first: 0 / 300 steps'), findsOneWidget);
+  });
+
+  testWidgets('Add to queue stays and says what it added', (t) async {
+    final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+    await c.addAction(
+      const Activity.fight('goblin'),
+      stop: StopCondition.untilHave('goblin_hide', 50),
+    );
+    await settle(t, c);
+    await openArea(t, 'goblin_woods');
+    await t.tap(option('fight', 'goblin_brute'));
+    await t.pumpAndSettle();
+    // The default stop condition: until grey.
+    await t.tap(find.byKey(const ValueKey('add-to-queue')));
+    await settle(t, c);
+    await t.pump();
+    expect(
+      find.text('Added to the queue: Goblin brute (2 of 5).'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('stop-activity')),
+      findsNothing,
+      reason: 'still on the World map, not on Now',
+    );
+
+    await openArea(t, 'copper_hills');
+    await t.tap(option('gather', 'copper_vein'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('add-to-queue')));
+    await settle(t, c);
+    await t.pump();
+    expect(
+      find.text(
+        'Added to the queue: a walk to Copper Hills, then Copper vein '
+        '(4 of 5).',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Stop is shown only while active, and banks unspent steps', (

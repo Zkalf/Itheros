@@ -256,8 +256,33 @@ Future<void> startAction(
     );
     if (choice == null) return;
     final (stop, now) = choice;
-    await (now ? c.startActivity(a, stop: stop) : c.addAction(a, stop: stop));
-    if (now) showNow?.call();
+    if (now) {
+      await c.startActivity(a, stop: stop);
+      showNow?.call();
+      return;
+    }
+    // The player stays to plan more, so say what went in.
+    final labels = Labels(c.game.data);
+    final before = c.state.queue.length;
+    await c.addAction(a, stop: stop);
+    final s = c.state;
+    final walk = s.queue.length - before == 2
+        ? 'a walk to ${labels.location(s.queue[s.queue.length - 2].activity.target)}, then '
+        : '';
+    final name = labels.short(a);
+    final added = walk.isEmpty
+        ? '${name[0].toUpperCase()}${name.substring(1)}'
+        : '$walk$name';
+    messenger
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            'Added to the queue: $added '
+            '(${1 + s.queue.length} of ${c.game.queueSlots(s)}).',
+          ),
+        ),
+      );
   } on ActivityError catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));
   }

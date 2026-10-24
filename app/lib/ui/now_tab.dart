@@ -387,8 +387,10 @@ class _QueueCard extends StatelessWidget {
         const SizedBox(height: 8),
         _Bar(
           label: switch (run) {
-            RunningActivity(:final leg?) =>
-              'Walking to ${labels.location(leg)}: '
+            // The title names the place; a walk of more than one stage
+            // names the stage under way.
+            RunningActivity(:final leg?) when leg != run.activity.target =>
+              '${labels.location(leg)} first: '
                   '${fmt(run.progress)} / ${fmt(cost)} steps',
             _ when run.activity.kind == ActivityKind.fight =>
               'Next round: ${run.progress} / $cost steps',
