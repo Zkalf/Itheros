@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show PathMetric;
+import 'dart:ui' show ImageFilter, PathMetric;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
@@ -64,6 +64,7 @@ class WorldTab extends StatelessWidget {
                       ),
                 ],
                 here: s.location,
+                fog: true,
               ),
             ),
             Padding(
@@ -119,6 +120,7 @@ class MapSpot {
 ///   overlaps, and each name stays inside the map.
 /// - [roads] are the two places of each road and its step count; null for a
 ///   road into the fog.
+/// - With [fog], the painted fog lies over the image and under the marks.
 class MapView extends StatelessWidget {
   const MapView({
     super.key,
@@ -128,6 +130,7 @@ class MapView extends StatelessWidget {
     required this.here,
     this.strip,
     this.marker = 40,
+    this.fog = false,
   });
 
   final double width;
@@ -135,6 +138,7 @@ class MapView extends StatelessWidget {
   final List<(String, String, String?)> roads;
   final String here;
   final Rect? strip;
+  final bool fog;
 
   /// The size of each marker.
   final double marker;
@@ -155,7 +159,11 @@ class MapView extends StatelessWidget {
   static const _namePad = EdgeInsets.symmetric(horizontal: 5, vertical: 1);
   static const _countPad = 3.0;
 
-  static const _image = Picture('pictures/world_map');
+  static final _image = Image(
+    image: AssetImage(const Picture('pictures/world_map').asset!),
+    fit: BoxFit.cover,
+    excludeFromSemantics: true,
+  );
 
   /// How far a marker and its ring reach from its centre.
   double get _room => marker / 2 + _ring;
@@ -210,21 +218,36 @@ class MapView extends StatelessWidget {
       ],
     );
 
+    // The image and the fog cover the whole map. The strip shows a part.
+    Widget onImage(Widget child) => Positioned(
+      left: 0,
+      top: -shown.top,
+      width: whole.width,
+      height: whole.height,
+      child: child,
+    );
     return SizedBox.fromSize(
       size: shown.size,
       child: Stack(
         children: [
-          Positioned(
-            left: 0,
-            top: -shown.top,
-            width: whole.width,
-            height: whole.height,
-            child: Image(
-              image: AssetImage(_image.asset!),
-              fit: BoxFit.cover,
-              excludeFromSemantics: true,
+          onImage(_image),
+          if (fog)
+            onImage(
+              _Fog(
+                key: const ValueKey('map-fog'),
+                painter: FogPainter(
+                  holes: [
+                    for (final p in places)
+                      if (!p.fogged) _mapPoint(data, p.id, whole),
+                  ],
+                  clouds: [
+                    for (final p in places)
+                      if (p.fogged) _mapPoint(data, p.id, whole),
+                  ],
+                  scale: width / 360,
+                ),
+              ),
             ),
-          ),
           Positioned.fill(
             child: CustomPaint(
               painter: MapPainter(
@@ -338,11 +361,17 @@ class MapView extends StatelessWidget {
 /// point, moved inward on each axis just enough that a marker and its ring,
 /// [reach] from the centre, lie inside the image (plan 0017, M3).
 Offset placeCentre(GameData data, String place, Size size, double reach) {
-  final p = data.locations[place]?.map ?? const MapPoint(.5, .5);
+  final p = _mapPoint(data, place, size);
   return Offset(
-    (p.x * size.width).clamp(reach, size.width - reach),
-    (p.y * size.height).clamp(reach, size.height - reach),
+    p.dx.clamp(reach, size.width - reach),
+    p.dy.clamp(reach, size.height - reach),
   );
+}
+
+/// The map point of [place] on the map image of [size].
+Offset _mapPoint(GameData data, String place, Size size) {
+  final p = data.locations[place]?.map ?? const MapPoint(.5, .5);
+  return Offset(p.x * size.width, p.y * size.height);
 }
 
 /// The map that [build] makes at a width, for a screen [width] wide. Below
@@ -370,6 +399,148 @@ class _Ring extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// The painted fog of the World map, as the design phones 08, 10 and 15
+/// show it: the map blurred and pale under a light veil, with a soft hole
+/// around each place out of the fog and a cloud on each place in it. The
+/// fog still shows by exploring (spec 0008 decision 5).
+class _Fog extends StatelessWidget {
+  const _Fog({super.key, required this.painter});
+
+  final FogPainter painter;
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    // The layer of the colour filter holds the blurred map and the veil.
+    // Thus the holes of the painter clear them, and not the map under them.
+    child: ColorFiltered(
+      colorFilter: ColorFilter.matrix(_mist),
+      child: CustomPaint(
+        foregroundPainter: painter,
+        child: ImageFiltered(
+          imageFilter: ImageFilter.blur(
+            sigmaX: 2.4 * painter.scale,
+            sigmaY: 2.4 * painter.scale,
+            tileMode: TileMode.clamp,
+          ),
+          child: MapView._image,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Saturation 0.45 and brightness 1.04: the paler map under the veil.
+final _mist = _saturation(.45, 1.04);
+
+List<double> _saturation(double s, double brightness) {
+  // The weights of red, green and blue in the brightness of a colour.
+  const w = [.213, .715, .072];
+  return [
+    for (var i = 0; i < 3; i++) ...[
+      for (var j = 0; j < 3; j++)
+        brightness * (w[j] * (1 - s) + (i == j ? s : 0)),
+      0,
+      0,
+    ],
+    ...[0, 0, 0, 1, 0],
+  ];
+}
+
+/// The veil, the holes and the clouds of the painted fog, at a map of
+/// [scale] × 360 dp. It paints over the blurred map of [_Fog].
+/// - A hole is clear to [clear] from its centre and full fog from [full].
+///   Where holes meet, each clears the fog.
+/// - A cloud of the size [cloud] lies on each place in the fog.
+@visibleForTesting
+class FogPainter extends CustomPainter {
+  FogPainter({required this.holes, required this.clouds, required this.scale});
+
+  /// The map point of each place out of the fog.
+  final List<Offset> holes;
+
+  /// The map point of each place in the fog.
+  final List<Offset> clouds;
+
+  /// The width of the map over 360 dp.
+  final double scale;
+
+  double get clear => 62 * scale;
+  double get full => 118 * scale;
+  Size get cloud => const Size(176, 120) * scale;
+
+  /// The veil from the top of the map to the bottom, and a cloud from its
+  /// middle to its edge: light text colour, as the mist of the design.
+  static final _veil = [
+    Quiet.text.withValues(alpha: .66),
+    Quiet.text.withValues(alpha: .56),
+  ];
+  static final _cloud = [
+    Quiet.text.withValues(alpha: .95),
+    Quiet.text.withValues(alpha: .64),
+    Quiet.text.withValues(alpha: .13),
+    Quiet.text.withValues(alpha: 0),
+  ];
+
+  /// Each colour that the fog paints. A hole clears with black.
+  List<Color> get colours => [..._veil, ..._cloud, Quiet.black];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final all = Offset.zero & size;
+    canvas.drawRect(
+      all,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: _veil,
+        ).createShader(all),
+    );
+    // Each hole clears the veil and the blurred map, so the map shows.
+    for (final h in holes) {
+      final round = Rect.fromCircle(center: h, radius: full);
+      canvas.drawCircle(
+        h,
+        full,
+        Paint()
+          ..blendMode = BlendMode.dstOut
+          ..shader = RadialGradient(
+            colors: [
+              Quiet.black,
+              Quiet.black,
+              Quiet.black.withValues(alpha: 0),
+            ],
+            stops: [0, clear / full, 1],
+          ).createShader(round),
+      );
+    }
+    // A cloud is a soft circle, made flat to the shape of the cloud.
+    final r = cloud.width / 2;
+    for (final c in clouds) {
+      canvas
+        ..save()
+        ..translate(c.dx, c.dy)
+        ..scale(1, cloud.height / cloud.width)
+        ..drawCircle(
+          Offset.zero,
+          r,
+          Paint()
+            ..shader = RadialGradient(
+              colors: _cloud,
+              stops: const [0, .55, .8, 1],
+            ).createShader(Rect.fromCircle(center: Offset.zero, radius: r)),
+        )
+        ..restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(FogPainter old) =>
+      !listEquals(old.holes, holes) ||
+      !listEquals(old.clouds, clouds) ||
+      old.scale != scale;
 }
 
 /// The roads, then the step plates: solid roads with their step count
