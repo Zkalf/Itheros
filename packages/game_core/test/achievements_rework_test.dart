@@ -353,6 +353,32 @@ void main() {
       );
     });
 
+    // A misspelt reward must not load as a bonus of nothing.
+    test('the data check refuses a reward that it does not know', () {
+      final json = dataJson('achievements');
+      for (final reward in [
+        {'atack': 4},
+        {'queueSlot': 2},
+        <String, Object?>{},
+        {'attack': 0},
+      ]) {
+        final list = [...json['achievements']! as List<Object?>];
+        final i = list.indexWhere(
+          (a) => (a! as Map<String, Object?>)['id'] == 'goblin_slayer_1',
+        );
+        list[i] = {...list[i]! as Map<String, Object?>, 'reward': reward};
+        expect(
+          () => loadGameData(
+            overrides: {
+              'achievements': {'achievements': list},
+            },
+          ),
+          throwsFormatException,
+          reason: '$reward',
+        );
+      }
+    });
+
     test('criterion 15: no reward item comes from a monster or a spot of its '
         'criterion', () {
       for (final x in data.achievements.values) {
