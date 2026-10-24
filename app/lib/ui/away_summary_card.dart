@@ -5,6 +5,7 @@ import '../sync/away_summary.dart';
 import 'controller_scope.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
+import 'route_map.dart';
 import 'theme.dart';
 
 /// The colour of [q] (`#rrggbb` in the data).
@@ -151,6 +152,9 @@ class AwayScreen extends StatelessWidget {
                       ),
                     const SizedBox(height: 8),
                     if (summary != null) ...reportBanners(summary, labels),
+                    // Between the banners and the lines (spec 0014 §4.2).
+                    if (summary != null)
+                      ?routeMapOf(labels.data, summary.route),
                     if (summary != null)
                       for (final l in reportLines(summary, labels))
                         Padding(

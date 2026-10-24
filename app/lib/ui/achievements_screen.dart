@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import 'controller_scope.dart';
+import 'images.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Opens from the trophy button in the top bar (spec 0006 amendment 2).
@@ -62,10 +64,13 @@ class _AchievementTile extends StatelessWidget {
     final a = achievement;
     final shown = progress.clamp(0, a.atLeast);
     return Card(
+      key: ValueKey('achievement-${a.id}'),
       child: ListTile(
-        leading: Icon(
-          unlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
-          color: unlocked ? Theme.of(context).colorScheme.primary : null,
+        // Its picture, or the locked patch (spec 0014 §3.1).
+        leading: PictureSocket(
+          picture: ImageScope.of(context)
+              .pictureOf(labels.data, AchievementThing(a.id, earned: unlocked)),
+          size: 48,
         ),
         title: Text(a.name),
         titleTextStyle: nameStyle(context),
