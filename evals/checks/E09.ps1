@@ -15,7 +15,7 @@ if ($ring.Count -eq 1) {
   $r = @($data.recipes | Where-Object { $_.output -eq $ring[0].id })
   Expect ($r.Count -eq 1) 'no recipe for the ring'
   if ($r.Count -eq 1) {
-    Expect ("$($r[0].inputs.mithril_ore)/$($r[0].steps)/$($r[0].xp)/$($r[0].unlockLevel)" -eq '4/400/500/25') "recipe ore/steps/xp/level is $($r[0].inputs.mithril_ore)/$($r[0].steps)/$($r[0].xp)/$($r[0].unlockLevel)"
+    Expect ("$($r[0].inputs.mithril_ore)/$($r[0].steps)/$($r[0].xp)/$($r[0].level)" -eq '4/400/500/25') "recipe ore/steps/xp/level is $($r[0].inputs.mithril_ore)/$($r[0].steps)/$($r[0].xp)/$($r[0].level)"
   }
 }
 Expect-Green $Worktree
