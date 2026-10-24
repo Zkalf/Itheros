@@ -536,10 +536,15 @@ class _QueueCard extends StatelessWidget {
     try {
       skipped = await controller.removeAction(index);
     } on ActivityError catch (e) {
-      // A walk that the next action needs stays (spec 0016 §4.3).
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      // A walk that the next action needs stays (spec 0016 §4.3). One
+      // message for the latest tap, not one more in line for each tap.
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
+    // The queue changed, so older messages about it are out of date.
+    messenger.clearSnackBars();
     if (skipped.isEmpty) return;
     messenger.showSnackBar(
       SnackBar(
