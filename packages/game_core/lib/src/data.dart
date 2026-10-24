@@ -1289,7 +1289,7 @@ class GameData {
       gearSlots.map((g) => g.id).toSet().length == gearSlots.length,
       'gearSlots: ids must be unique',
     );
-    check(queueSlots >= 1, 'queueSlots must be >= 1');
+    check(queueSlots >= 2, 'queueSlots must be >= 2');
     // The two-hand rule names these slots (spec 0008 §2.1).
     check(
       slotsOfKind('mainHand').contains('mainHand') &&

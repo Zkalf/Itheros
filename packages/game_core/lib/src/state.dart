@@ -343,6 +343,7 @@ class GameState {
     );
   }
 
+  /// 11: walks take a slot in the queue (spec 0016 §6); same format as 10.
   /// 10: the character, or none until Set out (spec 0012 §6).
   /// 9: fish records, the running meal, auto-eat, revealed areas and
   /// bottles found (spec 0011 §10).
@@ -356,7 +357,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 10;
+  static const schemaVersion = 11;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;

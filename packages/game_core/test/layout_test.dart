@@ -21,8 +21,8 @@ void main() {
       ]);
     });
 
-    test('the queue takes 3 actions at level 1', () {
-      expect(game.queueSlots(stateAt(game)), 3);
+    test('the queue takes 5 actions at level 1 (spec 0016)', () {
+      expect(game.queueSlots(stateAt(game)), 5);
       var s = stateAt(game, location: 'goblin_woods');
       const goblins = Activity.fight('goblin');
       s = game.addAction(s, goblins);

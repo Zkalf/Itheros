@@ -6,8 +6,9 @@ import 'state.dart';
 /// save's walk heads into the fog (spec 0008 decision 6).
 enum EndReason { arrived, defeated, noMaterials, grey, enough, noRoute }
 
-/// Why a queued action was skipped (spec 0003 §4).
-enum SkipReason { locked, alreadyDone, noMaterials, noRoute }
+/// Why a queued action was skipped (spec 0003 §4). [notThere]: the
+/// character isn't where it happens (spec 0016 §3.5).
+enum SkipReason { locked, alreadyDone, noMaterials, noRoute, notThere }
 
 /// Something that happened while steps were applied, in order. Used for the
 /// "while you were away" summary.

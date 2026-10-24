@@ -401,6 +401,7 @@ class Labels {
   }) => switch (r) {
     SkipReason.locked => 'not unlocked yet',
     SkipReason.noRoute => 'no open route there',
+    SkipReason.notThere => 'you were not there',
     SkipReason.noMaterials when missing.isNotEmpty =>
       'not enough ${missing.entries.map((e) => '${item(e.key)} (needs ${fmt(e.value)} more)').join(', ')}',
     SkipReason.noMaterials => 'not enough materials',

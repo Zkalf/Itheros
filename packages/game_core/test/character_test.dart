@@ -307,9 +307,9 @@ void main() {
 
     test('a version 10 save keeps its character', () {
       final s = make(game.newGame(seed: 1), name: 'Ada', gender: Gender.female);
-      final back = GameState.fromJson(s.toJson());
+      // Version 11 (spec 0016) keeps the format of 10.
+      final back = GameState.fromJson(s.toJson()..['version'] = 10);
       expect(back.loadedVersion, 10);
-      expect(GameState.schemaVersion, 10);
       expect(back.character!.name, 'Ada');
       expect(back.character!.gender, Gender.female);
       expect(back.character!.origin, 'miners_child');

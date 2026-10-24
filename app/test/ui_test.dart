@@ -608,7 +608,7 @@ void main() {
       expect(c.state.queue.single.stop.kind, StopKind.untilHave);
       await openTab(t, 'now');
       expect(find.byKey(const ValueKey('queued-0')), findsOneWidget);
-      expect(find.text('2 of 3 actions planned'), findsOneWidget);
+      expect(find.text('2 of 5 actions planned'), findsOneWidget);
 
       await t.tap(find.byKey(const ValueKey('remove-1')));
       await settle(t, c);
@@ -620,12 +620,13 @@ void main() {
       t,
     ) async {
       final (c, _) = await pumpGame(t);
+      // From Camp: the walk to Goblin Woods takes a slot (spec 0016).
       await c.addAction(const Activity.fight('goblin'));
       await c.addAction(const Activity.fight('goblin_brute'));
       await c.addAction(const Activity.fight('goblin'));
       await settle(t, c);
       await openTab(t, 'now');
-      expect(find.text('3 of 3 actions planned'), findsOneWidget);
+      expect(find.text('4 of 5 actions planned'), findsOneWidget);
       final numbers = t
           .widgetList<Text>(
             find.descendant(
@@ -635,7 +636,7 @@ void main() {
           )
           .map((w) => w.data)
           .toList();
-      expect(numbers, ['1', '2', '3']);
+      expect(numbers, ['1', '2', '3', '4']);
     });
 
     testWidgets('criterion 9: the report tells each action\'s story', (
@@ -691,19 +692,23 @@ void main() {
         await t.pump();
       }
       expect(c.state.activity!.leg, 'copper_hills', reason: 'still walking');
+      // The walk takes a slot and starts next (spec 0016).
       expect(
-        find.textContaining('Stopped: goal reached. Next: Copper vein.'),
+        find.textContaining(
+          'Stopped: goal reached. Next: walk to Copper Hills.',
+        ),
         findsOneWidget,
       );
     });
 
     testWidgets('Stop says why it skipped a waiting action', (t) async {
-      final (c, _) = await pumpGame(t, level: 5, location: 'goblin_woods');
+      // At Camp, so the second craft needs no walk (spec 0016).
+      final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 5});
       await c.addAction(
-        const Activity.fight('goblin'),
-        stop: StopCondition.untilHave('goblin_hide', 9),
+        const Activity.craft('copper_sword'),
+        stop: const StopCondition.untilCrafted(1),
       );
-      await c.addAction(const Activity.craft('copper_sword'));
+      await c.addAction(const Activity.craft('hide_vest'));
       await t.pump();
       await t.tap(find.byKey(const ValueKey('stop-activity')));
       await settle(t, c);
@@ -711,7 +716,7 @@ void main() {
       expect(find.text('Resting'), findsOneWidget);
       expect(
         find.text(
-          'Skipped the Copper sword: not enough Copper ore (needs 5 more).',
+          'Skipped the Hide vest: not enough Goblin hide (needs 4 more).',
         ),
         findsOneWidget,
       );
@@ -2181,12 +2186,13 @@ void professionScreens() {
         within('profession-mining', find.text('Iron vein · Iron Ridge')),
         findsOneWidget,
       );
-      // Go there walks to the spot, then works it.
+      // Go there walks to the spot, then works it (spec 0016 §5).
       await t.tap(find.byKey(const ValueKey('go-mining')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('start-now')));
       await settle(t, c);
-      expect(c.state.activity!.activity, const Activity.gather('iron_vein'));
+      expect(c.state.activity!.activity, const Activity.travel('iron_ridge'));
+      expect(c.state.queue.single.activity, const Activity.gather('iron_vein'));
     });
 
     testWidgets('criterion 14: the tool line opens its card', (t) async {
