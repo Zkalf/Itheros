@@ -158,6 +158,23 @@ class AchievementUnlocked extends GameEvent {
   final String id;
 }
 
+/// An achievement whose criterion the save no longer meets, and what its
+/// reward took (spec 0017 §5): steps over the lower bank cap, the item key
+/// removed (null when the player no longer had it) and waiting actions that
+/// no longer fit.
+class AchievementLost extends GameEvent {
+  const AchievementLost(
+    this.id, {
+    this.bankSteps = 0,
+    this.item,
+    this.actions = 0,
+  });
+  final String id;
+  final int bankSteps;
+  final String? item;
+  final int actions;
+}
+
 class ActivityEnded extends GameEvent {
   const ActivityEnded(this.activity, this.reason);
   final Activity activity;

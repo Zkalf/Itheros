@@ -223,6 +223,9 @@ class AwaySummary {
           rerolls.add((before, after));
         case AchievementUnlocked(:final id):
           achievements.add(id);
+        // Only a load loses an achievement; plan 0021 M3 reports it.
+        case AchievementLost():
+          break;
         case LoreFound(:final note):
           lore.add(note);
         case WeaknessLearned(:final enemy):

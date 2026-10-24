@@ -379,14 +379,31 @@ class Game {
 
   int bankCap(GameState s) {
     var cap = data.bankCapBase + data.bankCapPerLevel * level(s);
-    for (final id in s.achievements) {
-      cap += data.achievements[id]?.bankCapReward ?? 0;
+    for (final r in _rewards(s)) {
+      if (r case BankCapReward(:final amount)) cap += amount;
     }
     return cap;
   }
 
-  /// The character's stats: level, gear and the running meal.
-  Stats stats(GameState s) => _gearStats(s) + mealBonus(s);
+  /// The rewards of the earned achievements (spec 0017 §3.4).
+  Iterable<Reward> _rewards(GameState s) => [
+    for (final id in s.achievements)
+      if (data.achievements[id] case final a?) a.reward,
+  ];
+
+  /// The character's stats: level, gear, the running meal and the bonuses
+  /// of the earned feats (spec 0017 §3.4).
+  Stats stats(GameState s) =>
+      _gearStats(s) + mealBonus(s) + achievementBonus(s);
+
+  /// The bonuses of the earned feats; two bonuses to one stat add up.
+  Stats achievementBonus(GameState s) {
+    var total = const Stats();
+    for (final r in _rewards(s)) {
+      if (r case BonusReward(:final bonus)) total += bonus;
+    }
+    return total;
+  }
 
   Stats _gearStats(GameState s) {
     var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
@@ -738,6 +755,7 @@ class Game {
   /// you?" shows once (spec 0012 §6).
   /// Saves before version 11 get the walks their queue needs (spec 0016
   /// §6).
+  /// Saves before version 12 start the quality counter (spec 0017 §3.2).
   /// Any save holding a two-hander and an off-hand item puts the off-hand
   /// item in the bag.
   GameState migrate(GameState s) {
@@ -748,7 +766,17 @@ class Game {
     if (s.loadedVersion < 7) n = _migrateBonus(n.copy());
     if (s.loadedVersion < 8) n = _migrateProfessions(n.copy());
     if (s.loadedVersion < 11) n = _migrateWalks(n.copy());
+    if (s.loadedVersion < 12) n = _migrateQualityFound(n.copy());
     return _freeOffHand(n);
+  }
+
+  /// The quality counter starts at the best quality in the bag and on the
+  /// doll (spec 0017 §3.2).
+  GameState _migrateQualityFound(GameState s) {
+    for (final key in [...s.inventory.keys, ...s.equipment.values]) {
+      _foundQuality(s, key);
+    }
+    return s;
   }
 
   /// A running action that walks becomes a walk with the action after it,
@@ -1042,6 +1070,124 @@ class Game {
   /// decision 5).
   static String foundCounter(String enemy, String item) => 'found.$enemy.$item';
 
+  /// The best quality found, as its index in the quality list plus one; none
+  /// before any item (spec 0017 §3.2).
+  static const foundQualityCounter = 'quality.best';
+
+  /// Counts the quality of [key] for the quality criteria (spec 0017 §3.2).
+  void _foundQuality(GameState s, String key) {
+    final q = data.qualities.indexOf(data.qualityOf(key)) + 1;
+    if (q > (s.counters[foundQualityCounter] ?? 0)) {
+      s.counters[foundQualityCounter] = q;
+    }
+  }
+
+  /// Whether [s] meets the criterion of [a] (spec 0017 §3.1).
+  bool achievementMet(GameState s, AchievementDef a) {
+    final (:have, :need) = _progress(s, a);
+    return have >= need;
+  }
+
+  /// How far [s] is towards the achievement [id]: a count, a level, or 0 or
+  /// 1 for a quality.
+  ({int have, int need}) achievementProgress(GameState s, String id) =>
+      _progress(s, data.achievements[id]!);
+
+  ({int have, int need}) _progress(GameState s, AchievementDef a) =>
+      switch (a.criterion) {
+        CounterCriterion(:final counter, :final atLeast) => (
+          have: s.counters[counter] ?? 0,
+          need: atLeast,
+        ),
+        LevelCriterion(:final level) => (have: this.level(s), need: level),
+        ProfessionCriterion(:final profession, :final level) => (
+          have: professionLevel(s, profession),
+          need: level,
+        ),
+        // The lowest level of the list (spec 0017 amendment 1).
+        EachProfessionCriterion(:final professions, :final level) => (
+          have: professions.map((p) => professionLevel(s, p)).reduce(math.min),
+          need: level,
+        ),
+        QualityCriterion(:final quality) => (
+          have:
+              (s.counters[foundQualityCounter] ?? 0) >
+                  data.qualities.indexWhere((q) => q.id == quality)
+              ? 1
+              : 0,
+          need: 1,
+        ),
+      };
+
+  /// Earns [a] and gives its reward. A reward item does not count for the
+  /// quality criteria (spec 0017 §3.2).
+  void _earn(GameState s, AchievementDef a, List<GameEvent> events) {
+    s.achievements.add(a.id);
+    if (a.reward case ItemReward(:final item, :final quality)) {
+      s.addItem(data.keyFor(item, quality));
+    }
+    events.add(AchievementUnlocked(a.id));
+  }
+
+  /// Loses [a] and takes its reward (spec 0017 §5).
+  void _lose(GameState s, AchievementDef a, List<GameEvent> events) {
+    s.achievements.remove(a.id);
+    var bankSteps = 0;
+    String? item;
+    var actions = 0;
+    switch (a.reward) {
+      case BankCapReward():
+        final cap = bankCap(s);
+        if (s.bank > cap) {
+          bankSteps = s.bank - cap;
+          s.bank = cap;
+        }
+      case ItemReward(item: final id, :final quality):
+        final key = data.keyFor(id, quality);
+        final worn = [
+          for (final e in s.equipment.entries)
+            if (e.value == key) e.key,
+        ];
+        if ((s.inventory[key] ?? 0) > 0) {
+          s.addItem(key, -1);
+          item = key;
+        } else if (worn.isNotEmpty) {
+          s.equipment.remove(worn.first);
+          item = key;
+        }
+      case QueueSlotReward():
+        // The current action stays; waiting actions go from the back.
+        while (s.queue.isNotEmpty && s.queue.length > queueSlots(s) - 1) {
+          s.queue.removeLast();
+          actions++;
+        }
+      case BonusReward():
+        break;
+    }
+    events.add(
+      AchievementLost(a.id, bankSteps: bankSteps, item: item, actions: actions),
+    );
+  }
+
+  /// A saved state ready to play: [migrate], then each achievement checked
+  /// by its criterion (spec 0017 §4). The events name the achievements
+  /// earned and lost.
+  ({GameState state, List<GameEvent> events}) load(GameState loaded) {
+    final s = migrate(loaded).copy();
+    final events = <GameEvent>[];
+    for (final a in data.achievements.values) {
+      if (s.achievements.contains(a.id) && !achievementMet(s, a)) {
+        _lose(s, a, events);
+      }
+    }
+    for (final a in data.achievements.values) {
+      if (!s.achievements.contains(a.id) && achievementMet(s, a)) {
+        _earn(s, a, events);
+      }
+    }
+    return (state: s, events: events);
+  }
+
   /// Monsters [item] has dropped from for this player, and the gathering
   /// spots that give it, for the item card (spec 0008 §3.5). Monsters it
   /// hasn't dropped from yet stay hidden (spec 0006 §2.2).
@@ -1093,7 +1239,9 @@ class Game {
 
   /// How many actions the queue holds, the running one and walks included
   /// (spec 0016 §2).
-  int queueSlots(GameState s) => data.queueSlots;
+  /// Chieftain's Bane adds one (spec 0017 §3.4).
+  int queueSlots(GameState s) =>
+      data.queueSlots + _rewards(s).whereType<QueueSlotReward>().length;
 
   /// The conditions [a] may stop on; "never" may still be refused by its
   /// place in the queue.
@@ -1908,6 +2056,7 @@ class _Run {
             ]);
     }
     game._replaceItem(s, key, after);
+    game._foundQuality(s, after);
     act.crafted++;
     events.add(Rerolled(key, after));
     return null;
@@ -2114,8 +2263,10 @@ class _Run {
   }
 
   /// Adds [key] to the running action's tally.
-  void _gain(RunningActivity act, String key) =>
-      act.gained[key] = (act.gained[key] ?? 0) + 1;
+  void _gain(RunningActivity act, String key) {
+    act.gained[key] = (act.gained[key] ?? 0) + 1;
+    game._foundQuality(s, key);
+  }
 
   EndReason? _win(RunningActivity act, EnemyDef enemy) {
     act.fight = null;
@@ -2251,12 +2402,12 @@ class _Run {
     game._startNext(s, events);
   }
 
+  /// Counters, levels and the quality found never go down in play, so only
+  /// a load loses an achievement (spec 0017 §4).
   void _checkAchievements() {
     for (final a in data.achievements.values) {
-      if (!s.achievements.contains(a.id) &&
-          (s.counters[a.counter] ?? 0) >= a.atLeast) {
-        s.achievements.add(a.id);
-        events.add(AchievementUnlocked(a.id));
+      if (!s.achievements.contains(a.id) && game.achievementMet(s, a)) {
+        game._earn(s, a, events);
       }
     }
   }
