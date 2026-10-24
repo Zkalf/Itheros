@@ -131,13 +131,14 @@ void main() {
     });
 
     // Spec 0012 criterion 10: no character yet, so "Who are you?" shows
-    // once; everything else kept. Spec 0016 §6 raises the version to 11.
-    test('$name loads as version 11 with no character', () {
+    // once; everything else kept. Spec 0016 §6 raised the version to 11,
+    // spec 0017 to 12.
+    test('$name loads as version 12 with no character', () {
       final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
       final raw = json['game'] as Map<String, Object?>;
       final game = loadTestGame();
       final s = game.migrate(SaveData.fromJson(json).game);
-      expect(GameState.fromJson(s.toJson()).loadedVersion, 11);
+      expect(GameState.fromJson(s.toJson()).loadedVersion, 12);
       expect(s.character, isNull);
       expect(s.xp, raw['xp']);
       expect(s.bank, raw['bank']);
