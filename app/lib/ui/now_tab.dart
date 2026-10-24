@@ -464,7 +464,7 @@ class _QueueCard extends StatelessWidget {
             // before it (spec 0016 §7.1).
             title: Text(switch (s.queue[i].activity) {
               Activity(kind: ActivityKind.travel, :final target) =>
-                'Travel to ${labels.location(target)} · '
+                'Walk to ${labels.location(target)} · '
                     '${fmt(game.walkSteps(s, places[i], target) ?? 0)} steps',
               final a => labels.short(a),
             }),
