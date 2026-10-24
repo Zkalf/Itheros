@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/ui/labels.dart';
 
 import 'support.dart';
@@ -46,14 +47,14 @@ void main() {
       await c.addAction(goblins, stop: someHides);
       await c.addAction(brutes, stop: someHides);
       await settle(t, c);
-      await openArea(t, 'goblin_woods');
-      await t.tap(option('fight', 'goblin'));
+      await openArea(t, 'copper_hills');
+      await t.tap(option('gather', 'copper_vein'));
       await t.pumpAndSettle();
       expect(startNowText('Start now, clear queue'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('start-now')));
       await settle(t, c);
-      expect(c.state.activity!.activity, goblins);
-      expect(c.state.queue, isEmpty);
+      expect(c.state.activity!.activity, const Activity.travel('copper_hills'));
+      expect(c.state.queue.single.activity, mining);
     });
   });
 
@@ -107,7 +108,8 @@ void main() {
     });
 
     testWidgets('with no room for the walk, it shows the refusal', (t) async {
-      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      // Level 10: the skeleton is not deadly, so its sheet opens at once.
+      final (c, _) = await pumpGame(t, level: 10, location: 'goblin_woods');
       await c.addAction(goblins, stop: someHides);
       await c.addAction(mining, stop: someOre);
       await c.addAction(const Activity.travel('camp'));
@@ -141,6 +143,39 @@ void main() {
         find.textContaining('Walked to Goblin Woods (200 steps).'),
         findsOneWidget,
       );
+    });
+
+    test('a leg in the middle of a walk is not news; its steps add up', () {
+      StepReport report(List<GameEvent> events, {required bool walking}) =>
+          StepReport(
+            state: GameState(location: 'old_graveyard', rngState: 1)
+              ..activity = walking
+                  ? RunningActivity(const Activity.travel('grey_moor'))
+                  : null,
+            walked: 500,
+            activitySteps: 500,
+            boostUsed: 0,
+            banked: 0,
+            lost: 0,
+            events: events,
+          );
+      // Camp -> Old Graveyard (500), then Old Graveyard -> Grey Moor (800).
+      final middle = AwaySummary.fromReports([
+        report(const [Arrived('old_graveyard', steps: 500)], walking: true),
+      ]);
+      expect(middle.isEventful, isFalse);
+      final both =
+          middle +
+          AwaySummary.fromReports([
+            report(const [
+              Arrived('grey_moor', steps: 800),
+              ActivityEnded(Activity.travel('grey_moor'), EndReason.arrived),
+            ], walking: false),
+          ]);
+      expect(both.isEventful, isTrue);
+      expect(Labels(loadTestGame().data).actionLines(both.actions.single), [
+        'Walked to Grey Moor (1,300 steps).',
+      ]);
     });
 
     test('an action at the wrong place says where the player is not', () {
