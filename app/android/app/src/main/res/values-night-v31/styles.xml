@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- From Android 12 the launch window is the system splash screen, which
-         does not use launch_background. It is dark too (spec 0014 §3.3). -->
+         does not use launch_background. It is dark too, and it shows the
+         emblem (spec 0014 §3.3). The 66 dp safe zone of the emblem fits the
+         circle of the splash screen icon. -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowSplashScreenBackground">@color/case_black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
     </style>
 </resources>

@@ -111,6 +111,22 @@ Notes:
 - The skull band shows the skull picture as it is, in tan. The design phones show a white skull; the spec does not ask
   for it.
 
+## M5: splash, welcome and launcher
+
+![Start screens](0017-ui/m5-start.webp)
+
+The splash, the welcome and "Health Connect is needed". The status bar icons are dark on the picture. The renders
+draw a status bar and a gesture bar; a phone draws its own.
+
+![Launcher](0017-ui/m5-launcher.webp)
+
+The launcher icon in a circle, a squircle and a square mask; the one-colour icon in a dark and a light theme; and the
+splash screen of Android 12 and later. This sheet comes from the icon files, not from a phone.
+
+Notes:
+- The splash screen of Android 12 scales the emblem up about 2.5 times, so it can look soft there. The phone test
+  shows it.
+
 ## Seen in the renders, outside plan 0017
 - Now shows "Fighting Wolfs". The label adds "s" to the name of the monster (`app/lib/ui/labels.dart`).
 - The item card names the slot twice: "Rare chest armour · Chest" and "Light armour · Chest" (spec 0009 §8.2).

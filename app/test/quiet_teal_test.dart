@@ -26,6 +26,7 @@ import 'package:walkingrpg/ui/level_badge.dart';
 import 'package:walkingrpg/ui/licences_screen.dart';
 import 'package:walkingrpg/ui/socket.dart' show PictureSocket;
 import 'package:walkingrpg/ui/world_tab.dart' show MapPainter;
+import 'package:walkingrpg/version.dart';
 
 import 'images_test.dart'
     show bagSquare, bareRing, diskImages, fillColour, markTexts, openBag;
@@ -41,6 +42,7 @@ import 'quiet_teal_files_test.dart'
         licenceFiles,
         litRgb,
         mistRgb,
+        mutedRgb,
         onTealRgb,
         plateRgb,
         rgb,
@@ -51,6 +53,7 @@ import 'quiet_teal_files_test.dart'
         steelRgb,
         tealRgb,
         textRgb;
+import 'start_screens_test.dart' show pumpSplash, pumpUnavailable, pumpWelcome;
 import 'ui_test.dart'
     show
         ada,
@@ -463,6 +466,23 @@ void criterion2() {
         expect(allowed, contains(rgb(style.color!)), reason: 'the count $text');
       }
     });
+
+    // Plan 0017 M5: the words on the plate of the splash. The test of
+    // criterion 24 checks the plate and the teal loading bar. This file draws
+    // text in the test font, so the splash keeps the view of the test.
+    testWidgets('on the splash, "Reading your steps" is body text #E3EAEC, '
+        'and the version is secondary text #A8B3B8, as on Settings', (t) async {
+      await pumpSplash(t, onPhone: false);
+      for (final (words, colour) in [
+        ('Reading your steps', textRgb),
+        ('Version $appVersion', mutedRgb),
+      ]) {
+        expect(find.text(words), findsOneWidget, reason: words);
+        for (final (text, style) in piecesOf(richWhere(t, (s) => s == words))) {
+          expectRgb(style.color, colour, '"$text" in "$words"');
+        }
+      }
+    });
   });
 }
 
@@ -855,6 +875,30 @@ void criterion3() {
         );
       }
     });
+
+    // Plan 0017 M5: the new words of the splash. §2.2 puts the wordmark in
+    // Cormorant Garamond. The version keeps the font of its words, as on
+    // Settings.
+    testWidgets('on the splash, the wordmark ITHEROS is in Cormorant Garamond '
+        '600, and "Reading your steps" and the version are in Alegreya Sans', (
+      t,
+    ) async {
+      await pumpSplash(t, onPhone: false);
+      for (final (words, family, weight) in [
+        ('ITHEROS', cormorant, FontWeight.w600),
+        ('Reading your steps', alegreya, null),
+        ('Version $appVersion', alegreya, null),
+      ]) {
+        expect(find.text(words), findsOneWidget, reason: words);
+        for (final (text, style) in piecesOf(richWhere(t, (s) => s == words))) {
+          expect(
+            (style.fontFamily, weight == null ? null : style.fontWeight),
+            (family, weight),
+            reason: '"$text" in "$words"',
+          );
+        }
+      }
+    });
   });
 }
 
@@ -1079,6 +1123,16 @@ void criterion4() {
       await t.tap(find.byKey(const ValueKey('origin-coast_fisher')));
       await t.pump();
       expectBordersOnScreen(t, '"Who are you?" with an origin picked');
+    });
+
+    // Plan 0017 M5 puts the splash picture on these screens. The splash has
+    // no control.
+    testWidgets('the welcome and "Health Connect is needed" with the splash '
+        'picture', (t) async {
+      await pumpWelcome(t, onPhone: false);
+      expectBordersOnScreen(t, 'the welcome');
+      await pumpUnavailable(t, onPhone: false);
+      expectBordersOnScreen(t, '"Health Connect is needed"');
     });
   });
 }

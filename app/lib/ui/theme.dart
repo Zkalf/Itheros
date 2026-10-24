@@ -53,6 +53,24 @@ abstract final class Quiet {
   static final hairline = teal.withValues(alpha: .24);
 }
 
+/// The status bar with light icons (spec 0014 §2.1). The status bar is
+/// transparent: below Android 15, Flutter's Android activity otherwise keeps
+/// a band of 25% black under it. The style gives the navigation bar no
+/// colour, so the navigation bar keeps the look of the window theme.
+const lightStatusBar = SystemUiOverlayStyle(
+  statusBarColor: Quiet.transparent,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+);
+
+/// The status bar with dark icons, on the splash picture (spec 0014 §2.1),
+/// transparent as in [lightStatusBar].
+const darkStatusBar = SystemUiOverlayStyle(
+  statusBarColor: Quiet.transparent,
+  statusBarIconBrightness: Brightness.dark,
+  statusBarBrightness: Brightness.light,
+);
+
 /// The four families of spec 0014 §2.2, as pubspec.yaml names them.
 abstract final class Fonts {
   /// The wordmark, titles and names.
@@ -480,7 +498,7 @@ ThemeData _quietTheme() {
       leadingWidth: 64,
       titleSpacing: 8,
       titleTextStyle: _display(26),
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: lightStatusBar,
     ),
     filledButtonTheme: FilledButtonThemeData(style: tealButton),
     outlinedButtonTheme: OutlinedButtonThemeData(style: slateButton),

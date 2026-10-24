@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../game_controller.dart';
 import 'away_summary_card.dart';
@@ -56,6 +57,14 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
           // Dark for each phone setting (spec 0014 decision 2): without a
           // dark theme of its own, the app uses this one in dark mode too.
           theme: quietTheme,
+          // Light status bar icons (spec 0014 §2.1), also on the screens
+          // with no top bar. The start screens give dark icons on the
+          // splash picture, and a style stays on the phone until a screen
+          // gives another one.
+          builder: (context, screens) => AnnotatedRegion<SystemUiOverlayStyle>(
+            value: lightStatusBar,
+            child: screens!,
+          ),
           home: ListenableBuilder(
             listenable: widget.controller,
             builder: (context, _) => switch (widget.controller.status) {
