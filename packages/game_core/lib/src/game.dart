@@ -751,18 +751,20 @@ class Game {
   /// Every vein mined and item crafted counts its profession XP, unfaded;
   /// Mining and Crafting are learned with their starter tools.
   GameState _migrateProfessions(GameState s) {
+    // Two spots can give one item, and two recipes can make one: each
+    // counter earns once, from the first.
+    final seen = <String>{};
     void earn(String profession, String counter, int xp) {
       final n = s.counters[counter] ?? 0;
-      if (n == 0) return;
+      if (n == 0 || !seen.add(counter)) return;
       s.professions[profession] = (s.professions[profession] ?? 0) + n * xp;
     }
 
     for (final node in data.nodes.values) {
       earn(node.profession, 'gathered.${node.item}', node.xp);
     }
-    final seen = <String>{};
     for (final r in data.recipes.values) {
-      if (seen.add(r.output)) earn(r.profession, 'crafted.${r.output}', r.xp);
+      earn(r.profession, 'crafted.${r.output}', r.xp);
     }
     for (final id in const ['mining', 'crafting']) {
       if (data.professions[id] case final p?) {

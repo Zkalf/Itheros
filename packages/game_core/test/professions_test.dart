@@ -342,6 +342,27 @@ void main() {
       expect(s.rngState, old.rngState);
     });
 
+    test('an item two spots give counts its XP once', () {
+      final world = dataJson('world');
+      final nodes = world['nodes']! as List<Object?>;
+      final vein = nodes.cast<Map<String, Object?>>().firstWhere(
+        (n) => n['id'] == 'copper_vein',
+      );
+      nodes.add({...vein, 'id': 'second_copper_vein'});
+      for (final l
+          in (world['locations']! as List<Object?>)
+              .cast<Map<String, Object?>>()) {
+        if (l['id'] == 'copper_hills') {
+          l['nodes'] = [...l['nodes']! as List<Object?>, 'second_copper_vein'];
+        }
+      }
+      final twoVeins = newTestGame(overrides: {'world': world});
+      final old = stateAt(twoVeins, level: 9)
+        ..counters['gathered.copper_ore'] = 30;
+      final s = twoVeins.migrate(GameState.fromJson(v7(old)));
+      expect(s.professions['mining'], 30 * 20);
+    });
+
     test('a save without counters starts its professions at 0', () {
       final s = game.migrate(GameState.fromJson(v7(stateAt(game))));
       expect(s.learned, {'mining', 'crafting'});
