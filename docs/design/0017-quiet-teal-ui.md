@@ -79,6 +79,38 @@ Notes:
   today (spec 0014 §4.2). The route map has no fog.
 - These renders come before M4, so the banners and the earned achievements keep their earlier look.
 
+## M4: Now, monsters and each fact once
+
+![Now](0017-ui/m4-now.webp)
+
+Now: the status card with the marker of the place and the meal line; "Here" with the monsters on their own plate
+under one heading "Monsters · 10 steps per round"; and Mirror Lake, which keeps the water icon.
+
+![Sheets](0017-ui/m4-sheets.webp)
+
+The area sheet, a monster sheet, the sheet of a boss with its image across the width, and a boss that shows the
+monster placeholder.
+
+![Reports](0017-ui/m4-reports.webp)
+
+The away report with each kind of banner, then its end with the route map of M3; the journal entry of the same
+report; and the level-up card of a new rank. Banners for levels, lore notes, profession levels and the sea chart show
+text only.
+
+![Professions](0017-ui/m4-professions.webp)
+
+Mining with its tool line, Cooking with the tool line and the meal row, and the "What's new" rows of a level-up card.
+
+![Each fact once](0017-ui/m4-once.webp)
+
+The card for an empty slot, without the change line; the card of a two-hander, which keeps the change line because it
+takes off the shield; Achievements, where an earned row has a teal rim and no bar; and the Bestiary, where "Slayer" is
+a word with no icon.
+
+Notes:
+- The skull band shows the skull picture as it is, in tan. The design phones show a white skull; the spec does not ask
+  for it.
+
 ## Seen in the renders, outside plan 0017
 - Now shows "Fighting Wolfs". The label adds "s" to the name of the monster (`app/lib/ui/labels.dart`).
 - The item card names the slot twice: "Rare chest armour · Chest" and "Light armour · Chest" (spec 0009 §8.2).
