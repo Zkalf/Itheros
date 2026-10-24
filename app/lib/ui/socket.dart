@@ -15,6 +15,8 @@ import 'theme.dart';
 /// - A [count] of 2 or more shows the badge "×N" off the lower right corner.
 /// - A placeholder has the PH mark on the object and the semantics label
 ///   "placeholder picture" (§3.2).
+/// - A [round] socket is a marker of the map (plan 0017, M3). A marker image
+///   has its own frame, so it fills the whole socket.
 class PictureSocket extends StatelessWidget {
   const PictureSocket({
     super.key,
@@ -23,6 +25,7 @@ class PictureSocket extends StatelessWidget {
     this.quality,
     this.count = 1,
     this.qualities = const [],
+    this.round = false,
   });
 
   /// The socket of the item key [item]: gear and tools have the ring and the
@@ -39,7 +42,8 @@ class PictureSocket extends StatelessWidget {
          ItemDef(tool: != null) => data.qualityOf(item),
          _ => null,
        },
-       qualities = data.qualities;
+       qualities = data.qualities,
+       round = false;
 
   final Picture picture;
   final double size;
@@ -50,11 +54,13 @@ class PictureSocket extends StatelessWidget {
   /// them sets the strength of the wash; without them, the socket has no
   /// wash.
   final List<QualityDef> qualities;
+  final bool round;
 
   @override
   Widget build(BuildContext context) {
     final q = quality;
-    final radius = socketRadius(size);
+    final radius = round ? null : socketRadius(size);
+    final shape = round ? BoxShape.circle : BoxShape.rectangle;
     // None for the first quality, then the steps of the kit, and the last
     // step for each quality after them.
     final place = q == null ? -1 : qualities.indexOf(q);
@@ -62,21 +68,30 @@ class PictureSocket extends StatelessWidget {
     final spot = picture.placeholder
         ? phSpots[picture.key] ?? const PhSpot(.5, .5, 0)
         : null;
+    final face = socketDecoration(size, round: round);
     return SizedBox.square(
       dimension: size,
       child: CustomMultiChildLayout(
-        delegate: _SocketLayout(spot),
+        delegate: _SocketLayout(spot, round: round),
         children: [
           LayoutId(
             id: _Part.face,
             child: DecoratedBox(
-              decoration: socketDecoration(size),
+              // A water place keeps today's icon (spec 0014 §3.1). On the
+              // map its disc gets a mist rim, as each marker image has a
+              // frame.
+              decoration: round && picture.icon != null
+                  ? face.copyWith(
+                      border: Border.all(color: Quiet.mist, width: 2.5),
+                    )
+                  : face,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   DecoratedBox(
                     decoration: BoxDecoration(
                       borderRadius: radius,
+                      shape: shape,
                       gradient: _shade,
                     ),
                   ),
@@ -85,6 +100,7 @@ class PictureSocket extends StatelessWidget {
                       key: const ValueKey('wash'),
                       decoration: BoxDecoration(
                         borderRadius: radius,
+                        shape: shape,
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
@@ -97,7 +113,10 @@ class PictureSocket extends StatelessWidget {
                       ),
                     ),
                   Padding(
-                    padding: EdgeInsets.all(size * _inset),
+                    // A placeholder keeps the room of its PH spot.
+                    padding: EdgeInsets.all(
+                      round && !picture.placeholder ? 0 : size * _inset,
+                    ),
                     child: _image(size),
                   ),
                 ],
@@ -111,6 +130,7 @@ class PictureSocket extends StatelessWidget {
                 key: const ValueKey('ring'),
                 decoration: BoxDecoration(
                   borderRadius: radius,
+                  shape: shape,
                   border: Border.all(color: qualityColour(q), width: 2),
                 ),
               ),
@@ -128,7 +148,11 @@ class PictureSocket extends StatelessWidget {
 
   Widget _image(double size) {
     if (picture.icon case final icon?) {
-      return Icon(icon, size: size / 2, color: Quiet.muted);
+      return Icon(
+        icon,
+        size: size / 2,
+        color: round ? Quiet.steel : Quiet.muted,
+      );
     }
     return Image(
       image: AssetImage(picture.asset!),
@@ -243,11 +267,13 @@ BorderRadius socketRadius(double size) =>
     BorderRadius.circular(size <= 32 ? 10 : 12);
 
 /// The dark socket with its faint rim. An empty doll slot uses it too.
-BoxDecoration socketDecoration(double size) => BoxDecoration(
-  color: Quiet.socket,
-  borderRadius: socketRadius(size),
-  border: Border.all(color: Quiet.steel.withValues(alpha: .18)),
-);
+BoxDecoration socketDecoration(double size, {bool round = false}) =>
+    BoxDecoration(
+      color: Quiet.socket,
+      borderRadius: round ? null : socketRadius(size),
+      shape: round ? BoxShape.circle : BoxShape.rectangle,
+      border: Border.all(color: Quiet.steel.withValues(alpha: .18)),
+    );
 
 /// The recess of the socket: a slate shade at its centre, a little above
 /// the middle (the kit).
@@ -273,9 +299,10 @@ enum _Part { face, ring, mark, badge }
 /// Lays out the socket. The badge comes first: the PH mark keeps off it, by
 /// the size that each has after its layout.
 class _SocketLayout extends MultiChildLayoutDelegate {
-  _SocketLayout(this.spot);
+  _SocketLayout(this.spot, {required this.round});
 
   final PhSpot? spot;
+  final bool round;
 
   @override
   void performLayout(Size size) {
@@ -306,7 +333,10 @@ class _SocketLayout extends MultiChildLayoutDelegate {
         // than 1 dp to spare above the badge.
         bounds: RRect.fromRectAndRadius(
           whole.deflate(2),
-          socketRadius(size.width).topLeft - const Radius.circular(2),
+          (round
+                  ? Radius.circular(size.width / 2)
+                  : socketRadius(size.width).topLeft) -
+              const Radius.circular(2),
         ),
         avoid: badge?.inflate(.5),
       );
@@ -315,7 +345,8 @@ class _SocketLayout extends MultiChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_SocketLayout oldDelegate) => oldDelegate.spot != spot;
+  bool shouldRelayout(_SocketLayout oldDelegate) =>
+      oldDelegate.spot != spot || oldDelegate.round != round;
 }
 
 /// The centre of a PH mark of the size [mark], turned by [angle] degrees

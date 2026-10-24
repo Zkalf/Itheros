@@ -7,6 +7,7 @@ import 'bestiary_card.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 import 'level_badge.dart';
+import 'route_map.dart';
 import 'teacher_sheet.dart';
 import 'theme.dart';
 
@@ -142,6 +143,8 @@ class _Log extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   ...reportBanners(e.summary, labels),
+                  // Between the banners and the lines (spec 0014 §4.2).
+                  ?routeMapOf(labels.data, e.summary.route),
                   for (final l in reportLines(e.summary, labels))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
