@@ -156,6 +156,45 @@ void main() {
       expect(planned(s), [brutes, travel('copper_hills'), mining, goblins]);
     });
 
+    test('an action where a walk from the Travel list ends needs no walk', () {
+      var s = stateAt(game, location: 'goblin_woods');
+      s = game.addAction(s, goblins, stop: someHides);
+      s = game.addAction(s, travel('copper_hills'));
+      s = game.addAction(s, mining);
+      expect(planned(s), [goblins, travel('copper_hills'), mining]);
+    });
+
+    test('a reroll walks to the nearest forge first', () {
+      const key = 'bone_sword@uncommon+crit2';
+      final s = game.startActivity(
+        stateAt(
+          game,
+          level: 10,
+          location: 'copper_hills',
+          inventory: {key: 1, 'uncommon_dust': 3},
+        ),
+        const Activity.reroll(key),
+      );
+      expect(planned(s), [travel('camp'), const Activity.reroll(key)]);
+    });
+
+    test('the screens read the walk an action needs, with its steps', () {
+      var s = stateAt(game, location: 'goblin_woods');
+      s = game.addAction(s, goblins, stop: someHides);
+      expect(game.walkFirst(s, mining), (place: 'copper_hills', steps: 300));
+      expect(game.walkFirst(s, brutes), isNull);
+      expect(game.walkFirst(s, travel('camp')), isNull);
+      expect(game.walkSteps(s, 'goblin_woods', 'copper_hills'), 300);
+    });
+
+    test('each arrival carries the steps of its leg', () {
+      final s = game.addAction(stateAt(game), goblins, stop: someHides);
+      final r = game.applySteps(s, 200);
+      final arrived = r.events.whereType<Arrived>().single;
+      expect(arrived.location, 'goblin_woods');
+      expect(arrived.steps, 200);
+    });
+
     test('a full queue refuses with "The queue is full."', () {
       var s = fightThenMine();
       s = game.addAction(s, travel('camp'));
