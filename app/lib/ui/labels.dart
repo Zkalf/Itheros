@@ -143,12 +143,20 @@ class Labels {
   /// piece's type and slot, "Light armour · Chest"; null otherwise (spec
   /// 0009 §8.2).
   String? typeLine(String key) {
+    if (weaponLine(key) case final weapon?) return weapon;
+    final item = data.itemOf(key);
+    if (item?.armourType case final type?) {
+      return '${armour(type)} · ${slot(item!.slot!)}';
+    }
+    return null;
+  }
+
+  /// A weapon's damage type and hands, "Pierce · One hand"; null for
+  /// anything else (spec 0009 §8.2).
+  String? weaponLine(String key) {
     final item = data.itemOf(key);
     if (item?.damageType case final type?) {
       return '${capital(type)} · ${item!.twoHanded ? 'Two hands' : 'One hand'}';
-    }
-    if (item?.armourType case final type?) {
-      return '${armour(type)} · ${slot(item!.slot!)}';
     }
     return null;
   }
@@ -313,14 +321,19 @@ class Labels {
   }
 
   /// The saving of the tool with [key]: "Full step cost" with none, else
-  /// "−10% steps" (spec 0010 amendment 7).
+  /// "−10% steps" (spec 0010 amendment 7). A tool that costs more steps
+  /// says so: "+10% steps".
   String stepSaving(String? key) {
-    final saving = 100 - stepShare(key);
-    return saving <= 0 ? 'Full step cost' : '−$saving% steps';
+    final saving = 100 - _stepShare(key);
+    return switch (saving) {
+      0 => 'Full step cost',
+      > 0 => '−$saving% steps',
+      _ => '+${-saving}% steps',
+    };
   }
 
   /// The share of an action's steps the tool with [key] costs, in percent.
-  int stepShare(String? key) => (Game(data).toolFactor(key) * 100).round();
+  int _stepShare(String? key) => (Game(data).toolFactor(key) * 100).round();
 
   /// An item drawn as an object (bag, doll, card title): its name only, the
   /// quality shows as colour and on the card's kind line (spec 0008

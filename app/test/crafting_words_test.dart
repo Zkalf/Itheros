@@ -16,6 +16,13 @@ Finder _in(Finder of, String text) => find.descendant(
 
 final _mining = find.byKey(const ValueKey('profession-mining'));
 
+/// A share of the steps without the minus sign of a saving, as the old
+/// words "100% steps" (spec 0010 amendment 7, criterion 5).
+final _shareWithoutMinus = find.textContaining(
+  RegExp(r'(^|[^−+\d])\d+% steps'),
+  findRichText: true,
+);
+
 /// Scrolls the profession screen until [row] shows.
 Future<void> _show(WidgetTester t, Finder row) => t.scrollUntilVisible(
   row,
@@ -66,13 +73,22 @@ void main() {
       final row = option('craft', 'copper_pickaxe');
       await _show(t, row);
       expect(_in(row, 'Mining tool · −10% steps'), findsOneWidget);
-      expect(
-        find.textContaining(
-          RegExp(r'(^|[^−\d])\d+% steps'),
-          findRichText: true,
-        ),
-        findsNothing,
-      );
+      expect(_shareWithoutMinus, findsNothing, reason: 'Crafting');
+    });
+
+    testWidgets('criterion 5: each gathering screen and a tool card show no '
+        'share without the minus', (t) async {
+      final (c, _) = await pumpGame(t, level: 5);
+      c.state.tools['mining'] = 'copper_pickaxe';
+      for (final p in ['mining', 'woodcutting', 'fishing', 'hunting']) {
+        await openProfession(t, p);
+        expect(_shareWithoutMinus, findsNothing, reason: p);
+      }
+      await openProfession(t, 'mining');
+      await t.tap(_in(_mining, 'Copper pickaxe'));
+      await t.pumpAndSettle();
+      expect(find.text('Mining tool · −10% steps'), findsOneWidget);
+      expect(_shareWithoutMinus, findsNothing, reason: 'the item card');
     });
   });
 

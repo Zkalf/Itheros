@@ -211,7 +211,7 @@ class _ProfessionCard extends StatelessWidget {
 
   /// The worn tool: its picture with the ring of its quality (spec 0014
   /// §3.1, plan 0017 choice 8), then its name in its quality colour and its
-  /// step cost; tap for its card. The socket is 32 dp, the banner size of
+  /// step saving (spec 0010 amendment 7); tap for its card. The socket is 32 dp, the banner size of
   /// §2.3, as the design phones 11 and 25 show for an item on one line.
   Widget _toolRow(BuildContext context) {
     final c = controller;
@@ -464,7 +464,7 @@ class _RecipeTile extends StatelessWidget {
     final levelMet = game.recipeLevelMet(s, recipe);
     // A weapon says its damage type and hands before its stats, in place of
     // its slot (spec 0010 amendment 7).
-    final weapon = out.damageType != null ? labels.typeLine(out.id) : null;
+    final weapon = labels.weaponLine(out.id);
     final kind = [
       ?weapon,
       if (out.meal != null) labels.mealLength(out.id),
