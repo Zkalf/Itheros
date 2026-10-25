@@ -58,6 +58,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
   Game? withGame,
   Character? character = ada,
   ImageIndex images = ImageIndex.empty,
+  // Changes the save before the game loads it.
+  void Function(GameState)? prepare,
 }) async {
   final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
@@ -86,6 +88,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
         );
     }
   }
+  prepare?.call(state);
   final store = MemorySaveStore(
     granted
         ? SaveData(
@@ -1080,7 +1083,10 @@ void main() {
       final banners = find.byKey(const ValueKey('report-banner'));
       Finder banner(String text) =>
           find.descendant(of: banners, matching: find.text(text));
-      expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
+      expect(
+        banner('Achievement unlocked: First Steps. Reward: +250 step bank cap'),
+        findsOneWidget,
+      );
       expect(banner('Reached level 2!'), findsOneWidget);
       // Spec 0014 lines 8 and 146 (§4.2): the banner of an achievement shows
       // the image of the achievement, not an icon.
@@ -1089,7 +1095,9 @@ void main() {
           for (final i in t.widgetList<Image>(
             find.descendant(
               of: find.ancestor(
-                of: banner('Achievement unlocked: First Steps'),
+                of: banner(
+                  'Achievement unlocked: First Steps. Reward: +250 step bank cap',
+                ),
                 matching: banners,
               ),
               matching: find.byType(Image),
@@ -1118,7 +1126,10 @@ void main() {
       await t.pump();
       await t.tap(find.byKey(const ValueKey('journal-button')));
       await t.pumpAndSettle();
-      expect(banner('Achievement unlocked: First Steps'), findsOneWidget);
+      expect(
+        banner('Achievement unlocked: First Steps. Reward: +250 step bank cap'),
+        findsOneWidget,
+      );
       expect(banner('Reached level 2!'), findsOneWidget);
     });
   });

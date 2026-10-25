@@ -304,6 +304,7 @@ Future<GameController> reachLevel(
       walked: 300,
       levelsReached: const [2],
       achievements: const ['first_steps'],
+      lostAchievements: const [AchievementLost('goblin_slayer_1')],
       lore: [lore],
       learned: const ['goblin'],
       slayers: const ['goblin_brute'],
@@ -318,8 +319,13 @@ Future<GameController> reachLevel(
     <(String, Thing?)>[
       ('Reached level 2!', null),
       (
-        'Achievement unlocked: ${labels.achievement('first_steps')}',
+        'Achievement unlocked: First Steps. Reward: +250 step bank cap',
         const AchievementThing('first_steps', earned: true),
+      ),
+      // A lost achievement shows the locked patch (spec 0017 §5).
+      (
+        'Achievement lost: Goblin Slayer I. Lost: +4 Attack.',
+        const AchievementThing('goblin_slayer_1', earned: false),
       ),
       (labels.loreFound(lore), null),
       (labels.weaknessLearned('goblin'), const MonsterThing('goblin')),
