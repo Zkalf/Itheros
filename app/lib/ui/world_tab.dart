@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter, PathMetric;
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -67,6 +67,18 @@ class WorldTab extends StatelessWidget {
                 ],
                 here: s.location,
                 fog: true,
+                // Room for each place and road, also hidden and in the
+                // fog, so that no name moves (spec 0014 amendment 2).
+                roomFor: (
+                  names: {
+                    for (final area in game.data.locations.keys)
+                      area: labels.location(area),
+                  },
+                  roads: [
+                    for (final r in game.data.routes)
+                      (r.from, r.to, fmt(r.steps)),
+                  ],
+                ),
               ),
             ),
             Padding(
@@ -123,6 +135,9 @@ class MapSpot {
 /// - [roads] are the two places of each road and its step count; null for a
 ///   road into the fog.
 /// - With [fog], the painted fog lies over the image and under the marks.
+/// - [roomFor] gives the places and roads that the labels keep room for, so
+///   that no name moves when a place leaves the fog or shows on the map
+///   (spec 0014 amendment 2). Null keeps room for [places] and [roads].
 class MapView extends StatefulWidget {
   const MapView({
     super.key,
@@ -134,6 +149,7 @@ class MapView extends StatefulWidget {
     this.strip,
     this.marker = 40,
     this.fog = false,
+    this.roomFor,
   });
 
   final GameData data;
@@ -143,12 +159,16 @@ class MapView extends StatefulWidget {
   final String here;
   final Rect? strip;
   final bool fog;
+  final MapRoom? roomFor;
 
   /// The size of each marker.
   final double marker;
 
   /// The width of the ring of the current place.
   static const _ring = 3.0;
+
+  /// The size of the names (spec 0014 amendment 2).
+  static const _nameSize = 13.0;
 
   /// The step counts are numbers that stand alone (spec 0014 §2.2): the
   /// size of main, in the weight of small numbers in the kit.
@@ -186,6 +206,8 @@ class MapView extends StatefulWidget {
       strip == other.strip &&
       marker == other.marker &&
       listEquals(roads, other.roads) &&
+      mapEquals(roomFor?.names, other.roomFor?.names) &&
+      listEquals(roomFor?.roads, other.roomFor?.roads) &&
       listEquals(
         [for (final p in places) (p.id, p.name, p.fogged)],
         [for (final p in other.places) (p.id, p.name, p.fogged)],
@@ -195,12 +217,30 @@ class MapView extends StatefulWidget {
   State<MapView> createState() => _MapViewState();
 }
 
+/// The places and roads that the labels of a map keep room for: the name of
+/// each place by its id, and the two places and the step count of each
+/// road. It holds each place and each road that the map draws, and can hold
+/// more.
+typedef MapRoom = ({
+  Map<String, String> names,
+  List<(String, String, String)> roads,
+});
+
+/// The labels of a map as it draws them: the rect and the text of each
+/// name by its place, and the step plate of each road with a count, in the
+/// order of the roads.
+typedef _Labels = ({
+  Map<String, Rect> names,
+  Map<String, String> texts,
+  List<Rect> plates,
+});
+
 /// The state of a map keeps what costs time to make: the laid-out step
 /// counts and the placement of the labels. A rebuild with the same roads,
 /// places and size keeps them.
 class _MapViewState extends State<MapView> {
   late List<TextPainter> _counts = _layOut(widget._counts);
-  MapLabels? _labels;
+  _Labels? _labels;
 
   /// The centre of each marker in the coordinates of the strip. Each marker
   /// gets the room of the ring, so that no name moves when the player
@@ -245,55 +285,103 @@ class _MapViewState extends State<MapView> {
   }
 
   /// A name on one line, and on two lines if it has a space.
-  static List<String> _lines(MapSpot p) => [
-    p.name,
-    if (p.name.contains(' ')) p.name.replaceFirst(' ', '\n'),
+  static List<String> _lines(String name) => [
+    name,
+    if (name.contains(' ')) name.replaceFirst(' ', '\n'),
   ];
 
-  /// Each name is a name (spec 0014 §2.2), at the size of main.
+  /// Each name is a name (spec 0014 §2.2), at [MapView._nameSize].
   TextStyle _styleOf(MapSpot p) {
-    final name = nameStyle(context)!.copyWith(fontSize: 14);
+    final name = nameStyle(context)!.copyWith(fontSize: MapView._nameSize);
     return p.fogged ? name.copyWith(color: Quiet.faint) : name;
   }
 
-  MapLabels _place() {
+  /// The size of [text] in a label. The labels keep their size at each
+  /// text size of the phone, so that the placement holds.
+  Size _sizeOf(String text, TextStyle style) =>
+      textSizeOf(context, text, style, textScaler: TextScaler.noScaling);
+
+  _Labels _place() {
     final w = widget;
+    final room =
+        w.roomFor ??
+        (
+          names: {for (final p in w.places) p.id: p.name},
+          roads: [
+            for (final (a, b, count) in w.roads)
+              if (count != null) (a, b, count),
+          ],
+        );
     _centres = {
-      for (final p in w.places)
-        p.id: placeCentre(w.data, p.id, w._whole, w._room) - w._shown.topLeft,
+      for (final id in room.names.keys)
+        id: placeCentre(w.data, id, w._whole, w._room) - w._shown.topLeft,
     };
-    return placeMapLabels(
+    final name = nameStyle(context)!.copyWith(fontSize: MapView._nameSize);
+    final step = TextPainter(textDirection: TextDirection.ltr);
+    final placed = placeMapLabels(
       map: w._shown.size,
       names: [
-        for (final p in w.places)
+        for (final MapEntry(key: id, value: text) in room.names.entries)
           MapName(
-            place: p.id,
-            marker: Rect.fromCircle(center: _centres[p.id]!, radius: w._room),
+            place: id,
+            marker: Rect.fromCircle(center: _centres[id]!, radius: w._room),
             sizes: [
-              for (final text in _lines(p))
-                MapView._namePad.inflateSize(
-                  // The labels keep their size at each text size of the
-                  // phone, so that the placement holds.
-                  textSizeOf(
-                    context,
-                    text,
-                    _styleOf(p),
-                    textScaler: TextScaler.noScaling,
-                  ),
-                ),
+              for (final line in _lines(text))
+                MapView._namePad.inflateSize(_sizeOf(line, name)),
             ],
           ),
       ],
       plates: [
-        for (final (i, (a, b, _)) in [
-          for (final road in w.roads)
-            if (road.$3 != null) road,
-        ].indexed)
+        for (final (a, b, count) in room.roads)
           MapPlate(
             from: _centres[a]!,
             to: _centres[b]!,
-            size: _counts[i].size + const Offset(2, 2) * MapView._countPad,
+            size:
+                (step
+                      ..text = TextSpan(text: count, style: MapView._stepStyle)
+                      ..layout())
+                    .size +
+                const Offset(2, 2) * MapView._countPad,
           ),
+      ],
+    );
+    step.dispose();
+    final names = <String, Rect>{};
+    final texts = <String, String>{};
+    for (final p in w.places) {
+      final rect = placed.names[p.id]!;
+      if (!p.fogged) {
+        names[p.id] = rect;
+        texts[p.id] = _lines(p.name)[placed.sizes[p.id]!];
+      } else {
+        // A name in the fog is shorter than the name that it keeps room
+        // for. It stands in that room, as near to its marker as it can.
+        final size = MapView._namePad.inflateSize(_sizeOf(p.name, name));
+        final centre = _centres[p.id]!;
+        names[p.id] = Rect.fromLTWH(
+          (centre.dx - size.width / 2).clamp(
+            rect.left,
+            math.max(rect.left, rect.right - size.width),
+          ),
+          (centre.dy - size.height / 2).clamp(
+            rect.top,
+            math.max(rect.top, rect.bottom - size.height),
+          ),
+          size.width,
+          size.height,
+        );
+        texts[p.id] = p.name;
+      }
+    }
+    return (
+      names: names,
+      texts: texts,
+      plates: [
+        for (final (a, b, count) in w.roads)
+          if (count != null)
+            placed.plates[room.roads.indexWhere(
+              (r) => {r.$1, r.$2}.containsAll([a, b]),
+            )],
       ],
     );
   }
@@ -355,7 +443,7 @@ class _MapViewState extends State<MapView> {
               centre: _centres[p.id]!,
               name: labels.names[p.id]!,
               // The text of the size that the placement gave the name.
-              text: _lines(p)[labels.sizes[p.id]!],
+              text: labels.texts[p.id]!,
               style: _styleOf(p),
               picture: images.pictureOf(
                 w.data,

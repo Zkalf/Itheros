@@ -46,6 +46,9 @@ typedef MapLabels = ({
 /// - No two of the names, the plates and the markers overlap.
 /// - Each name takes one of its sizes. It lies inside the map, at most 8 dp
 ///   from its marker.
+/// - The marker nearest to the middle of a name is its own (amendment 2).
+/// - The middle of a name lies at least half its height from the road of
+///   each plate: a road can cross the edge of a name (amendment 2).
 /// - Each plate lies on its road: the road crosses it. It lies inside the
 ///   map.
 ///
@@ -60,8 +63,22 @@ MapLabels placeMapLabels({
 }) {
   final area = Offset.zero & map;
   final markers = [for (final n in names) n.marker];
+  // A name without a spot that keeps the rules of amendment 2 keeps all its
+  // spots, so that it still stands near its marker; the placement is then
+  // not clean.
+  var kept = true;
   final spots = [
-    for (final n in names) _nameSpots(n, area).toList(),
+    for (final n in names)
+      () {
+        final all = _nameSpots(n, area).toList();
+        final good = [
+          for (final s in all)
+            if (_staysWith(s.rect, n.marker, markers, plates)) s,
+        ];
+        if (good.isNotEmpty || all.isEmpty) return good;
+        kept = false;
+        return all;
+      }(),
     for (final p in plates)
       [for (final rect in _plateSpots(p, area)) (rect: rect, size: 0)],
   ];
@@ -78,7 +95,7 @@ MapLabels placeMapLabels({
     names: {for (final (i, n) in names.indexed) n.place: placed[i].rect},
     sizes: {for (final (i, n) in names.indexed) n.place: placed[i].size},
     plates: [for (final spot in placed.skip(names.length)) spot.rect],
-    clean: found != null,
+    clean: found != null && kept,
   );
 }
 
@@ -261,4 +278,31 @@ bool _crosses(Offset a, Offset b, Rect r) {
     }
   }
   return t0 <= t1;
+}
+
+/// Whether a name at [rect] reads as the name of [own]: no other of
+/// [markers] lies as near to its middle, and no road of [plates] runs
+/// nearer to its middle than half its height.
+bool _staysWith(
+  Rect rect,
+  Rect own,
+  List<Rect> markers,
+  List<MapPlate> plates,
+) {
+  final middle = rect.center;
+  final near = _distance(middle & Size.zero, own);
+  return markers.every(
+        (m) => identical(m, own) || _distance(middle & Size.zero, m) > near,
+      ) &&
+      plates.every((p) => _toSegment(middle, p.from, p.to) >= rect.height / 2);
+}
+
+/// The shortest distance from [x] to the segment from [a] to [b].
+double _toSegment(Offset x, Offset a, Offset b) {
+  final d = b - a;
+  final len2 = d.dx * d.dx + d.dy * d.dy;
+  final t = len2 == 0
+      ? 0.0
+      : (((x - a).dx * d.dx + (x - a).dy * d.dy) / len2).clamp(0.0, 1.0);
+  return (x - (a + d * t)).distance;
 }

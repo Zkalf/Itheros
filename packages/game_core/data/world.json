@@ -3,11 +3,11 @@
   "mapAspect": 1.5,
   "mapRiver": [{ "x": 0, "y": 0.58 }, { "x": 0.3, "y": 0.55 }, { "x": 0.6, "y": 0.58 }, { "x": 1, "y": 0.54 }],
   "locations": [
-    { "id": "camp", "map": { "x": 0.5, "y": 0.92 }, "name": "Camp", "crafting": true, "fire": true, "enemies": [], "nodes": [],
+    { "id": "camp", "map": { "x": 0.36, "y": 0.92 }, "name": "Camp", "crafting": true, "fire": true, "enemies": [], "nodes": [],
       "flavour": "The Guild camp: a fire, a forge, and a notice board." },
     { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": ["oak_tree", "deer_trail"],
       "flavour": "Goblin Woods: small thieves, big brothers, and something that growls in the deep." },
-    { "id": "copper_hills", "map": { "x": 0.8, "y": 0.8 }, "name": "Copper Hills", "enemies": [], "nodes": ["copper_vein"],
+    { "id": "copper_hills", "map": { "x": 0.84, "y": 0.76 }, "name": "Copper Hills", "enemies": [], "nodes": ["copper_vein"],
       "flavour": "Copper Hills: red-brown rock that rings when you hit it." },
     { "id": "old_graveyard", "map": { "x": 0.14, "y": 0.68 }, "name": "Old Graveyard", "enemies": ["skeleton", "zombie", "graveyard_king"], "nodes": [],
       "flavour": "Old Graveyard: the dead here don't rest, and one of them wears a crown." },
@@ -23,7 +23,7 @@
       "flavour": "Mithril Deep: silver light in the dark, and a long way down." },
     { "id": "dragons_peak", "map": { "x": 0.3, "y": 0.06 }, "name": "Dragon's Peak", "enemies": ["wyvern", "fire_drake", "young_dragon"], "nodes": [],
       "flavour": "Dragon's Peak: scorched rock and the smell of smoke. Something big sleeps at the top." },
-    { "id": "mirror_lake", "map": { "x": 0.72, "y": 0.94 }, "name": "Mirror Lake", "enemies": [], "nodes": ["lake_shore"],
+    { "id": "mirror_lake", "map": { "x": 0.72, "y": 0.89 }, "name": "Mirror Lake", "enemies": [], "nodes": ["lake_shore"],
       "flavour": "Mirror Lake: still water, reeds, and something big that rolls under the surface at dawn." },
     { "id": "smugglers_cove", "map": { "x": 0.95, "y": 0.96 }, "name": "Smugglers' Cove", "hidden": true, "enemies": [], "nodes": ["cove_rocks"],
       "flavour": "Smugglers' Cove: a crooked jetty, tar on the rocks, and an X nobody bothered to scratch out." }
