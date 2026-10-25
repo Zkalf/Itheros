@@ -1,6 +1,6 @@
 # Plan 0022: Build "Materials you have, need, use and keep"
 
-Status: draft
+Status: accepted
 Spec: `specs/0010-professions.amendment-5.md` · Issue: #89 · Product owner: Zkalf · Date: 2026-10-25
 
 Names of files, widgets and tests refer to `main` at `2e770b7`.
