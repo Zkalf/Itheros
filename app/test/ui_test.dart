@@ -2256,7 +2256,10 @@ void professionScreens() {
       );
       await openProfession(t, 'mining');
       expect(
-        within('profession-mining', find.text("Hilde's old pick · Full step cost")),
+        within(
+          'profession-mining',
+          find.text("Hilde's old pick · Full step cost"),
+        ),
         findsOneWidget,
       );
       // Where to practise: the best spot for the level, with Go there.

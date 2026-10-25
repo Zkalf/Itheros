@@ -67,7 +67,10 @@ void main() {
       await _show(t, row);
       expect(_in(row, 'Mining tool · −10% steps'), findsOneWidget);
       expect(
-        find.textContaining(RegExp(r'(^|[^−])\d+% steps'), findRichText: true),
+        find.textContaining(
+          RegExp(r'(^|[^−\d])\d+% steps'),
+          findRichText: true,
+        ),
         findsNothing,
       );
     });
