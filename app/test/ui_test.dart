@@ -2256,7 +2256,10 @@ void professionScreens() {
       );
       await openProfession(t, 'mining');
       expect(
-        within('profession-mining', find.text("Hilde's old pick · 100% steps")),
+        within(
+          'profession-mining',
+          find.text("Hilde's old pick · Full step cost"),
+        ),
         findsOneWidget,
       );
       // Where to practise: the best spot for the level, with Go there.
@@ -2279,7 +2282,7 @@ void professionScreens() {
       await t.tap(within('profession-mining', find.textContaining('old pick')));
       await t.pumpAndSettle();
       expect(card(find.text("Hilde's old pick")), findsOneWidget);
-      expect(card(find.text('Mining tool · 100% steps')), findsOneWidget);
+      expect(card(find.text('Mining tool · Full step cost')), findsOneWidget);
     });
 
     testWidgets('criterion 14: an unlearned profession points to its '
@@ -2416,8 +2419,9 @@ void professionScreens() {
       final (c, _) = await pumpGame(t, inventory: {'copper_pickaxe@rare': 1});
       await openItem(t, 'copper_pickaxe@rare');
       expect(card(find.text('Rare pickaxe · Mining')), findsOneWidget);
-      // 90% less 2 points per quality step: Rare is 2 steps up.
-      expect(card(find.text('Mining tool · 86% steps')), findsOneWidget);
+      // 10% off and 2 more points per quality step: Rare is 2 steps up
+      // (spec 0010 amendment 7).
+      expect(card(find.text('Mining tool · −14% steps')), findsOneWidget);
       expect(card(find.text("Instead of Hilde's old pick")), findsOneWidget);
       await t.tap(card(find.byKey(const ValueKey('card-tool'))));
       await settle(t, c);

@@ -211,7 +211,7 @@ class _ProfessionCard extends StatelessWidget {
 
   /// The worn tool: its picture with the ring of its quality (spec 0014
   /// §3.1, plan 0017 choice 8), then its name in its quality colour and its
-  /// step cost; tap for its card. The socket is 32 dp, the banner size of
+  /// step saving (spec 0010 amendment 7); tap for its card. The socket is 32 dp, the banner size of
   /// §2.3, as the design phones 11 and 25 show for an item on one line.
   Widget _toolRow(BuildContext context) {
     final c = controller;
@@ -239,7 +239,7 @@ class _ProfessionCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${labels.plain(tool)} · ${labels.stepShare(tool)}% steps',
+                '${labels.plain(tool)} · ${labels.stepSaving(tool)}',
                 style: TextStyle(color: itemColour(data, tool)),
               ),
             ),
@@ -462,10 +462,15 @@ class _RecipeTile extends StatelessWidget {
     // are gathered (spec 0003 §4, spec 0008 decision 7); only its Crafting
     // level holds it back (spec 0010 §2.2).
     final levelMet = game.recipeLevelMet(s, recipe);
+    // A weapon says its damage type and hands before its stats, in place of
+    // its slot (spec 0010 amendment 7).
+    final weapon = labels.weaponLine(out.id);
     final kind = [
+      ?weapon,
       if (out.meal != null) labels.mealLength(out.id),
       ...labels.bonus(out.bonus),
-      if (out.slot case final slot?) labels.slot(slot),
+      if (weapon == null)
+        if (out.slot case final slot?) labels.slot(slot),
       if (out.tool != null) labels.toolLine(out.id),
     ].join(' · ');
     return ListTile(
