@@ -31,17 +31,26 @@ void main() {
           findsNothing,
           reason: '${p.id}: the name in the card',
         );
+        // The first line of the card holds the icon and "Level N".
+        final head = find.byKey(ValueKey('profession-head-${p.id}'));
         expect(
-          find.descendant(
-            of: _card(p.id),
-            matching: find.byIcon(professionIcon(p.icon)),
+          t.widget(
+            find.descendant(of: _card(p.id), matching: find.byType(Row)).first,
           ),
-          findsOneWidget,
-          reason: '${p.id}: the icon in the card',
+          same(t.widget(head)),
+          reason: '${p.id}: the first row of the card',
         );
         expect(
           find.descendant(
-            of: _card(p.id),
+            of: head,
+            matching: find.byIcon(professionIcon(p.icon)),
+          ),
+          findsOneWidget,
+          reason: '${p.id}: the icon on the first line',
+        );
+        expect(
+          find.descendant(
+            of: head,
             matching: find.textContaining(RegExp(r'^Level \d+$')),
           ),
           learned ? findsOneWidget : findsNothing,
@@ -63,24 +72,36 @@ void main() {
   });
 
   testWidgets('criterion 5: Crafting and Cooking show no chip when not '
-      'learned', (t) async {
+      'learned, and name their teacher', (t) async {
     await pumpGame(t, learned: false);
     for (final p in ['crafting', 'cooking']) {
       await openProfession(t, p);
       for (final chip in _chips) {
         expect(find.byKey(ValueKey(chip)), findsNothing, reason: '$p $chip');
       }
+      final teacher = game.data.professions[p]!.teacher.name;
+      expect(
+        find.descendant(
+          of: _card(p),
+          matching: find.text('Learn from $teacher in camp'),
+        ),
+        findsOneWidget,
+        reason: p,
+      );
     }
   });
 
-  testWidgets('criterion 6: the other four screens show no chip', (t) async {
-    await pumpGame(t);
-    for (final p in game.data.professions.keys) {
-      if (p == 'crafting' || p == 'cooking') continue;
-      await openProfession(t, p);
-      for (final chip in _chips) {
-        expect(find.byKey(ValueKey(chip)), findsNothing, reason: '$p $chip');
+  for (final learned in [true, false]) {
+    testWidgets('criterion 6: the other four screens show no chip '
+        '(learned: $learned)', (t) async {
+      await pumpGame(t, learned: learned);
+      for (final p in game.data.professions.keys) {
+        if (p == 'crafting' || p == 'cooking') continue;
+        await openProfession(t, p);
+        for (final chip in _chips) {
+          expect(find.byKey(ValueKey(chip)), findsNothing, reason: '$p $chip');
+        }
       }
-    }
-  });
+    });
+  }
 }

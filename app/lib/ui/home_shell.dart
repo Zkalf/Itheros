@@ -8,6 +8,7 @@ import 'controller_scope.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
 import 'now_tab.dart';
+import 'profession_screen.dart' show RecipeFilter;
 import 'professions_tab.dart';
 import 'settings_screen.dart';
 import 'theme.dart';

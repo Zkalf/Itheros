@@ -9,19 +9,6 @@ import 'labels.dart';
 import 'profession_screen.dart';
 import 'theme.dart';
 
-/// "Have level" or "Up to 5 levels ahead": never both (spec 0010
-/// amendment 3).
-enum LevelFilter { level, ahead }
-
-/// The recipe filters (spec 0010 amendment 3): a view setting, not saved,
-/// shared by the Crafting and Cooking screens (amendment 4).
-class RecipeFilter {
-  const RecipeFilter({this.mats = false, this.level});
-
-  final bool mats;
-  final LevelFilter? level;
-}
-
 /// Professions (spec 0010 §8.1 and amendment 4, spec 0011 §8.1): one
 /// button per profession with its level, progress and tier; a tap opens
 /// that profession's own screen.

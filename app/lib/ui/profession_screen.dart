@@ -15,7 +15,19 @@ import 'level_badge.dart';
 import 'meals.dart';
 import 'socket.dart';
 import 'theme.dart';
-import 'professions_tab.dart' show LevelFilter, RecipeFilter;
+
+/// "Have level" or "Up to 5 levels ahead": never both (spec 0010
+/// amendment 3).
+enum LevelFilter { level, ahead }
+
+/// The recipe filters (spec 0010 amendment 3): a view setting, not saved,
+/// shared by the Crafting and Cooking screens (amendment 4).
+class RecipeFilter {
+  const RecipeFilter({this.mats = false, this.level});
+
+  final bool mats;
+  final LevelFilter? level;
+}
 
 /// One profession's card alone; Crafting and Cooking put the recipe
 /// filters on top.
@@ -150,11 +162,12 @@ class _ProfessionCard extends StatelessWidget {
     final next = data.professionXpForLevel(level + 1);
 
     // The top bar holds the name, so the card does not repeat it (spec 0010
-    // amendment 6).
+    // amendment 6). A screen reader still hears it on the icon.
     final rows = <Widget>[
       Row(
+        key: ValueKey('profession-head-${p.id}'),
         children: [
-          Icon(professionIcon(p.icon)),
+          Icon(professionIcon(p.icon), semanticLabel: p.name),
           const Spacer(),
           if (learned)
             Text.rich(numberSpan('Level $level'), style: text.titleMedium),
