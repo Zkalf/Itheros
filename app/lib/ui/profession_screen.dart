@@ -239,7 +239,7 @@ class _ProfessionCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${labels.plain(tool)} · ${labels.stepShare(tool)}% steps',
+                '${labels.plain(tool)} · ${labels.stepSaving(tool)}',
                 style: TextStyle(color: itemColour(data, tool)),
               ),
             ),
@@ -462,10 +462,15 @@ class _RecipeTile extends StatelessWidget {
     // are gathered (spec 0003 §4, spec 0008 decision 7); only its Crafting
     // level holds it back (spec 0010 §2.2).
     final levelMet = game.recipeLevelMet(s, recipe);
+    // A weapon says its damage type and hands before its stats, in place of
+    // its slot (spec 0010 amendment 7).
+    final weapon = out.damageType != null ? labels.typeLine(out.id) : null;
     final kind = [
+      ?weapon,
       if (out.meal != null) labels.mealLength(out.id),
       ...labels.bonus(out.bonus),
-      if (out.slot case final slot?) labels.slot(slot),
+      if (weapon == null)
+        if (out.slot case final slot?) labels.slot(slot),
       if (out.tool != null) labels.toolLine(out.id),
     ].join(' · ');
     return ListTile(

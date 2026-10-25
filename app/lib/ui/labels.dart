@@ -305,11 +305,18 @@ class Labels {
     return '$line Found a ${plain(shard)}$count!';
   }
 
-  /// A tool's profession and step cost: "Mining tool · 86% steps" (spec
-  /// 0010 §3.2).
+  /// A tool's profession and step saving: "Mining tool · −14% steps" (spec
+  /// 0010 §3.2, amendment 7).
   String toolLine(String key) {
     final p = data.toolProfession(key);
-    return '${profession(p!)} tool · ${stepShare(key)}% steps';
+    return '${profession(p!)} tool · ${stepSaving(key)}';
+  }
+
+  /// The saving of the tool with [key]: "Full step cost" with none, else
+  /// "−10% steps" (spec 0010 amendment 7).
+  String stepSaving(String? key) {
+    final saving = 100 - stepShare(key);
+    return saving <= 0 ? 'Full step cost' : '−$saving% steps';
   }
 
   /// The share of an action's steps the tool with [key] costs, in percent.
