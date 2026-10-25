@@ -4,9 +4,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walkingrpg/ui/labels.dart' show fmt;
+import 'package:walkingrpg/ui/map_labels.dart';
+import 'package:walkingrpg/ui/route_map.dart';
 import 'package:walkingrpg/ui/world_tab.dart';
 
 import 'images_test.dart' show loadFonts, socketIn;
+import 'quiet_teal_files_test.dart' show cormorant, spectral;
 import 'ui_test.dart' show game;
 import 'world_route_test.dart'
     show area, nameBox, painterIn, platesOf, pumpWorld, textIn;
@@ -37,6 +41,17 @@ Map<String, Rect> _names(WidgetTester t, {String Function(String)? shown}) => {
     if (area(p).evaluate().isNotEmpty)
       p: nameBox(t, area(p), (shown ?? _name)(p)),
 };
+
+/// The size of [text] in [style], with [pad] around it.
+Size _measure(String text, TextStyle style, EdgeInsets pad) {
+  final p = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  final size = pad.inflateSize(p.size);
+  p.dispose();
+  return size;
+}
 
 bool _contains(Rect outer, Rect r) =>
     r.left >= outer.left - .01 &&
@@ -162,6 +177,58 @@ void main() {
             !c.game.isFogged(c.state, r.to),
       );
       expect(platesOf(painter, box), hasLength(counted.length));
+    });
+  });
+
+  group('spec 0014 amendment 2: the route map', () {
+    test('change 7: at 360 dp, the strip of each road keeps each rule of the '
+        'placement, with no fallback', () {
+      const name = TextStyle(
+        fontFamily: cormorant,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+      );
+      const step = TextStyle(
+        fontFamily: spectral,
+        fontWeight: FontWeight.w600,
+        fontSize: 11,
+      );
+      final whole = Size(360, 360 * game.data.mapAspect);
+      for (final r in game.data.routes) {
+        final strip = routeStrip(game.data, [r.from, r.to], 360);
+        Offset at(String p) =>
+            placeCentre(game.data, p, whole, 23) - strip.topLeft;
+        final placed = placeMapLabels(
+          map: strip.size,
+          names: [
+            for (final p in [r.from, r.to])
+              MapName(
+                place: p,
+                marker: Rect.fromCircle(center: at(p), radius: 23),
+                sizes: [
+                  for (final text in [
+                    _name(p),
+                    if (_name(p).contains(' '))
+                      _name(p).replaceFirst(' ', '\n'),
+                  ])
+                    _measure(
+                      text,
+                      name,
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    ),
+                ],
+              ),
+          ],
+          plates: [
+            MapPlate(
+              from: at(r.from),
+              to: at(r.to),
+              size: _measure(fmt(r.steps), step, const EdgeInsets.all(3)),
+            ),
+          ],
+        );
+        expect(placed.clean, isTrue, reason: '${r.from} - ${r.to}');
+      }
     });
   });
 

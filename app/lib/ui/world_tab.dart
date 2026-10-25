@@ -298,12 +298,8 @@ class _MapViewState extends State<MapView> {
 
   /// The size of [text] in a label. The labels keep their size at each
   /// text size of the phone, so that the placement holds.
-  Size _sizeOf(String text, TextStyle style) => textSizeOf(
-    context,
-    text,
-    style,
-    textScaler: TextScaler.noScaling,
-  );
+  Size _sizeOf(String text, TextStyle style) =>
+      textSizeOf(context, text, style, textScaler: TextScaler.noScaling);
 
   _Labels _place() {
     final w = widget;
