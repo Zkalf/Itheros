@@ -332,7 +332,9 @@ class GameController extends ChangeNotifier {
           boostUsed: 0,
           banked: 0,
           lost: 0,
-          events: events,
+          // Only the lost ones (spec 0017 §5): an achievement that the load
+          // earns makes no report.
+          events: events.whereType<AchievementLost>().toList(),
         ),
       ]);
       await store.save(_save!);

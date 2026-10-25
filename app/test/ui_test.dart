@@ -2373,6 +2373,10 @@ void professionScreens() {
       await t.ensureVisible(find.byKey(const ValueKey('set-out')));
       await t.tap(find.byKey(const ValueKey('set-out')));
       await settle(t, c);
+      // The report names the achievements that the old save lost (spec 0017
+      // §5).
+      if (c.awaySummary != null) c.dismissAwaySummary();
+      await t.pumpAndSettle();
       final mining = c.game.professionLevel(c.state, 'mining');
       final crafting = c.game.professionLevel(c.state, 'crafting');
       expect(c.state.learned, {'mining', 'crafting', 'cooking'});
