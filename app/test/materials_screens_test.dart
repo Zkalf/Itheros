@@ -259,6 +259,20 @@ void main() {
       await untilCrafted(t, 3);
       expect(textOf(t, cell('copper_ore', 'uses')), '15');
       expect(t.takeException(), isNull);
+      // The name keeps room for words, not one letter on each line.
+      expect(
+        t.getRect(cell('copper_ore', 'name')).width,
+        greaterThanOrEqualTo(100),
+      );
+      // A table that is too wide paints past its edge without an error, so
+      // the last column must end inside the sheet's 16 dp padding.
+      for (final item in ['copper_ore', 'oak_log']) {
+        expect(
+          t.getRect(cell(item, 'left')).right,
+          lessThanOrEqualTo(360 - 16),
+          reason: item,
+        );
+      }
     });
   });
 
@@ -281,6 +295,31 @@ void main() {
       expect(afterQueue, findsOneWidget);
       expect(textOf(t, afterQueue), 'After your queue');
       expect(textOf(t, cell('copper_ore', 'have')), '2');
+    });
+
+    testWidgets('criterion 14: Have also counts a waiting action after the '
+        'current one', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {'copper_ore': 15, 'oak_log': 5},
+      );
+      for (final r in ['copper_sword', 'copper_spear']) {
+        await c.addAction(
+          Activity.craft(r),
+          stop: const StopCondition.untilCrafted(1),
+        );
+      }
+      await settle(t, c);
+      expect(
+        c.state.queue.map((p) => p.activity),
+        contains(const Activity.craft('copper_spear')),
+      );
+      await openRecipe(t, 'crafting', 'copper_mace');
+      expect(afterQueue, findsOneWidget);
+      // The sword uses 5 ore; the spear 5 ore and 1 log.
+      expect(textOf(t, cell('copper_ore', 'have')), '5');
+      expect(textOf(t, cell('oak_log', 'have')), '4');
     });
   });
 }

@@ -335,11 +335,13 @@ class _MaterialsTable extends StatelessWidget {
             style: text.bodySmall,
           ),
         Table(
+          // Shares, not the width of the numbers: at a large text size the
+          // numbers would take the width and leave the names none.
           columnWidths: const {
-            0: FlexColumnWidth(),
-            1: IntrinsicColumnWidth(),
-            2: IntrinsicColumnWidth(),
-            3: IntrinsicColumnWidth(),
+            0: FlexColumnWidth(2),
+            1: FlexColumnWidth(),
+            2: FlexColumnWidth(),
+            3: FlexColumnWidth(),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
