@@ -20,7 +20,10 @@ void main() {
     for (final a in game.data.achievements.values) {
       final row = find.byKey(ValueKey('achievement-${a.id}'));
       await t.scrollUntilVisible(row, 200);
-      final box = t.getRect(row);
+      // The plate of the card, without its margin below.
+      final box = t.getRect(
+        find.descendant(of: row, matching: find.byType(Material)).first,
+      );
       final socket = t.getRect(socketIn(row));
       expect(
         (socket.center.dy - box.center.dy).abs(),
