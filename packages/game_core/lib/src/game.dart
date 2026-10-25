@@ -1227,6 +1227,83 @@ class Game {
       if (e.value - (s.inventory[e.key] ?? 0) case final n when n > 0) e.key: n,
   };
 
+  /// How many crafts of [recipe] [bag] allows; null for a recipe with no
+  /// inputs (spec 0010 amendment 5 §2.1).
+  int? craftsAllowed(Map<String, int> bag, String recipe) {
+    int? n;
+    data.recipes[recipe]!.inputs.forEach((item, need) {
+      final k = (bag[item] ?? 0) ~/ need;
+      if (n == null || k < n!) n = k;
+    });
+    return n;
+  }
+
+  /// How many crafts [stop] asks of craft [a], with [bag] before it; null
+  /// when the number is unknown (spec 0010 amendment 5 §2.2). [done] counts
+  /// the crafts the current action already made.
+  int? craftsFor(
+    Activity a,
+    StopCondition stop,
+    Map<String, int> bag, {
+    int done = 0,
+  }) => switch (stop.kind) {
+    StopKind.untilCrafted => math.max(0, stop.count - done),
+    StopKind.untilHave => math.max(0, stop.count - (bag[stop.item] ?? 0)),
+    _ => null,
+  };
+
+  /// The bag by base item id once the current action and the waiting ones
+  /// end, as far as the game can know it: it never promises more than the
+  /// player will have (spec 0010 amendment 5 §3). It never changes [s].
+  Map<String, int> bagAfterQueue(GameState s) {
+    final bag = <String, int>{};
+    s.inventory.forEach((key, n) {
+      final id = data.itemOf(key)?.id ?? key;
+      bag[id] = (bag[id] ?? 0) + n;
+    });
+    if (s.activity case final now?) {
+      _afterAction(bag, now.activity, now.stop, done: now.crafted);
+    }
+    for (final p in s.queue) {
+      _afterAction(bag, p.activity, p.stop);
+    }
+    return bag;
+  }
+
+  /// What [a] with [stop] does to [bag] (spec 0010 amendment 5 §3.1-3.2).
+  void _afterAction(
+    Map<String, int> bag,
+    Activity a,
+    StopCondition stop, {
+    int done = 0,
+  }) {
+    void take(String item, int n) =>
+        bag[item] = math.max(0, (bag[item] ?? 0) - n);
+    switch (a.kind) {
+      case ActivityKind.craft:
+        final recipe = data.recipes[a.target]!;
+        final asked = craftsFor(a, stop, bag, done: done);
+        final allowed = craftsAllowed(bag, recipe.id);
+        // An unknown number uses all the crafts the materials allow.
+        final crafts = switch ((asked, allowed)) {
+          (null, null) => 0,
+          (null, final m?) => m,
+          (final k?, null) => k,
+          (final k?, final m?) => math.min(k, m),
+        };
+        recipe.inputs.forEach((item, need) => take(item, need * crafts));
+        bag[recipe.output] = (bag[recipe.output] ?? 0) + crafts;
+      case ActivityKind.fight || ActivityKind.gather:
+        if (stop.kind == StopKind.untilHave) {
+          bag[stop.item!] = math.max(bag[stop.item!] ?? 0, stop.count);
+        }
+      case ActivityKind.reroll:
+        take(_rerollDust(a), data.rerollDust);
+      case ActivityKind.travel:
+        break;
+    }
+  }
+
   /// Owned [item]s of every quality, equipped ones included.
   int owned(GameState s, String item) {
     bool isIt(String key) => data.itemOf(key)?.id == item;
