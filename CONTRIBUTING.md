@@ -33,8 +33,9 @@ player is missing and why it matters, and open a pull request with it (status `d
 spec and a plan follow, then the code. Accepted intent, spec and plan files are never edited.
 
 Each kind of file has a template: `intent/TEMPLATE.md`, `specs/TEMPLATE.md`, `specs/AMENDMENT-TEMPLATE.md` and
-`plans/TEMPLATE.md`. They are guides, not forms: keep the header and the acceptance criteria (or, in a plan, the
-milestones with their proof), and leave out the sections that do not fit.
+`plans/TEMPLATE.md`. They are guides, not forms. Each says what to keep: in an intent the problem and the outcome,
+in a spec or an amendment the acceptance criteria, in a plan the milestones with their proof. Leave out the sections
+that do not fit.
 
 How a draft becomes accepted in a pull request:
 1. The pull request holds the file with `Status: draft`. The discussion and the review happen on the pull request.
