@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'actions.dart' show Heading;
 import 'controller_scope.dart';
 import 'images.dart';
 import 'labels.dart';
 import 'socket.dart';
 import 'theme.dart';
 
-/// Opens from the trophy button in the top bar (spec 0006 amendment 2).
+/// Opens from the trophy button in the top bar (spec 0006 amendment 2). The
+/// achievements stand under the headings Early, Mid and Late (spec 0017 §6).
 class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({super.key, this.fresh = const {}});
 
@@ -29,19 +31,32 @@ class AchievementsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(gutter),
           children: [
-            for (final a in c.game.data.achievements.values)
-              _AchievementTile(
-                achievement: a,
-                unlocked: s.achievements.contains(a.id),
-                fresh: fresh.contains(a.id),
-                progress: c.game.achievementProgress(s, a.id),
-                labels: labels,
+            for (final stage in AchievementStage.values) ...[
+              Heading(
+                _stageNames[stage]!,
+                key: ValueKey('achievement-stage-${stage.name}'),
               ),
+              for (final a in c.game.data.achievements.values)
+                if (a.stage == stage)
+                  _AchievementTile(
+                    achievement: a,
+                    unlocked: s.achievements.contains(a.id),
+                    fresh: fresh.contains(a.id),
+                    progress: c.game.achievementProgress(s, a.id),
+                    labels: labels,
+                  ),
+            ],
           ],
         ),
       ),
     );
   }
+
+  static const _stageNames = {
+    AchievementStage.early: 'Early',
+    AchievementStage.mid: 'Mid',
+    AchievementStage.late: 'Late',
+  };
 }
 
 class _AchievementTile extends StatelessWidget {
@@ -78,7 +93,21 @@ class _AchievementTile extends StatelessWidget {
               .pictureOf(labels.data, AchievementThing(a.id, earned: unlocked)),
           size: 48,
         ),
-        title: Text(a.name),
+        // A feat says so beside its name (spec 0017 §6).
+        title: a.kind == AchievementKind.feat
+            ? Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(a.name),
+                  statusChip(
+                    'Feat',
+                    Quiet.muted,
+                    key: ValueKey('achievement-feat-${a.id}'),
+                  ),
+                ],
+              )
+            : Text(a.name),
         titleTextStyle: nameStyle(context),
         // "New" is a teal outline (spec 0014 §2.1, §2.2).
         trailing: fresh
@@ -92,8 +121,7 @@ class _AchievementTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(_goal(a)),
-            if (a.reward case BankCapReward(:final amount))
-              Text('Reward: +${fmt(amount)} step bank cap'),
+            Text('Reward: ${labels.reward(a.reward)}'),
             if (!unlocked && bar) ...[
               const SizedBox(height: 6),
               // The bar of an achievement is teal (spec 0014 §2.3).
@@ -136,7 +164,11 @@ class _AchievementTile extends StatelessWidget {
     return switch (parts.first) {
       'steps' => 'Walk $n steps',
       'kills' => 'Defeat $n × ${labels.enemy(parts.last)}',
-      'gathered' => 'Gather $n × ${labels.item(parts.last)}',
+      // A fish names its spot (spec 0017 amendments 2 and 3).
+      'gathered' => switch (_fishingSpot(parts.last)) {
+        final spot? => 'Catch $n fish at ${spot.name}',
+        null => 'Gather $n × ${labels.item(parts.last)}',
+      },
       'crafted' when parts.last == 'total' => 'Craft $n item(s)',
       'crafted' => 'Craft $n × ${labels.item(parts.last)}',
       'areas' => 'Arrive at all $n areas',
@@ -144,4 +176,9 @@ class _AchievementTile extends StatelessWidget {
       _ => '$counter ≥ $n',
     };
   }
+
+  /// The fishing spot where [item] is caught, if one is.
+  NodeDef? _fishingSpot(String item) => labels.data.nodes.values
+      .where((n) => n.profession == 'fishing' && n.item == item)
+      .firstOrNull;
 }

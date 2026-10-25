@@ -1490,13 +1490,24 @@ void criterion26() {
         }
         await settle(t, c);
         if (c.levelCards.isNotEmpty) c.dismissLevelCards();
+        // The report names the achievements that the old save lost (spec 0017
+        // §5).
+        if (c.awaySummary != null) c.dismissAwaySummary();
         await t.pumpAndSettle();
         await openJournal(t);
         expect(c.journal, isNotEmpty);
+        // The load adds an entry of the lost achievements, with no steps.
+        final walks = c.journal.where((e) => e.summary.walked > 0);
         expect(
           find.textContaining('You walked'),
-          findsNWidgets(c.journal.length),
+          findsNWidgets(walks.length),
           reason: 'each entry shows',
+        );
+        expect(
+          find.textContaining('Achievement lost: '),
+          findsNWidgets(
+            c.journal.fold(0, (n, e) => n + e.summary.lostAchievements.length),
+          ),
         );
         expect(_routeMap, findsNothing);
       });

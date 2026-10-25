@@ -350,6 +350,42 @@ class Labels {
   String recipe(String id) => item(data.recipes[id]?.output ?? id);
   String achievement(String id) => data.achievements[id]?.name ?? id;
 
+  /// What [r] gives: "+250 step bank cap", "Iron shield (Uncommon)",
+  /// "+4 Attack", "+1 queue slot" (spec 0017 §6).
+  String reward(Reward r) => switch (r) {
+    BankCapReward(:final amount) => '+${fmt(amount)} step bank cap',
+    ItemReward(:final item, :final quality) => this.item(
+      data.keyFor(item, quality),
+    ),
+    BonusReward(:final bonus) => this.bonus(bonus).join(', '),
+    QueueSlotReward() => '+1 queue slot',
+  };
+
+  /// The banner of an earned achievement names its reward (spec 0017 §6).
+  String achievementUnlocked(String id) {
+    final a = data.achievements[id];
+    final name = 'Achievement unlocked: ${achievement(id)}';
+    return a == null ? name : '$name. Reward: ${reward(a.reward)}';
+  }
+
+  /// A lost achievement and what the player lost with it (spec 0017 §5).
+  String achievementLost(AchievementLost e) {
+    final a = data.achievements[e.id];
+    final name = 'Achievement lost: ${achievement(e.id)}';
+    if (a == null) return '$name.';
+    final lost = switch (a.reward) {
+      BankCapReward() when e.bankSteps > 0 =>
+        '${reward(a.reward)} and ${plural(e.bankSteps, 'step')} from your '
+            'step bank',
+      ItemReward() when e.item == null =>
+        'nothing more, the ${reward(a.reward)} was gone already',
+      QueueSlotReward() when e.actions > 0 =>
+        '${reward(a.reward)} and ${plural(e.actions, 'waiting action')}',
+      final r => reward(r),
+    };
+    return '$name. Lost: $lost.';
+  }
+
   String activity(Activity a) => switch (a.kind) {
     ActivityKind.travel => 'Walking to ${location(a.target)}',
     ActivityKind.fight => 'Fighting ${enemy(a.target)}s',

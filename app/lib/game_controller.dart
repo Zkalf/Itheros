@@ -315,10 +315,21 @@ class GameController extends ChangeNotifier {
   Future<void> _openSave({required bool away}) async {
     _save = await store.load();
     final loaded = _save?.game;
-    // Each load checks the achievements again (spec 0017 §4). Plan 0021 M3
-    // puts the lost ones in the report.
+    var reported = false;
+    // Each load checks the achievements again (spec 0017 §4). The report
+    // names the ones lost (§5) at once, in the same save as the losses, so
+    // a failed sync or a closed app cannot drop it. An achievement that the
+    // load earns makes no report.
     if (loaded != null) {
-      _save = _save!.withGame(game.load(loaded).state);
+      final (:state, :events) = game.load(loaded);
+      _save = _save!.withGame(state);
+      final lost = events.whereType<AchievementLost>().toList();
+      if (lost.isNotEmpty) {
+        reported = _report(
+          _from(state.location, AwaySummary(lostAchievements: lost)),
+          away: away,
+        );
+      }
       await store.save(_save!);
     }
     if (_save == null) {
@@ -326,7 +337,8 @@ class GameController extends ChangeNotifier {
       await store.save(_save!);
     }
     status = ControllerStatus.ready;
-    await _syncNow(away: away);
+    // The steps of the open join the report of the losses.
+    await _syncNow(away: away && !reported);
     _startTimer();
     notifyListeners();
   }

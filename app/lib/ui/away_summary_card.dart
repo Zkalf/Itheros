@@ -45,18 +45,17 @@ Widget reportLine(String line, Labels labels) =>
     Text.rich(TextSpan(children: reportSpans(line, labels.data)));
 
 /// The big moments of a report, shown as banners above its lines (spec 0004
-/// amendment 3): levels reached, achievements, what was learned about
-/// monsters (spec 0009 §7), then profession news and the lake's (spec 0011
-/// §3.2, §4, §6). Each comes with the thing that it names, or null for news
-/// of text only: levels, lore notes, profession levels and the sea chart
-/// (spec 0014 §4.2).
+/// amendment 3): levels reached, achievements earned and lost (spec 0017
+/// §5, §6), what was learned about monsters (spec 0009 §7), then profession
+/// news and the lake's (spec 0011 §3.2, §4, §6). Each comes with the thing
+/// that it names, or null for news of text only: levels, lore notes,
+/// profession levels and the sea chart (spec 0014 §4.2).
 List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   for (final l in s.levelsReached) (null, 'Reached level $l!'),
   for (final a in s.achievements)
-    (
-      AchievementThing(a, earned: true),
-      'Achievement unlocked: ${labels.achievement(a)}',
-    ),
+    (AchievementThing(a, earned: true), labels.achievementUnlocked(a)),
+  for (final l in s.lostAchievements)
+    (AchievementThing(l.id, earned: false), labels.achievementLost(l)),
   for (final n in s.lore) (null, labels.loreFound(n)),
   for (final e in s.learned) (MonsterThing(e), labels.weaknessLearned(e)),
   for (final e in s.slayers) (MonsterThing(e), labels.slayerEarned(e)),
@@ -131,7 +130,9 @@ class ReportBanner extends StatelessWidget {
 
 /// The lines of one report, as the card and the journal show them.
 List<String> reportLines(AwaySummary s, Labels labels) => [
-  'You walked ${plural(s.walked, 'step')}.',
+  // A load can bring news without a step (spec 0017 §5).
+  if (s.walked > 0 || (s.achievements.isEmpty && s.lostAchievements.isEmpty))
+    'You walked ${plural(s.walked, 'step')}.',
   if (s.boostUsed > 0)
     'Used ${plural(s.boostUsed, 'step')} from your step bank.',
   for (final a in s.actions) ...labels.actionLines(a),
