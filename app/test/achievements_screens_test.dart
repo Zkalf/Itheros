@@ -311,8 +311,10 @@ void main() {
       expect(find.text(text), findsNothing);
     });
 
-    testWidgets('when the sync of the open fails, the next sync that works '
-        'names them, also the sync of an action', (t) async {
+    testWidgets('when the sync of the open fails, the report and the saved '
+        'journal name them at once, and the next sync does not repeat them', (
+      t,
+    ) async {
       final (c, _) = await pumpGame(
         t,
         location: 'goblin_woods',
@@ -321,16 +323,21 @@ void main() {
       );
       expect(c.syncError, isNotNull, reason: 'the test needs a failed sync');
       expect(c.state.achievements, isNot(contains('goblin_slayer_1')));
-      expect(c.awaySummary, isNull);
-
-      await c.startActivity(const Activity.fight('goblin'));
-      await t.pump();
       expect(c.awaySummary?.lostAchievements.map((e) => e.id), [
         'goblin_slayer_1',
       ]);
-      expect(c.journal.first.summary.lostAchievements.map((e) => e.id), [
+      // The store holds the report with the losses: a closed app keeps it.
+      final saved = (await c.store.load())!;
+      expect(saved.game.achievements, isNot(contains('goblin_slayer_1')));
+      expect(saved.journal.first.summary.lostAchievements.map((e) => e.id), [
         'goblin_slayer_1',
       ]);
+
+      // The sync of an action works, and names them no second time.
+      await c.startActivity(const Activity.fight('goblin'));
+      await t.pump();
+      expect(c.journal, hasLength(1));
+      expect(c.journal.first.summary.lostAchievements, hasLength(1));
     });
   });
 }

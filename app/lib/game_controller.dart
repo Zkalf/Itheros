@@ -62,10 +62,6 @@ class GameController extends ChangeNotifier {
   /// the screen; cleared once shown.
   AwaySummary? quietReport;
 
-  /// What the load of the save earned and lost (spec 0017 §4, §5), for the
-  /// report of the next sync.
-  AwaySummary _loaded = const AwaySummary();
-
   /// The player closed this return's screen: late steps don't reopen it.
   bool _closed = false;
 
@@ -319,24 +315,21 @@ class GameController extends ChangeNotifier {
   Future<void> _openSave({required bool away}) async {
     _save = await store.load();
     final loaded = _save?.game;
-    // Each load checks the achievements again (spec 0017 §4); the report
-    // of the next sync names the ones lost (§5).
+    var reported = false;
+    // Each load checks the achievements again (spec 0017 §4). The report
+    // names the ones lost (§5) at once, in the same save as the losses, so
+    // a failed sync or a closed app cannot drop it. An achievement that the
+    // load earns makes no report.
     if (loaded != null) {
       final (:state, :events) = game.load(loaded);
       _save = _save!.withGame(state);
-      _loaded = AwaySummary.fromReports([
-        StepReport(
-          state: state,
-          walked: 0,
-          activitySteps: 0,
-          boostUsed: 0,
-          banked: 0,
-          lost: 0,
-          // Only the lost ones (spec 0017 §5): an achievement that the load
-          // earns makes no report.
-          events: events.whereType<AchievementLost>().toList(),
-        ),
-      ]);
+      final lost = events.whereType<AchievementLost>().toList();
+      if (lost.isNotEmpty) {
+        reported = _report(
+          _from(state.location, AwaySummary(lostAchievements: lost)),
+          away: away,
+        );
+      }
       await store.save(_save!);
     }
     if (_save == null) {
@@ -344,7 +337,8 @@ class GameController extends ChangeNotifier {
       await store.save(_save!);
     }
     status = ControllerStatus.ready;
-    await _syncNow(away: away);
+    // The steps of the open join the report of the losses.
+    await _syncNow(away: away && !reported);
     _startTimer();
     notifyListeners();
   }
@@ -360,18 +354,14 @@ class GameController extends ChangeNotifier {
       return;
     }
     syncError = null;
-    final summary = _from(start, _loaded + result.summary);
-    // The losses of the load open a report of their own, also after a
-    // failed sync at the open (spec 0017 §5).
-    final lostOnLoad = !_loaded.isEmpty;
-    _loaded = const AwaySummary();
+    final summary = _from(start, result.summary);
     _levelCards.addAll(summary.levelsReached);
     // Also saves when old days were pruned from the credit.
     var changed =
         !summary.isEmpty ||
         result.save.credited.length != _save!.credited.length;
     if (changed) _save = result.save;
-    if (_report(summary, away: away || lostOnLoad)) changed = true;
+    if (_report(summary, away: away)) changed = true;
     if (changed) await store.save(_save!);
     notifyListeners();
   }

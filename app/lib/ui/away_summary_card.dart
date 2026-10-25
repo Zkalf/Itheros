@@ -47,9 +47,9 @@ Widget reportLine(String line, Labels labels) =>
 /// The big moments of a report, shown as banners above its lines (spec 0004
 /// amendment 3): levels reached, achievements earned and lost (spec 0017
 /// §5, §6), what was learned about monsters (spec 0009 §7), then profession
-/// news and the lake's (spec 0011 §3.2, §4, §6). Each comes with the thing that it names, or null for news
-/// of text only: levels, lore notes, profession levels and the sea chart
-/// (spec 0014 §4.2).
+/// news and the lake's (spec 0011 §3.2, §4, §6). Each comes with the thing
+/// that it names, or null for news of text only: levels, lore notes,
+/// profession levels and the sea chart (spec 0014 §4.2).
 List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   for (final l in s.levelsReached) (null, 'Reached level $l!'),
   for (final a in s.achievements)
