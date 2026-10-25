@@ -29,68 +29,71 @@ if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = [Environment]::GetEnvironmentV
 
 # One full check at a time on this computer: it uses a lot of memory (scripts\check-turn.ps1).
 . "$PSScriptRoot\check-turn.ps1"
+# The turn goes back in finally, so an error or Ctrl+C cannot keep it while this shell stays open.
 Enter-CheckTurn -Folder $root
-
-function Step([string]$name, [string]$dir, [scriptblock]$block) {
-  Write-Host "==> $name" -ForegroundColor Cyan
-  Push-Location $dir
-  try {
-    & $block
-    if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
-  } catch {
-    Write-Host "FAILED: $name ($_)" -ForegroundColor Red
-    $script:failed += $name
-  } finally {
-    Pop-Location
+try {
+  function Step([string]$name, [string]$dir, [scriptblock]$block) {
+    Write-Host "==> $name" -ForegroundColor Cyan
+    Push-Location $dir
+    try {
+      & $block
+      if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
+    } catch {
+      Write-Host "FAILED: $name ($_)" -ForegroundColor Red
+      $script:failed += $name
+    } finally {
+      Pop-Location
+    }
   }
-}
 
-# The production gate (plan 0009): what it blocks and what it lets through.
-Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
-Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" }
+  # The production gate (plan 0009): what it blocks and what it lets through.
+  Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
+  Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" }
 
-# Pure-Dart packages.
-Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-  $pkg = $_.FullName; $n = $_.Name
-  Step "${n}: pub get"  $pkg { dart pub get | Out-Null }
-  Step "${n}: format"   $pkg { dart format --output=none --set-exit-if-changed . }
-  Step "${n}: analyze"  $pkg { dart analyze --fatal-infos }
-  # Failing tests only: the full list is long enough that a cut-off tool output hid the one failure (eval E21).
-  if (Test-Path "$pkg\test") { Step "${n}: test" $pkg { dart test -r failures-only } }
-}
-
-# Flutter app.
-$app = "$root\app"
-Step 'app: pub get' $app { flutter pub get | Out-Null }
-Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
-Step 'app: analyze' $app { flutter analyze --fatal-infos }
-if (Test-Path "$app\test") { Step 'app: test' $app { flutter test -r failures-only } }
-
-if ($Release) {
-  # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.
-  # Only this step: flutter build prints a Kotlin plugin warning on stderr, which PowerShell 5.1 turns into an
-  # error. Its exit code decides; a missing flutter still fails (no exit code, so it throws below).
-  Step 'app: build release APK' $app {
-    $ErrorActionPreference = 'Continue'
-    $global:LASTEXITCODE = $null
-    flutter build apk --release --dart-define=TEST_WALK=true
-    if ($null -eq $LASTEXITCODE) { throw 'flutter did not run' }
+  # Pure-Dart packages.
+  Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $pkg = $_.FullName; $n = $_.Name
+    Step "${n}: pub get"  $pkg { dart pub get | Out-Null }
+    Step "${n}: format"   $pkg { dart format --output=none --set-exit-if-changed . }
+    Step "${n}: analyze"  $pkg { dart analyze --fatal-infos }
+    # Failing tests only: the full list is long enough that a cut-off tool output hid the one failure (eval E21).
+    if (Test-Path "$pkg\test") { Step "${n}: test" $pkg { dart test -r failures-only } }
   }
-  Step 'app: APK check (no INTERNET, no cloud backup)' $app {
-    & "$PSScriptRoot\apk-check.ps1" "$app\build\app\outputs\flutter-apk\app-release.apk"
+
+  # Flutter app.
+  $app = "$root\app"
+  Step 'app: pub get' $app { flutter pub get | Out-Null }
+  Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
+  Step 'app: analyze' $app { flutter analyze --fatal-infos }
+  if (Test-Path "$app\test") { Step 'app: test' $app { flutter test -r failures-only } }
+
+  if ($Release) {
+    # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.
+    # Only this step: flutter build prints a Kotlin plugin warning on stderr, which PowerShell 5.1 turns into an
+    # error. Its exit code decides; a missing flutter still fails (no exit code, so it throws below).
+    Step 'app: build release APK' $app {
+      $ErrorActionPreference = 'Continue'
+      $global:LASTEXITCODE = $null
+      flutter build apk --release --dart-define=TEST_WALK=true
+      if ($null -eq $LASTEXITCODE) { throw 'flutter did not run' }
+    }
+    Step 'app: APK check (no INTERNET, no cloud backup)' $app {
+      & "$PSScriptRoot\apk-check.ps1" "$app\build\app\outputs\flutter-apk\app-release.apk"
+    }
   }
-}
 
-# Plan 0002 T5: warn (don't fail) when the Claude setup changed since the last full eval run.
-$latest = "$root\evals\results\latest.json"
-$hash = & "$PSScriptRoot\config-hash.ps1" -Root $root
-$evaluated = if (Test-Path $latest) { (Get-Content -Raw $latest | ConvertFrom-Json).configHash }
-if ($hash -ne $evaluated) {
-  Write-Host "`nWARNING: Claude setup $hash has no full eval run (last: $(if ($evaluated) { $evaluated } else { 'none' }))." -ForegroundColor Yellow
-  Write-Host '         Commit, then run .\evals\run.ps1 (evals/README.md).' -ForegroundColor Yellow
-}
+  # Plan 0002 T5: warn (don't fail) when the Claude setup changed since the last full eval run.
+  $latest = "$root\evals\results\latest.json"
+  $hash = & "$PSScriptRoot\config-hash.ps1" -Root $root
+  $evaluated = if (Test-Path $latest) { (Get-Content -Raw $latest | ConvertFrom-Json).configHash }
+  if ($hash -ne $evaluated) {
+    Write-Host "`nWARNING: Claude setup $hash has no full eval run (last: $(if ($evaluated) { $evaluated } else { 'none' }))." -ForegroundColor Yellow
+    Write-Host '         Commit, then run .\evals\run.ps1 (evals/README.md).' -ForegroundColor Yellow
+  }
 
-Exit-CheckTurn
+} finally {
+  Exit-CheckTurn
+}
 if ($failed.Count) {
   Write-Host "`nCHECK FAILED: $($failed -join ', ')" -ForegroundColor Red
   exit 1

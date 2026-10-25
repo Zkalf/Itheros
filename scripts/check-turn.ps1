@@ -17,11 +17,13 @@ function Enter-CheckTurn {
   param(
     [string]$Name = 'itheros-check',
     [string]$Folder = (Get-Location).Path,
-    [int]$PollSeconds = 30
+    [int]$PollSeconds = 30,
+    [int]$SayEverySeconds = 300
   )
   $note = Join-Path $env:TEMP "$Name.txt"
   $mutex = New-Object System.Threading.Mutex($false, "Local\$Name")
   $waited = $false
+  $said = $null
   while ($true) {
     try {
       if ($mutex.WaitOne([TimeSpan]::FromSeconds($(if ($waited) { $PollSeconds } else { 0 })))) { break }
@@ -29,8 +31,12 @@ function Enter-CheckTurn {
       # The check before this one ended without giving the turn back (a crash or a stop): the turn is ours now.
       break
     }
-    $other = if (Test-Path $note) { (Get-Content -Raw $note).Trim() } else { 'another folder' }
-    Write-Host "Another check is running in $other, waiting..." -ForegroundColor Yellow
+    # Once at the start, then every few minutes, so a long wait does not flood the output.
+    if (-not $said -or $said.Elapsed.TotalSeconds -ge $SayEverySeconds) {
+      $other = if (Test-Path $note) { (Get-Content -Raw $note).Trim() } else { 'another folder' }
+      Write-Host "Another check is running in $other, waiting..." -ForegroundColor Yellow
+      $said = [Diagnostics.Stopwatch]::StartNew()
+    }
     $waited = $true
   }
   Set-Content -LiteralPath $note -Value $Folder -Encoding utf8

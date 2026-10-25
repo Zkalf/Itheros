@@ -26,14 +26,23 @@ if ($LASTEXITCODE -eq 0) { throw "Branch $Branch exists already. Pick another na
 
 git -C $main fetch --quiet origin
 if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+# A branch of that name on GitHub belongs to other work; a new one from main could never push over it.
+git -C $main ls-remote --exit-code --heads origin $Branch | Out-Null
+if ($LASTEXITCODE -eq 0) { throw "Branch $Branch exists on GitHub already. Pick another name." }
 git -C $main worktree add --quiet $folder -b $Branch origin/main
 if ($LASTEXITCODE -ne 0) { throw 'git worktree add failed' }
 
 # The packages, so that format, analyze and single tests work at once.
+Get-ChildItem "$folder\packages" -Directory | ForEach-Object {
+  Push-Location $_.FullName
+  try { dart pub get | Out-Null; if ($LASTEXITCODE -ne 0) { throw "dart pub get failed in $($_.Name)" } }
+  finally { Pop-Location }
+}
 Push-Location "$folder\app"
-try { flutter pub get | Out-Null } finally { Pop-Location }
+try { flutter pub get | Out-Null; if ($LASTEXITCODE -ne 0) { throw 'flutter pub get failed in app' } }
+finally { Pop-Location }
 
 Write-Host "Worktree: $folder"
 Write-Host "Branch:   $Branch (from origin/main)"
-Write-Host "Run scripts by their full path, e.g. & `"$folder\scripts\check.ps1`"."
-Write-Host "Push with the branch named: git -C `"$folder`" push -u origin $Branch"
+Write-Host "Run its scripts from it: .\scripts\check.ps1 with the shell in $folder, else & `"$folder\scripts\check.ps1`"."
+Write-Host "Push with the shell in the worktree and the branch named: git push -u origin $Branch"
