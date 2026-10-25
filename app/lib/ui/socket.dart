@@ -7,8 +7,9 @@ import 'away_summary_card.dart' show qualityColour;
 import 'images.dart';
 import 'theme.dart';
 
-/// A picture in its dark socket (spec 0014 §2.3): 72 dp in heads and
-/// portraits, 48 dp in rows and the bag, 32 dp in banners. The socket is
+/// A picture in its dark socket (spec 0014 §2.3): 72 dp in heads,
+/// portraits and achievement rows (amendment 3), 48 dp in other rows and the
+/// bag, 32 dp in banners. The socket is
 /// [size] square; the count badge reaches outside it.
 /// - [quality] is set for gear and tools: a 2 dp ring in its colour, Common
 ///   included, and from Uncommon up a wash of that colour from the bottom.

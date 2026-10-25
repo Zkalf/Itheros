@@ -864,7 +864,8 @@ void criterion12() {
     });
 
     testWidgets('on Achievements, a locked achievement shows the locked patch '
-        'and an earned one its image, each in a 48 dp socket at the start of '
+        'and an earned one its image, each in a 72 dp socket (amendment 3) '
+        'at the start of '
         'its row; the list stays a ListView', (t) async {
       final (c, _) = await pumpGame(t, images: diskImages);
       c.state.achievements.addAll(['first_steps', 'smith']);
@@ -879,7 +880,7 @@ void criterion12() {
         final row = find.byKey(ValueKey('achievement-${a.id}'));
         expect(find.descendant(of: list, matching: row), findsOneWidget);
         final socket = socketIn(row);
-        expect(t.getSize(socket), const Size(48, 48), reason: a.id);
+        expect(t.getSize(socket), const Size(72, 72), reason: a.id);
         expect(imagesIn(t, socket), [
           assetOf(earned ? 'achievements/${a.id}' : 'pictures/locked_patch'),
         ], reason: '${a.id}, ${earned ? 'earned' : 'locked'}');
