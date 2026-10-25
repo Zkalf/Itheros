@@ -361,6 +361,9 @@ class GameController extends ChangeNotifier {
     }
     syncError = null;
     final summary = _from(start, _loaded + result.summary);
+    // The losses of the load open a report of their own, also after a
+    // failed sync at the open (spec 0017 §5).
+    final lostOnLoad = !_loaded.isEmpty;
     _loaded = const AwaySummary();
     _levelCards.addAll(summary.levelsReached);
     // Also saves when old days were pruned from the credit.
@@ -368,7 +371,7 @@ class GameController extends ChangeNotifier {
         !summary.isEmpty ||
         result.save.credited.length != _save!.credited.length;
     if (changed) _save = result.save;
-    if (_report(summary, away: away)) changed = true;
+    if (_report(summary, away: away || lostOnLoad)) changed = true;
     if (changed) await store.save(_save!);
     notifyListeners();
   }
