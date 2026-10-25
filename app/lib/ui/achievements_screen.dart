@@ -78,58 +78,80 @@ class _AchievementTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = achievement;
     final (:have, :need) = progress;
+    return Card(
+      key: ValueKey('achievement-${a.id}'),
+      shape: plateShape(selected: unlocked),
+      // A ListTile caps its leading widget at 56 dp, so the 72 dp picture
+      // stands beside it (spec 0014 amendment 3).
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 16),
+            // Its picture, or the locked patch (spec 0014 §3.1).
+            child: PictureSocket(
+              picture: ImageScope.of(context).pictureOf(
+                labels.data,
+                AchievementThing(a.id, earned: unlocked),
+              ),
+              size: 72,
+            ),
+          ),
+          Expanded(
+            child: _tile(context, a, have: have, need: need),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(
+    BuildContext context,
+    AchievementDef a, {
+    required int have,
+    required int need,
+  }) {
     final shown = have.clamp(0, need);
     // A quality is found or not: it has no bar.
     final bar = a.criterion is! QualityCriterion;
     // An earned achievement shows its goal and a teal rim, not a full bar
     // and "100 / 100" (spec 0014 §4.1).
-    return Card(
-      key: ValueKey('achievement-${a.id}'),
-      shape: plateShape(selected: unlocked),
-      child: ListTile(
-        // Its picture, or the locked patch (spec 0014 §3.1).
-        leading: PictureSocket(
-          picture: ImageScope.of(context)
-              .pictureOf(labels.data, AchievementThing(a.id, earned: unlocked)),
-          size: 48,
-        ),
-        // A feat says so beside its name (spec 0017 §6).
-        title: a.kind == AchievementKind.feat
-            ? Wrap(
-                spacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(a.name),
-                  statusChip(
-                    'Feat',
-                    Quiet.muted,
-                    key: ValueKey('achievement-feat-${a.id}'),
-                  ),
-                ],
-              )
-            : Text(a.name),
-        titleTextStyle: nameStyle(context),
-        // "New" is a teal outline (spec 0014 §2.1, §2.2).
-        trailing: fresh
-            ? statusChip(
-                'New',
-                Quiet.teal,
-                key: ValueKey('achievement-new-${a.id}'),
-              )
-            : null,
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_goal(a)),
-            Text('Reward: ${labels.reward(a.reward)}'),
-            if (!unlocked && bar) ...[
-              const SizedBox(height: 6),
-              // The bar of an achievement is teal (spec 0014 §2.3).
-              LinearProgressIndicator(value: shown / need, color: Quiet.teal),
-              Text.rich(numberSpan('${fmt(shown)} / ${fmt(need)}')),
-            ],
+    return ListTile(
+      // A feat says so beside its name (spec 0017 §6).
+      title: a.kind == AchievementKind.feat
+          ? Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(a.name),
+                statusChip(
+                  'Feat',
+                  Quiet.muted,
+                  key: ValueKey('achievement-feat-${a.id}'),
+                ),
+              ],
+            )
+          : Text(a.name),
+      titleTextStyle: nameStyle(context),
+      // "New" is a teal outline (spec 0014 §2.1, §2.2).
+      trailing: fresh
+          ? statusChip(
+              'New',
+              Quiet.teal,
+              key: ValueKey('achievement-new-${a.id}'),
+            )
+          : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_goal(a)),
+          Text('Reward: ${labels.reward(a.reward)}'),
+          if (!unlocked && bar) ...[
+            const SizedBox(height: 6),
+            // The bar of an achievement is teal (spec 0014 §2.3).
+            LinearProgressIndicator(value: shown / need, color: Quiet.teal),
+            Text.rich(numberSpan('${fmt(shown)} / ${fmt(need)}')),
           ],
-        ),
+        ],
       ),
     );
   }
