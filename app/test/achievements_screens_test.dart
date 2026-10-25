@@ -86,7 +86,7 @@ void main() {
         ('first_steps', 'Reward: +250 step bank cap'),
         ('the_long_road', 'Reward: +1,500 step bank cap'),
         ('master_smith', 'Reward: Mithril helm (Rare)'),
-        ('champion', 'Reward: Star diamond ring (Epic)'),
+        ('champion', 'Reward: Star-diamond ring (Epic)'),
         ('goblin_slayer_1', 'Reward: +4 Attack'),
         ('wyvern_hunter', 'Reward: +130 HP'),
         ('bear_hunter', 'Reward: +4% Crit'),
@@ -156,7 +156,7 @@ void main() {
       );
       expect(
         labels.achievementUnlocked('champion'),
-        'Achievement unlocked: Champion. Reward: Star diamond ring (Epic)',
+        'Achievement unlocked: Champion. Reward: Star-diamond ring (Epic)',
       );
       expect(
         labels.achievementUnlocked('goblin_slayer_1'),
@@ -184,11 +184,11 @@ void main() {
         ),
         (
           AchievementLost('champion', item: ring),
-          'Achievement lost: Champion. Lost: Star diamond ring (Epic).',
+          'Achievement lost: Champion. Lost: Star-diamond ring (Epic).',
         ),
         (
           const AchievementLost('champion'),
-          'Achievement lost: Champion. Lost: nothing more, the Star diamond '
+          'Achievement lost: Champion. Lost: nothing more, the Star-diamond '
               'ring (Epic) was gone already.',
         ),
         (
@@ -264,7 +264,7 @@ void main() {
         'Achievement lost: Smith. Lost: +500 step bank cap and '
             '${fmt(over)} steps from your step bank.',
         'Achievement lost: Goblin Slayer I. Lost: +4 Attack.',
-        'Achievement lost: Champion. Lost: Star diamond ring (Epic).',
+        'Achievement lost: Champion. Lost: Star-diamond ring (Epic).',
       ];
       final banners = find.byKey(const ValueKey('report-banner'));
       Finder banner(String text) =>
