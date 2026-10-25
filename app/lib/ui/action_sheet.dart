@@ -214,6 +214,16 @@ class _ActionSheetState extends State<ActionSheet> {
                 ],
               ),
             ],
+            if (a.kind == ActivityKind.craft &&
+                _game.data.recipes[a.target]!.inputs.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _MaterialsTable(
+                game: _game,
+                state: s,
+                recipe: a.target,
+                stop: _stop,
+              ),
+            ],
             if (walk != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -267,6 +277,137 @@ class _ActionSheetState extends State<ActionSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Each material of [recipe]: what the player has where the action will
+/// stand in the queue, what [stop] uses and what is left (spec 0010
+/// amendment 5 §2.2-2.3).
+class _MaterialsTable extends StatelessWidget {
+  const _MaterialsTable({
+    required this.game,
+    required this.state,
+    required this.recipe,
+    required this.stop,
+  });
+
+  final Game game;
+  final GameState state;
+  final String recipe;
+  final StopCondition stop;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = Labels(game.data);
+    final text = Theme.of(context).textTheme;
+    // With an action running, the new one waits after the queue.
+    final queued = state.activity != null;
+    final bag = game.bagAfterQueue(state);
+    final crafts = game.craftsFor(Activity.craft(recipe), stop, bag);
+    final allowed = game.craftsAllowed(bag, recipe)!;
+    final number = text.bodyMedium?.copyWith(fontFamily: Fonts.number);
+
+    Widget cell(
+      String key,
+      String value, {
+      TextStyle? style,
+      bool end = true,
+    }) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+      child: Text(
+        value,
+        key: ValueKey(key),
+        textAlign: end ? TextAlign.end : TextAlign.start,
+        style: style,
+      ),
+    );
+
+    final heading = text.bodySmall?.copyWith(color: Quiet.muted);
+    return Column(
+      key: const ValueKey('materials'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (queued)
+          Text(
+            'After your queue',
+            key: const ValueKey('materials-after-queue'),
+            style: text.bodySmall,
+          ),
+        Table(
+          columnWidths: const {
+            0: FlexColumnWidth(),
+            1: IntrinsicColumnWidth(),
+            2: IntrinsicColumnWidth(),
+            3: IntrinsicColumnWidth(),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            TableRow(
+              children: [
+                cell(
+                  'materials-head-name',
+                  'Material',
+                  style: heading,
+                  end: false,
+                ),
+                cell('materials-head-have', 'Have', style: heading),
+                cell('materials-head-uses', 'Uses', style: heading),
+                cell('materials-head-left', 'Left', style: heading),
+              ],
+            ),
+            for (final MapEntry(key: item, value: need)
+                in game.data.recipes[recipe]!.inputs.entries)
+              _row(item, need, bag[item] ?? 0, crafts, labels, number, cell),
+          ],
+        ),
+        if (crafts == null || allowed < crafts)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Enough for $allowed',
+              key: const ValueKey('materials-enough'),
+              style: text.bodySmall?.copyWith(color: Quiet.short),
+            ),
+          ),
+      ],
+    );
+  }
+
+  TableRow _row(
+    String item,
+    int need,
+    int have,
+    int? crafts,
+    Labels labels,
+    TextStyle? number,
+    Widget Function(String, String, {TextStyle? style, bool end}) cell,
+  ) {
+    final uses = crafts == null ? null : need * crafts;
+    final short = uses != null && have < uses;
+    TextStyle? colour(TextStyle? s) =>
+        short ? (s ?? const TextStyle()).copyWith(color: Quiet.short) : s;
+    return TableRow(
+      children: [
+        cell(
+          'material-$item-name',
+          labels.item(item),
+          style: colour(null),
+          end: false,
+        ),
+        cell('material-$item-have', '$have', style: colour(number)),
+        cell(
+          'material-$item-uses',
+          uses == null ? '–' : '$uses',
+          style: colour(number),
+        ),
+        cell(
+          'material-$item-left',
+          uses == null ? '–' : '${have - uses < 0 ? 0 : have - uses}',
+          style: colour(number),
+        ),
+      ],
     );
   }
 }

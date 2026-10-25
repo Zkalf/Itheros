@@ -619,6 +619,12 @@ class _RecipeTile extends StatelessWidget {
                     : null,
               ),
             ],
+            // The crafts the bag of now allows (spec 0010 amendment 5 §2.1).
+            if (game.craftsAllowed(s.inventory, recipe) case final n?)
+              TextSpan(
+                text: ' · Enough for $n',
+                style: n == 0 ? const TextStyle(color: Quiet.short) : null,
+              ),
             TextSpan(
               text: levelMet
                   ? ' · ${game.professionSteps(s, r.profession, r.steps)} '
