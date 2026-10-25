@@ -77,7 +77,6 @@ class _AchievementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final a = achievement;
-    final (:have, :need) = progress;
     return Card(
       key: ValueKey('achievement-${a.id}'),
       shape: plateShape(selected: unlocked),
@@ -86,7 +85,13 @@ class _AchievementTile extends StatelessWidget {
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 16),
+            // The room above and below keeps the picture off the rim of a
+            // short row.
+            padding: const EdgeInsetsDirectional.only(
+              start: 16,
+              top: 8,
+              bottom: 8,
+            ),
             // Its picture, or the locked patch (spec 0014 §3.1).
             child: PictureSocket(
               picture: ImageScope.of(context).pictureOf(
@@ -96,20 +101,16 @@ class _AchievementTile extends StatelessWidget {
               size: 72,
             ),
           ),
-          Expanded(
-            child: _tile(context, a, have: have, need: need),
-          ),
+          Expanded(child: _tile(context)),
         ],
       ),
     );
   }
 
-  Widget _tile(
-    BuildContext context,
-    AchievementDef a, {
-    required int have,
-    required int need,
-  }) {
+  /// The words of the row: its name, goal, reward and bar, and "New".
+  Widget _tile(BuildContext context) {
+    final a = achievement;
+    final (:have, :need) = progress;
     final shown = have.clamp(0, need);
     // A quality is found or not: it has no bar.
     final bar = a.criterion is! QualityCriterion;
