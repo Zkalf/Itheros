@@ -63,12 +63,22 @@ MapLabels placeMapLabels({
 }) {
   final area = Offset.zero & map;
   final markers = [for (final n in names) n.marker];
+  // A name without a spot that keeps the rules of amendment 2 keeps all its
+  // spots, so that it still stands near its marker; the placement is then
+  // not clean.
+  var kept = true;
   final spots = [
     for (final n in names)
-      [
-        for (final s in _nameSpots(n, area))
-          if (_staysWith(s.rect, n.marker, markers, plates)) s,
-      ],
+      () {
+        final all = _nameSpots(n, area).toList();
+        final good = [
+          for (final s in all)
+            if (_staysWith(s.rect, n.marker, markers, plates)) s,
+        ];
+        if (good.isNotEmpty || all.isEmpty) return good;
+        kept = false;
+        return all;
+      }(),
     for (final p in plates)
       [for (final rect in _plateSpots(p, area)) (rect: rect, size: 0)],
   ];
@@ -85,7 +95,7 @@ MapLabels placeMapLabels({
     names: {for (final (i, n) in names.indexed) n.place: placed[i].rect},
     sizes: {for (final (i, n) in names.indexed) n.place: placed[i].size},
     plates: [for (final spot in placed.skip(names.length)) spot.rect],
-    clean: found != null,
+    clean: found != null && kept,
   );
 }
 

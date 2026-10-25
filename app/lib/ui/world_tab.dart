@@ -354,7 +354,7 @@ class _MapViewState extends State<MapView> {
     final texts = <String, String>{};
     for (final p in w.places) {
       final rect = placed.names[p.id]!;
-      if (p.name == room.names[p.id]) {
+      if (!p.fogged) {
         names[p.id] = rect;
         texts[p.id] = _lines(p.name)[placed.sizes[p.id]!];
       } else {
