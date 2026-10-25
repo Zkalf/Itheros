@@ -3,7 +3,7 @@
   "mapAspect": 1.5,
   "mapRiver": [{ "x": 0, "y": 0.58 }, { "x": 0.3, "y": 0.55 }, { "x": 0.6, "y": 0.58 }, { "x": 1, "y": 0.54 }],
   "locations": [
-    { "id": "camp", "map": { "x": 0.5, "y": 0.92 }, "name": "Camp", "crafting": true, "fire": true, "enemies": [], "nodes": [],
+    { "id": "camp", "map": { "x": 0.36, "y": 0.92 }, "name": "Camp", "crafting": true, "fire": true, "enemies": [], "nodes": [],
       "flavour": "The Guild camp: a fire, a forge, and a notice board." },
     { "id": "goblin_woods", "map": { "x": 0.42, "y": 0.76 }, "name": "Goblin Woods", "enemies": ["goblin", "goblin_brute", "old_bear"], "nodes": ["oak_tree", "deer_trail"],
       "flavour": "Goblin Woods: small thieves, big brothers, and something that growls in the deep." },

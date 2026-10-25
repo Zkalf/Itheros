@@ -61,7 +61,18 @@ MapLabels placeMapLabels({
   final area = Offset.zero & map;
   final markers = [for (final n in names) n.marker];
   final spots = [
-    for (final n in names) _nameSpots(n, area).toList(),
+    for (final n in names)
+      [
+        for (final s in _nameSpots(n, area))
+          if (markers.every(
+                (m) =>
+                    identical(m, n.marker) ||
+                    _distance(s.rect.center & Size.zero, m) >
+                        _distance(s.rect.center & Size.zero, n.marker),
+              ) &&
+              !plates.any((p) => _crosses(p.from, p.to, s.rect)))
+            s,
+      ],
     for (final p in plates)
       [for (final rect in _plateSpots(p, area)) (rect: rect, size: 0)],
   ];

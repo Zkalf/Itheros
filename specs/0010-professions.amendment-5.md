@@ -1,6 +1,6 @@
 # Spec 0010 amendment 5: materials you have, need, use and keep
 
-Status: draft
+Status: accepted
 Amends: [spec 0010](0010-professions.md) §8.1 (the recipe rows) and
 [spec 0016](0016-queue-rework.md) §7.2 (the action sheet)
 Issue: #89
