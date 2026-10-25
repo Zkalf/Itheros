@@ -254,8 +254,9 @@ class Labels {
   /// "Out of Venison skewer: no meal running".
   String mealsOut(String meal) => 'Out of ${item(meal)}: no meal running';
 
-  /// A meal's buffs (spec 0011 §5.3): "+6% Attack", "+2% Crit", "6% fewer
-  /// steps"; a feast's two joined, "+6% HP, +6% Attack".
+  /// A meal's buffs (spec 0011 §5.3): "+6% Attack", "+2% Crit", "−6% steps"
+  /// (the words of a tool, spec 0010 amendment 7); a feast's two joined,
+  /// "+6% HP, +6% Attack".
   String mealBuff(String key) {
     final meal = data.itemOf(key)?.meal;
     if (meal == null) return '';
@@ -267,7 +268,7 @@ class Labels {
           'attack' => '+$pct% Attack',
           'defense' => '+$pct% Defense',
           'crit' => '+${data.mealCrit[meal.tier - 1]}% Crit',
-          _ => '$pct% fewer steps',
+          _ => '−$pct% steps',
         },
     ].join(', ');
   }
