@@ -85,7 +85,12 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($pubspec, ($text -replace '(?m)^version: [^\r\n]*', "version: $version+$build"), $utf8)
 [IO.File]::WriteAllText($versionDart, ((Get-Content -Raw -Encoding UTF8 $versionDart) -replace "appVersion = '[^']*'", "appVersion = '$version'"), $utf8)
 
-# 3. The full check (format, analyze, tests: the save fixtures and the version line included).
+# 3. The full check (format, analyze, tests: the save fixtures and the version line included). The turn holds the
+# check and the friend build, so no other full check runs beside them (scripts\check-turn.ps1). The check inside
+# takes the same turn again, which a mutex allows to the process that holds it; an Abort ends the process, and
+# Windows frees the turn.
+. "$PSScriptRoot\check-turn.ps1"
+Enter-CheckTurn -Folder $root
 & "$PSScriptRoot\check.ps1"
 if ($LASTEXITCODE -ne 0) { Abort 'the check failed' }
 
@@ -98,6 +103,7 @@ Pop-Location
 if ($built -ne 0) { Abort 'the build failed' }
 & "$PSScriptRoot\apk-check.ps1" $apk -RequireReleaseKey
 if ($LASTEXITCODE -ne 0) { Abort 'the APK check failed' }
+Exit-CheckTurn
 $out = Join-Path $env:TEMP 'itheros-release'
 New-Item -ItemType Directory -Force $out | Out-Null
 $asset = Join-Path $out 'itheros.apk'

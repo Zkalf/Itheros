@@ -20,7 +20,7 @@ function Fail([string]$message) {
 }
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Fail 'the GitHub CLI (gh) is not installed' }
 
-$pr = & gh pr view $Number --repo $repo --json title,body,state,files,url | ConvertFrom-Json
+$pr = & gh pr view $Number --repo $repo --json title,body,state,files,url,headRefName | ConvertFrom-Json
 if (-not $pr) { Fail "no pull request #$Number" }
 if ($pr.state -ne 'OPEN') { Fail "#$Number is $($pr.state.ToLower())" }
 
@@ -39,9 +39,28 @@ switch ($LASTEXITCODE) {
 }
 
 # From inside the repo (no --repo), so gh also updates the PC: off the merged branch, onto main, pulled.
-Push-Location (Split-Path -Parent $PSScriptRoot)
+$main = Split-Path -Parent $PSScriptRoot
+Push-Location $main
 & gh pr merge $Number --squash --delete-branch
-$merged = $LASTEXITCODE
 Pop-Location
-if ($merged -ne 0) { Fail 'GitHub refused the merge' }
+# GitHub's state decides: gh can report an error after the merge, when it cannot delete a local branch.
+$state = & gh pr view $Number --repo $repo --json state --jq .state
+if ($state -ne 'MERGED') { Fail 'GitHub refused the merge' }
 Write-Host "`nMERGED #$Number" -ForegroundColor Green
+
+# The worktree of the change (scripts\new-worktree.ps1) and its local branch, if they are still there. A worktree
+# with uncommitted changes stays, with a note.
+$branch = $pr.headRefName
+$lines = @(& git -C $main worktree list --porcelain)
+for ($i = 0; $i -lt $lines.Count; $i++) {
+  if ($lines[$i] -eq "branch refs/heads/$branch") {
+    $wt = ($lines[$i - 2] -replace '^worktree ', '') -replace '/', '\'
+    & git -C $main worktree remove $wt
+    if ($LASTEXITCODE -eq 0) { Write-Host "Removed the worktree $wt" }
+    else { Write-Host "Kept the worktree ${wt}: it has changes. Remove it by hand when you are done." -ForegroundColor Yellow }
+  }
+}
+& git -C $main show-ref --verify --quiet "refs/heads/$branch"
+if ($LASTEXITCODE -eq 0) {
+  & git -C $main branch -D $branch
+}
