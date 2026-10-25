@@ -231,14 +231,31 @@ void main() {
     });
 
     testWidgets('the table fits at 360 dp and the text size 2.0', (t) async {
-      await pumpGame(t, level: 5, inventory: {'copper_ore': 12, 'oak_log': 5});
-      await openRecipe(t, 'crafting', 'copper_spear');
-      // Only the sheet at this size: the profession buttons are not part of
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {'copper_ore': 12, 'oak_log': 5},
+      );
+      // The sheet alone: the profession screen behind it is not part of
       // this change.
       t.view.physicalSize = const Size(360, 4000);
-      t.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
-      await t.pumpAndSettle();
+      await t.pumpWidget(
+        MaterialApp(
+          theme: quietTheme,
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: Scaffold(
+                body: ActionSheet(
+                  controller: c,
+                  activity: const Activity.craft('copper_spear'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
       await untilCrafted(t, 3);
       expect(textOf(t, cell('copper_ore', 'uses')), '15');
       expect(t.takeException(), isNull);
@@ -248,13 +265,19 @@ void main() {
   group('the queue (§2.3)', () {
     testWidgets('criterion 14: with actions in the queue, "After your queue" '
         'and Have counts the bag after the queue', (t) async {
-      final (c, _) = await pumpGame(t, level: 5, inventory: {'copper_ore': 12});
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {'copper_ore': 12, 'oak_log': 5},
+      );
       await c.addAction(
         const Activity.craft('copper_sword'),
         stop: const StopCondition.untilCrafted(2),
       );
       await settle(t, c);
-      await openRecipe(t, 'crafting', 'copper_sword');
+      // The sword is the current action, so its row has no sheet: the spear
+      // shares its ore.
+      await openRecipe(t, 'crafting', 'copper_spear');
       expect(afterQueue, findsOneWidget);
       expect(textOf(t, afterQueue), 'After your queue');
       expect(textOf(t, cell('copper_ore', 'have')), '2');
