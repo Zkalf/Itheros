@@ -400,7 +400,8 @@ void main() {
       final s = fightThenMine();
       final t = game.migrate(GameState.fromJson(s.toJson()));
       expect(planned(t), planned(s));
-      expect(GameState.schemaVersion, 11);
+      // Version 12 (spec 0017) keeps the format of 11.
+      expect(GameState.schemaVersion, 12);
     });
   });
 }

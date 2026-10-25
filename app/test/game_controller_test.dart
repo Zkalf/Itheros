@@ -468,7 +468,9 @@ void main() {
       () async {
         final c = controller();
         await c.start();
-        // First Steps (an achievement) out of the way first.
+        // First Steps (an achievement) out of the way first: it asks for
+        // 10,000 steps (spec 0017 §2.1).
+        c.state.counters['steps.walked'] = 9900;
         c.pause();
         source.walk(DateTime(2026, 10, 18, 9, 10), 150);
         now = DateTime(2026, 10, 18, 9, 20);

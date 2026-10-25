@@ -516,8 +516,8 @@ void criterion10() {
       await openAchievements(t);
       final count = RegExp(r'^[\d,]+ / [\d,]+$');
       for (final (id, earned, goal, counts) in const [
-        ('first_steps', true, 'Walk 100 steps', <String>[]),
-        ('goblin_slayer_1', false, 'Defeat 10 × Goblin', ['3 / 10']),
+        ('first_steps', true, 'Walk 10,000 steps', <String>[]),
+        ('goblin_slayer_1', false, 'Defeat 1,200 × Goblin', ['3 / 1,200']),
       ]) {
         final row = find
             .ancestor(
@@ -1221,7 +1221,12 @@ void criteria3and4() {
       await closeSheet(t);
       c.state.achievements.add('first_steps');
       await openAchievements(t);
-      expect(find.text('New'), findsOneWidget, reason: 'the earned one');
+      // The load at level 10 also earns Adventurer (spec 0017 §4).
+      expect(
+        find.byKey(const ValueKey('achievement-new-first_steps')),
+        findsOneWidget,
+        reason: 'the earned one',
+      );
       expectBordersOnScreen(t, 'Achievements with an earned achievement');
       await t.pageBack();
       await t.pumpAndSettle();

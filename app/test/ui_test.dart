@@ -886,8 +886,9 @@ void main() {
     testWidgets(
       'criterion 5: +1,000 walks 1,000 steps, marked in the journal',
       (t) async {
-        final (c, source) = await pumpGame(t);
-        // First Steps (an achievement) out of the way first.
+        // First Steps (an achievement) out of the way first: it asks for
+        // 10,000 steps (spec 0017 §2.1).
+        final (c, source) = await pumpGame(t, counters: {'steps.walked': 9900});
         c.pause();
         source.walk(DateTime(2026, 10, 18, 8, 50), 150);
         await c.resume();
@@ -935,11 +936,13 @@ void main() {
       await pumpGame(t);
       await openAchievements(t);
       for (final a in game.data.achievements.values) {
-        expect(
-          find.textContaining(a.counter),
-          findsNothing,
-          reason: '${a.id} shows "${a.counter}"',
-        );
+        if (a.criterion case CounterCriterion(:final counter)) {
+          expect(
+            find.textContaining(counter),
+            findsNothing,
+            reason: '${a.id} shows "$counter"',
+          );
+        }
       }
     });
   });
@@ -1058,6 +1061,8 @@ void main() {
         t,
         location: 'goblin_woods',
         images: const ImageIndex({'achievements/first_steps'}),
+        // 300 steps earn First Steps at 10,000 (spec 0017 §2.1).
+        counters: {'steps.walked': 9800},
       );
       await c.startActivity(const Activity.fight('goblin'));
       c.pause();
@@ -1147,7 +1152,12 @@ void moreScreens() {
     testWidgets('amendment 2: a dot marks a new achievement until opened', (
       t,
     ) async {
-      final (c, source) = await pumpGame(t, location: 'goblin_woods');
+      // 300 steps earn First Steps at 10,000 (spec 0017 §2.1).
+      final (c, source) = await pumpGame(
+        t,
+        location: 'goblin_woods',
+        counters: {'steps.walked': 9800},
+      );
       bool dot() => t
           .widget<Badge>(find.byKey(const ValueKey('achievements-dot')))
           .isLabelVisible;
@@ -2509,7 +2519,14 @@ void professionScreens() {
     });
 
     testWidgets('§8.4: Next goal names a missing profession level', (t) async {
-      await pumpGame(t, level: 30, professionLevel: 1);
+      final (c, _) = await pumpGame(t, level: 30, professionLevel: 1);
+      // The load earns Champion at level 30 (spec 0017 §4): its ring to
+      // wear would be the next goal.
+      c.state.inventory.removeWhere(
+        (k, _) => k.startsWith('star_diamond_ring'),
+      );
+      await openTab(t, 'world');
+      await openTab(t, 'now');
       expect(
         within('next-goal', find.textContaining(RegExp('^Reach Crafting'))),
         findsOneWidget,

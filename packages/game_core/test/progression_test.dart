@@ -139,9 +139,11 @@ void main() {
     expect(r.state.activity!.progress, 50);
   });
 
+  // The criteria of spec 0017 §2 (plan 0021 M1).
   group('achievements', () {
-    test('First Steps unlocks at 100 walked steps', () {
-      final r = game.applySteps(stateAt(game), 100);
+    test('First Steps unlocks at 10,000 walked steps', () {
+      final s = stateAt(game)..counters['steps.walked'] = 9999;
+      final r = game.applySteps(s, 1);
       expect(r.state.achievements, contains('first_steps'));
       expect(r.events.whereType<AchievementUnlocked>().map((e) => e.id), [
         'first_steps',
@@ -149,21 +151,25 @@ void main() {
     });
 
     test('achievements unlock only once', () {
-      var s = game.applySteps(stateAt(game), 100).state;
-      final r = game.applySteps(s, 100);
+      final s = stateAt(game)..counters['steps.walked'] = 9999;
+      final once = game.applySteps(s, 1).state;
+      final r = game.applySteps(once, 100);
       expect(r.events.whereType<AchievementUnlocked>(), isEmpty);
     });
 
     test('Marathon raises the bank cap by 500', () {
-      final s = stateAt(game)..counters['steps.walked'] = 42194;
-      expect(game.bankCap(s), 10000);
+      final s = stateAt(game)
+        ..counters['steps.walked'] = 99999
+        ..achievements.add('first_steps');
+      final before = game.bankCap(s);
       final r = game.applySteps(s, 1);
       expect(r.state.achievements, contains('marathon'));
-      expect(game.bankCap(r.state), 10500);
+      expect(game.bankCap(r.state), before + 500);
     });
 
-    test('Smith unlocks on the first crafted item', () {
-      var s = stateAt(game, level: 3, inventory: {'goblin_hide': 4});
+    test('Smith unlocks on the 15th crafted item', () {
+      var s = stateAt(game, level: 3, inventory: {'goblin_hide': 4})
+        ..counters['crafted.total'] = 14;
       s = game.startActivity(s, const Activity.craft('hide_vest'));
       final r = game.applySteps(s, 150);
       expect(r.state.achievements, contains('smith'));

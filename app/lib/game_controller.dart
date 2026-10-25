@@ -315,8 +315,10 @@ class GameController extends ChangeNotifier {
   Future<void> _openSave({required bool away}) async {
     _save = await store.load();
     final loaded = _save?.game;
-    if (loaded != null && loaded.loadedVersion != GameState.schemaVersion) {
-      _save = _save!.withGame(game.migrate(loaded));
+    // Each load checks the achievements again (spec 0017 §4). Plan 0021 M3
+    // puts the lost ones in the report.
+    if (loaded != null) {
+      _save = _save!.withGame(game.load(loaded).state);
       await store.save(_save!);
     }
     if (_save == null) {

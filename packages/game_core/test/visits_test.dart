@@ -64,10 +64,12 @@ void main() {
   // A hidden area is a bonus: the owner's choice in plan 0013 M1.
   test('Travelling Salesman asks for every area that isn\'t hidden', () {
     final a = game.data.achievements[salesman]!;
-    expect(a.counter, 'areas.visited');
     expect(
-      a.atLeast,
-      game.data.locations.values.where((l) => !l.hidden).length,
+      a.criterion,
+      CounterCriterion(
+        'areas.visited',
+        game.data.locations.values.where((l) => !l.hidden).length,
+      ),
     );
   });
 

@@ -34,7 +34,7 @@ class AchievementsScreen extends StatelessWidget {
                 achievement: a,
                 unlocked: s.achievements.contains(a.id),
                 fresh: fresh.contains(a.id),
-                progress: s.counters[a.counter] ?? 0,
+                progress: c.game.achievementProgress(s, a.id),
                 labels: labels,
               ),
           ],
@@ -56,13 +56,16 @@ class _AchievementTile extends StatelessWidget {
   final AchievementDef achievement;
   final bool unlocked;
   final bool fresh;
-  final int progress;
+  final ({int have, int need}) progress;
   final Labels labels;
 
   @override
   Widget build(BuildContext context) {
     final a = achievement;
-    final shown = progress.clamp(0, a.atLeast);
+    final (:have, :need) = progress;
+    final shown = have.clamp(0, need);
+    // A quality is found or not: it has no bar.
+    final bar = a.criterion is! QualityCriterion;
     // An earned achievement shows its goal and a teal rim, not a full bar
     // and "100 / 100" (spec 0014 §4.1).
     return Card(
@@ -89,16 +92,13 @@ class _AchievementTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(_goal(a)),
-            if (a.bankCapReward > 0)
-              Text('Reward: +${fmt(a.bankCapReward)} step bank cap'),
-            if (!unlocked) ...[
+            if (a.reward case BankCapReward(:final amount))
+              Text('Reward: +${fmt(amount)} step bank cap'),
+            if (!unlocked && bar) ...[
               const SizedBox(height: 6),
               // The bar of an achievement is teal (spec 0014 §2.3).
-              LinearProgressIndicator(
-                value: shown / a.atLeast,
-                color: Quiet.teal,
-              ),
-              Text.rich(numberSpan('${fmt(shown)} / ${fmt(a.atLeast)}')),
+              LinearProgressIndicator(value: shown / need, color: Quiet.teal),
+              Text.rich(numberSpan('${fmt(shown)} / ${fmt(need)}')),
             ],
           ],
         ),
@@ -106,9 +106,33 @@ class _AchievementTile extends StatelessWidget {
     );
   }
 
+  /// The goal of [a] in words (spec 0017 §3.1).
   String _goal(AchievementDef a) {
-    final n = fmt(a.atLeast);
-    final parts = a.counter.split('.');
+    final data = labels.data;
+    String profession(String id) => data.professions[id]!.name;
+    return switch (a.criterion) {
+      CounterCriterion(:final counter, :final atLeast) => _counterGoal(
+        counter,
+        fmt(atLeast),
+      ),
+      LevelCriterion(:final level) => 'Reach level $level',
+      ProfessionCriterion(:final profession, :final level) =>
+        'Reach ${data.professions[profession]!.name} level $level',
+      EachProfessionCriterion(:final professions, :final level) =>
+        'Reach level $level in '
+            '${professions.take(professions.length - 1).map(profession).join(', ')}'
+            ' and ${profession(professions.last)}',
+      QualityCriterion(:final quality) when quality == data.qualities.last.id =>
+        'Find a ${data.qualities.last.name} item',
+      QualityCriterion(:final quality) =>
+        'Find an item of '
+            '${data.qualities.firstWhere((q) => q.id == quality).name} '
+            'quality or better',
+    };
+  }
+
+  String _counterGoal(String counter, String n) {
+    final parts = counter.split('.');
     return switch (parts.first) {
       'steps' => 'Walk $n steps',
       'kills' => 'Defeat $n × ${labels.enemy(parts.last)}',
@@ -116,7 +140,8 @@ class _AchievementTile extends StatelessWidget {
       'crafted' when parts.last == 'total' => 'Craft $n item(s)',
       'crafted' => 'Craft $n × ${labels.item(parts.last)}',
       'areas' => 'Arrive at all $n areas',
-      _ => '${a.counter} ≥ $n',
+      'visited' => 'Find ${labels.location(parts.last)}',
+      _ => '$counter ≥ $n',
     };
   }
 }

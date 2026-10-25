@@ -4,7 +4,10 @@
 // level 5 on day 1-2; level 30 as spec 0009 amendment 1 sets it. Spec 0010
 // §9.3: the walker's professions (target 2), the fighter (target 3) and the
 // gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart. Spec 0011
-// §9.3 target 5: meals help, they aren't a must.
+// §9.3 target 5: meals help, they aren't a must. Spec 0017 §8 (criteria 31
+// and 32): the pace of the walker without feats, and the milestones on the
+// way.
+import 'package:game_core/game_core.dart';
 import 'package:game_core/simulation.dart';
 import 'package:test/test.dart';
 
@@ -12,7 +15,25 @@ import 'support.dart';
 
 void main() {
   final game = newTestGame();
+  // Meals are compared without the bonuses of feats: Legendary Find is
+  // luck, and its bonus lands on other days with and without meals (spec
+  // 0017 amendment 3).
+  final noBonuses = newTestGame(
+    overrides: {
+      'achievements': {
+        'achievements': [
+          for (final a in dataJson('achievements')['achievements']! as List)
+            {
+              ...a as Map<String, Object?>,
+              if (game.data.achievements[a['id']]!.reward is BonusReward)
+                'reward': {'bankCap': 0},
+            },
+        ],
+      },
+    },
+  );
   final level30 = <int?>[];
+  final level30Meals = <int?>[];
   final level30NoMeals = <int?>[];
   final professionDays = <(String, int), List<int?>>{
     for (final p in ['mining', 'crafting'])
@@ -23,15 +44,20 @@ void main() {
     group('seed $seed', () {
       final result = simulate(game, stepsPerDay: 5000, days: 100, seed: seed);
       level30.add(result.dayReached(30));
-      level30NoMeals.add(
-        simulate(
-          game,
-          stepsPerDay: 5000,
-          days: 100,
-          seed: seed,
-          meals: false,
-        ).dayReached(30),
-      );
+      for (final (meals, days) in [
+        (true, level30Meals),
+        (false, level30NoMeals),
+      ]) {
+        days.add(
+          simulate(
+            noBonuses,
+            stepsPerDay: 5000,
+            days: 100,
+            seed: seed,
+            meals: meals,
+          ).dayReached(30),
+        );
+      }
       professionDays.forEach(
         (k, days) => days.add(result.professionDay(k.$1, k.$2)),
       );
@@ -52,6 +78,29 @@ void main() {
         expect(result.dayReached(10), inInclusiveRange(11, 16));
       });
 
+      // Smuggler's Secret needs the bottle, and the walker may skip the
+      // Graveyard King: both are luck or a choice (spec 0017 amendment 3).
+      test(
+        'spec 0017 criterion 32: each milestone by the end of its stage',
+        () {
+          final end = {
+            AchievementStage.early: result.dayReached(10)!,
+            AchievementStage.mid: result.dayReached(20)!,
+            AchievementStage.late: result.dayReached(30)!,
+          };
+          for (final a in game.data.achievements.values) {
+            if (a.kind != AchievementKind.milestone) continue;
+            if (a.id == 'smugglers_secret' || a.id == 'kings_bane') continue;
+            final day = result.days
+                .where((d) => d.achievements.contains(a.id))
+                .firstOrNull
+                ?.day;
+            expect(day, isNotNull, reason: a.id);
+            expect(day, lessThanOrEqualTo(end[a.stage]!), reason: a.id);
+          }
+        },
+      );
+
       // A lucky walker may be up to 10 days sooner (spec 0009 amendment 1).
       test('spec 0009 amendment 1: level 30 on day 70-100', () {
         expect(result.dayReached(30), inInclusiveRange(70, 100));
@@ -65,6 +114,19 @@ void main() {
     return (sorted[3] + sorted[4]) / 2;
   }
 
+  // Days 16, 50 and 84: seed 1 before spec 0017.
+  test('spec 0017 criterion 31: without feats, seed 1 reaches levels 10, 20 '
+      'and 30 within 5% of days 16, 50 and 84', () {
+    final seed1 = simulate(game, stepsPerDay: 5000, days: 100);
+    for (final (level, day) in [(10, 16), (20, 50), (30, 84)]) {
+      expect(
+        seed1.dayReached(level),
+        inInclusiveRange(day * .95, day * 1.05),
+        reason: 'level $level',
+      );
+    }
+  });
+
   test('spec 0009 amendment 1: the median seed reaches level 30 on day '
       '80-100', () {
     expect(median(level30), inInclusiveRange(80, 100));
@@ -72,7 +134,7 @@ void main() {
 
   test('spec 0011 §9.3 target 5: with meals the median level 30 day is no '
       'later than without, and at most 5 days sooner', () {
-    final gain = median(level30NoMeals) - median(level30);
+    final gain = median(level30NoMeals) - median(level30Meals);
     expect(gain, inInclusiveRange(0, 5));
   });
 

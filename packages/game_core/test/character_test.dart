@@ -298,7 +298,9 @@ void main() {
         ..remove('character');
       final s = game.migrate(GameState.fromJson(json));
       expect(s.character, isNull);
-      expect(s.toJson(), old.toJson());
+      // The quality counter is new in version 12 (spec 0017 §3.2).
+      final kept = s.copy()..counters.remove(Game.foundQualityCounter);
+      expect(kept.toJson(), old.toJson());
     });
 
     test('a new game has no character until Set out', () {

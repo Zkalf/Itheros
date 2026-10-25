@@ -15,6 +15,7 @@ class DayResult {
     this.bank,
     this.equipment, [
     this.professions = const {},
+    this.achievements = const {},
   ]);
 
   final int day;
@@ -25,6 +26,9 @@ class DayResult {
 
   /// Profession levels at the end of the day (spec 0010 §9.3).
   final Map<String, int> professions;
+
+  /// The achievements earned by the end of the day (spec 0017 §8).
+  final Set<String> achievements;
 }
 
 class SimulationResult {
@@ -482,10 +486,15 @@ class SensiblePlayer {
     this.meals = true,
     this.mealBatch = 10,
     this.mealsFrom = 10,
+    this.feat,
   });
 
   final Game game;
   final Walker walker;
+
+  /// A feat it grinds once it reaches the last level of the feat's stage,
+  /// before all else; then it plays on (plan 0021 M2).
+  final String? feat;
 
   /// Whether it cooks and eats (spec 0011 §9.2); off for target 5's
   /// comparison.
@@ -566,6 +575,7 @@ class SensiblePlayer {
   /// Next goal says, spec 0010 §8.4). It aims only at gear up to its own
   /// character level, "the gear of its stretch".
   Activity _goal(GameState s) {
+    if (_featGoal(s) case final a?) return a;
     if (walker == Walker.fighter) return _bestFight(s);
     if (_rerollGoal(s) case final a?) return a;
     if (_mealGoal(s) case final a?) return a;
@@ -607,6 +617,55 @@ class SensiblePlayer {
     if (_toolGoal(s) case final a?) return a;
     if (walker == Walker.gatherer) return _gatherersDay(s);
     return _bestFight(s);
+  }
+
+  /// The last level of each stage (spec 0017 §2): the grind of a feat starts
+  /// there.
+  static const featFrom = {
+    AchievementStage.early: 10,
+    AchievementStage.mid: 20,
+    AchievementStage.late: 30,
+  };
+
+  /// The next action of the grind of [feat]: a fight with its monster, or
+  /// practice in its lowest profession. Null before its stage ends, once
+  /// earned, or for a feat of luck.
+  Activity? _featGoal(GameState s) {
+    final a = data.achievements[feat];
+    if (a == null || s.achievements.contains(a.id)) return null;
+    if (game.level(s) < featFrom[a.stage]!) return null;
+    List<String> lowest(List<String> professions) => [
+      professions.reduce(
+        (x, y) =>
+            game.professionLevel(s, y) < game.professionLevel(s, x) ? y : x,
+      ),
+    ];
+    // A count of an item gathered: the spot that gives it each action.
+    if (a.criterion case CounterCriterion(:final counter)
+        when counter.startsWith('gathered.')) {
+      final item = counter.substring('gathered.'.length);
+      final spot = data.nodes.values.where((n) => n.item == item).firstOrNull;
+      if (spot == null) return null;
+      // A spot above its level waits for practice in its profession.
+      return game.nodeLevelMet(s, spot.id)
+          ? Activity.gather(spot.id)
+          : _practise(s, spot.profession);
+    }
+    final practise = switch (a.criterion) {
+      CounterCriterion(:final counter) when counter.startsWith('kills.') =>
+        null,
+      ProfessionCriterion(:final profession) => [profession],
+      EachProfessionCriterion(:final professions) => lowest(professions),
+      _ => const <String>[],
+    };
+    if (practise == null) {
+      final enemy =
+          data.enemies[(a.criterion as CounterCriterion).counter.substring(
+            'kills.'.length,
+          )]!;
+      return _canFight(s, enemy) ? Activity.fight(enemy.id) : null;
+    }
+    return practise.isEmpty ? null : _practise(s, practise.single);
   }
 
   /// With no upgrade to work toward, the gatherer explores the nearest open
@@ -1042,6 +1101,7 @@ SimulationResult simulate(
   bool meals = true,
   int mealBatch = 10,
   int mealsFrom = 10,
+  String? feat,
 }) {
   final player = SensiblePlayer(
     game,
@@ -1049,6 +1109,7 @@ SimulationResult simulate(
     meals: meals,
     mealBatch: mealBatch,
     mealsFrom: mealsFrom,
+    feat: feat,
   );
   // Every walker is a Miner's child (spec 0012 §5.2).
   var s = game.makeCharacter(
@@ -1085,7 +1146,7 @@ SimulationResult simulate(
       DayResult(day, game.level(s), s.xp, s.bank, Map.of(s.equipment), {
         for (final p in game.data.professions.keys)
           p: game.professionLevel(s, p),
-      }),
+      }, Set.of(s.achievements)),
     );
   }
   return SimulationResult(results, toLevel2, s);
