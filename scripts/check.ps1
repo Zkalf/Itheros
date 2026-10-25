@@ -9,6 +9,8 @@
   health data stays on the device; spec 0007 §6).
   -Root: check another checkout (the eval grader checks throwaway worktrees with
   this repo's copy of the script, so an agent can't weaken the check it is graded by).
+  One check at a time on this computer: a second one waits for its turn
+  (scripts\check-turn.ps1), so two sessions in two worktrees don't run it at once.
 
   In Claude Code run it directly (.\scripts\check.ps1): a nested
   `powershell -File` can't be auto-approved by permission rules.
@@ -24,6 +26,10 @@ $failed = @()
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
 if ($env:JAVA_HOME) { $env:JAVA_HOME = $env:JAVA_HOME.TrimEnd('\') }
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = [Environment]::GetEnvironmentVariable('ANDROID_HOME', 'User') }
+
+# One full check at a time on this computer: it uses a lot of memory (scripts\check-turn.ps1).
+. "$PSScriptRoot\check-turn.ps1"
+Enter-CheckTurn -Folder $root
 
 function Step([string]$name, [string]$dir, [scriptblock]$block) {
   Write-Host "==> $name" -ForegroundColor Cyan
@@ -41,6 +47,7 @@ function Step([string]$name, [string]$dir, [scriptblock]$block) {
 
 # The production gate (plan 0009): what it blocks and what it lets through.
 Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
+Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" }
 
 # Pure-Dart packages.
 Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
@@ -83,6 +90,7 @@ if ($hash -ne $evaluated) {
   Write-Host '         Commit, then run .\evals\run.ps1 (evals/README.md).' -ForegroundColor Yellow
 }
 
+Exit-CheckTurn
 if ($failed.Count) {
   Write-Host "`nCHECK FAILED: $($failed -join ', ')" -ForegroundColor Red
   exit 1
