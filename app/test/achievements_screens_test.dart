@@ -310,5 +310,27 @@ void main() {
       );
       expect(find.text(text), findsNothing);
     });
+
+    testWidgets('when the sync of the open fails, the next sync that works '
+        'names them, also the sync of an action', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        location: 'goblin_woods',
+        failFirstSync: true,
+        prepare: (s) => s.achievements.add('goblin_slayer_1'),
+      );
+      expect(c.syncError, isNotNull, reason: 'the test needs a failed sync');
+      expect(c.state.achievements, isNot(contains('goblin_slayer_1')));
+      expect(c.awaySummary, isNull);
+
+      await c.startActivity(const Activity.fight('goblin'));
+      await t.pump();
+      expect(c.awaySummary?.lostAchievements.map((e) => e.id), [
+        'goblin_slayer_1',
+      ]);
+      expect(c.journal.first.summary.lostAchievements.map((e) => e.id), [
+        'goblin_slayer_1',
+      ]);
+    });
   });
 }

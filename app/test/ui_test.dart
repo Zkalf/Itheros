@@ -60,6 +60,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
   ImageIndex images = ImageIndex.empty,
   // Changes the save before the game loads it.
   void Function(GameState)? prepare,
+  // The sync of the open fails (Health Connect not ready).
+  bool failFirstSync = false,
 }) async {
   final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
@@ -67,7 +69,7 @@ Future<(GameController, FakeStepSource)> pumpGame(
   addTearDown(tester.view.reset);
   now = DateTime(2026, 10, 18, 9);
 
-  final source = FakeStepSource(granted: granted);
+  final source = FakeStepSource(granted: granted)..failNext = failFirstSync;
   final state = game.newGame(seed: 1)
     ..xp = xp ?? game.data.xpForLevel(level)
     ..location = location
