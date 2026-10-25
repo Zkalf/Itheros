@@ -62,6 +62,10 @@ class GameController extends ChangeNotifier {
   /// the screen; cleared once shown.
   AwaySummary? quietReport;
 
+  /// What the load of the save earned and lost (spec 0017 §4, §5), for the
+  /// report of the next sync.
+  AwaySummary _loaded = const AwaySummary();
+
   /// The player closed this return's screen: late steps don't reopen it.
   bool _closed = false;
 
@@ -315,10 +319,22 @@ class GameController extends ChangeNotifier {
   Future<void> _openSave({required bool away}) async {
     _save = await store.load();
     final loaded = _save?.game;
-    // Each load checks the achievements again (spec 0017 §4). Plan 0021 M3
-    // puts the lost ones in the report.
+    // Each load checks the achievements again (spec 0017 §4); the report
+    // of the next sync names the ones lost (§5).
     if (loaded != null) {
-      _save = _save!.withGame(game.load(loaded).state);
+      final (:state, :events) = game.load(loaded);
+      _save = _save!.withGame(state);
+      _loaded = AwaySummary.fromReports([
+        StepReport(
+          state: state,
+          walked: 0,
+          activitySteps: 0,
+          boostUsed: 0,
+          banked: 0,
+          lost: 0,
+          events: events,
+        ),
+      ]);
       await store.save(_save!);
     }
     if (_save == null) {
@@ -342,7 +358,8 @@ class GameController extends ChangeNotifier {
       return;
     }
     syncError = null;
-    final summary = _from(start, result.summary);
+    final summary = _from(start, _loaded + result.summary);
+    _loaded = const AwaySummary();
     _levelCards.addAll(summary.levelsReached);
     // Also saves when old days were pruned from the credit.
     var changed =

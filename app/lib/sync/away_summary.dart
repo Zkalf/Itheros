@@ -123,6 +123,7 @@ class AwaySummary {
     this.actions = const [],
     this.levelsReached = const [],
     this.achievements = const [],
+    this.lostAchievements = const [],
     this.lore = const [],
     this.learned = const [],
     this.slayers = const [],
@@ -148,6 +149,7 @@ class AwaySummary {
     final logs = <ActionLog>[];
     final levels = <int>[];
     final achievements = <String>[];
+    final lostAchievements = <AchievementLost>[];
     final lore = <String>[], learned = <String>[], slayers = <String>[];
     final professionLevels = <(String, int)>[];
     final finds = <String>[];
@@ -223,9 +225,9 @@ class AwaySummary {
           rerolls.add((before, after));
         case AchievementUnlocked(:final id):
           achievements.add(id);
-        // Only a load loses an achievement; plan 0021 M3 reports it.
+        // Today only a load loses one (spec 0017 §5).
         case AchievementLost():
-          break;
+          lostAchievements.add(e);
         case LoreFound(:final note):
           lore.add(note);
         case WeaknessLearned(:final enemy):
@@ -274,6 +276,7 @@ class AwaySummary {
       actions: logs,
       levelsReached: levels,
       achievements: achievements,
+      lostAchievements: lostAchievements,
       lore: lore,
       learned: learned,
       slayers: slayers,
@@ -301,6 +304,10 @@ class AwaySummary {
   final List<ActionLog> actions;
   final List<int> levelsReached;
   final List<String> achievements;
+
+  /// Achievements that the save no longer met, and what each took (spec
+  /// 0017 §5).
+  final List<AchievementLost> lostAchievements;
 
   /// Lore notes found, monsters whose weakness was learned, Slayer marks
   /// earned (spec 0009 §7).
@@ -331,7 +338,10 @@ class AwaySummary {
   /// start place first. A report alone holds only its arrivals.
   final List<String> route;
 
-  bool get isEmpty => walked == 0;
+  /// No steps and no news: a load can lose an achievement without a step
+  /// (spec 0017 §5).
+  bool get isEmpty =>
+      walked == 0 && achievements.isEmpty && lostAchievements.isEmpty;
 
   /// Something happened beyond steps going to the bank or toward an
   /// unfinished unit: worth its own screen (spec 0004 amendment 2). A route
@@ -343,6 +353,7 @@ class AwaySummary {
       ) ||
       levelsReached.isNotEmpty ||
       achievements.isNotEmpty ||
+      lostAchievements.isNotEmpty ||
       lore.isNotEmpty ||
       learned.isNotEmpty ||
       slayers.isNotEmpty ||
@@ -369,6 +380,22 @@ class AwaySummary {
     ],
     levelsReached: (j['levelsReached']! as List<Object?>).cast<int>(),
     achievements: (j['achievements']! as List<Object?>).cast<String>(),
+    // Entries from before spec 0017 have none.
+    lostAchievements: [
+      for (final l in j['lostAchievements'] as List<Object?>? ?? const [])
+        if (l case {
+          'id': final String id,
+          'bankSteps': final int bankSteps,
+          'item': final String? item,
+          'actions': final int actions,
+        })
+          AchievementLost(
+            id,
+            bankSteps: bankSteps,
+            item: item,
+            actions: actions,
+          ),
+    ],
     // Entries from before spec 0009 have none.
     lore: _strings(j['lore']),
     learned: _strings(j['learned']),
@@ -414,6 +441,15 @@ class AwaySummary {
     'actions': [for (final a in actions) a.toJson()],
     'levelsReached': levelsReached,
     'achievements': achievements,
+    'lostAchievements': [
+      for (final l in lostAchievements)
+        {
+          'id': l.id,
+          'bankSteps': l.bankSteps,
+          'item': l.item,
+          'actions': l.actions,
+        },
+    ],
     'lore': lore,
     'learned': learned,
     'slayers': slayers,
@@ -460,6 +496,7 @@ class AwaySummary {
       actions: [...merged, ...rest],
       levelsReached: [...levelsReached, ...o.levelsReached],
       achievements: [...achievements, ...o.achievements],
+      lostAchievements: [...lostAchievements, ...o.lostAchievements],
       lore: [...lore, ...o.lore],
       learned: [...learned, ...o.learned],
       slayers: [...slayers, ...o.slayers],
