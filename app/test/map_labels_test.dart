@@ -77,5 +77,39 @@ void main() {
       expect(placed.sizes['x'], 0);
       expect(placed.names['x']!.size, const Size(100, 40));
     });
+
+    test('a name whose every spot breaks the rules of amendment 2 still gets '
+        'a rect of its size, near its marker', () {
+      // Four roads cross at the marker, so that each spot of the tall name
+      // lies nearer to a road than half its height.
+      const centre = Offset(100, 100);
+      final marker = Rect.fromCircle(center: centre, radius: 20);
+      final placed = placeMapLabels(
+        map: const Size(200, 200),
+        names: [
+          MapName(place: 'x', marker: marker, sizes: const [Size(30, 60)]),
+        ],
+        plates: [
+          for (final (a, b) in const [
+            (Offset(0, 100), Offset(200, 100)),
+            (Offset(100, 0), Offset(100, 200)),
+            (Offset(0, 0), Offset(200, 200)),
+            (Offset(0, 200), Offset(200, 0)),
+          ])
+            MapPlate(from: a, to: b, size: const Size(10, 10)),
+        ],
+      );
+      final name = placed.names['x']!;
+      expect(name.size, const Size(30, 60));
+      final gap = Offset(
+        (name.center.dx - centre.dx).abs() - 20 - name.width / 2,
+        (name.center.dy - centre.dy).abs() - 20 - name.height / 2,
+      );
+      expect(
+        gap.dx <= 8.01 || gap.dy <= 8.01,
+        isTrue,
+        reason: 'the name at $name lies far from its marker',
+      );
+    });
   });
 }
