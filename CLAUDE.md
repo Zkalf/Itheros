@@ -41,7 +41,9 @@ auto-approved by permission rules (headless and eval runs deny it).
   builds and installs (only it has the release key). Start sessions in the main folder; work in the worktree: run its
   scripts with the shell there (`.\scripts\check.ps1`), or by full path from elsewhere; push with the shell there and
   the branch named (`git push -u origin <branch>`). `merge.ps1` removes the worktree and its branch when the owner
-  merges the PR. An eval run already works in a throwaway worktree: it stays there and makes none.
+  merges the PR. A session told mid-change that another one now runs finishes its change on its branch in the main
+  folder (no switch to `main` or another branch) and makes its next change in a worktree; the owner's builds wait
+  until the main folder is back on `main`. An eval run already works in a throwaway worktree: it stays there.
 - One full check runs at a time on this PC: `check.ps1` (and `release.ps1`) waits its turn while another runs
   (memory; `scripts\check-turn.ps1`). A wait adds the other check's time, so start a full check in the background.
 - `gh` is `C:\Program Files\GitHub CLI\gh.exe` (signed in as the owner); shells started before its install don't have
