@@ -1451,15 +1451,21 @@ void criterion26() {
     for (final f in fixtures) {
       final name = f.uri.pathSegments.last;
       final text = f.readAsStringSync();
+      // The route came with 0.4.0, so only older fixtures are "old entries".
+      final old = _beforeRoute(name);
 
-      test('$name loads, and its journal entries have no route; with an entry '
-          'with a route, the save keeps the route at versions 12 and 3', () {
+      test('$name loads, and its journal entries have no route if it is older '
+          'than 0.4.0; with an entry with a route, the save keeps the route at '
+          'versions 12 and 3', () {
         final save = SaveData.fromJson(
           jsonDecode(text) as Map<String, Object?>,
         );
         expect(save.journal, isNotEmpty);
-        for (final e in save.journal) {
-          expect(e.summary.route, isEmpty, reason: '${e.started}');
+        final routes = [for (final e in save.journal) e.summary.route];
+        if (old) {
+          for (final (i, e) in save.journal.indexed) {
+            expect(routes[i], isEmpty, reason: '${e.started}');
+          }
         }
         final saved = jsonDecode(
           jsonEncode(
@@ -1473,9 +1479,7 @@ void criterion26() {
         expect((saved['game']! as Map<String, Object?>)['version'], 12);
         final back = SaveData.fromJson(saved);
         expect(back.journal.first.summary.route, _route);
-        for (final e in back.journal.skip(1)) {
-          expect(e.summary.route, isEmpty);
-        }
+        expect([for (final e in back.journal.skip(1)) e.summary.route], routes);
       });
 
       testWidgets('$name shows its journal entries with no route map', (
@@ -1693,4 +1697,11 @@ void criteria2to4() {
       expectBordersOnScreen(t, 'the Journal with a route map');
     });
   });
+}
+
+/// Whether the fixture [name] ("0.3.0.json") is from a version before 0.4.0,
+/// which brought the route (spec 0014).
+bool _beforeRoute(String name) {
+  final [major, minor, ...] = name.split('.').map(int.tryParse).toList();
+  return major! == 0 && minor! < 4;
 }
