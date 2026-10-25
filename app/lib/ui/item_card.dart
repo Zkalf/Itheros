@@ -278,8 +278,13 @@ class ItemCard extends StatelessWidget {
     final s = c.state;
     final running = s.meal;
     final small = Theme.of(context).textTheme.bodySmall;
+    // Eating takes one from the bag. The card of the running meal opens from
+    // Now also when none is left, so Eat waits for one (spec 0011 §5.4).
+    final inBag = (s.inventory[item] ?? 0) > 0;
     return [
-      if (running != null)
+      if (!inBag)
+        Text('None in the bag', style: small)
+      else if (running != null)
         Text(
           'Replaces ${labels.item(running.key)} '
           '(${fmt(running.left)} steps left)',
@@ -289,7 +294,7 @@ class ItemCard extends StatelessWidget {
       FilledButton.tonal(
         key: const ValueKey('card-eat'),
         style: slateButton,
-        onPressed: () => _close(context, () => _eat(labels)),
+        onPressed: inBag ? () => _close(context, () => _eat(labels)) : null,
         child: const Text('Eat'),
       ),
       const SizedBox(height: 16),
