@@ -37,9 +37,11 @@ class ProfessionScreen extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final p = game.data.professions[profession]!;
-    final recipes = game.data.recipes.values.any(
-      (r) => r.profession == profession,
-    );
+    // The filters show once the player has learned a profession with
+    // recipes (spec 0010 amendment 6).
+    final filters =
+        s.learned.contains(profession) &&
+        game.data.recipes.values.any((r) => r.profession == profession);
     final route = ModalRoute.of(context);
     return Scaffold(
       appBar: AppBar(leading: const BackPlate(), title: Text(p.name)),
@@ -75,7 +77,7 @@ class ProfessionScreen extends StatelessWidget {
                   // The filters stand on a plate (spec 0014 §2.2). The
                   // gutter as padding and spacing keeps the three filters on
                   // one line at 360 dp.
-                  if (recipes)
+                  if (filters)
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(gutter),
@@ -147,12 +149,12 @@ class _ProfessionCard extends StatelessWidget {
     final floor = data.professionXpForLevel(level);
     final next = data.professionXpForLevel(level + 1);
 
+    // The top bar holds the name, so the card does not repeat it (spec 0010
+    // amendment 6).
     final rows = <Widget>[
       Row(
         children: [
           Icon(professionIcon(p.icon)),
-          const SizedBox(width: 8),
-          Text(p.name, style: text.titleLarge),
           const Spacer(),
           if (learned)
             Text.rich(numberSpan('Level $level'), style: text.titleMedium),
