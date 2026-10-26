@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/theme.dart'
-    show ghostButton, slateButton, tealButton;
+    show ControlBox, ghostButton, slateButton, tealButton;
 
 import 'quiet_teal_files_test.dart'
     show mutedRgb, selectedRgb, slateRgb, textRgb;
@@ -82,8 +82,7 @@ void main() {
       expectRgb(_labelOf(t, 'Bag').color, textRgb, 'Bag: label');
     });
 
-    testWidgets('criterion 2: a selected choice chip and a selected filter '
-        'chip', (t) async {
+    testWidgets('criterion 2: a selected choice chip', (t) async {
       await pumpGame(t, location: 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await t.pumpAndSettle();
@@ -102,7 +101,9 @@ void main() {
         _white,
         'stop choice: label',
       );
+    });
 
+    testWidgets('criteria 2 and 4: a selected filter chip', (t) async {
       await pumpGame(t, level: 5, inventory: {'copper_ore': 12});
       await openProfession(t, 'crafting');
       await t.tap(find.byKey(const ValueKey('filter-mats')));
@@ -118,19 +119,18 @@ void main() {
     testWidgets('criteria 3 and 4: the open Journal tab', (t) async {
       await pumpGame(t);
       await openJournal(t);
-      final log = drawnUnder(t.element(find.text('Log')));
-      expect(
-        log.any((d) => sameRgb(d.fill, selectedRgb)),
-        isTrue,
-        reason: 'the open tab Log: ${describeAll(log)}',
-      );
+      // The box of each tab holds its label.
+      Color fillOf(String label) => t
+          .widget<ControlBox>(
+            find.ancestor(
+              of: find.text(label),
+              matching: find.byType(ControlBox),
+            ),
+          )
+          .fill;
+      expectRgb(fillOf('Log'), selectedRgb, 'the open tab Log');
       expectRgb(_labelOf(t, 'Log').color, _white, 'Log: label');
-      final lore = drawnUnder(t.element(find.text('Lore')));
-      expect(
-        lore.any((d) => sameRgb(d.fill, slateRgb)),
-        isTrue,
-        reason: 'the tab Lore: ${describeAll(lore)}',
-      );
+      expectRgb(fillOf('Lore'), slateRgb, 'the tab Lore');
       expectRgb(_labelOf(t, 'Lore').color, textRgb, 'Lore: label');
     });
 
@@ -174,7 +174,7 @@ void main() {
       );
     });
 
-    testWidgets('criterion 8: segments, chips and Journal tabs', (t) async {
+    testWidgets('criterion 8: choice chips', (t) async {
       await pumpGame(t, location: 'goblin_woods');
       await t.tap(option('fight', 'goblin'));
       await t.pumpAndSettle();
@@ -188,6 +188,9 @@ void main() {
           'the chip ${(chip.widget as ChoiceChip).selected ? '(selected)' : ''}',
         );
       }
+    });
+
+    testWidgets('criterion 8: segments and Journal tabs', (t) async {
       await pumpGame(t);
       await openTab(t, 'character');
       for (final label in ['Gear', 'Bag']) {

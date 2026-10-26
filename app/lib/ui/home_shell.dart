@@ -178,8 +178,8 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 /// A tab of the bottom bar in a box with the 2 dp black border; the open tab
-/// has the lit fill (spec 0014 §2.2). It stays a NavigationDestination, so
-/// the bar stays a NavigationBar (plan 0017).
+/// has the selected fill (spec 0014 amendment 4). It stays a
+/// NavigationDestination, so the bar stays a NavigationBar (plan 0017).
 class _Tab extends NavigationDestination {
   const _Tab({
     super.key,
@@ -194,7 +194,7 @@ class _Tab extends NavigationDestination {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.all(3),
     child: ControlBox(
-      fill: lit ? Quiet.lit : Quiet.transparent,
+      fill: lit ? Quiet.selected : Quiet.transparent,
       child: super.build(context),
     ),
   );

@@ -40,7 +40,6 @@ import 'quiet_teal_files_test.dart'
         deepTealRgb,
         hex,
         licenceFiles,
-        litRgb,
         mistRgb,
         mutedRgb,
         onTealRgb,
