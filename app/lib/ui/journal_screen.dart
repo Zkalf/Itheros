@@ -86,8 +86,8 @@ class JournalScreen extends StatelessWidget {
   );
 }
 
-/// A tab of the Journal: a box with the 2 dp black border, lit while its tab
-/// is open (spec 0014 §2.2).
+/// A tab of the Journal: a box with the 2 dp black border, with the selected
+/// fill while its tab is open (spec 0014 amendment 4).
 class _TabBox extends StatelessWidget {
   const _TabBox(this.index, this.label);
 
@@ -100,7 +100,7 @@ class _TabBox extends StatelessWidget {
     return ListenableBuilder(
       listenable: tabs,
       builder: (context, _) => ControlBox(
-        fill: tabs.index == index ? Quiet.lit : Quiet.slate,
+        fill: tabs.index == index ? Quiet.selected : Quiet.slate,
         child: SizedBox.expand(child: Center(child: Text(label))),
       ),
     );

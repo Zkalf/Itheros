@@ -16,8 +16,12 @@ abstract final class Quiet {
   static const slate = Color(0xFF2B333B);
   static const slateLow = Color(0xFF1E242A);
 
-  /// The lit tab, the selected segment and selected chips.
+  /// The thumb of a switch that is off.
   static const lit = Color(0xFF2E3740);
+
+  /// A selected chip, segment or tab: teal at 35% over [slate] (spec 0014
+  /// amendment 4). Its label is [white].
+  static const selected = Color(0xFF4C6768);
 
   /// Main buttons, focus, earned things, "New", the rank and the loading
   /// bar. Text on teal is [onTeal].
@@ -93,6 +97,15 @@ const gutter = 6.0;
 /// The 2 dp black border of each button, tab, chip, segment and switch.
 const _border = BorderSide(width: 2);
 
+/// The thin black outline of each button label but a teal button's (spec
+/// 0014 amendment 4): four black shadows of 0.8 dp, one on each side.
+const labelOutline = [
+  Shadow(offset: Offset(-.8, 0)),
+  Shadow(offset: Offset(.8, 0)),
+  Shadow(offset: Offset(0, -.8)),
+  Shadow(offset: Offset(0, .8)),
+];
+
 /// The font of a number that stands alone (spec 0014 §2.2). The size and the
 /// weight come from the text around it.
 const numberStyle = TextStyle(fontFamily: Fonts.number);
@@ -144,6 +157,8 @@ final plateDecoration = ShapeDecoration(
 final tealButton = _button(
   fill: Quiet.teal,
   label: Quiet.onTeal,
+  // Its dark label gets heavier with the outline, not clearer.
+  outline: false,
   shade: [
     Quiet.white.withValues(alpha: .18),
     Quiet.black.withValues(alpha: .1),
@@ -191,11 +206,14 @@ ButtonStyle _button({
   double radius = 12,
   EdgeInsets padding = _padding,
   Size minimumSize = const Size(64, 44),
+  bool outline = true,
 }) {
   bool off(Set<WidgetState> s) => s.contains(WidgetState.disabled);
   bool down(Set<WidgetState> s) => s.contains(WidgetState.pressed);
   return ButtonStyle(
-    textStyle: WidgetStatePropertyAll(_label(15)),
+    textStyle: WidgetStatePropertyAll(
+      outline ? _label(15).copyWith(shadows: labelOutline) : _label(15),
+    ),
     backgroundColor: WidgetStateProperty.resolveWith(
       (s) => off(s) && shade != null ? Quiet.plate : fill,
     ),
@@ -363,7 +381,8 @@ Widget statusChip(String label, Color colour, {Key? key, Widget? avatar}) =>
       key: key,
       avatar: avatar,
       label: Text(label),
-      labelStyle: TextStyle(color: colour),
+      // A status chip is not a button: no outline (spec 0014 amendment 4).
+      labelStyle: TextStyle(color: colour, shadows: const []),
       color: const WidgetStatePropertyAll(Quiet.transparent),
     );
 
@@ -433,7 +452,8 @@ ThemeData _quietTheme() {
     onSurface: Quiet.text,
     onSurfaceVariant: Quiet.muted,
     surfaceDim: Quiet.caseBlack,
-    surfaceBright: Quiet.lit,
+    // Lit is only the thumb of a switch that is off (spec 0014 amendment 4).
+    surfaceBright: Quiet.selected,
     surfaceContainerLowest: Quiet.caseBlack,
     surfaceContainerLow: Quiet.plate,
     surfaceContainer: Quiet.plate,
@@ -512,10 +532,12 @@ ThemeData _quietTheme() {
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
-        textStyle: WidgetStatePropertyAll(_label(14)),
-        backgroundColor: by(Quiet.lit, Quiet.slate, Quiet.plate),
-        foregroundColor: by(Quiet.teal, Quiet.text, Quiet.faint),
-        iconColor: by(Quiet.teal, Quiet.muted, Quiet.faint),
+        textStyle: WidgetStatePropertyAll(
+          _label(14).copyWith(shadows: labelOutline),
+        ),
+        backgroundColor: by(Quiet.selected, Quiet.slate, Quiet.plate),
+        foregroundColor: by(Quiet.white, Quiet.text, Quiet.faint),
+        iconColor: by(Quiet.white, Quiet.muted, Quiet.faint),
         overlayColor: WidgetStatePropertyAll(
           Quiet.white.withValues(alpha: .04),
         ),
@@ -526,16 +548,17 @@ ThemeData _quietTheme() {
       ),
     ),
     chipTheme: ChipThemeData(
-      color: by(Quiet.lit, Quiet.slate, Quiet.plate),
+      color: by(Quiet.selected, Quiet.slate, Quiet.plate),
       side: _border,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       labelPadding: const EdgeInsets.symmetric(horizontal: 6),
       labelStyle: _label(13).copyWith(
         letterSpacing: .5,
+        shadows: labelOutline,
         color: WidgetStateColor.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? Quiet.teal
+              ? Quiet.white
               : s.contains(WidgetState.disabled)
               ? Quiet.faint
               : Quiet.text,
@@ -621,10 +644,12 @@ ThemeData _quietTheme() {
       ),
     ),
     tabBarTheme: TabBarThemeData(
-      labelColor: Quiet.teal,
+      labelColor: Quiet.white,
       unselectedLabelColor: Quiet.text,
-      labelStyle: _body(15).copyWith(fontWeight: FontWeight.w700),
-      unselectedLabelStyle: _body(15).copyWith(fontWeight: FontWeight.w700),
+      labelStyle: _body(15)
+          .copyWith(fontWeight: FontWeight.w700, shadows: labelOutline),
+      unselectedLabelStyle: _body(15)
+          .copyWith(fontWeight: FontWeight.w700, shadows: labelOutline),
       labelPadding: const EdgeInsets.symmetric(horizontal: 3),
       indicator: const BoxDecoration(),
       dividerHeight: 0,
@@ -650,11 +675,14 @@ ThemeData _quietTheme() {
       indicatorColor: Quiet.transparent,
       labelPadding: const EdgeInsets.only(top: 2),
       labelTextStyle: by(
-        _body(13, Quiet.teal).copyWith(fontWeight: FontWeight.w700),
-        _body(13, Quiet.muted),
+        _body(
+          13,
+          Quiet.white,
+        ).copyWith(fontWeight: FontWeight.w700, shadows: labelOutline),
+        _body(13, Quiet.muted).copyWith(shadows: labelOutline),
       ),
       iconTheme: by(
-        const IconThemeData(color: Quiet.teal, size: 22),
+        const IconThemeData(color: Quiet.white, size: 22),
         const IconThemeData(color: Quiet.muted, size: 22),
       ),
     ),

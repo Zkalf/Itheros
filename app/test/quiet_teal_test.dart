@@ -40,13 +40,13 @@ import 'quiet_teal_files_test.dart'
         deepTealRgb,
         hex,
         licenceFiles,
-        litRgb,
         mistRgb,
         mutedRgb,
         onTealRgb,
         plateRgb,
         rgb,
         riskyRgb,
+        selectedRgb,
         shortRgb,
         slateRgb,
         spectral,
@@ -244,7 +244,8 @@ void criterion2() {
       }
     });
 
-    testWidgets('slate buttons and chips, the lit tab, selected chips and the '
+    // The selected fill and the white label are spec 0014 amendment 4.
+    testWidgets('slate buttons and chips, the open tab, selected chips and the '
         'selected segment', (t) async {
       await pumpGame(t, location: 'goblin_woods');
       expectRgb(
@@ -253,17 +254,17 @@ void criterion2() {
         'Open the World map',
       );
 
-      final lit = find.byKey(const ValueKey('tab-now'));
-      final drawn = drawnUnder(t.element(lit));
+      final open = find.byKey(const ValueKey('tab-now'));
+      final drawn = drawnUnder(t.element(open));
       expect(
-        drawn.any((d) => sameRgb(d.fill, litRgb)),
+        drawn.any((d) => sameRgb(d.fill, selectedRgb)),
         isTrue,
-        reason: 'the lit tab Now: ${describeAll(drawn)}',
+        reason: 'the open tab Now: ${describeAll(drawn)}',
       );
       expectRgb(
-        styleOf(t, 'Now', within: lit).color,
-        tealRgb,
-        'the label of the lit tab',
+        styleOf(t, 'Now', within: open).color,
+        0xFFFFFF,
+        'the label of the open tab',
       );
 
       await openArea(t, 'goblin_woods');
@@ -274,7 +275,7 @@ void criterion2() {
       for (final e in chips.evaluate()) {
         final selected = (e.widget as ChoiceChip).selected;
         final name = 'the chip ${nameOf(e)}${selected ? ', selected' : ''}';
-        expectRgb(chipFill(e), selected ? litRgb : slateRgb, name);
+        expectRgb(chipFill(e), selected ? selectedRgb : slateRgb, name);
         if (selected) {
           final label = find.descendant(
             of: byElement(e),
@@ -282,7 +283,7 @@ void criterion2() {
           );
           expectRgb(
             rootStyle(richIn(t, label)).color,
-            tealRgb,
+            0xFFFFFF,
             '$name: its label',
           );
         }
@@ -298,7 +299,7 @@ void criterion2() {
         final segment = find.ancestor(of: find.text(label), matching: segments);
         expectRgb(
           materialOf(t.element(segment)).color,
-          selected ? litRgb : slateRgb,
+          selected ? selectedRgb : slateRgb,
           'the segment $label',
         );
       }
