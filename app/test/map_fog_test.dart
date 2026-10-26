@@ -24,17 +24,24 @@ import 'world_route_test.dart'
 final _world = find.byType(WorldTab);
 final _fog = find.byKey(const ValueKey('map-fog'));
 
-/// The painter of the fog in [within], and the rect of its CustomPaint.
+/// The painter of the fog in [within], and the rect it paints: a live
+/// CustomPaint, or the fog made into one image once the map image has loaded
+/// (#121).
 (FogPainter, Rect) fogIn(WidgetTester t, Finder within) {
   final paint = find.descendant(
     of: within,
     matching: find.byWidgetPredicate(
-      (w) => w is CustomPaint && w.foregroundPainter is FogPainter,
+      (w) =>
+          (w is CustomPaint && w.foregroundPainter is FogPainter) ||
+          w is FogImage,
     ),
   );
   expect(paint, findsOneWidget, reason: 'one fog in $within');
   return (
-    t.widget<CustomPaint>(paint).foregroundPainter! as FogPainter,
+    switch (t.widget(paint)) {
+      FogImage(:final painter) => painter,
+      final w => (w as CustomPaint).foregroundPainter! as FogPainter,
+    },
     t.getRect(paint),
   );
 }
@@ -308,6 +315,23 @@ void main() {
         'holes clear only the fog; and the mist turns only the map pale, '
         'not the veil and the clouds', (t) async {
       await pumpWorld(t, 'camp', everywhere: false);
+      // Once the map image has loaded, the whole fog is one image, made in a
+      // layer of its own when the fog changes (#121): no live filter and no
+      // live layer are left.
+      if (find
+          .descendant(of: _fog, matching: find.byType(FogImage))
+          .evaluate()
+          .isNotEmpty) {
+        for (final type in [ColorFiltered, ImageFiltered, CustomPaint]) {
+          expect(
+            find.descendant(of: _fog, matching: find.byType(type)),
+            findsNothing,
+            reason: '$type',
+          );
+        }
+        return;
+      }
+      // Before it has loaded, the layer, the mist and the blur are live.
       final paint = find.descendant(
         of: _fog,
         matching: find.byWidgetPredicate(
@@ -320,16 +344,6 @@ void main() {
       ];
       expect(layers, [_sameColours], reason: 'the layer of the fog');
       final image = find.descendant(of: _fog, matching: find.byType(Image));
-      if (image.evaluate().isEmpty) {
-        // Once the map image has loaded, the blurred, pale map is one image
-        // made once (#121): no live mist and no live blur under the painter.
-        final made = find.descendant(of: _fog, matching: find.byType(RawImage));
-        final underPaint = between(t.element(made), t.element(paint));
-        expect(underPaint.whereType<ColorFiltered>(), isEmpty);
-        expect(underPaint.whereType<ImageFiltered>(), isEmpty);
-        return;
-      }
-      // Before it has loaded, the mist and the blur are live.
       final underPaint = between(t.element(image), t.element(paint));
       expect(
         [
