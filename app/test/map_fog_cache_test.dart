@@ -54,6 +54,25 @@ void main() {
         reason: 'no live $type on each frame',
       );
     }
+    // What the image holds (the review of #125): clear at the hole of the
+    // current place, so the map shows there, and fog on a place in the fog.
+    final fogImage = t.widget<FogImage>(made);
+    final pixels = (await t.runAsync(() => fogImage.image.toByteData()))!;
+    final scale = fogImage.image.width / fogImage.size.width;
+    int alphaAt(Offset dp) {
+      final x = (dp.dx * scale).round().clamp(0, fogImage.image.width - 1);
+      final y = (dp.dy * scale).round().clamp(0, fogImage.image.height - 1);
+      return pixels.getUint8((y * fogImage.image.width + x) * 4 + 3);
+    }
+
+    expect(fogImage.painter.holes, isNotEmpty);
+    expect(fogImage.painter.clouds, isNotEmpty);
+    for (final hole in fogImage.painter.holes) {
+      expect(alphaAt(hole), lessThan(10), reason: 'the hole at $hole');
+    }
+    for (final cloud in fogImage.painter.clouds) {
+      expect(alphaAt(cloud), 255, reason: 'the fog at $cloud');
+    }
     // A tap on a place still opens its sheet.
     await t.tap(find.byKey(const ValueKey('area-camp')));
     await t.pumpAndSettle();

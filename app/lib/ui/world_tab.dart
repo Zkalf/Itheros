@@ -597,7 +597,8 @@ class _Fog extends StatefulWidget {
 }
 
 class _FogState extends State<_Fog> {
-  /// The blurred, pale map by its size in pixels, made once for the app.
+  /// The blurred, pale map at the size in pixels of the map on screen, made
+  /// once. A new size replaces it.
   static final _made = <Size, ui.Image>{};
 
   ImageStream? _stream;
@@ -608,8 +609,14 @@ class _FogState extends State<_Fog> {
   FogPainter? _wholeFor;
   Size? _wholeAt;
 
-  double get _ratio => MediaQuery.devicePixelRatioOf(context);
-  Size get _pixels => widget.size * _ratio;
+  /// The size of the map in whole pixels.
+  Size get _pixels {
+    final ratio = MediaQuery.devicePixelRatioOf(context);
+    return Size(
+      (widget.size.width * ratio).roundToDouble(),
+      (widget.size.height * ratio).roundToDouble(),
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -626,6 +633,7 @@ class _FogState extends State<_Fog> {
   @override
   void dispose() {
     _stop();
+    _whole?.dispose();
     super.dispose();
   }
 
@@ -635,20 +643,30 @@ class _FogState extends State<_Fog> {
     _listener = null;
   }
 
-  /// Waits for the map image, then makes the blurred, pale map.
+  /// Waits for the map image, then makes the blurred, pale map. A map image
+  /// that fails to load keeps the live fog.
   void _load() {
     _stop();
     final pixels = _pixels;
     final stream = MapView._image.image.resolve(
       createLocalImageConfiguration(context),
     );
-    final listener = ImageStreamListener((info, _) {
-      _made[pixels] ??= _make(info.image, pixels);
+    // Kept before addListener: a map image in the cache calls back at once.
+    _stream = stream;
+    _listener = ImageStreamListener((info, _) {
+      if (_made[pixels] == null) {
+        for (final old in _made.values) {
+          old.dispose();
+        }
+        _made
+          ..clear()
+          ..[pixels] = _make(info.image, pixels);
+      }
+      info.dispose();
       _stop();
       if (mounted) setState(() {});
-    });
-    _stream = stream..addListener(listener);
-    _listener = listener;
+    }, onError: (_, _) => _stop());
+    stream.addListener(_listener!);
   }
 
   /// [map] blurred and pale at [pixels], as the live fog draws it: covered,
@@ -679,20 +697,20 @@ class _FogState extends State<_Fog> {
 
   /// The whole fog at [pixels]: [blurred] and the veil, the holes and the
   /// clouds of [painter] over it, in a layer of their own, as the live fog
-  /// draws them. So the holes clear the fog, and not the map under it.
+  /// draws them. So the holes clear the fog, and not the map under it. The
+  /// painter paints at [size] in dp, scaled to fill the whole pixels.
   static ui.Image _makeWhole(
     ui.Image blurred,
     FogPainter painter,
     Size size,
-    double ratio,
+    Size pixels,
   ) {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final pixels = size * ratio;
     canvas
       ..saveLayer(Offset.zero & pixels, Paint())
       ..drawImage(blurred, Offset.zero, Paint())
-      ..scale(ratio);
+      ..scale(pixels.width / size.width, pixels.height / size.height);
     painter.paint(canvas, size);
     canvas.restore();
     return recorder.endRecording().toImageSync(
@@ -709,12 +727,18 @@ class _FogState extends State<_Fog> {
       if (_whole == null ||
           _wholeAt != pixels ||
           _wholeFor!.shouldRepaint(painter)) {
-        _whole = _makeWhole(blurred, painter, widget.size, _ratio);
+        _whole?.dispose();
+        _whole = _makeWhole(blurred, painter, widget.size, pixels);
         _wholeFor = painter;
         _wholeAt = pixels;
       }
       return RepaintBoundary(
-        child: FogImage(painter: painter, image: _whole!, size: widget.size),
+        // The image widget owns and disposes the clone it is given.
+        child: FogImage(
+          painter: painter,
+          image: _whole!.clone(),
+          size: widget.size,
+        ),
       );
     }
     return RepaintBoundary(
