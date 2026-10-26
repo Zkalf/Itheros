@@ -1698,13 +1698,52 @@ void characterScreen() {
 
       await t.tap(find.byKey(const ValueKey('tab-gear')));
       await t.pumpAndSettle();
-      // A doll slot opens its slot sheet (spec 0008 amendment 3).
+      // A filled doll slot opens the card of its item (spec 0008 amendment
+      // 4, criteria 1 and 6).
       await openCard(t, 'slot-chest');
-      await t.tap(find.byKey(const ValueKey('sheet-unequip')));
+      expect(cardText(t, 'card-name'), 'Stitched armour');
+      await t.tap(card(find.byKey(const ValueKey('card-unequip'))));
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.equipment, isEmpty);
       expect(c.state.inventory['stitched_armour'], 1);
+    });
+
+    testWidgets('amendment 4: the worn card shows Change, which opens the '
+        'slot sheet', (t) async {
+      await pumpGame(
+        t,
+        inventory: {'mithril_helm': 1},
+        equipment: {'head': 'iron_helm'},
+      );
+      await openTab(t, 'character');
+      await openCard(t, 'slot-head');
+      expect(find.byKey(const ValueKey('slot-sheet')), findsNothing);
+      expect(card(find.byKey(const ValueKey('card-change'))), findsOneWidget);
+      expect(card(find.byKey(const ValueKey('card-unequip'))), findsOneWidget);
+      await t.tap(card(find.byKey(const ValueKey('card-change'))));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('item-card')), findsNothing);
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+        'Head',
+      );
+      expect(
+        find.byKey(const ValueKey('sheet-equip-mithril_helm')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('amendment 4: a bag card shows no Change', (t) async {
+      await pumpGame(
+        t,
+        inventory: {'mithril_helm': 1},
+        equipment: {'head': 'iron_helm'},
+      );
+      await openBag(t);
+      await openCard(t, 'bag-mithril_helm');
+      expect(card(find.byKey(const ValueKey('card-swap'))), findsOneWidget);
+      expect(card(find.byKey(const ValueKey('card-change'))), findsNothing);
     });
 
     testWidgets('a material card: where it comes from, what uses it', (
@@ -1854,7 +1893,13 @@ void characterScreen() {
           equipment: {'mainHand': 'big_axe'},
         );
         await openTab(t, 'character');
+        // The greyed Off hand is empty: it opens its sheet (amendment 4,
+        // criterion 3).
         await openCard(t, 'slot-offHand');
+        expect(
+          t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
+          'Off hand',
+        );
         expect(
           t
               .widget<Text>(find.byKey(const ValueKey('sheet-off-bone_shield')))
@@ -2019,7 +2064,7 @@ void fightsWithDepth() {
     });
 
     testWidgets('criterion 13: the item card shows type, hands and bonus '
-        'stats; list rows show none', (t) async {
+        'stats; of the list rows only the worn row shows them', (t) async {
       const spear = 'iron_spear@rare+crit3+hp12';
       await pumpGame(
         t,
@@ -2028,14 +2073,6 @@ void fightsWithDepth() {
         equipment: {'mainHand': spear},
       );
       await openTab(t, 'character');
-      await t.tap(find.byKey(const ValueKey('slot-mainHand')));
-      await t.pumpAndSettle();
-      final sheet = find.byKey(const ValueKey('slot-sheet'));
-      expect(
-        find.descendant(of: sheet, matching: find.textContaining('Crit')),
-        findsNothing,
-      );
-      await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('tab-bag')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('bag-hide_vest')));
@@ -2047,9 +2084,8 @@ void fightsWithDepth() {
       await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('tab-gear')));
       await t.pumpAndSettle();
+      // A filled slot opens the card at once (spec 0008 amendment 4).
       await t.tap(find.byKey(const ValueKey('slot-mainHand')));
-      await t.pumpAndSettle();
-      await t.tap(find.text('Iron spear').last);
       await t.pumpAndSettle();
       final card = find.byKey(const ValueKey('item-card'));
       Finder inCard(String text) =>
@@ -2057,6 +2093,75 @@ void fightsWithDepth() {
       expect(inCard('Pierce · One hand'), findsOneWidget);
       expect(inCard('+3% Crit'), findsOneWidget);
       expect(inCard('+12 Health'), findsOneWidget);
+      // The worn row shows its bonus stats; the bag row of the same spear
+      // shows only its change (spec 0009 amendment 2).
+      await t.tap(find.descendant(of: card, matching: find.text('Change')));
+      await t.pumpAndSettle();
+      final sheet = find.byKey(const ValueKey('slot-sheet'));
+      final worn = find.byKey(const ValueKey('sheet-worn'));
+      Finder inWorn(String text) =>
+          find.descendant(of: worn, matching: find.text(text));
+      expect(inWorn('+3% Crit'), findsOneWidget);
+      expect(inWorn('+12 Health'), findsOneWidget);
+      expect(
+        find.descendant(of: sheet, matching: find.text('+3% Crit')),
+        findsOneWidget,
+        reason: 'only in the worn row',
+      );
+      expect(
+        find.descendant(of: worn, matching: find.text('Pierce · One hand')),
+        findsNothing,
+        reason: 'the type stays on the card (amendment 2, change 3)',
+      );
+    });
+
+    testWidgets('amendment 2: the worn row has a line per bonus stat; a '
+        'Common item only its base line', (t) async {
+      const worn = 'iron_sword@epic+crit3+crit3+hp12';
+      const other = 'iron_sword@rare+crit2+hp8';
+      await pumpGame(
+        t,
+        level: 14,
+        inventory: {other: 1},
+        equipment: {'mainHand': worn, 'head': 'iron_helm'},
+      );
+      await openTab(t, 'character');
+      final row = find.byKey(const ValueKey('sheet-worn'));
+      List<String?> rowLines() => [
+        for (final w in t.widgetList<Text>(
+          find.descendant(of: row, matching: find.byType(Text)),
+        ))
+          w.data,
+      ];
+
+      await t.tap(find.byKey(const ValueKey('slot-mainHand')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('card-change')));
+      await t.pumpAndSettle();
+      // The name, the base line, then each roll; two equal rolls are two
+      // lines (criteria 1-3).
+      final lines = rowLines();
+      expect(lines, hasLength(5));
+      expect(lines[1], contains('Attack'));
+      expect(lines.sublist(2), ['+3% Crit', '+3% Crit', '+12 Health']);
+      // The bag row: its change line, no bonus stat lines (criterion 5).
+      final sheet = find.byKey(const ValueKey('slot-sheet'));
+      expect(find.byKey(const ValueKey('sheet-delta-$other')), findsOneWidget);
+      for (final line in ['+2% Crit', '+8 Health']) {
+        expect(
+          find.descendant(of: sheet, matching: find.text(line)),
+          findsNothing,
+          reason: line,
+        );
+      }
+      await closeSheet(t);
+
+      await t.tap(find.byKey(const ValueKey('slot-head')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('card-change')));
+      await t.pumpAndSettle();
+      // A Common item: the name and the base line (criterion 4).
+      expect(rowLines(), hasLength(2));
     });
 
     testWidgets('criterion 11: the card fills in by fighting, never shows '
