@@ -48,7 +48,11 @@ const faintRgb = 0x7F8A90;
 const shortRgb = 0xE08A7C;
 const riskyRgb = 0xFBB15A;
 
+/// The fill of a selected chip, segment or tab (spec 0014 amendment 4).
+const selectedRgb = 0x4C6768;
+
 const spec21Rgb = {
+  selectedRgb,
   caseRgb,
   plateRgb,
   slateRgb,
