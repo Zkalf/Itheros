@@ -2,6 +2,17 @@
 
 The owner's runbook (plan 0009 D3). Claude prepares; only the owner releases. Spec 0007 has the rules behind it.
 
+## How we number releases
+A version is **x.y.z** (spec 0007 amendment 1). Each release raises one part; the parts after it go back to 0.
+
+| Part | Goes up when | Script |
+|---|---|---|
+| **z** (fixes) | Only fixes: bugs, nits, wording, looks. No new rule, system or content. | `.\scripts\release.ps1 -Fix` |
+| **y** (new things) | Something new to play: a new rule or system, new content, or a change to the pace. Fixes can come with it. | `.\scripts\release.ps1` |
+| **x** (1.0) | The owner calls the game ready for a full release to friends, not only the closest ones. Until then x is 0. | comes with 1.0 |
+
+No release follows a schedule. The owner decides each release; Claude may suggest one, with its number and why.
+
 ## A normal release
 1. Claude drafts `releases/next.md` (a few plain lines for players) in a pull request. Read it, then merge it
    (`.\scripts\merge.ps1 <number>`, or `! scripts/merge.sh <number>` from the Claude Code prompt).
@@ -10,7 +21,8 @@ The owner's runbook (plan 0009 D3). Claude prepares; only the owner releases. Sp
    git pull
    .\scripts\release.ps1
    ```
-   Use `.\scripts\release.ps1 -Fix` for a small fix (0.3.0 → 0.3.1) instead of a new version (0.3.0 → 0.4.0).
+   Use `.\scripts\release.ps1 -Fix` for a release of only fixes (0.3.0 → 0.3.1) instead of one with something new
+   (0.3.0 → 0.4.0). See [How we number releases](#how-we-number-releases).
    From this terminal: `! powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1`
 3. It stops at the first problem. Before the upload, a failure undoes everything; just fix it and run it again.
 4. When it says `RELEASED`, tell Claude: it downloads the game through the friend link and checks it.
