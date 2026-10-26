@@ -387,13 +387,15 @@ class _ProfessionCard extends StatelessWidget {
     );
   }
 
-  /// The row from [tile] with [button] at its end. At a large text size the
-  /// button goes under the row, so the words keep its width (#96).
+  /// The row from [tile] with [button] at its end. From the text size 1.3
+  /// (Android's first large step) the button goes under the row, so the words
+  /// keep its width (#96). The scale is read at the row's own 14 sp, which
+  /// Android's nonlinear font scaling can make differ from 1 sp.
   List<Widget> _withButton(
     BuildContext context,
     Widget button,
     ListTile Function(Widget? trailing) tile,
-  ) => MediaQuery.textScalerOf(context).scale(1) < 1.5
+  ) => MediaQuery.textScalerOf(context).scale(14) / 14 < 1.3
       ? [tile(button)]
       : [
           tile(null),
