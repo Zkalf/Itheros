@@ -21,7 +21,9 @@ auto-approved by permission rules (headless and eval runs deny it).
   `scripts\apk-check.ps1` on it (fails on INTERNET or cloud backup).
 - `.\scripts\release.ps1 [-Fix] [-DryRun]` — releases to friends (spec 0007): version bump, check, friend APK (no
   test walk), signature check, commit + tag + push, GitHub release from `releases/next.md`. The owner runs it; Claude
-  drafts `releases/next.md` (plain words for players) and may run `-DryRun`. Runbook: `RELEASING.md`.
+  may run `-DryRun`. Runbook: `RELEASING.md`.
+- `releases/next.md` grows with each change: every PR with a change that players notice adds or changes a plain line
+  there (words for players, the light touch of `WRITING.md`). Tests, scripts, specs and plans add no line.
 - The production gate (plan 0009, `.claude/hooks/production-gate.ps1`) blocks Claude from releasing, merging PRs,
   pushing to `main` (or from eval worktrees) and touching the release key. Work on a short branch per change, open a
   PR (`gh pr create`, proof in the description), review it per `REVIEW.md` and post the review on it

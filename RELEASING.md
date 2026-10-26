@@ -13,9 +13,16 @@ A version is **x.y.z** (spec 0007 amendment 1). Each release raises one part; th
 
 No release follows a schedule. The owner decides each release; Claude may suggest one, with its number and why.
 
+## The notes grow with each change
+`releases/next.md` holds the notes of the next release, in plain words for players (#119).
+- Each pull request with a change that players notice adds a line to it, or changes a line.
+- A change that players do not notice (tests, scripts, specs, plans) adds no line.
+- So you can read what changed since the last release at any time, and the notes are ready when you release.
+
 ## A normal release
-1. Claude drafts `releases/next.md` (a few plain lines for players) in a pull request. Read it, then merge it
-   (`.\scripts\merge.ps1 <number>`, or `! scripts/merge.sh <number>` from the Claude Code prompt).
+1. Read `releases/next.md`. Claude tidies it in a pull request if you ask: a first line that sums it up, the
+   biggest changes first. Merge that (`.\scripts\merge.ps1 <number>`, or `! scripts/merge.sh <number>` from the
+   Claude Code prompt).
 2. In a PowerShell window in the project folder:
    ```
    git pull
