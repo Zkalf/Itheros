@@ -45,10 +45,14 @@ class _ActionSheetState extends State<ActionSheet> {
           : StopKind.never;
     }
     final items = _items;
-    if (items.isNotEmpty) {
-      _item = items.first;
-      _count = _game.owned(s, items.first) + 5;
-    }
+    if (items.isNotEmpty) _pick(items.first);
+  }
+
+  /// Counts "Until I have N" for [item]: what the player has of it, plus 5
+  /// (#113).
+  void _pick(String item) {
+    _item = item;
+    _count = _game.owned(widget.controller.state, item) + 5;
   }
 
   /// Items "until I have N" may count: a monster's drops only once found,
@@ -141,6 +145,9 @@ class _ActionSheetState extends State<ActionSheet> {
                     onSelected: (_) => setState(() {
                       _kind = k;
                       if (k == StopKind.untilCrafted) _count = 1;
+                      if (k == StopKind.untilHave && _item != null) {
+                        _pick(_item!);
+                      }
                     }),
                   ),
               ],
@@ -165,7 +172,7 @@ class _ActionSheetState extends State<ActionSheet> {
                             child: Text(labels.item(i)),
                           ),
                       ],
-                      onChanged: (i) => setState(() => _item = i),
+                      onChanged: (i) => setState(() => _pick(i!)),
                     ),
                   ),
                 ),
