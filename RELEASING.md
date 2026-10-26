@@ -15,14 +15,17 @@ No release follows a schedule. The owner decides each release; Claude may sugges
 
 ## The notes grow with each change
 `releases/next.md` holds the notes of the next release, in plain words for players (#119).
-- Each pull request with a change that players notice adds a line to it, or changes a line.
+- Each change that players notice adds a line to it, or changes a line: in its pull request, or in its fast-lane
+  commit.
 - A change that players do not notice (tests, scripts, specs, plans) adds no line.
-- So you can read what changed since the last release at any time, and the notes are ready when you release.
+- A release renames the file, so the first change after a release creates it again, with a first line that sums up.
+- So you can read what changed since the last release at any time.
 
 ## A normal release
-1. Read `releases/next.md`. Claude tidies it in a pull request if you ask: a first line that sums it up, the
-   biggest changes first. Merge that (`.\scripts\merge.ps1 <number>`, or `! scripts/merge.sh <number>` from the
-   Claude Code prompt).
+1. Claude drafts the final notes in a pull request (spec 0007 §5): it checks `releases/next.md` against every change
+   since the last release (`git log v<last>..main`), adds what is missing, writes a first line that sums it up and
+   puts the biggest changes first. Read it, then merge it (`.\scripts\merge.ps1 <number>`, or
+   `! scripts/merge.sh <number>` from the Claude Code prompt).
 2. In a PowerShell window in the project folder:
    ```
    git pull
