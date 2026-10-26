@@ -85,6 +85,15 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($pubspec, ($text -replace '(?m)^version: [^\r\n]*', "version: $version+$build"), $utf8)
 [IO.File]::WriteAllText($versionDart, ((Get-Content -Raw -Encoding UTF8 $versionDart) -replace "appVersion = '[^']*'", "appVersion = '$version'"), $utf8)
 
+# The sample save of this version, before the check, so the check runs the save tests on it too (#60). Undo
+# removes it again, also on a dry run.
+Write-Host '==> Writing the sample save' -ForegroundColor Cyan
+Push-Location $app
+dart run tool/sample_save.dart "test/fixtures/saves/$version.json"
+$sampled = $LASTEXITCODE
+Pop-Location
+if ($sampled -ne 0) { Abort 'could not write the sample save' }
+
 # 3. The full check (format, analyze, tests: the save fixtures and the version line included). The turn holds the
 # check and the friend build, so no other full check runs beside them (scripts\check-turn.ps1). The check inside
 # takes the same turn again, which a mutex allows to the process that holds it; an Abort ends the process, and
@@ -115,13 +124,8 @@ if ($DryRun) {
   exit 0
 }
 
-# 5. Sample save, notes renamed, commit, tag, push.
+# 5. Notes renamed, commit (with the sample save), tag, push.
 Write-Host '==> Committing' -ForegroundColor Cyan
-Push-Location $app
-dart run tool/sample_save.dart "test/fixtures/saves/$version.json"
-$sampled = $LASTEXITCODE
-Pop-Location
-if ($sampled -ne 0) { Abort 'could not write the sample save' }
 Repo mv releases/next.md "releases/$version.md"
 Repo add app/pubspec.yaml app/lib/version.dart "app/test/fixtures/saves/$version.json"
 Repo commit -q -m "Release $version"
