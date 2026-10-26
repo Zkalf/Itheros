@@ -6,11 +6,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walkingrpg/ui/images.dart' show Picture;
-import 'package:walkingrpg/ui/world_tab.dart' show FogImage;
+import 'package:walkingrpg/ui/world_tab.dart' show FogImage, MapPainter;
 
+import 'map_fog_test.dart' show callsOf;
 import 'ui_test.dart' show openTab, pumpGame;
 
 void main() {
+  // The soft edge of each dash of a road into the fog was a blur. The
+  // renderer blurred each dash again on each frame, the biggest cost left
+  // after the fog (measured on the phone: 11-12 frames in 2 s, 14-16 without).
+  testWidgets('the roads are drawn with no live blur', (t) async {
+    await pumpGame(t);
+    await openTab(t, 'world');
+    final paint = find.byWidgetPredicate(
+      (w) => w is CustomPaint && w.painter is MapPainter,
+    );
+    final painter = t.widget<CustomPaint>(paint).painter! as MapPainter;
+    expect(painter.paths.any((p) => p.$3 == null), isTrue, reason: 'fog');
+    final pens = [
+      for (final c in callsOf(painter, t.getSize(paint)))
+        if (c.memberName == #drawPath) c.positionalArguments[1] as Paint,
+    ];
+    expect(pens.where((p) => p.maskFilter != null), isEmpty);
+  });
+
   testWidgets('the fog of a loaded map is one image, with no live filter', (
     t,
   ) async {
