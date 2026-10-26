@@ -579,11 +579,12 @@ class _Ring extends StatelessWidget {
 /// around each place out of the fog and a cloud on each place in it. The
 /// fog still shows by exploring (spec 0008 decision 5).
 ///
-/// The blurred, pale map is made once into an image as soon as the map image
-/// has loaded, for each size of the map (#121). A blur on each frame made a
-/// sheet over the map open at about 20 frames a second on the phone, because
-/// the renderer keeps no blurred layer between frames. Until then the fog
-/// blurs live, so the map never shows without its fog.
+/// Once the map image has loaded, the fog is made into images (#121): the
+/// blurred, pale map once for each size of the map, and on it the whole fog
+/// each time the fog changes. Drawn live, the fog made a sheet over the map
+/// open at about 20 frames a second on the phone, because the renderer draws
+/// the blur and the layer of the fog again on each frame. Until the map image
+/// has loaded, the fog is drawn live, so the map never shows without its fog.
 class _Fog extends StatefulWidget {
   const _Fog({super.key, required this.size, required this.painter});
 
@@ -602,7 +603,13 @@ class _FogState extends State<_Fog> {
   ImageStream? _stream;
   ImageStreamListener? _listener;
 
-  Size get _pixels => widget.size * MediaQuery.devicePixelRatioOf(context);
+  /// The whole fog, and the painter and the pixels it was made for.
+  ui.Image? _whole;
+  FogPainter? _wholeFor;
+  Size? _wholeAt;
+
+  double get _ratio => MediaQuery.devicePixelRatioOf(context);
+  Size get _pixels => widget.size * _ratio;
 
   @override
   void didChangeDependencies() {
@@ -670,10 +677,46 @@ class _FogState extends State<_Fog> {
     );
   }
 
+  /// The whole fog at [pixels]: [blurred] and the veil, the holes and the
+  /// clouds of [painter] over it, in a layer of their own, as the live fog
+  /// draws them. So the holes clear the fog, and not the map under it.
+  static ui.Image _makeWhole(
+    ui.Image blurred,
+    FogPainter painter,
+    Size size,
+    double ratio,
+  ) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final pixels = size * ratio;
+    canvas
+      ..saveLayer(Offset.zero & pixels, Paint())
+      ..drawImage(blurred, Offset.zero, Paint())
+      ..scale(ratio);
+    painter.paint(canvas, size);
+    canvas.restore();
+    return recorder.endRecording().toImageSync(
+      pixels.width.round(),
+      pixels.height.round(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final painter = widget.painter;
-    final made = _made[_pixels];
+    final pixels = _pixels;
+    if (_made[pixels] case final blurred?) {
+      if (_whole == null ||
+          _wholeAt != pixels ||
+          _wholeFor!.shouldRepaint(painter)) {
+        _whole = _makeWhole(blurred, painter, widget.size, _ratio);
+        _wholeFor = painter;
+        _wholeAt = pixels;
+      }
+      return RepaintBoundary(
+        child: FogImage(painter: painter, image: _whole!, size: widget.size),
+      );
+    }
     return RepaintBoundary(
       // A layer of its own holds the blurred map and the veil. Thus the holes
       // of the painter clear them, and not the map under them.
@@ -683,28 +726,44 @@ class _FogState extends State<_Fog> {
           foregroundPainter: painter,
           // Only the map turns pale; the veil and the clouds keep the text
           // colour (the design's filter acts on the map behind the veil).
-          child: made != null
-              ? RawImage(
-                  image: made,
-                  width: widget.size.width,
-                  height: widget.size.height,
-                  fit: BoxFit.fill,
-                )
-              : ColorFiltered(
-                  colorFilter: _mist,
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(
-                      sigmaX: 2.4 * painter.scale,
-                      sigmaY: 2.4 * painter.scale,
-                      tileMode: TileMode.clamp,
-                    ),
-                    child: MapView._image,
-                  ),
-                ),
+          child: ColorFiltered(
+            colorFilter: _mist,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(
+                sigmaX: 2.4 * painter.scale,
+                sigmaY: 2.4 * painter.scale,
+                tileMode: TileMode.clamp,
+              ),
+              child: MapView._image,
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+/// The whole fog of the World map made into [image] at [size]: what [painter]
+/// paints over the blurred, pale map (#121). [painter] says what it holds.
+class FogImage extends StatelessWidget {
+  const FogImage({
+    super.key,
+    required this.painter,
+    required this.image,
+    required this.size,
+  });
+
+  final FogPainter painter;
+  final ui.Image image;
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) => RawImage(
+    image: image,
+    width: size.width,
+    height: size.height,
+    fit: BoxFit.fill,
+  );
 }
 
 /// The filter of the layer of the fog: it changes no colour.
