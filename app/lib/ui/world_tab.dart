@@ -920,11 +920,21 @@ class MapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     // A dark edge under each road and each dash, so that it reads on the
-    // painting and on the light fog. The edge of a dash is a soft shadow.
+    // painting and on the light fog. The edge of a dash is a soft shadow:
+    // four faint strokes, each narrower and darker than the one under it. A
+    // blur looks the same, but the renderer blurs each dash again on each
+    // frame (#121).
     final edge = pen(Quiet.caseBlack.withValues(alpha: .6), 4.5);
     final road = pen(Quiet.text.withValues(alpha: .9), 2.5);
-    final dashEdge = pen(Quiet.caseBlack.withValues(alpha: .5), 4.5)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+    final dashEdges = [
+      for (final (width, alpha) in const [
+        (8.0, .05),
+        (6.5, .08),
+        (5.0, .12),
+        (3.5, .15),
+      ])
+        pen(Quiet.caseBlack.withValues(alpha: alpha), width),
+    ];
     final fog = pen(Quiet.text.withValues(alpha: .9), 2.5);
     for (final (a, b, steps) in paths) {
       final line = Path()
@@ -939,9 +949,10 @@ class MapPainter extends CustomPainter {
       for (final PathMetric m in line.computeMetrics()) {
         for (var d = 0.0; d < m.length; d += 12) {
           final dash = m.extractPath(d, d + 6);
-          canvas
-            ..drawPath(dash, dashEdge)
-            ..drawPath(dash, fog);
+          for (final e in dashEdges) {
+            canvas.drawPath(dash, e);
+          }
+          canvas.drawPath(dash, fog);
         }
       }
     }
