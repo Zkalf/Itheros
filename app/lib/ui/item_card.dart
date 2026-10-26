@@ -5,6 +5,7 @@ import '../game_controller.dart';
 import 'away_summary_card.dart';
 import 'images.dart';
 import 'labels.dart';
+import 'slot_sheet.dart';
 import 'socket.dart';
 import 'theme.dart';
 
@@ -194,13 +195,25 @@ class ItemCard extends StatelessWidget {
     final c = controller;
     final game = c.game;
     final s = c.state;
+    // Change opens the sheet of its slot (spec 0008 amendment 4).
     if (wornIn case final slot?) {
       return [
-        _button(
-          context,
-          const ValueKey('card-unequip'),
-          'Unequip',
-          () => c.unequip(slot),
+        Row(
+          children: [
+            _button(
+              context,
+              const ValueKey('card-change'),
+              'Change',
+              () => showSlotSheet(host, c, slot),
+            ),
+            const SizedBox(width: 8),
+            _button(
+              context,
+              const ValueKey('card-unequip'),
+              'Unequip',
+              () => c.unequip(slot),
+            ),
+          ],
         ),
       ];
     }

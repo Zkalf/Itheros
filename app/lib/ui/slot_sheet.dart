@@ -20,8 +20,9 @@ Future<void> showSlotSheet(
   ),
 );
 
-/// One slot, empty or not: what's worn there with Unequip, and every bag item
-/// that fits with its stat change and Equip or Swap into this slot.
+/// One slot, empty or not: what's worn there with its stats and Unequip, and
+/// every bag item that fits with its stat change and Equip or Swap into this
+/// slot.
 class SlotSheet extends StatelessWidget {
   const SlotSheet({
     super.key,
@@ -80,10 +81,20 @@ class SlotSheet extends StatelessWidget {
             ),
             if (worn != null)
               ListTile(
+                key: const ValueKey('sheet-worn'),
                 title: name(worn),
-                // Rows show no bonus stats (spec 0009 §8.2).
-                subtitle: Text(
-                  labels.bonus(data.baseStatsOf(worn)).join(' · '),
+                // The base stats, then each bonus stat on its own line, as
+                // on the item card (spec 0009 amendment 2).
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(labels.bonus(data.baseStatsOf(worn)).join(' · ')),
+                    for (final r in data.bonusRolls(worn))
+                      Text(
+                        labels.bonusRoll(r),
+                        style: TextStyle(color: itemColour(data, worn)),
+                      ),
+                  ],
                 ),
                 onTap: () {
                   Navigator.of(context).pop();

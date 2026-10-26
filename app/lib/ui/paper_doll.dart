@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
+import 'item_card.dart';
 import 'item_square.dart';
 import 'slot_sheet.dart';
 
@@ -52,8 +53,11 @@ class PaperDoll extends StatelessWidget {
           item: worn,
           emptySlot: id,
           dimmed: id == 'offHand' && twoHanded && worn == null,
-          // Any slot, empty or not, opens its sheet (amendment 3).
-          onTap: () => showSlotSheet(context, c, id),
+          // A filled slot opens the card of its item, an empty one its sheet
+          // (amendment 4).
+          onTap: () => worn == null
+              ? showSlotSheet(context, c, id)
+              : showItemCard(context, c, worn, wornIn: id),
         ),
       );
     }

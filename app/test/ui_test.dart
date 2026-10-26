@@ -2127,11 +2127,12 @@ void fightsWithDepth() {
       );
       await openTab(t, 'character');
       final row = find.byKey(const ValueKey('sheet-worn'));
+      // The lines of the row, without its Unequip button.
       List<String?> rowLines() => [
         for (final w in t.widgetList<Text>(
           find.descendant(of: row, matching: find.byType(Text)),
         ))
-          w.data,
+          if (w.data != 'Unequip') w.data,
       ];
 
       await t.tap(find.byKey(const ValueKey('slot-mainHand')));
