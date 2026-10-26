@@ -5,6 +5,7 @@ import '../game_controller.dart';
 import 'away_summary_card.dart';
 import 'images.dart';
 import 'labels.dart';
+import 'slot_sheet.dart';
 import 'socket.dart';
 import 'theme.dart';
 
@@ -34,7 +35,7 @@ Future<void> showItemCard(
 
 /// The item's picture (spec 0014 §2.3), its name in its quality colour, the
 /// quality and kind in words, its stats, how it compares with what is worn,
-/// and Equip / Swap / Unequip. A tool says what it serves and costs; at a
+/// and Equip / Swap, or Change / Unequip when it is worn. A tool says what it serves and costs; at a
 /// forge gear and tools salvage and gear rerolls (spec 0010 §8.3). A meal
 /// says its buff and length, with Eat and Auto-eat (spec 0011 §8.3). A
 /// material says where it comes from and what uses it.
@@ -194,13 +195,27 @@ class ItemCard extends StatelessWidget {
     final c = controller;
     final game = c.game;
     final s = c.state;
+    // Change opens the sheet of its slot (spec 0008 amendment 4). The buttons
+    // wrap at a large text size.
     if (wornIn case final slot?) {
       return [
-        _button(
-          context,
-          const ValueKey('card-unequip'),
-          'Unequip',
-          () => c.unequip(slot),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _button(
+              context,
+              const ValueKey('card-change'),
+              'Change',
+              () => showSlotSheet(host, c, slot),
+            ),
+            _button(
+              context,
+              const ValueKey('card-unequip'),
+              'Unequip',
+              () => c.unequip(slot),
+            ),
+          ],
         ),
       ];
     }

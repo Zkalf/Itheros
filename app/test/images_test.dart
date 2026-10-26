@@ -714,9 +714,16 @@ void criterion9() {
       for (final slot in ['chest', 'head']) {
         expectInkOnTop(t, find.byKey(ValueKey('slot-$slot')), 'slot $slot');
       }
-      await t.tap(find.byKey(const ValueKey('slot-chest')));
+      // An empty slot opens its sheet, a filled one the card of its item
+      // (spec 0008 amendment 4).
+      await t.tap(find.byKey(const ValueKey('slot-head')));
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('slot-sheet')), findsOneWidget);
+      await closeSheet(t);
+      await t.tap(find.byKey(const ValueKey('slot-chest')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('item-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('slot-sheet')), findsNothing);
       await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('tab-bag')));
       await t.pumpAndSettle();
