@@ -18,9 +18,11 @@ import 'package:walkingrpg/ui/app.dart';
 import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
 import 'package:walkingrpg/ui/images.dart';
+import 'package:walkingrpg/ui/item_card.dart';
 import 'package:walkingrpg/ui/item_square.dart';
 import 'package:walkingrpg/ui/journal_screen.dart';
 import 'package:walkingrpg/ui/labels.dart';
+import 'package:walkingrpg/ui/theme.dart';
 import 'package:walkingrpg/ui/world_tab.dart';
 import 'package:walkingrpg/version.dart';
 
@@ -1732,6 +1734,47 @@ void characterScreen() {
         find.byKey(const ValueKey('sheet-equip-mithril_helm')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('amendment 4: Change and Unequip fit at 360 dp and the text '
+        'size 2.0', (t) async {
+      final (c, _) = await pumpGame(t, equipment: {'head': 'iron_helm'});
+      // The card alone, at the phone's width.
+      t.view.physicalSize = const Size(360, 4000);
+      t.view.devicePixelRatio = 1;
+      await t.pumpWidget(
+        MaterialApp(
+          theme: quietTheme,
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: Scaffold(
+                body: ItemCard(
+                  controller: c,
+                  item: 'iron_helm',
+                  wornIn: 'head',
+                  host: context,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await t.pump();
+      expect(t.takeException(), isNull);
+      expect(find.byKey(const ValueKey('card-change')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-unequip')), findsOneWidget);
+    });
+
+    testWidgets('amendment 4: a worn item the data no longer has opens its '
+        'sheet', (t) async {
+      // An old save can wear an item that later data renamed.
+      await pumpGame(t, equipment: {'head': 'gone_helm'});
+      await openTab(t, 'character');
+      await openCard(t, 'slot-head');
+      expect(find.byKey(const ValueKey('slot-sheet')), findsOneWidget);
+      expect(find.byKey(const ValueKey('sheet-unequip')), findsOneWidget);
     });
 
     testWidgets('amendment 4: a bag card shows no Change', (t) async {

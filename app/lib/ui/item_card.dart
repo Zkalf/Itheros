@@ -35,7 +35,7 @@ Future<void> showItemCard(
 
 /// The item's picture (spec 0014 §2.3), its name in its quality colour, the
 /// quality and kind in words, its stats, how it compares with what is worn,
-/// and Equip / Swap / Unequip. A tool says what it serves and costs; at a
+/// and Equip / Swap, or Change / Unequip when it is worn. A tool says what it serves and costs; at a
 /// forge gear and tools salvage and gear rerolls (spec 0010 §8.3). A meal
 /// says its buff and length, with Eat and Auto-eat (spec 0011 §8.3). A
 /// material says where it comes from and what uses it.
@@ -195,10 +195,13 @@ class ItemCard extends StatelessWidget {
     final c = controller;
     final game = c.game;
     final s = c.state;
-    // Change opens the sheet of its slot (spec 0008 amendment 4).
+    // Change opens the sheet of its slot (spec 0008 amendment 4). The buttons
+    // wrap at a large text size.
     if (wornIn case final slot?) {
       return [
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _button(
               context,
@@ -206,7 +209,6 @@ class ItemCard extends StatelessWidget {
               'Change',
               () => showSlotSheet(host, c, slot),
             ),
-            const SizedBox(width: 8),
             _button(
               context,
               const ValueKey('card-unequip'),

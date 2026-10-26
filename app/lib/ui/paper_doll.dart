@@ -54,8 +54,9 @@ class PaperDoll extends StatelessWidget {
           emptySlot: id,
           dimmed: id == 'offHand' && twoHanded && worn == null,
           // A filled slot opens the card of its item, an empty one its sheet
-          // (amendment 4).
-          onTap: () => worn == null
+          // (amendment 4). An item the data no longer has (an old save) has
+          // no card, so its sheet opens, with Unequip.
+          onTap: () => worn == null || data.itemOf(worn) == null
               ? showSlotSheet(context, c, id)
               : showItemCard(context, c, worn, wornIn: id),
         ),
