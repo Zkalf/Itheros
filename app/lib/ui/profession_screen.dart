@@ -177,10 +177,13 @@ class _ProfessionCard extends StatelessWidget {
       if (!learned)
         Text('Learn from ${p.teacher.name} in camp')
       else ...[
-        Row(
+        // A second line at a large text size, as on the Professions tab
+        // (#96).
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(p.tierAt(level).name, style: text.titleSmall),
-            const Spacer(),
             Text.rich(
               numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
               style: text.bodySmall,
@@ -277,7 +280,7 @@ class _ProfessionCard extends StatelessWidget {
         ),
     ];
     if (profession.id == 'cooking') {
-      return [_fireRow(context), ..._mealRows(context), ...list];
+      return [..._fireRows(context), ..._mealRows(context), ...list];
     }
     if (profession.id == 'crafting') {
       final forge = game.nearestForge(s);
@@ -315,8 +318,15 @@ class _ProfessionCard extends StatelessWidget {
     final area = game.data.locations.values.firstWhere(
       (l) => l.nodes.contains(spot.id),
     );
-    return [
-      ListTile(
+    return _withButton(
+      context,
+      FilledButton.tonal(
+        key: ValueKey('go-${profession.id}'),
+        style: slateButton,
+        onPressed: () => startAction(context, c, Activity.gather(spot.id)),
+        child: const Text('Go there'),
+      ),
+      (trailing) => ListTile(
         contentPadding: EdgeInsets.zero,
         leading: LevelBadge(
           level: spot.level,
@@ -332,18 +342,13 @@ class _ProfessionCard extends StatelessWidget {
         title: Text('${spot.name} · ${labels.location(area.id)}'),
         titleTextStyle: nameStyle(context),
         subtitle: const Text('Where to practise'),
-        trailing: FilledButton.tonal(
-          key: ValueKey('go-${profession.id}'),
-          style: slateButton,
-          onPressed: () => startAction(context, c, Activity.gather(spot.id)),
-          child: const Text('Go there'),
-        ),
+        trailing: trailing,
       ),
-    ];
+    );
   }
 
   /// The camp fire: here, or how far, with Go there (spec 0011 §5.1, §8.1).
-  Widget _fireRow(BuildContext context) {
+  List<Widget> _fireRows(BuildContext context) {
     final c = controller;
     final game = c.game;
     final s = c.state;
@@ -353,7 +358,7 @@ class _ProfessionCard extends StatelessWidget {
         .entries
         .where((e) => game.data.locations[e.key]!.fire)
         .firstOrNull;
-    return ListTile(
+    ListTile tile(Widget? trailing) => ListTile(
       key: const ValueKey('fire'),
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.outdoor_grill),
@@ -367,17 +372,33 @@ class _ProfessionCard extends StatelessWidget {
       subtitle: fire == null || fire.value == 0
           ? null
           : const Text('Cooking walks you there first.'),
-      trailing: fire == null || fire.value == 0
-          ? null
-          : FilledButton.tonal(
-              key: const ValueKey('go-cooking'),
-              style: slateButton,
-              onPressed: () =>
-                  startAction(context, c, Activity.travel(fire.key)),
-              child: const Text('Go there'),
-            ),
+      trailing: trailing,
+    );
+    if (fire == null || fire.value == 0) return [tile(null)];
+    return _withButton(
+      context,
+      FilledButton.tonal(
+        key: const ValueKey('go-cooking'),
+        style: slateButton,
+        onPressed: () => startAction(context, c, Activity.travel(fire.key)),
+        child: const Text('Go there'),
+      ),
+      tile,
     );
   }
+
+  /// The row from [tile] with [button] at its end. At a large text size the
+  /// button goes under the row, so the words keep its width (#96).
+  List<Widget> _withButton(
+    BuildContext context,
+    Widget button,
+    ListTile Function(Widget? trailing) tile,
+  ) => MediaQuery.textScalerOf(context).scale(1) < 1.5
+      ? [tile(button)]
+      : [
+          tile(null),
+          Align(alignment: AlignmentDirectional.centerStart, child: button),
+        ];
 
   /// The meal running, tap for its card, and the auto-eat choice (spec
   /// 0011 §8.1). The meal row starts with the meal (spec 0014 §4.2), in a

@@ -80,12 +80,20 @@ class _Summary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
+        // On one line, the level at the right; at a large text size the
+        // level wraps to a second line instead of past the edge (#96).
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Icon(professionIcon(p.icon)),
-            const SizedBox(width: 8),
-            Text(p.name, style: text.titleLarge),
-            const Spacer(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(professionIcon(p.icon)),
+                const SizedBox(width: 8),
+                Flexible(child: Text(p.name, style: text.titleLarge)),
+              ],
+            ),
             if (learned)
               Text.rich(numberSpan('Level $level'), style: text.titleMedium),
           ],
@@ -94,10 +102,11 @@ class _Summary extends StatelessWidget {
         if (!learned)
           Text('Learn from ${p.teacher.name} in camp')
         else ...[
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(p.tierAt(level).name, style: text.titleSmall),
-              const Spacer(),
               Text.rich(
                 numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
                 style: text.bodySmall,
