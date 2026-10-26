@@ -320,6 +320,16 @@ void main() {
       ];
       expect(layers, [_sameColours], reason: 'the layer of the fog');
       final image = find.descendant(of: _fog, matching: find.byType(Image));
+      if (image.evaluate().isEmpty) {
+        // Once the map image has loaded, the blurred, pale map is one image
+        // made once (#121): no live mist and no live blur under the painter.
+        final made = find.descendant(of: _fog, matching: find.byType(RawImage));
+        final underPaint = between(t.element(made), t.element(paint));
+        expect(underPaint.whereType<ColorFiltered>(), isEmpty);
+        expect(underPaint.whereType<ImageFiltered>(), isEmpty);
+        return;
+      }
+      // Before it has loaded, the mist and the blur are live.
       final underPaint = between(t.element(image), t.element(paint));
       expect(
         [

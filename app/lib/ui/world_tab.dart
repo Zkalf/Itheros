@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:ui' show ImageFilter, PathMetric;
 
 import 'package:flutter/foundation.dart' show listEquals, mapEquals;
@@ -411,6 +412,7 @@ class _MapViewState extends State<MapView> {
             onImage(
               _Fog(
                 key: const ValueKey('map-fog'),
+                size: whole,
                 painter: FogPainter(
                   holes: [
                     for (final p in w.places)
@@ -576,35 +578,133 @@ class _Ring extends StatelessWidget {
 /// show it: the map blurred and pale under a light veil, with a soft hole
 /// around each place out of the fog and a cloud on each place in it. The
 /// fog still shows by exploring (spec 0008 decision 5).
-class _Fog extends StatelessWidget {
-  const _Fog({super.key, required this.painter});
+///
+/// The blurred, pale map is made once into an image as soon as the map image
+/// has loaded, for each size of the map (#121). A blur on each frame made a
+/// sheet over the map open at about 20 frames a second on the phone, because
+/// the renderer keeps no blurred layer between frames. Until then the fog
+/// blurs live, so the map never shows without its fog.
+class _Fog extends StatefulWidget {
+  const _Fog({super.key, required this.size, required this.painter});
 
+  /// The size of the whole map.
+  final Size size;
   final FogPainter painter;
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    // A layer of its own holds the blurred map and the veil. Thus the holes
-    // of the painter clear them, and not the map under them.
-    child: ColorFiltered(
-      colorFilter: _ownLayer,
-      child: CustomPaint(
-        foregroundPainter: painter,
-        // Only the map turns pale; the veil and the clouds keep the text
-        // colour (the design's filter acts on the map behind the veil).
-        child: ColorFiltered(
-          colorFilter: _mist,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: 2.4 * painter.scale,
-              sigmaY: 2.4 * painter.scale,
-              tileMode: TileMode.clamp,
-            ),
-            child: MapView._image,
-          ),
+  State<_Fog> createState() => _FogState();
+}
+
+class _FogState extends State<_Fog> {
+  /// The blurred, pale map by its size in pixels, made once for the app.
+  static final _made = <Size, ui.Image>{};
+
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  Size get _pixels => widget.size * MediaQuery.devicePixelRatioOf(context);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_made[_pixels] == null) _load();
+  }
+
+  @override
+  void didUpdateWidget(_Fog old) {
+    super.didUpdateWidget(old);
+    if (old.size != widget.size && _made[_pixels] == null) _load();
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    super.dispose();
+  }
+
+  void _stop() {
+    if (_listener case final l?) _stream?.removeListener(l);
+    _stream = null;
+    _listener = null;
+  }
+
+  /// Waits for the map image, then makes the blurred, pale map.
+  void _load() {
+    _stop();
+    final pixels = _pixels;
+    final stream = MapView._image.image.resolve(
+      createLocalImageConfiguration(context),
+    );
+    final listener = ImageStreamListener((info, _) {
+      _made[pixels] ??= _make(info.image, pixels);
+      _stop();
+      if (mounted) setState(() {});
+    });
+    _stream = stream..addListener(listener);
+    _listener = listener;
+  }
+
+  /// [map] blurred and pale at [pixels], as the live fog draws it: covered,
+  /// blurred, then the mist filter. The live blur is 2.4 dp for each 360 dp
+  /// of map width, so in pixels it is 2.4 for each 360 pixels.
+  static ui.Image _make(ui.Image map, Size pixels) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final all = Offset.zero & pixels;
+    final sigma = 2.4 * pixels.width / 360;
+    canvas.saveLayer(
+      all,
+      Paint()
+        ..colorFilter = _mist
+        ..imageFilter = ImageFilter.blur(
+          sigmaX: sigma,
+          sigmaY: sigma,
+          tileMode: TileMode.clamp,
+        ),
+    );
+    paintImage(canvas: canvas, rect: all, image: map, fit: BoxFit.cover);
+    canvas.restore();
+    return recorder.endRecording().toImageSync(
+      pixels.width.round(),
+      pixels.height.round(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final painter = widget.painter;
+    final made = _made[_pixels];
+    return RepaintBoundary(
+      // A layer of its own holds the blurred map and the veil. Thus the holes
+      // of the painter clear them, and not the map under them.
+      child: ColorFiltered(
+        colorFilter: _ownLayer,
+        child: CustomPaint(
+          foregroundPainter: painter,
+          // Only the map turns pale; the veil and the clouds keep the text
+          // colour (the design's filter acts on the map behind the veil).
+          child: made != null
+              ? RawImage(
+                  image: made,
+                  width: widget.size.width,
+                  height: widget.size.height,
+                  fit: BoxFit.fill,
+                )
+              : ColorFiltered(
+                  colorFilter: _mist,
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(
+                      sigmaX: 2.4 * painter.scale,
+                      sigmaY: 2.4 * painter.scale,
+                      tileMode: TileMode.clamp,
+                    ),
+                    child: MapView._image,
+                  ),
+                ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// The filter of the layer of the fog: it changes no colour.
