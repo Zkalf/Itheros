@@ -452,7 +452,8 @@ ThemeData _quietTheme() {
     onSurface: Quiet.text,
     onSurfaceVariant: Quiet.muted,
     surfaceDim: Quiet.caseBlack,
-    surfaceBright: Quiet.lit,
+    // Lit is only the thumb of a switch that is off (spec 0014 amendment 4).
+    surfaceBright: Quiet.selected,
     surfaceContainerLowest: Quiet.caseBlack,
     surfaceContainerLow: Quiet.plate,
     surfaceContainer: Quiet.plate,

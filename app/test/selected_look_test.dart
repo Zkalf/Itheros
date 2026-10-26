@@ -16,6 +16,7 @@ import 'quiet_teal_test.dart'
         drawnUnder,
         expectRgb,
         materialOf,
+        nameOf,
         openJournal,
         richIn,
         rootStyle,
@@ -185,7 +186,8 @@ void main() {
         );
         _expectOutline(
           rootStyle(richIn(t, label)),
-          'the chip ${(chip.widget as ChoiceChip).selected ? '(selected)' : ''}',
+          'the chip ${nameOf(chip)}'
+          '${(chip.widget as ChoiceChip).selected ? ', selected' : ''}',
         );
       }
     });
