@@ -17,20 +17,25 @@ function Case([string]$what, [bool]$ok) {
 }
 
 # 1. Another check holds the turn for 3 s: this one waits until it ends, and the message names its folder.
-# The other check says when it holds the turn, so a slow start of its process cannot make the case pass by luck.
+# The other check says when it holds the turn, so a slow start of its process cannot make the case pass by luck. Its
+# 3 s start only when this one says it goes to wait: a stall of the CI runner before that cannot use them up.
 $ready = Join-Path $env:TEMP "$name.ready"
-Remove-Item -LiteralPath $ready -ErrorAction SilentlyContinue
-$holder = Start-Job -ArgumentList $lib, $name, $ready -ScriptBlock {
-  param($lib, $name, $ready)
+$go = Join-Path $env:TEMP "$name.go"
+Remove-Item -LiteralPath $ready, $go -ErrorAction SilentlyContinue
+$holder = Start-Job -ArgumentList $lib, $name, $ready, $go -ScriptBlock {
+  param($lib, $name, $ready, $go)
   . $lib
   Enter-CheckTurn -Name $name -Folder 'C:\other-checkout'
   Set-Content -LiteralPath $ready -Value 'holding'
+  $start = [Diagnostics.Stopwatch]::StartNew()
+  while (-not (Test-Path $go) -and $start.Elapsed.TotalSeconds -lt 60) { Start-Sleep -Milliseconds 100 }
   Start-Sleep -Seconds 3
   Exit-CheckTurn
 }
 $start = [Diagnostics.Stopwatch]::StartNew()
 while (-not (Test-Path $ready) -and $start.Elapsed.TotalSeconds -lt 60) { Start-Sleep -Milliseconds 100 }
 Case 'the other check takes the turn' (Test-Path $ready)
+Set-Content -LiteralPath $go -Value 'waiting'
 $clock = [Diagnostics.Stopwatch]::StartNew()
 $said = Enter-CheckTurn -Name $name -PollSeconds 1 6>&1 | Out-String
 $clock.Stop()
@@ -38,7 +43,7 @@ Exit-CheckTurn
 Case 'a second check waits for the first' ($clock.Elapsed.TotalSeconds -ge 1.5)
 Case 'the message names the folder of the other check' ($said -like '*C:\other-checkout*')
 $holder | Wait-Job | Remove-Job
-Remove-Item -LiteralPath $ready -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $ready, $go -ErrorAction SilentlyContinue
 
 # 2. With no other check, the turn comes at once.
 $clock = [Diagnostics.Stopwatch]::StartNew()
