@@ -87,6 +87,10 @@ auto-approved by permission rules (headless and eval runs deny it).
 - `GameController` runs every change through one queue, and every player action syncs first, so steps
   walked earlier aren't credited to the new activity.
 - `MainActivity` must stay a `FlutterFragmentActivity` (health plugin permission flow). `minSdk` is 26.
+- No live blur on a screen that a sheet slides over or that animates (`ImageFilter.blur`, `MaskFilter.blur`, a
+  `BoxShadow` with a large blur): the renderer (Impeller) draws it again on each frame, and the World map lagged at
+  20 frames a second (#121). Bake the effect once into an image (`FogImage` in `world_tab.dart`), into the art, or
+  draw it with plain strokes. Measure on the phone: `dumpsys SurfaceFlinger --latency` on the app's layer.
 
 ## Known mistakes
 - PowerShell: `"$n:"` parses as a drive variable; write `"${n}:"`. Don't `Set-Location` in tool calls
@@ -95,3 +99,5 @@ auto-approved by permission rules (headless and eval runs deny it).
 - PowerShell pipes to `.bat` tools (sdkmanager) don't deliver stdin; use `cmd /c "tool < file"`.
 - PowerShell 5.1 mangles double quotes in native args: write commit messages to `.git-commit-msg.txt`
   (git ignores it; overwrite it each time, never delete it) and use `git commit -F .git-commit-msg.txt`.
+- A profile build (`flutter build apk --profile`, `flutter run --profile`) is signed with the debug key. Never install
+  it over the owner's game: the only way is an uninstall, which loses the save.

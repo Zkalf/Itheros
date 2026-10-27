@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:ui' show ImageFilter, PathMetric;
 
 import 'package:flutter/foundation.dart' show listEquals, mapEquals;
@@ -411,6 +412,7 @@ class _MapViewState extends State<MapView> {
             onImage(
               _Fog(
                 key: const ValueKey('map-fog'),
+                size: whole,
                 painter: FogPainter(
                   holes: [
                     for (final p in w.places)
@@ -576,34 +578,215 @@ class _Ring extends StatelessWidget {
 /// show it: the map blurred and pale under a light veil, with a soft hole
 /// around each place out of the fog and a cloud on each place in it. The
 /// fog still shows by exploring (spec 0008 decision 5).
-class _Fog extends StatelessWidget {
-  const _Fog({super.key, required this.painter});
+///
+/// Once the map image has loaded, the fog is made into images (#121): the
+/// blurred, pale map once for each size of the map, and on it the whole fog
+/// each time the fog changes. Drawn live, the fog made a sheet over the map
+/// open at about 20 frames a second on the phone, because the renderer draws
+/// the blur and the layer of the fog again on each frame. Until the map image
+/// has loaded, the fog is drawn live, so the map never shows without its fog.
+class _Fog extends StatefulWidget {
+  const _Fog({super.key, required this.size, required this.painter});
 
+  /// The size of the whole map.
+  final Size size;
   final FogPainter painter;
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    // A layer of its own holds the blurred map and the veil. Thus the holes
-    // of the painter clear them, and not the map under them.
-    child: ColorFiltered(
-      colorFilter: _ownLayer,
-      child: CustomPaint(
-        foregroundPainter: painter,
-        // Only the map turns pale; the veil and the clouds keep the text
-        // colour (the design's filter acts on the map behind the veil).
-        child: ColorFiltered(
-          colorFilter: _mist,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: 2.4 * painter.scale,
-              sigmaY: 2.4 * painter.scale,
-              tileMode: TileMode.clamp,
+  State<_Fog> createState() => _FogState();
+}
+
+class _FogState extends State<_Fog> {
+  /// The blurred, pale map at the size in pixels of the map on screen, made
+  /// once. A new size replaces it.
+  static final _made = <Size, ui.Image>{};
+
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  /// The whole fog, and the painter and the pixels it was made for.
+  ui.Image? _whole;
+  FogPainter? _wholeFor;
+  Size? _wholeAt;
+
+  /// The size of the map in whole pixels.
+  Size get _pixels {
+    final ratio = MediaQuery.devicePixelRatioOf(context);
+    return Size(
+      (widget.size.width * ratio).roundToDouble(),
+      (widget.size.height * ratio).roundToDouble(),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_made[_pixels] == null) _load();
+  }
+
+  @override
+  void didUpdateWidget(_Fog old) {
+    super.didUpdateWidget(old);
+    if (old.size != widget.size && _made[_pixels] == null) _load();
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    _whole?.dispose();
+    super.dispose();
+  }
+
+  void _stop() {
+    if (_listener case final l?) _stream?.removeListener(l);
+    _stream = null;
+    _listener = null;
+  }
+
+  /// Waits for the map image, then makes the blurred, pale map. A map image
+  /// that fails to load keeps the live fog.
+  void _load() {
+    _stop();
+    final pixels = _pixels;
+    final stream = MapView._image.image.resolve(
+      createLocalImageConfiguration(context),
+    );
+    // Kept before addListener: a map image in the cache calls back at once.
+    _stream = stream;
+    _listener = ImageStreamListener((info, _) {
+      if (_made[pixels] == null) {
+        for (final old in _made.values) {
+          old.dispose();
+        }
+        _made
+          ..clear()
+          ..[pixels] = _make(info.image, pixels);
+      }
+      info.dispose();
+      _stop();
+      if (mounted) setState(() {});
+    }, onError: (_, _) => _stop());
+    stream.addListener(_listener!);
+  }
+
+  /// [map] blurred and pale at [pixels], as the live fog draws it: covered,
+  /// blurred, then the mist filter. The live blur is 2.4 dp for each 360 dp
+  /// of map width, so in pixels it is 2.4 for each 360 pixels.
+  static ui.Image _make(ui.Image map, Size pixels) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final all = Offset.zero & pixels;
+    final sigma = 2.4 * pixels.width / 360;
+    canvas.saveLayer(
+      all,
+      Paint()
+        ..colorFilter = _mist
+        ..imageFilter = ImageFilter.blur(
+          sigmaX: sigma,
+          sigmaY: sigma,
+          tileMode: TileMode.clamp,
+        ),
+    );
+    paintImage(canvas: canvas, rect: all, image: map, fit: BoxFit.cover);
+    canvas.restore();
+    return recorder.endRecording().toImageSync(
+      pixels.width.round(),
+      pixels.height.round(),
+    );
+  }
+
+  /// The whole fog at [pixels]: [blurred] and the veil, the holes and the
+  /// clouds of [painter] over it, in a layer of their own, as the live fog
+  /// draws them. So the holes clear the fog, and not the map under it. The
+  /// painter paints at [size] in dp, scaled to fill the whole pixels.
+  static ui.Image _makeWhole(
+    ui.Image blurred,
+    FogPainter painter,
+    Size size,
+    Size pixels,
+  ) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas
+      ..saveLayer(Offset.zero & pixels, Paint())
+      ..drawImage(blurred, Offset.zero, Paint())
+      ..scale(pixels.width / size.width, pixels.height / size.height);
+    painter.paint(canvas, size);
+    canvas.restore();
+    return recorder.endRecording().toImageSync(
+      pixels.width.round(),
+      pixels.height.round(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final painter = widget.painter;
+    final pixels = _pixels;
+    if (_made[pixels] case final blurred?) {
+      if (_whole == null ||
+          _wholeAt != pixels ||
+          _wholeFor!.shouldRepaint(painter)) {
+        _whole?.dispose();
+        _whole = _makeWhole(blurred, painter, widget.size, pixels);
+        _wholeFor = painter;
+        _wholeAt = pixels;
+      }
+      return RepaintBoundary(
+        // The image widget owns and disposes the clone it is given.
+        child: FogImage(
+          painter: painter,
+          image: _whole!.clone(),
+          size: widget.size,
+        ),
+      );
+    }
+    return RepaintBoundary(
+      // A layer of its own holds the blurred map and the veil. Thus the holes
+      // of the painter clear them, and not the map under them.
+      child: ColorFiltered(
+        colorFilter: _ownLayer,
+        child: CustomPaint(
+          foregroundPainter: painter,
+          // Only the map turns pale; the veil and the clouds keep the text
+          // colour (the design's filter acts on the map behind the veil).
+          child: ColorFiltered(
+            colorFilter: _mist,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(
+                sigmaX: 2.4 * painter.scale,
+                sigmaY: 2.4 * painter.scale,
+                tileMode: TileMode.clamp,
+              ),
+              child: MapView._image,
             ),
-            child: MapView._image,
           ),
         ),
       ),
-    ),
+    );
+  }
+}
+
+/// The whole fog of the World map made into [image] at [size]: what [painter]
+/// paints over the blurred, pale map (#121). [painter] says what it holds.
+class FogImage extends StatelessWidget {
+  const FogImage({
+    super.key,
+    required this.painter,
+    required this.image,
+    required this.size,
+  });
+
+  final FogPainter painter;
+  final ui.Image image;
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) => RawImage(
+    image: image,
+    width: size.width,
+    height: size.height,
+    fit: BoxFit.fill,
   );
 }
 
@@ -761,11 +944,21 @@ class MapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     // A dark edge under each road and each dash, so that it reads on the
-    // painting and on the light fog. The edge of a dash is a soft shadow.
+    // painting and on the light fog. The edge of a dash is a soft shadow:
+    // four faint strokes, each narrower and darker than the one under it. A
+    // blur looks the same, but the renderer blurs each dash again on each
+    // frame (#121).
     final edge = pen(Quiet.caseBlack.withValues(alpha: .6), 4.5);
     final road = pen(Quiet.text.withValues(alpha: .9), 2.5);
-    final dashEdge = pen(Quiet.caseBlack.withValues(alpha: .5), 4.5)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+    final dashEdges = [
+      for (final (width, alpha) in const [
+        (8.0, .05),
+        (6.5, .08),
+        (5.0, .12),
+        (3.5, .15),
+      ])
+        pen(Quiet.caseBlack.withValues(alpha: alpha), width),
+    ];
     final fog = pen(Quiet.text.withValues(alpha: .9), 2.5);
     for (final (a, b, steps) in paths) {
       final line = Path()
@@ -780,9 +973,10 @@ class MapPainter extends CustomPainter {
       for (final PathMetric m in line.computeMetrics()) {
         for (var d = 0.0; d < m.length; d += 12) {
           final dash = m.extractPath(d, d + 6);
-          canvas
-            ..drawPath(dash, dashEdge)
-            ..drawPath(dash, fog);
+          for (final e in dashEdges) {
+            canvas.drawPath(dash, e);
+          }
+          canvas.drawPath(dash, fog);
         }
       }
     }
