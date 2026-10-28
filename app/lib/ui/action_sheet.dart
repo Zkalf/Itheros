@@ -212,9 +212,10 @@ class _ActionSheetState extends State<ActionSheet> {
                     key: ValueKey('stop-${k.name}'),
                     label: Text(kindName(k)),
                     selected: _kind == k,
-                    // A tap on the selected chip keeps its number.
+                    // In the change sheet, a tap on the selected chip keeps
+                    // the action's number.
                     onSelected: (_) => setState(() {
-                      if (k == _kind) return;
+                      if (k == _kind && widget.change != null) return;
                       _kind = k;
                       if (k == StopKind.untilCrafted) _count = 1;
                       if (k == StopKind.untilHave && _item != null) {
