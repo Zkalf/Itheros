@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:walkingrpg/game_controller.dart';
 
 import 'ui_test.dart';
 

@@ -1532,6 +1532,71 @@ class Game {
     return s.copy()..queue.removeAt(index - 1);
   }
 
+  /// Gives the action at [index] the stop condition [stop]: 0 is the
+  /// running one, 1 the first waiting one, and so on. The action keeps its
+  /// place and its progress (spec 0016 amendment 2 §2). A running action
+  /// whose new goal is reached ends now, or after the fight in progress
+  /// (§3); [events] gets its end and the next action's start.
+  GameState changeStop(
+    GameState s,
+    int index,
+    StopCondition stop, {
+    List<GameEvent>? events,
+  }) {
+    final a = _actionAt(s, index);
+    if (a.kind == ActivityKind.travel) {
+      throw ActivityError('A walk ends when it arrives.');
+    }
+    _checkStop(s, a, stop);
+    if (stop.kind == StopKind.never && index < s.queue.length) {
+      throw ActivityError('Only the last action can go on without a stop.');
+    }
+    final n = s.copy();
+    if (index > 0) {
+      n.queue[index - 1] = PlannedAction(a, stop);
+      return n;
+    }
+    final run = n.activity!..stop = stop;
+    if (run.fight == null && stopReached(n, 0, stop)) {
+      final reason = _stopMet(
+        n,
+        a,
+        stop,
+        crafted: run.crafted,
+        gained: run.gained,
+      )!;
+      _refundProgress(n).activity = null;
+      events?.add(ActivityEnded(a, reason));
+      _startNext(n, events);
+    }
+    return n;
+  }
+
+  /// Whether the goal of [stop] is reached already for the action at
+  /// [index]. The running action counts what it crafted and gained.
+  bool stopReached(GameState s, int index, StopCondition stop) {
+    final a = _actionAt(s, index);
+    final run = index == 0 ? s.activity : null;
+    return _stopMet(
+          s,
+          a,
+          stop,
+          crafted: run?.crafted ?? 0,
+          gained: run?.gained ?? const {},
+        ) !=
+        null;
+  }
+
+  /// The action at [index] in the queue: 0 is the running one.
+  Activity _actionAt(GameState s, int index) {
+    if (index == 0) {
+      if (s.activity case final run?) return run.activity;
+    } else if (index >= 1 && index <= s.queue.length) {
+      return s.queue[index - 1].activity;
+    }
+    throw ActivityError('No action $index in the queue');
+  }
+
   /// Throws if [stop] doesn't fit [a] (spec 0003 §3).
   void _checkStop(GameState s, Activity a, StopCondition stop) {
     if (!stopKindsFor(s, a).contains(stop.kind)) {

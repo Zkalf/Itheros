@@ -22,7 +22,8 @@ String dropsLine(Game game, GameState s, Labels labels, String enemy) {
   return 'Drops: ${names.join(', ')} · ${found.length} of ${all.length} found';
 }
 
-/// A tappable row for one action; the running one is marked Active.
+/// A tappable row for one action; the running one is marked Active, and a
+/// tap on it changes its stop condition (spec 0016 amendment 2).
 class ActionTile extends StatelessWidget {
   const ActionTile({
     super.key,
@@ -78,18 +79,20 @@ class ActionTile extends StatelessWidget {
       subtitle: subtitle,
       enabled: enabled,
       trailing: active ? statusChip('Active', Quiet.steel) : null,
-      onTap: active || !enabled
-          ? null
-          : () {
-              final from = startFrom;
-              if (from != null) Navigator.pop(context);
-              startAction(
-                from ?? context,
-                controller,
-                activity,
-                deadly: deadly,
-              );
-            },
+      onTap: switch ((active, enabled)) {
+        (true, _) when !canChangeStop(activity) => null,
+        (true, _) => () {
+          final from = startFrom;
+          if (from != null) Navigator.pop(context);
+          changeAction(from ?? context, controller, 0);
+        },
+        (false, false) => null,
+        (false, true) => () {
+          final from = startFrom;
+          if (from != null) Navigator.pop(context);
+          startAction(from ?? context, controller, activity, deadly: deadly);
+        },
+      },
     );
   }
 }
@@ -295,6 +298,51 @@ Future<void> startAction(
   } on ActivityError catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));
   }
+}
+
+/// Whether the player can change the stop condition of [a]: a walk ends on
+/// arrival and a reroll is one roll (spec 0016 amendment 2 §1.5).
+bool canChangeStop(Activity a) =>
+    a.kind != ActivityKind.travel && a.kind != ActivityKind.reroll;
+
+/// Opens the change sheet of the action at [index] (0: the running one)
+/// and gives it the stop condition the player picks (spec 0016
+/// amendment 2).
+Future<void> changeAction(
+  BuildContext context,
+  GameController c,
+  int index,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final s = c.state;
+  final a = index == 0 ? s.activity!.activity : s.queue[index - 1].activity;
+  final choice = await showModalBottomSheet<(StopCondition, bool)>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => ActionSheet(controller: c, activity: a, change: index),
+  );
+  if (choice == null) return;
+  final List<ActionSkipped> skipped;
+  try {
+    skipped = await c.changeStop(index, choice.$1);
+  } on ActivityError catch (e) {
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(e.message)));
+    return;
+  }
+  messenger.clearSnackBars();
+  if (skipped.isEmpty) return;
+  final labels = Labels(c.game.data);
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        skipped
+            .map((e) => labels.skipLine(e.activity, e.reason, e.missing))
+            .join('\n'),
+      ),
+    ),
+  );
 }
 
 /// Brings the player to Now once an action starts (playtest 3), from any
