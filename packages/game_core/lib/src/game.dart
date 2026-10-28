@@ -1546,16 +1546,22 @@ class Game {
   /// running one, 1 the first waiting one, and so on. The action keeps its
   /// place and its progress (spec 0016 amendment 2 §2). A running action
   /// whose new goal is reached ends now, or after the fight in progress
-  /// (§3); [events] gets its end and the next action's start.
+  /// (§3); [events] gets its end and the next action's start. With
+  /// [expected], it refuses when another action now holds [index]: a sync
+  /// can move the queue after the player picks the action.
   GameState changeStop(
     GameState s,
     int index,
     StopCondition stop, {
+    Activity? expected,
     List<GameEvent>? events,
   }) {
-    final a = _actionAt(s, index);
+    final a = _actionAt(s, index, expected);
     if (a.kind == ActivityKind.travel) {
       throw ActivityError('A walk ends when it arrives.');
+    }
+    if (a.kind == ActivityKind.reroll) {
+      throw ActivityError('A reroll is one roll.');
     }
     _checkStop(s, a, stop);
     if (stop.kind == StopKind.never && index < s.queue.length) {
@@ -1583,9 +1589,20 @@ class Game {
   }
 
   /// Whether the goal of [stop] is reached already for the action at
-  /// [index]. The running action counts what it crafted and gained.
-  bool stopReached(GameState s, int index, StopCondition stop) {
-    final a = _actionAt(s, index);
+  /// [index]. The running action counts what it crafted and gained. False
+  /// when [index] holds no action, or not [expected].
+  bool stopReached(
+    GameState s,
+    int index,
+    StopCondition stop, {
+    Activity? expected,
+  }) {
+    final Activity a;
+    try {
+      a = _actionAt(s, index, expected);
+    } on ActivityError {
+      return false;
+    }
     final run = index == 0 ? s.activity : null;
     return _stopMet(
           s,
@@ -1597,14 +1614,19 @@ class Game {
         null;
   }
 
-  /// The action at [index] in the queue: 0 is the running one.
-  Activity _actionAt(GameState s, int index) {
-    if (index == 0) {
-      if (s.activity case final run?) return run.activity;
-    } else if (index >= 1 && index <= s.queue.length) {
-      return s.queue[index - 1].activity;
+  /// The action at [index] in the queue: 0 is the running one. Throws when
+  /// there is none, or when it is not [expected].
+  Activity _actionAt(GameState s, int index, [Activity? expected]) {
+    final a = switch (index) {
+      0 => s.activity?.activity,
+      _ when index >= 1 && index <= s.queue.length =>
+        s.queue[index - 1].activity,
+      _ => null,
+    };
+    if (expected != null && a != expected) {
+      throw ActivityError('The queue changed. Open the action again.');
     }
-    throw ActivityError('No action $index in the queue');
+    return a ?? (throw ActivityError('No action $index in the queue'));
   }
 
   /// Throws if [stop] doesn't fit [a] (spec 0003 §3).

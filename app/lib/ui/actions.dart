@@ -324,7 +324,7 @@ Future<void> changeAction(
   if (choice == null) return;
   final List<ActionSkipped> skipped;
   try {
-    skipped = await c.changeStop(index, choice.$1);
+    skipped = await c.changeStop(index, choice.$1, expected: a);
   } on ActivityError catch (e) {
     messenger
       ..clearSnackBars()

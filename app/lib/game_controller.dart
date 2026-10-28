@@ -246,10 +246,16 @@ class GameController extends ChangeNotifier {
   /// Gives the action at [index] (0: the running one) the stop condition
   /// [stop] (spec 0016 amendment 2). Returns the waiting actions that
   /// couldn't start when the running one reached its new goal.
-  Future<List<ActionSkipped>> changeStop(int index, StopCondition stop) =>
-      _actSkipping(
-        (s, events) => game.changeStop(s, index, stop, events: events),
-      );
+  /// [expected] is the action the player picked: the sync first can move
+  /// the queue.
+  Future<List<ActionSkipped>> changeStop(
+    int index,
+    StopCondition stop, {
+    Activity? expected,
+  }) => _actSkipping(
+    (s, events) =>
+        game.changeStop(s, index, stop, expected: expected, events: events),
+  );
 
   Future<List<ActionSkipped>> _actSkipping(
     GameState Function(GameState, List<GameEvent>) action,

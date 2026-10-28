@@ -57,6 +57,8 @@ class _ActionSheetState extends State<ActionSheet> {
           ? StopKind.untilHave
           : StopKind.never;
     }
+    // The change sheet shows only the kinds its slot allows.
+    if (widget.change != null && !_kinds.contains(_kind)) _kind = _kinds.first;
     final items = _items;
     if (items.isNotEmpty) _pick(items.first);
     // The change sheet opens on the action's own choice (amendment 2 §1).
@@ -170,7 +172,8 @@ class _ActionSheetState extends State<ActionSheet> {
     final room = s.activity != null && !blocked && refusal == null;
     final walk = change == null ? _game.walkFirst(s, a) : null;
     // The new goal is reached already (amendment 2 §3.3).
-    final reached = change != null && _game.stopReached(s, change, _stop);
+    final reached =
+        change != null && _game.stopReached(s, change, _stop, expected: a);
 
     String kindName(StopKind k) => switch (k) {
       StopKind.untilGrey => 'Until grey',
@@ -209,7 +212,9 @@ class _ActionSheetState extends State<ActionSheet> {
                     key: ValueKey('stop-${k.name}'),
                     label: Text(kindName(k)),
                     selected: _kind == k,
+                    // A tap on the selected chip keeps its number.
                     onSelected: (_) => setState(() {
+                      if (k == _kind) return;
                       _kind = k;
                       if (k == StopKind.untilCrafted) _count = 1;
                       if (k == StopKind.untilHave && _item != null) {
