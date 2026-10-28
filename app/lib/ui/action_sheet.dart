@@ -56,12 +56,15 @@ class _ActionSheetState extends State<ActionSheet> {
   }
 
   /// Items "until I have N" may count: a monster's drops only once found,
-  /// so the picker never names a "???" drop (spec 0006 criterion 6).
+  /// so the picker never names a "???" drop (spec 0006 criterion 6), and a
+  /// spot's catches the same way (#114).
   List<String> get _items {
     final a = widget.activity;
+    final s = widget.controller.state;
+    if (a.kind == ActivityKind.gather) return _game.foundCatches(s, a.target);
     final items = _game.countableItems(a);
     if (a.kind != ActivityKind.fight) return items;
-    final found = _game.foundDrops(widget.controller.state, a.target);
+    final found = _game.foundDrops(s, a.target);
     return [
       for (final i in items)
         if (found.contains(i)) i,
