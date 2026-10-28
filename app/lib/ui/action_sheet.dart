@@ -10,15 +10,22 @@ import 'theme.dart';
 /// Picks a stop condition for [activity] and whether to start it now or add
 /// it to the queue (spec 0003 §8). Pops `(StopCondition, bool now)`. For a
 /// fight, the monster's bestiary card sits on top (spec 0009 decision 11).
+/// With [change] set, it changes the stop condition of that action instead
+/// (spec 0016 amendment 2) and pops `(StopCondition, false)`.
 class ActionSheet extends StatefulWidget {
   const ActionSheet({
     super.key,
     required this.controller,
     required this.activity,
+    this.change,
   });
 
   final GameController controller;
   final Activity activity;
+
+  /// The queue index of the action to change (0: the running one), or null
+  /// for a new action.
+  final int? change;
 
   @override
   State<ActionSheet> createState() => _ActionSheetState();
@@ -37,16 +44,46 @@ class _ActionSheetState extends State<ActionSheet> {
     super.initState();
     final s = widget.controller.state;
     final a = widget.activity;
-    _kind = StopCondition.defaultFor(a).kind;
+    final current = switch (widget.change) {
+      null => null,
+      0 => s.activity!.stop,
+      final i => s.queue[i - 1].stop,
+    };
+    if (current?.kind == StopKind.untilHave) _own = current!.item;
+    _kind = (current ?? StopCondition.defaultFor(a)).kind;
     // "Until grey" can't start on a monster that is already grey.
-    if (_kind == StopKind.untilGrey &&
-        _game.enemyBand(s, a.target).colour == LevelColour.grey) {
+    if (_kind == StopKind.untilGrey && _grey) {
       _kind = _kinds.contains(StopKind.untilHave)
           ? StopKind.untilHave
           : StopKind.never;
     }
+    // The change sheet shows only the kinds its slot allows.
+    if (widget.change != null && !_kinds.contains(_kind)) _kind = _kinds.first;
     final items = _items;
     if (items.isNotEmpty) _pick(items.first);
+    // The change sheet opens on the action's own choice (amendment 2 §1).
+    switch (current) {
+      case StopCondition(kind: StopKind.untilHave, :final item?, :final count):
+        _item = item;
+        _count = count;
+      case StopCondition(kind: StopKind.untilCrafted, :final count):
+        _count = count;
+      case StopCondition(kind: StopKind.untilQuality, :final item?):
+        _quality = item;
+      default:
+    }
+  }
+
+  bool get _grey =>
+      widget.activity.kind == ActivityKind.fight &&
+      _game.enemyBand(widget.controller.state, widget.activity.target).colour ==
+          LevelColour.grey;
+
+  /// The change sheet of an action with another action after it: "never"
+  /// is not allowed there (spec 0003 §3).
+  bool get _notLast {
+    final i = widget.change;
+    return i != null && i < widget.controller.state.queue.length;
   }
 
   /// Counts "Until I have N" for [item]: what the player has of it, plus 5
@@ -64,19 +101,29 @@ class _ActionSheetState extends State<ActionSheet> {
     if (n != null && mounted) setState(() => _count = n);
   }
 
+  /// The item of the action's own "until I have N", in the change sheet.
+  String? _own;
+
   /// Items "until I have N" may count: a monster's drops only once found,
   /// so the picker never names a "???" drop (spec 0006 criterion 6), and a
-  /// spot's catches the same way (#114).
+  /// spot's catches the same way (#114). The change sheet keeps the
+  /// action's own item.
   List<String> get _items {
     final a = widget.activity;
     final s = widget.controller.state;
-    if (a.kind == ActivityKind.gather) return _game.foundCatches(s, a.target);
+    if (a.kind == ActivityKind.gather) {
+      final found = _game.foundCatches(s, a.target);
+      return [
+        ...found,
+        if (_own case final own? when !found.contains(own)) own,
+      ];
+    }
     final items = _game.countableItems(a);
     if (a.kind != ActivityKind.fight) return items;
     final found = _game.foundDrops(s, a.target);
     return [
       for (final i in items)
-        if (found.contains(i)) i,
+        if (found.contains(i) || i == _own) i,
     ];
   }
 
@@ -85,7 +132,13 @@ class _ActionSheetState extends State<ActionSheet> {
       widget.controller.state,
       widget.activity,
     ))
-      if (k != StopKind.untilHave || _items.isNotEmpty) k,
+      if ((k != StopKind.untilHave || _items.isNotEmpty) &&
+          // The change sheet hides what the slot does not allow
+          // (amendment 2 §1.6).
+          !(widget.change != null &&
+              ((k == StopKind.never && _notLast) ||
+                  (k == StopKind.untilGrey && _grey))))
+        k,
   ];
 
   StopCondition get _stop => switch (_kind) {
@@ -104,10 +157,12 @@ class _ActionSheetState extends State<ActionSheet> {
     final labels = Labels(_game.data);
     final text = Theme.of(context).textTheme;
     final kinds = _kinds;
-    final blocked = s.activity != null && _game.lastNeverStops(s);
+    final change = widget.change;
+    final blocked =
+        change == null && s.activity != null && _game.lastNeverStops(s);
     // Why "Add to queue" can't take it (spec 0016 §7.2), or null.
     String? refusal;
-    if (s.activity != null && !blocked) {
+    if (change == null && s.activity != null && !blocked) {
       try {
         _game.addAction(s, a, stop: _stop);
       } on ActivityError catch (e) {
@@ -115,7 +170,10 @@ class _ActionSheetState extends State<ActionSheet> {
       }
     }
     final room = s.activity != null && !blocked && refusal == null;
-    final walk = _game.walkFirst(s, a);
+    final walk = change == null ? _game.walkFirst(s, a) : null;
+    // The new goal is reached already (amendment 2 §3.3).
+    final reached =
+        change != null && _game.stopReached(s, change, _stop, expected: a);
 
     String kindName(StopKind k) => switch (k) {
       StopKind.untilGrey => 'Until grey',
@@ -154,7 +212,10 @@ class _ActionSheetState extends State<ActionSheet> {
                     key: ValueKey('stop-${k.name}'),
                     label: Text(kindName(k)),
                     selected: _kind == k,
+                    // In the change sheet, a tap on the selected chip keeps
+                    // the action's number.
                     onSelected: (_) => setState(() {
+                      if (k == _kind && widget.change != null) return;
                       _kind = k;
                       if (k == StopKind.untilCrafted) _count = 1;
                       if (k == StopKind.untilHave && _item != null) {
@@ -241,7 +302,9 @@ class _ActionSheetState extends State<ActionSheet> {
                 ],
               ),
             ],
-            if (a.kind == ActivityKind.craft &&
+            // The table plans a new action; the change sheet has none.
+            if (change == null &&
+                a.kind == ActivityKind.craft &&
                 _game.data.recipes[a.target]!.inputs.isNotEmpty) ...[
               const SizedBox(height: 12),
               _MaterialsTable(
@@ -270,37 +333,56 @@ class _ActionSheetState extends State<ActionSheet> {
                 style: text.bodySmall,
               ),
             ],
-            const SizedBox(height: 16),
-            // Two equal buttons in the middle: Start now left, Add to queue
-            // right. A Wrap, so big system text stacks them instead of
-            // overflowing.
-            Center(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  FilledButton.icon(
-                    key: const ValueKey('start-now'),
-                    onPressed: () => Navigator.pop(context, (_stop, true)),
-                    icon: const Icon(Icons.play_arrow),
-                    // Start now clears the queue (spec 0016 §5).
-                    label: Text(switch (s) {
-                      GameState(activity: null) => 'Start',
-                      GameState(queue: []) => 'Start now',
-                      _ => 'Start now, clear queue',
-                    }),
-                  ),
-                  if (room)
-                    FilledButton.icon(
-                      key: const ValueKey('add-to-queue'),
-                      onPressed: () => Navigator.pop(context, (_stop, false)),
-                      icon: const Icon(Icons.playlist_add),
-                      label: const Text('Add to queue'),
-                    ),
-                ],
+            if (reached) ...[
+              const SizedBox(height: 8),
+              Text(
+                change == 0
+                    ? 'You have this already. The action stops now.'
+                    : 'You have this already. The action will be skipped.',
+                style: text.bodySmall,
               ),
-            ),
+            ],
+            const SizedBox(height: 16),
+            if (change != null)
+              Center(
+                child: FilledButton.icon(
+                  key: const ValueKey('change-stop'),
+                  onPressed: () => Navigator.pop(context, (_stop, false)),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Change'),
+                ),
+              )
+            else
+              // Two equal buttons in the middle: Start now left, Add to queue
+              // right. A Wrap, so big system text stacks them instead of
+              // overflowing.
+              Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      key: const ValueKey('start-now'),
+                      onPressed: () => Navigator.pop(context, (_stop, true)),
+                      icon: const Icon(Icons.play_arrow),
+                      // Start now clears the queue (spec 0016 §5).
+                      label: Text(switch (s) {
+                        GameState(activity: null) => 'Start',
+                        GameState(queue: []) => 'Start now',
+                        _ => 'Start now, clear queue',
+                      }),
+                    ),
+                    if (room)
+                      FilledButton.icon(
+                        key: const ValueKey('add-to-queue'),
+                        onPressed: () => Navigator.pop(context, (_stop, false)),
+                        icon: const Icon(Icons.playlist_add),
+                        label: const Text('Add to queue'),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

@@ -134,8 +134,9 @@ class RunningActivity {
 
   final Activity activity;
 
-  /// When it ends by itself (spec 0003 §3).
-  final StopCondition stop;
+  /// When it ends by itself (spec 0003 §3). The player may change it
+  /// (spec 0016 amendment 2).
+  StopCondition stop;
 
   /// Steps paid toward the next unit (fight round, ore, item, travel leg).
   int progress;

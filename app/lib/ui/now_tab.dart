@@ -360,9 +360,11 @@ class _QueueCard extends StatelessWidget {
               const SizedBox(width: 16),
             ],
             Expanded(
-              child: Text(
-                labels.activity(run.activity),
-                style: text.titleMedium,
+              child: _changeable(
+                context,
+                run.activity,
+                0,
+                Text(labels.activity(run.activity), style: text.titleMedium),
               ),
             ),
             OutlinedButton.icon(
@@ -374,15 +376,21 @@ class _QueueCard extends StatelessWidget {
           ],
         ),
         if (run.activity.kind != ActivityKind.travel)
-          Text(
-            labels.stop(
-              run.stop,
-              run.activity,
-              owned: run.stop.kind == StopKind.untilHave
-                  ? game.owned(s, run.stop.item!)
-                  : 0,
-              crafted: run.crafted,
+          _changeable(
+            context,
+            run.activity,
+            0,
+            Text(
+              labels.stop(
+                run.stop,
+                run.activity,
+                owned: run.stop.kind == StopKind.untilHave
+                    ? game.owned(s, run.stop.item!)
+                    : 0,
+                crafted: run.crafted,
+              ),
             ),
+            key: false,
           ),
         const SizedBox(height: 8),
         _Bar(
@@ -481,6 +489,10 @@ class _QueueCard extends StatelessWidget {
                           : game.owned(s, s.queue[i].stop.item!),
                     ),
                   ),
+            // A tap changes its stop condition (spec 0016 amendment 2).
+            onTap: canChangeStop(s.queue[i].activity)
+                ? () => changeAction(context, controller, i + 1)
+                : null,
             trailing: IconButton(
               key: ValueKey('remove-${i + 1}'),
               tooltip: 'Remove',
@@ -508,6 +520,23 @@ class _QueueCard extends StatelessWidget {
       ),
     );
   }
+
+  /// [child] on the queue card: a tap opens the change sheet of the action
+  /// at [index] (spec 0016 amendment 2), unless it is a walk or a reroll.
+  /// [key] gives it the key `change-<index>`.
+  Widget _changeable(
+    BuildContext context,
+    Activity a,
+    int index,
+    Widget child, {
+    bool key = true,
+  }) => canChangeStop(a)
+      ? InkWell(
+          key: key ? ValueKey('change-$index') : null,
+          onTap: () => changeAction(context, controller, index),
+          child: child,
+        )
+      : child;
 
   /// [gained] in item data order, then quality order, like the inventory.
   /// Items of the same quality count together, whatever their bonus stats
