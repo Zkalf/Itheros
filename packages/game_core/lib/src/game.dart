@@ -1215,6 +1215,16 @@ class Game {
       if ((s.counters[foundCounter(enemy, item)] ?? 0) > 0) item,
   ];
 
+  /// [node]'s countable items the player has found, in [countableItems]
+  /// order: its own item always, a catch once gathered or owned (#114).
+  List<String> foundCatches(GameState s, String node) => [
+    for (final item in countableItems(Activity.gather(node)))
+      if (item == data.nodes[node]!.item ||
+          (s.counters['gathered.$item'] ?? 0) > 0 ||
+          owned(s, item) > 0)
+        item,
+  ];
+
   bool hasMaterials(GameState s, String recipe) => data
       .recipes[recipe]!
       .inputs
