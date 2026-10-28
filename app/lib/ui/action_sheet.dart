@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
@@ -90,17 +91,34 @@ class _ActionSheetState extends State<ActionSheet> {
     _count = _game.owned(widget.controller.state, item) + 5;
   }
 
+  Future<void> _typeCount() async {
+    final n = await showDialog<int>(
+      context: context,
+      builder: (_) => _CountDialog(_count),
+    );
+    if (n != null && mounted) setState(() => _count = n);
+  }
+
   /// The item of the action's own "until I have N", in the change sheet.
   String? _own;
 
   /// Items "until I have N" may count: a monster's drops only once found,
-  /// so the picker never names a "???" drop (spec 0006 criterion 6). The
-  /// change sheet keeps the action's own item.
+  /// so the picker never names a "???" drop (spec 0006 criterion 6), and a
+  /// spot's catches the same way (#114). The change sheet keeps the
+  /// action's own item.
   List<String> get _items {
     final a = widget.activity;
+    final s = widget.controller.state;
+    if (a.kind == ActivityKind.gather) {
+      final found = _game.foundCatches(s, a.target);
+      return [
+        ...found,
+        if (_own case final own? when !found.contains(own)) own,
+      ];
+    }
     final items = _game.countableItems(a);
     if (a.kind != ActivityKind.fight) return items;
-    final found = _game.foundDrops(widget.controller.state, a.target);
+    final found = _game.foundDrops(s, a.target);
     return [
       for (final i in items)
         if (found.contains(i) || i == _own) i,
@@ -253,9 +271,17 @@ class _ActionSheetState extends State<ActionSheet> {
                         ? () => setState(() => _count--)
                         : null,
                   ),
-                  Text(
-                    '$_count',
-                    style: text.titleMedium?.copyWith(fontFamily: Fonts.number),
+                  // A tap types the number (#115).
+                  TextButton(
+                    key: const ValueKey('count'),
+                    style: ghostButton,
+                    onPressed: _typeCount,
+                    child: Text(
+                      '$_count',
+                      style: text.titleMedium?.copyWith(
+                        fontFamily: Fonts.number,
+                      ),
+                    ),
                   ),
                   IconButton(
                     key: const ValueKey('count-up'),
@@ -485,6 +511,68 @@ class _MaterialsTable extends StatelessWidget {
           'material-$item-left',
           uses == null ? '–' : '${have - uses < 0 ? 0 : have - uses}',
           style: colour(number),
+        ),
+      ],
+    );
+  }
+}
+
+/// Types the number of "Until I have N" or "Until N crafted" (#115). Pops the
+/// number, at least 1, or null on Cancel.
+class _CountDialog extends StatefulWidget {
+  const _CountDialog(this.count);
+
+  final int count;
+
+  @override
+  State<_CountDialog> createState() => _CountDialogState();
+}
+
+class _CountDialogState extends State<_CountDialog> {
+  late final _field = TextEditingController(text: '${widget.count}')
+    ..selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: '${widget.count}'.length,
+    );
+
+  int? get _value => switch (int.tryParse(_field.text)) {
+    final n? when n >= 1 => n,
+    _ => null,
+  };
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('How many?'),
+      content: TextField(
+        key: const ValueKey('count-field'),
+        controller: _field,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        maxLength: 5,
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) {
+          if (_value case final n?) Navigator.pop(context, n);
+        },
+      ),
+      actions: [
+        TextButton(
+          style: ghostButton,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _value == null
+              ? null
+              : () => Navigator.pop(context, _value),
+          child: const Text('Set'),
         ),
       ],
     );
