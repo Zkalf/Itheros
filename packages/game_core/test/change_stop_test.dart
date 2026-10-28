@@ -228,4 +228,51 @@ void main() {
       );
     });
   });
+
+  // Review of PR #131: the sheet names an action by its place in the queue,
+  // and a sync can move the queue before the change.
+  group('the action that the player changes', () {
+    test('a change refuses an index that now holds another action', () {
+      final s = twoFights();
+      expect(
+        () => game.changeStop(
+          s,
+          0,
+          const StopCondition.untilHave('goblin_hide', 20),
+          expected: const Activity.fight('goblin_brute'),
+        ),
+        refused('The queue changed. Open the action again.'),
+      );
+    });
+
+    test('a change goes through when the index holds the expected action', () {
+      final s = game.changeStop(
+        twoFights(),
+        1,
+        const StopCondition.untilHave('goblin_hide', 20),
+        expected: goblins,
+      );
+      expect(s.queue.single.stop.count, 20);
+    });
+
+    test('stopReached is false for an index that is gone or moved', () {
+      final s = twoFights()..inventory['goblin_hide'] = 9;
+      const one = StopCondition.untilHave('goblin_hide', 1);
+      expect(game.stopReached(s, 5, one), isFalse);
+      expect(
+        game.stopReached(s, 0, one, expected: const Activity.fight('rat')),
+        isFalse,
+      );
+      expect(game.stopReached(s, 0, one, expected: goblins), isTrue);
+    });
+
+    test('a reroll is one roll: its stop condition does not change', () {
+      final s = stateAt(game)
+        ..activity = RunningActivity(const Activity.reroll('copper_sword'));
+      expect(
+        () => game.changeStop(s, 0, const StopCondition.untilCrafted(5)),
+        refused('A reroll is one roll.'),
+      );
+    });
+  });
 }

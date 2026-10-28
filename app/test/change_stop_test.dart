@@ -197,4 +197,58 @@ void main() {
     expect(c.state.activity!.activity, brutes);
     expect(c.state.counters['kills.goblin_brute'], isNull);
   });
+
+  // Review of PR #131: the queue can change while the sheet is open.
+  group('the queue changes while the sheet is open', () {
+    testWidgets('the sheet does not break when its action is gone', (t) async {
+      final c = await twoFights(t);
+      await c.addAction(goblins, stop: hides);
+      await settle(t, c);
+      await t.tap(button('queued-1'));
+      await t.pumpAndSettle();
+
+      await c.removeAction(1);
+      await settle(t, c);
+      await t.tap(button('count-up'));
+      await t.pumpAndSettle();
+
+      expect(t.takeException(), isNull);
+      expect(button('change-stop'), findsOneWidget);
+    });
+
+    testWidgets('"Change" refuses when another action took the place', (
+      t,
+    ) async {
+      final c = await twoFights(t);
+      await t.tap(button('change-0'));
+      await t.pumpAndSettle();
+      await t.tap(button('count-up'));
+      await t.pumpAndSettle();
+
+      // The goblins end (as a sync can end them); the brutes take place 0.
+      await c.removeAction(0);
+      await settle(t, c);
+      expect(c.state.activity!.activity, brutes);
+      await t.tap(button('change-stop'));
+      await settle(t, c);
+      await t.pumpAndSettle();
+
+      expect(c.state.activity!.stop, hides, reason: 'the brutes keep 50');
+      expect(
+        find.text('The queue changed. Open the action again.'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('a tap on the selected chip keeps the number of the action', (
+    t,
+  ) async {
+    await twoFights(t, inventory: {'goblin_hide': 3});
+    await t.tap(button('change-0'));
+    await t.pumpAndSettle();
+    await t.tap(button('stop-untilHave'));
+    await t.pumpAndSettle();
+    expect(find.text('50'), findsOneWidget, reason: 'not 3 + 5');
+  });
 }
