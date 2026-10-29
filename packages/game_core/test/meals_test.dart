@@ -112,13 +112,18 @@ void main() {
         location: 'grey_moor',
         inventory: {'perch': 2},
       );
-      expect(game.availableRecipes(moor), isNot(contains('grilled_perch')));
-      expect(game.availableRecipes(moor), contains('bone_sword'));
       // Started away from the fire, it walks to camp first.
       final s = game.startActivity(moor, const Activity.craft('grilled_perch'));
       expect(s.activity!.leg, isNotNull);
       final camp = stateAt(game, inventory: {'perch': 2});
-      expect(game.availableRecipes(camp), contains('grilled_perch'));
+      // At the fire, it starts at once.
+      expect(
+        game
+            .startActivity(camp, const Activity.craft('grilled_perch'))
+            .activity!
+            .leg,
+        isNull,
+      );
       final r = work(camp, const Activity.craft('grilled_perch'), 60);
       expect(game.owned(r.state, 'grilled_perch'), 1);
       expect(r.state.inventory['perch'], isNull);

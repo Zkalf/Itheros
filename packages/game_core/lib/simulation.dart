@@ -188,12 +188,6 @@ GameState armWith(Game game, GameState s, String? main, String? off) {
   return s;
 }
 
-/// [s] armed for [enemy] with [bestArms].
-GameState armFor(Game game, GameState s, String enemy) {
-  final (main, off, _) = bestArms(game, s, game.data.enemies[enemy]!);
-  return armWith(game, s, main, off);
-}
-
 /// A player at [level] wearing, per open slot, the best item a recipe up to
 /// [level] makes ("the gear of that stretch"), or no gear at all. Recipes
 /// needing any of [without] are skipped (a boss's own drops). The weapon is

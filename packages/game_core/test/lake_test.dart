@@ -428,7 +428,6 @@ void main() {
       final s = atLake();
       expect(game.isHidden(s, 'smugglers_cove'), isTrue);
       expect(game.isFogged(s, 'smugglers_cove'), isTrue);
-      expect(game.travelDestinations(s), isNot(contains('smugglers_cove')));
       expect(
         game.openLocationsByDistance(s).keys,
         isNot(contains('smugglers_cove')),
@@ -458,7 +457,6 @@ void main() {
       expect(game.isFogged(far, 'smugglers_cove'), isTrue);
       final s = atLake()..revealed.add('smugglers_cove');
       expect(game.isFogged(s, 'smugglers_cove'), isFalse);
-      expect(game.travelDestinations(s), contains('smugglers_cove'));
       final there = work(s, const Activity.travel('smugglers_cove'), 700).state;
       expect(there.location, 'smugglers_cove');
     });

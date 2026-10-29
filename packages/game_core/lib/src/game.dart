@@ -972,24 +972,14 @@ class Game {
   // by profession (spec 0010 §2), which still show; fogged areas show
   // nothing.
 
-  List<String> travelDestinations(GameState s) => [
-    for (final to in data.destinationsFrom(s.location))
-      if (!isFogged(s, to)) to,
-  ];
-
   List<String> availableEnemies(GameState s) => _here(s).enemies;
 
   /// Spots here, those above the player's level included (see
   /// [nodeLevelMet]).
   List<String> availableNodes(GameState s) => _here(s).nodes;
 
-  /// Recipes made here: crafts at a forge, meals at a fire (spec 0011
-  /// §5.1).
-  List<String> availableRecipes(GameState s) => [
-    for (final id in allRecipes())
-      if (_makesHere(_here(s), data.recipes[id]!)) id,
-  ];
-
+  /// Whether [r] is made at [l]: crafts at a forge, meals at a fire (spec
+  /// 0011 §5.1).
   bool _makesHere(LocationDef l, RecipeDef r) =>
       r.profession == 'cooking' ? l.fire : l.crafting;
 
