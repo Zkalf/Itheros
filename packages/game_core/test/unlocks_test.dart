@@ -11,14 +11,28 @@ void main() {
   // Spec 0008 decision 1 replaced the level gates below level 10.
   test('level 1 at camp: every neighbour is reachable, every recipe shows', () {
     final s = stateAt(game);
-    expect(game.travelDestinations(s), [
-      'goblin_woods',
-      'copper_hills',
-      'old_graveyard',
-      // Spec 0011 §3.1.
-      'mirror_lake',
-    ]);
-    expect(game.availableRecipes(s), game.data.recipes.keys.toList());
+    // The World map shows each place that is not in the fog.
+    expect(
+      [
+        for (final to in game.data.destinationsFrom('camp'))
+          if (!game.isFogged(s, to)) to,
+      ],
+      [
+        'goblin_woods',
+        'copper_hills',
+        'old_graveyard',
+        // Spec 0011 §3.1.
+        'mirror_lake',
+      ],
+    );
+    for (final to in ['goblin_woods', 'copper_hills', 'old_graveyard']) {
+      expect(
+        game.startActivity(s, Activity.travel(to)).activity?.activity.target,
+        to,
+      );
+    }
+    // The profession screens list each recipe (spec 0010 amendment 4).
+    expect(game.allRecipes(), game.data.recipes.keys.toList());
   });
 
   test('level 1 in Goblin Woods: every monster there', () {
