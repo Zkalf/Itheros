@@ -5,6 +5,7 @@
 // in placeholders_test.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/actions.dart' show professionColour;
 import 'package:walkingrpg/ui/images.dart';
 import 'package:walkingrpg/ui/level_badge.dart';
