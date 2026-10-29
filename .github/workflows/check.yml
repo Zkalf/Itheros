@@ -64,11 +64,18 @@ jobs:
             exit 1
           fi
           echo "No drafts."
+      # Gradle's downloads stay between runs: a fresh machine took about 7 of the 11 minutes for the APK build. The key
+      # is the hash of the Gradle files in app/android, so a change there starts a new cache.
       - uses: actions/setup-java@v4
         if: steps.scope.outputs.build == 'true'
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            app/android/*.gradle.kts
+            app/android/app/*.gradle.kts
+            app/android/gradle/wrapper/gradle-wrapper.properties
       - uses: subosito/flutter-action@v2
         if: steps.scope.outputs.build == 'true'
         with:
