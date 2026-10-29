@@ -38,6 +38,8 @@ flutter:
     - assets/images/placeholders/
     - assets/images/pictures/
     - assets/images/spots/
+    # A copy of releases/*.md, made by scripts/copy-notes.ps1 (plan 0029).
+    - assets/releases/
 
   # Spec 0014 §2.2 and the font table of plan 0017, all SIL OFL 1.1.
   fonts:

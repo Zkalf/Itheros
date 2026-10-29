@@ -3,10 +3,11 @@
   Releases a new version of Itheros to friends (spec 0007 §5).
 
 .DESCRIPTION
-  Raises the version (0.2.0 -> 0.3.0; -Fix: 0.3.0 -> 0.3.1), runs the full check, builds the friend APK
+  Raises the version (0.2.0 -> 0.3.0; -Fix: 0.3.0 -> 0.3.1), renames releases\next.md to releases\<version>.md
+  and copies the notes into the app (spec 0018 §2.2), runs the full check, builds the friend APK
   (no test walk), checks that exact file (no INTERNET, no cloud backup, signed with the release key), adds a
   sample save for the save tests, commits "Release <version>", tags v<version>, pushes, and publishes a GitHub
-  release with releases\next.md as the notes and the APK as itheros.apk.
+  release with releases\<version>.md as the notes and the APK as itheros.apk.
 
   Stops at the first failure. Until the push, a failure undoes everything (version, commit, tag).
   -DryRun: stops after the APK check and undoes the version change; nothing is committed or published.
@@ -77,6 +78,9 @@ function Undo {
   Repo tag -d $tag *> $null
   Repo reset --hard $head *> $null
   Remove-Item -ErrorAction SilentlyContinue (Join-Path $app "test/fixtures/saves/$version.json")
+  # The reset brings next.md back; the copy in the app follows it.
+  # A failed copy must not stop Undo: the next check makes the copy again.
+  try { & "$PSScriptRoot\copy-notes.ps1" *> $null } catch { Write-Host "    the copy of the notes failed: $_" -ForegroundColor Yellow }
   Write-Host "    undone: back at $($head.Substring(0, 7)), version unchanged" -ForegroundColor Yellow
 }
 function Abort([string]$message) { Undo; Fail $message }
@@ -84,6 +88,13 @@ function Abort([string]$message) { Undo; Fail $message }
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($pubspec, ($text -replace '(?m)^version: [^\r\n]*', "version: $version+$build"), $utf8)
 [IO.File]::WriteAllText($versionDart, ((Get-Content -Raw -Encoding UTF8 $versionDart) -replace "appVersion = '[^']*'", "appVersion = '$version'"), $utf8)
+
+# The notes become releases\<version>.md now, not in step 5 (spec 0018 §2.2): the check and the friend build see
+# them under the new version, and the app carries them as a copy (plan 0029). Undo puts next.md back.
+Repo mv releases/next.md "releases/$version.md"
+if ($LASTEXITCODE -ne 0) { Abort 'could not rename releases\next.md' }
+# copy-notes.ps1 stops on an error; catch it, so that Undo still runs.
+try { & "$PSScriptRoot\copy-notes.ps1" } catch { Abort "could not copy the release notes into the app: $_" }
 
 # The sample save of this version, before the check, so the check runs the save tests on it too (#60). Undo
 # removes it again, also on a dry run.
@@ -124,9 +135,8 @@ if ($DryRun) {
   exit 0
 }
 
-# 5. Notes renamed, commit (with the sample save), tag, push.
+# 5. Commit (with the notes renamed in step 2 and the sample save), tag, push.
 Write-Host '==> Committing' -ForegroundColor Cyan
-Repo mv releases/next.md "releases/$version.md"
 Repo add app/pubspec.yaml app/lib/version.dart "app/test/fixtures/saves/$version.json"
 Repo commit -q -m "Release $version"
 if ($LASTEXITCODE -ne 0) { Abort 'git commit failed' }

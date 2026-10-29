@@ -8,6 +8,7 @@ import 'controller_scope.dart';
 import 'home_shell.dart';
 import 'images.dart';
 import 'level_up_screen.dart';
+import 'notes_screen.dart';
 import 'onboarding_screens.dart';
 import 'theme.dart';
 
@@ -71,10 +72,13 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
               ControllerStatus.loading => const LoadingScreen(),
               ControllerStatus.unavailable => const UnavailableScreen(),
               ControllerStatus.needsPermission => const PermissionScreen(),
-              // Who you are comes first (spec 0012 decision 6).
+              // Who you are comes first (spec 0012 decision 6), then the
+              // notes of a new version (spec 0018 §3.1).
               ControllerStatus.ready =>
                 widget.controller.state.character == null
                     ? const CharacterCreationScreen()
+                    : widget.controller.newNotes.isNotEmpty
+                    ? const NewNotesScreen()
                     : widget.controller.levelCards.isNotEmpty
                     ? const LevelUpScreen()
                     : widget.controller.awaySummary != null

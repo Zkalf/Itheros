@@ -14,6 +14,7 @@ class SaveData {
     Set<String> seen = const {},
     List<JournalEntry> journal = const [],
     this.testWalk = false,
+    this.lastVersion,
   }) : credited = Map.unmodifiable(credited),
        seen = Set.unmodifiable(seen),
        journal = List.unmodifiable(journal);
@@ -36,11 +37,13 @@ class SaveData {
           JournalEntry.fromJson(e! as Map<String, Object?>),
       ],
       testWalk: json['testWalk'] as bool? ?? false,
+      lastVersion: json['lastVersion'] as String?,
     );
   }
 
-  /// 3: adds [journal] and [testWalk]. 2: adds [nextGoalHidden] and [seen].
-  static const version = 3;
+  /// 4: adds [lastVersion]. 3: adds [journal] and [testWalk]. 2: adds
+  /// [nextGoalHidden] and [seen].
+  static const version = 4;
 
   final GameState game;
 
@@ -62,6 +65,10 @@ class SaveData {
   /// The hidden test walk switch is on (spec 0004 §3).
   final bool testWalk;
 
+  /// The last version that the player opened (spec 0018 §2.3). Null in a
+  /// save from before version 4.
+  final String? lastVersion;
+
   SaveData withGame(GameState game) => copyWith(game: game);
 
   SaveData copyWith({
@@ -71,6 +78,7 @@ class SaveData {
     Set<String>? seen,
     List<JournalEntry>? journal,
     bool? testWalk,
+    String? lastVersion,
   }) => SaveData(
     game: game ?? this.game,
     firstDay: firstDay,
@@ -79,6 +87,7 @@ class SaveData {
     seen: seen ?? this.seen,
     journal: journal ?? this.journal,
     testWalk: testWalk ?? this.testWalk,
+    lastVersion: lastVersion ?? this.lastVersion,
   );
 
   Map<String, Object?> toJson() => {
@@ -89,6 +98,7 @@ class SaveData {
     'seen': seen.toList()..sort(),
     'journal': [for (final e in journal) e.toJson()],
     'testWalk': testWalk,
+    'lastVersion': lastVersion,
     'game': game.toJson(),
   };
 }

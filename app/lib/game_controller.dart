@@ -6,10 +6,12 @@ import 'package:game_core/game_core.dart';
 
 import 'persistence/save_data.dart';
 import 'persistence/save_store.dart';
+import 'release_notes.dart';
 import 'steps/step_source.dart';
 import 'sync/away_summary.dart';
 import 'sync/day_key.dart';
 import 'sync/sync_service.dart';
+import 'version.dart';
 
 enum ControllerStatus { loading, unavailable, needsPermission, ready }
 
@@ -28,6 +30,8 @@ class GameController extends ChangeNotifier {
     this.awayGrace = const Duration(minutes: 2),
     int Function()? newSeed,
     this.testWalkAllowed = true,
+    this.notes = ReleaseNotes.empty,
+    this.version = appVersion,
   }) : _clock = clock ?? DateTime.now,
        _sync = SyncService(game: game, source: source, clock: clock),
        _newSeed = newSeed ?? (() => Random.secure().nextInt(1 << 32));
@@ -36,6 +40,12 @@ class GameController extends ChangeNotifier {
 
   /// Test walk exists in this build: owner builds only (spec 0007 §4).
   final bool testWalkAllowed;
+
+  /// The release notes that come with the app (spec 0018 §2.1).
+  final ReleaseNotes notes;
+
+  /// The version that the player has: [appVersion], or another in tests.
+  final String version;
   final StepPermissions permissions;
   final SaveStorage store;
 
@@ -142,6 +152,15 @@ class GameController extends ChangeNotifier {
     _levelCards.clear();
     notifyListeners();
   }
+
+  /// The versions of the "New in Itheros" card, newest first (spec 0018
+  /// §2.3). Shown before the level-up cards.
+  List<String> get newNotes =>
+      _save == null ? const [] : notes.toShow(_save!.lastVersion, version);
+
+  /// The player closed the card. It changes no game state, so no sync first.
+  Future<void> dismissNewNotes() =>
+      _update((s) => s.copyWith(lastVersion: version));
 
   /// The player hid "Next goal" (spec 0002 §9.3).
   bool get nextGoalHidden => _save!.nextGoalHidden;
@@ -347,7 +366,9 @@ class GameController extends ChangeNotifier {
       await store.save(_save!);
     }
     if (_save == null) {
-      _save = await _sync.newSave(seed: _newSeed());
+      // A new player sees no card (spec 0018 §2.3 rule 19).
+      _save = (await _sync.newSave(seed: _newSeed()))
+          .copyWith(lastVersion: version);
       await store.save(_save!);
     }
     status = ControllerStatus.ready;
