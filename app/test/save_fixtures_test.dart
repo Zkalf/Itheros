@@ -143,6 +143,20 @@ void main() {
       expect(s.xp, raw['xp']);
       expect(s.bank, raw['bank']);
     });
+
+    // Spec 0018 criteria 32-33: a save from before version 4 has no last
+    // version; a save of version 4 keeps it.
+    final saveVersion = jsonDecode(f.readAsStringSync())['version'] as int;
+    test('$name loads with an empty last version', () {
+      final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+      final save = SaveData.fromJson(json);
+      expect(save.lastVersion, isNull);
+      final again = SaveData.fromJson(
+        save.copyWith(lastVersion: '0.6.0').toJson(),
+      );
+      expect(again.toJson()['version'], 4);
+      expect(again.lastVersion, '0.6.0');
+    }, skip: saveVersion >= 4 ? 'saved with a last version' : false);
   }
 
   test('the version shown in the game matches pubspec.yaml', () {

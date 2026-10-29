@@ -1426,12 +1426,12 @@ void criterion26() {
   );
 
   // Spec 0016 §6 raised GameState to 11 and spec 0017 to 12; the route
-  // changes no version.
+  // changes no version. Spec 0018 §4 raised SaveData to 4.
   group('spec 0014 criterion 26: old entries load with no route, the save '
-      'versions stay at 12 and 3, and each fixture loads', () {
-    test('GameState.schemaVersion is 12 and SaveData.version is 3', () {
+      'versions stay at 12 and 4, and each fixture loads', () {
+    test('GameState.schemaVersion is 12 and SaveData.version is 4', () {
       expect(GameState.schemaVersion, 12);
-      expect(SaveData.version, 3);
+      expect(SaveData.version, 4);
     });
 
     test('a journal entry with a route comes back from JSON with its route; '
