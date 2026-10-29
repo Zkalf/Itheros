@@ -22,6 +22,9 @@ jobs:
       # The checkout is on D:. With the pub cache on C:, Kotlin's incremental compile of plugins fails
       # ("this and base files have different roots"), so keep both on one drive.
       PUB_CACHE: D:\pub-cache
+      # No Gradle or Kotlin daemon stays after the build: a daemon holds the lock files in ~/.gradle, and the cache step
+      # then cannot read them and saves nothing (PR #134).
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process
     steps:
       - uses: actions/checkout@v4
         with:
