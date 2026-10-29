@@ -39,48 +39,50 @@ class WorldTab extends StatelessWidget {
           children: [
             fitMap(
               box.maxWidth,
-              (width) => MapView(
-                data: game.data,
-                width: width,
-                places: [
-                  for (final area in game.data.locations.keys)
-                    if (!game.isHidden(s, area))
-                      MapSpot(
-                        area,
-                        key: ValueKey('area-$area'),
-                        name: game.isFogged(s, area)
-                            ? '???'
-                            : labels.location(area),
-                        fogged: game.isFogged(s, area),
-                        onTap: () => _open(context, c, area),
-                      ),
-                ],
-                roads: [
-                  // A hidden area's roads aren't drawn either (spec 0011
-                  // §6.2).
-                  for (final r in game.data.routes)
-                    if (!game.isHidden(s, r.from) && !game.isHidden(s, r.to))
-                      (
-                        r.from,
-                        r.to,
-                        game.isFogged(s, r.from) || game.isFogged(s, r.to)
-                            ? null
-                            : fmt(r.steps),
-                      ),
-                ],
-                here: s.location,
-                fog: true,
-                // Room for each place and road, also hidden and in the
-                // fog, so that no name moves (spec 0014 amendment 2).
-                roomFor: (
-                  names: {
+              (width) => _snap(
+                MapView(
+                  data: game.data,
+                  width: width,
+                  places: [
                     for (final area in game.data.locations.keys)
-                      area: labels.location(area),
-                  },
-                  roads: [
-                    for (final r in game.data.routes)
-                      (r.from, r.to, fmt(r.steps)),
+                      if (!game.isHidden(s, area))
+                        MapSpot(
+                          area,
+                          key: ValueKey('area-$area'),
+                          name: game.isFogged(s, area)
+                              ? '???'
+                              : labels.location(area),
+                          fogged: game.isFogged(s, area),
+                          onTap: () => _open(context, c, area),
+                        ),
                   ],
+                  roads: [
+                    // A hidden area's roads aren't drawn either (spec 0011
+                    // §6.2).
+                    for (final r in game.data.routes)
+                      if (!game.isHidden(s, r.from) && !game.isHidden(s, r.to))
+                        (
+                          r.from,
+                          r.to,
+                          game.isFogged(s, r.from) || game.isFogged(s, r.to)
+                              ? null
+                              : fmt(r.steps),
+                        ),
+                  ],
+                  here: s.location,
+                  fog: true,
+                  // Room for each place and road, also hidden and in the
+                  // fog, so that no name moves (spec 0014 amendment 2).
+                  roomFor: (
+                    names: {
+                      for (final area in game.data.locations.keys)
+                        area: labels.location(area),
+                    },
+                    roads: [
+                      for (final r in game.data.routes)
+                        (r.from, r.to, fmt(r.steps)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -98,6 +100,8 @@ class WorldTab extends StatelessWidget {
     );
   }
 
+  static Widget _snap(Widget map) => _CoveredSnapshot(child: map);
+
   static void _open(BuildContext context, GameController c, String area) {
     unawaited(
       showModalBottomSheet<void>(
@@ -108,6 +112,56 @@ class WorldTab extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [child] drawn once into an image while another route (a sheet) covers its
+/// page, and drawn live otherwise (#136).
+///
+/// The renderer (Impeller) keeps no image of a layer. While a sheet slides
+/// over the World map, it draws the whole map again on each frame: the
+/// picture, the fog, the roads, the markers and the names. On the Fairphone,
+/// that missed 1-3 frames each time a sheet opened or closed. The image of the
+/// map costs one draw. The map cannot change under a sheet, and it is live
+/// again once the sheet has closed.
+class _CoveredSnapshot extends StatefulWidget {
+  const _CoveredSnapshot({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_CoveredSnapshot> createState() => _CoveredSnapshotState();
+}
+
+class _CoveredSnapshotState extends State<_CoveredSnapshot> {
+  final _controller = SnapshotController();
+  Timer? _live;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final covered = !(ModalRoute.of(context)?.isCurrent ?? true);
+    _live?.cancel();
+    if (covered) {
+      _controller.allowSnapshotting = true;
+    } else if (_controller.allowSnapshotting) {
+      // The page is current as soon as a sheet starts to close; its close
+      // animation (200 ms) still runs over the map.
+      _live = Timer(const Duration(milliseconds: 350), () {
+        if (mounted) _controller.allowSnapshotting = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      SnapshotWidget(controller: _controller, child: widget.child);
 }
 
 /// A place on a [MapView]: its id, the name that it shows, whether it is in
