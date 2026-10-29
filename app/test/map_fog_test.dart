@@ -12,6 +12,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/world_tab.dart';
 
 import 'images_test.dart' show loadFonts;
