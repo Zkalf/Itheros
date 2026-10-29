@@ -62,7 +62,9 @@ $clock = [Diagnostics.Stopwatch]::StartNew()
 Enter-CheckTurn -Name $name 6>$null
 $clock.Stop()
 Exit-CheckTurn
-Case 'a crashed check does not block the next' ($clock.Elapsed.TotalSeconds -lt 1)
+# Windows frees the turn when the job's process has ended, which can take a few seconds after Remove-Job on a slow
+# CI machine (PR #134 took more than 1 s). Without the crash handling, the next check would wait forever.
+Case 'a crashed check does not block the next' ($clock.Elapsed.TotalSeconds -lt 10)
 
 # 4. A script that holds the turn and runs another script that takes it too (release.ps1 runs check.ps1): the inner
 # one goes at once, and after it gives its turn back, the outer one still holds the turn.
