@@ -61,10 +61,15 @@ class ReleaseNotes {
 
   static Future<ReleaseNotes> load(AssetBundle bundle) async {
     final manifest = await AssetManifest.loadFromAssetBundle(bundle);
-    return ReleaseNotes.fromFiles({
+    final keys = [
       for (final key in manifest.listAssets())
-        if (key.startsWith(folder))
-          key.substring(folder.length): await bundle.loadString(key),
+        if (key.startsWith(folder)) key,
+    ];
+    // All files at once: the app waits for them before its first frame.
+    final texts = await Future.wait(keys.map(bundle.loadString));
+    return ReleaseNotes.fromFiles({
+      for (final (i, key) in keys.indexed)
+        key.substring(folder.length): texts[i],
     });
   }
 
@@ -119,14 +124,19 @@ class NoteBlock {
 
 /// The blocks of [text], in the format of spec 0018 §3.3 and its
 /// amendment 1. Any other Markdown stays as plain text, with its marks.
-List<NoteBlock> parseNotes(String text) {
-  final blocks = <NoteBlock>[];
+List<NoteBlock> parseNotes(String text) => [
+  for (final (depth, words) in _rawBlocks(text))
+    NoteBlock(_parts(words), depth: depth),
+];
+
+/// The depth and the text of each block of [text], with its marks. The
+/// reader and the check of the format cut the notes the same way.
+List<(int, String)> _rawBlocks(String text) {
+  final blocks = <(int, String)>[];
   int? depth;
   final words = <String>[];
   void flush() {
-    if (depth case final d?) {
-      blocks.add(NoteBlock(_parts(words.join(' ')), depth: d));
-    }
+    if (depth case final d?) blocks.add((d, words.join(' ')));
     depth = null;
     words.clear();
   }
@@ -173,7 +183,9 @@ final _outside = [
   RegExp(r'^\s*\d+\.\s'), // a numbered list
   RegExp(r'^\s*[*+]\s'), // a list with * or +
   RegExp(r'^\s*\|'), // a table
-  RegExp(r'^\s{4,}- '), // a list inside an item of the second list
+  // An item starts with 0 or 2 spaces: 4 would be a third list, 1 or 3 an
+  // item that the reader joins to the item above.
+  RegExp(r'^( | {3,})- '),
   RegExp(r'\[[^\]]*\]\('), // a link
   RegExp('`'), // code
   RegExp(r'(^|[\s(])_\S'), // an emphasis with _
@@ -185,7 +197,8 @@ bool usesOnlyKnownMarks(String text) {
   for (final line in text.split('\n')) {
     if (_outside.any((p) => p.hasMatch(line))) return false;
   }
-  for (final block in text.split(RegExp(r'\n\s*\n'))) {
+  // Each `**` pairs inside its own paragraph or item, as the reader shows it.
+  for (final (_, block) in _rawBlocks(text)) {
     final pieces = block.split('**');
     if (pieces.length.isEven) return false;
     if (pieces.any((p) => p.contains('*'))) return false;

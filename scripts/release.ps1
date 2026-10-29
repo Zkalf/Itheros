@@ -79,7 +79,8 @@ function Undo {
   Repo reset --hard $head *> $null
   Remove-Item -ErrorAction SilentlyContinue (Join-Path $app "test/fixtures/saves/$version.json")
   # The reset brings next.md back; the copy in the app follows it.
-  & "$PSScriptRoot\copy-notes.ps1" *> $null
+  # A failed copy must not stop Undo: the next check makes the copy again.
+  try { & "$PSScriptRoot\copy-notes.ps1" *> $null } catch { Write-Host "    the copy of the notes failed: $_" -ForegroundColor Yellow }
   Write-Host "    undone: back at $($head.Substring(0, 7)), version unchanged" -ForegroundColor Yellow
 }
 function Abort([string]$message) { Undo; Fail $message }
