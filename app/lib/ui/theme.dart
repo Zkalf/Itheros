@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
@@ -487,6 +488,13 @@ ThemeData _quietTheme() {
   );
   return ThemeData(
     brightness: Brightness.dark,
+    // A new screen slides in from the side (#136, the owner's choice). The
+    // default on Android fades both whole screens: each fade costs an extra
+    // layer, and on the Fairphone a frame of 33-50 ms at each screen change.
+    // The slide only moves the screens: no frame missed.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+    ),
     colorScheme: scheme,
     fontFamily: Fonts.body,
     textTheme: text,
