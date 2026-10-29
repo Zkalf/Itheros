@@ -60,7 +60,9 @@ try {
       $head = "$(git -C $root rev-parse HEAD)".Trim()
       $base = "$(git -C $root merge-base HEAD origin/main)".Trim()
       if ($LASTEXITCODE -ne 0 -or -not $base) { return $true }
-      if ($base -eq $head) { $base = "$(git -C $root rev-parse HEAD~1)".Trim() }
+      # On main itself with nothing uncommitted: the last commit is the change. A new branch with no commit of its
+      # own yet compares its uncommitted files with HEAD.
+      if ($base -eq $head -and -not "$(git -C $root status --porcelain)") { $base = "$(git -C $root rev-parse HEAD~1)".Trim() }
       if ($LASTEXITCODE -ne 0 -or -not $base) { return $true }
       $changed = @(git -C $root diff --name-only $base)
       if ($LASTEXITCODE -ne 0) { return $true }
