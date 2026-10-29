@@ -7,3 +7,5 @@ Small fixes.
 - **Change when an action stops:** tap the current action, or one that waits in the queue, to change its stop
   condition. It goes on where it was, with nothing lost.
 - **App icon:** a thinner dark edge around the picture on your home screen.
+- **New in Itheros:** after an update, the game shows you what changed, like these lines. Skipped a version? You
+  see its notes too. Read them again any time in Settings.

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'game_controller.dart';
 import 'game_data_loader.dart';
 import 'persistence/save_store.dart';
+import 'release_notes.dart';
 import 'steps/health_connect_step_source.dart';
 import 'ui/app.dart';
 import 'ui/images.dart';
@@ -22,6 +23,9 @@ Future<void> main() async {
   // index, each thing shows its placeholder.
   final images = await ImageIndex.load(rootBundle)
       .catchError((Object _) => ImageIndex.empty);
+  // The notes of each version (spec 0018 §2.1). Without them, no card shows.
+  final notes = await ReleaseNotes.load(rootBundle)
+      .catchError((Object _) => ReleaseNotes.empty);
   final source = HealthConnectStepSource();
   final controller = GameController(
     game: Game(data),
@@ -30,6 +34,7 @@ Future<void> main() async {
     store: SaveStore(await getApplicationSupportDirectory()),
     // Owner builds pass --dart-define=TEST_WALK=true; friends' builds don't.
     testWalkAllowed: const bool.fromEnvironment('TEST_WALK'),
+    notes: notes,
   );
   await splash;
   runApp(WalkingRpgApp(controller: controller, images: images));

@@ -6,6 +6,7 @@ import '../version.dart';
 import 'controller_scope.dart';
 import 'labels.dart';
 import 'licences_screen.dart';
+import 'notes_screen.dart';
 import 'theme.dart';
 
 /// Settings, opened from the top bar (spec 0008 decision 12), with the
@@ -85,6 +86,16 @@ class SettingsScreen extends StatelessWidget {
                   MaterialPageRoute<void>(
                     builder: (_) => const LicencesScreen(),
                   ),
+                ),
+              ),
+            ]),
+            // The notes of each version, to read again (spec 0018 §3.4).
+            plate([
+              ListTile(
+                key: const ValueKey('settings-notes'),
+                title: const Text('New in Itheros'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const NotesScreen()),
                 ),
               ),
             ]),

@@ -22,7 +22,8 @@ void main() {
       'check', () {
     final script = File('../scripts/release.ps1').readAsStringSync();
     final rename = script.indexOf('Repo mv releases/next.md');
-    final copy = script.indexOf('copy-notes.ps1');
+    // The first copy after the rename: Undo, above it, copies again too.
+    final copy = script.indexOf('copy-notes.ps1', rename + 1);
     final check = script.indexOf(r'& "$PSScriptRoot\check.ps1"');
     expect(rename, isNot(-1), reason: 'the rename');
     expect(copy, isNot(-1), reason: 'the copy of the notes');
@@ -35,7 +36,8 @@ void main() {
     test('$name copies the notes before the tests', () {
       final script = File('../scripts/$name').readAsStringSync();
       final copy = script.indexOf('copy-notes.ps1');
-      final test = script.indexOf('flutter test');
+      // The command, not the words "flutter test" in the help text.
+      final test = script.indexOf(RegExp(r'flutter test [@-]'));
       expect(copy, isNot(-1), reason: 'the copy of the notes');
       expect(copy, lessThan(test), reason: 'the copy comes first');
     });

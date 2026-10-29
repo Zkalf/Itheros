@@ -62,6 +62,8 @@ try {
 
   # Flutter app.
   $app = "$root\app"
+  # The release notes come into the app as a copy (plan 0029), before the tests and the build.
+  Step 'app: copy the release notes' $root { & "$PSScriptRoot\copy-notes.ps1" -Root $root }
   Step 'app: pub get' $app { flutter pub get | Out-Null }
   Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
   Step 'app: analyze' $app { flutter analyze --fatal-infos }

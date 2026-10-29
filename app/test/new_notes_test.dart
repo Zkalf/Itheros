@@ -271,10 +271,13 @@ void main() {
       addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
       final store = MemorySaveStore(_save('0.2.0'));
       await _open(t, store, version: '0.5.0', notes: _realNotes);
-      expect(find.text('Itheros 0.3.0'), findsOneWidget);
+      expect(find.text('Itheros 0.5.0'), findsOneWidget);
       expect(t.takeException(), isNull);
-      await t.ensureVisible(_continue);
+      // The list builds its plates as they scroll in: 0.3.0, then Continue.
+      await t.scrollUntilVisible(find.text('Itheros 0.3.0'), 200);
+      await t.scrollUntilVisible(_continue, 200);
       await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
       await t.tap(_continue);
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);

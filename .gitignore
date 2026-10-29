@@ -8,6 +8,8 @@ build/
 .flutter-plugins-dependencies
 pubspec_overrides.yaml
 coverage/
+# The copy of releases/*.md, made by scripts/copy-notes.ps1 (plan 0029)
+app/assets/releases/*.md
 
 # Android
 .gradle/

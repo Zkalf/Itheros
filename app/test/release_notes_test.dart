@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walkingrpg/release_notes.dart';
 import 'package:walkingrpg/version.dart';
 
-/// Notes for each of [versions], each with the line "Notes of <version>.".
+/// Notes for each of [versions], each with the line "Notes of `x.y.z`.".
 ReleaseNotes notesUpTo(List<String> versions, {String? next}) =>
     ReleaseNotes({for (final v in versions) v: 'Notes of $v.'}, next: next);
 

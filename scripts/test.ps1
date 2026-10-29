@@ -25,6 +25,8 @@ if (-not $pkg) { throw "no pubspec.yaml above $Path" }
 $rel = $file.Substring($pkg.Length + 1)
 $testArgs = @($rel) + $(if ($Name) { @('--plain-name', $Name) } else { @() })
 $isFlutter = Select-String -Quiet -Path "$pkg\pubspec.yaml" -Pattern '^\s+sdk: flutter'
+# The app's tests read the copy of the release notes (plan 0029).
+if ($isFlutter) { & "$PSScriptRoot\copy-notes.ps1" }
 Push-Location $pkg
 try {
   if ($isFlutter) { flutter test @testArgs } else { dart test @testArgs }
