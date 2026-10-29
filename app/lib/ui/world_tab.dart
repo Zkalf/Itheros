@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'dart:ui' show ImageFilter, PathMetric;
@@ -97,11 +99,13 @@ class WorldTab extends StatelessWidget {
   }
 
   static void _open(BuildContext context, GameController c, String area) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => _AreaSheet(controller: c, area: area, host: context),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => _AreaSheet(controller: c, area: area, host: context),
+      ),
     );
   }
 }

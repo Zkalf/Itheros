@@ -24,7 +24,7 @@ void main() {
 
     test('without it, the player strikes first and wins', () {
       final g = arenaGame([glassImp([])]);
-      var s = g.startActivity(
+      final s = g.startActivity(
         stateAt(g, location: 'arena'),
         const Activity.fight('imp'),
       );
@@ -36,7 +36,7 @@ void main() {
       final g = arenaGame([
         glassImp(['quick']),
       ]);
-      var s = g.startActivity(
+      final s = g.startActivity(
         stateAt(g, location: 'arena'),
         const Activity.fight('imp'),
       );
@@ -124,7 +124,7 @@ void main() {
         },
       ),
     ]);
-    var s = g.startActivity(
+    final s = g.startActivity(
       stateAt(g, location: 'arena'),
       const Activity.fight('king'),
     );

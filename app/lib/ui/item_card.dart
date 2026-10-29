@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -508,9 +510,11 @@ class _AutoEatState extends State<_AutoEat> {
 
   void _set(int? keep) {
     setState(() => _keep = keep);
-    widget.controller.setAutoEat(
-      keep == null ? null : widget.meal,
-      keep: keep ?? 0,
+    unawaited(
+      widget.controller.setAutoEat(
+        keep == null ? null : widget.meal,
+        keep: keep ?? 0,
+      ),
     );
   }
 

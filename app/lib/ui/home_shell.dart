@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'achievements_screen.dart';
@@ -83,7 +85,7 @@ class _HomeShellState extends State<HomeShell> {
                 tooltip: 'Achievements',
                 onPressed: () {
                   final unseen = c.unseenAchievements;
-                  c.markSeen(unseen);
+                  unawaited(c.markSeen(unseen));
                   final fresh = {
                     for (final id in unseen)
                       id.substring('achievement.'.length),

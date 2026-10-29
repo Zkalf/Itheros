@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../game_controller.dart';
@@ -98,7 +100,7 @@ class SlotSheet extends StatelessWidget {
                 ),
                 onTap: () {
                   Navigator.of(context).pop();
-                  showItemCard(host, c, worn, wornIn: slot);
+                  unawaited(showItemCard(host, c, worn, wornIn: slot));
                 },
                 trailing: sheetButton(
                   context,
@@ -164,7 +166,7 @@ class SlotSheet extends StatelessWidget {
       ),
       onTap: () {
         Navigator.of(context).pop();
-        showItemCard(host, c, key);
+        unawaited(showItemCard(host, c, key));
       },
       trailing: sheetButton(
         context,
