@@ -31,6 +31,21 @@ void main() {
     expect(copy, lessThan(check), reason: 'the copy comes before the check');
   });
 
+  // check.ps1 leaves out the pacing sims when a change does not touch
+  // packages/; a release always runs them.
+  test('release.ps1 runs the full check with the pacing sims', () {
+    final script = File('../scripts/release.ps1').readAsStringSync();
+    expect(script, contains(r'& "$PSScriptRoot\check.ps1" -Pacing'));
+  });
+
+  test('the pacing test carries the tag that check.ps1 leaves out', () {
+    final pacing = File('../packages/game_core/test/pacing_test.dart')
+        .readAsStringSync();
+    final check = File('../scripts/check.ps1').readAsStringSync();
+    expect(pacing, contains("@Tags(['pacing'])"));
+    expect(check, contains('-x pacing'));
+  });
+
   // Plan 0029: the tests and the APK get the notes from the copy.
   for (final name in ['check.ps1', 'test.ps1']) {
     test('$name copies the notes before the tests', () {

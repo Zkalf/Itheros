@@ -1,0 +1,4 @@
+# pacing: the sims of test/pacing_test.dart. check.ps1 leaves them out with `-x pacing` when a change does not touch
+# packages/; release.ps1 always runs them.
+tags:
+  pacing:

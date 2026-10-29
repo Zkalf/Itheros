@@ -11,11 +11,14 @@
   this repo's copy of the script, so an agent can't weaken the check it is graded by).
   One check at a time on this computer: a second one waits for its turn
   (scripts\check-turn.ps1), so two sessions in two worktrees don't run it at once.
+  The pacing sims (game_core tests with the tag `pacing`) run only when the change touches packages\ (the game
+  rules, data\*.json, the sim), compared with origin/main, or with -Pacing. release.ps1 passes -Pacing. When git
+  cannot tell what changed, they run. Each step prints its time.
 
   In Claude Code run it directly (.\scripts\check.ps1): a nested
   `powershell -File` can't be auto-approved by permission rules.
 #>
-param([switch]$Release, [string]$Root)
+param([switch]$Release, [string]$Root, [switch]$Pacing)
 
 $ErrorActionPreference = 'Stop'
 $root = if ($Root) { (Resolve-Path $Root).Path } else { Split-Path -Parent $PSScriptRoot }
@@ -32,8 +35,10 @@ if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = [Environment]::GetEnvironmentV
 # The turn goes back in finally, so an error or Ctrl+C cannot keep it while this shell stays open.
 Enter-CheckTurn -Folder $root
 try {
+  $total = [Diagnostics.Stopwatch]::StartNew()
   function Step([string]$name, [string]$dir, [scriptblock]$block) {
     Write-Host "==> $name" -ForegroundColor Cyan
+    $time = [Diagnostics.Stopwatch]::StartNew()
     Push-Location $dir
     try {
       & $block
@@ -43,7 +48,33 @@ try {
       $script:failed += $name
     } finally {
       Pop-Location
+      Write-Host ("    {0:N0} s" -f $time.Elapsed.TotalSeconds) -ForegroundColor DarkGray
     }
+  }
+
+  # The pacing sims run when the change touches packages\, compared with origin/main (on main itself: with the
+  # commit before). Committed, uncommitted and new files count. Any doubt runs them.
+  function Test-PacingNeeded {
+    if ($Pacing) { return $true }
+    try {
+      $head = "$(git -C $root rev-parse HEAD)".Trim()
+      $base = "$(git -C $root merge-base HEAD origin/main)".Trim()
+      if ($LASTEXITCODE -ne 0 -or -not $base) { return $true }
+      if ($base -eq $head) { $base = "$(git -C $root rev-parse HEAD~1)".Trim() }
+      if ($LASTEXITCODE -ne 0 -or -not $base) { return $true }
+      $changed = @(git -C $root diff --name-only $base)
+      if ($LASTEXITCODE -ne 0) { return $true }
+      $changed += @(git -C $root ls-files --others --exclude-standard)
+      return [bool]($changed | Where-Object { $_ -like 'packages/*' })
+    } catch {
+      return $true
+    }
+  }
+  $runPacing = Test-PacingNeeded
+  if ($runPacing) {
+    Write-Host '==> pacing sims: on (a change in packages\, or -Pacing)' -ForegroundColor Cyan
+  } else {
+    Write-Host '==> pacing sims: off (no change in packages\; release.ps1 always runs them)' -ForegroundColor Cyan
   }
 
   # The production gate (plan 0009): what it blocks and what it lets through.
@@ -57,7 +88,10 @@ try {
     Step "${n}: format"   $pkg { dart format --output=none --set-exit-if-changed . }
     Step "${n}: analyze"  $pkg { dart analyze --fatal-infos }
     # Failing tests only: the full list is long enough that a cut-off tool output hid the one failure (eval E21).
-    if (Test-Path "$pkg\test") { Step "${n}: test" $pkg { dart test -r failures-only } }
+    if (Test-Path "$pkg\test") {
+      if ($runPacing) { Step "${n}: test" $pkg { dart test -r failures-only } }
+      else { Step "${n}: test (no pacing sims)" $pkg { dart test -r failures-only -x pacing } }
+    }
   }
 
   # Flutter app.
@@ -100,4 +134,4 @@ if ($failed.Count) {
   Write-Host "`nCHECK FAILED: $($failed -join ', ')" -ForegroundColor Red
   exit 1
 }
-Write-Host "`nCHECK PASSED" -ForegroundColor Green
+Write-Host ("`nCHECK PASSED in {0:N0} s" -f $total.Elapsed.TotalSeconds) -ForegroundColor Green
