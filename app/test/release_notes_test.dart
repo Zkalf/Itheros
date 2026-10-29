@@ -177,6 +177,11 @@ void main() {
       ('a table', '| a | b |\n'),
       ('an open **', '- **Fixed: a meal.\n'),
       ('a third list', '- A\n  - B\n    - C\n'),
+      // PR #132 review: ** pairs inside one item, not across two items.
+      ('a ** that spans two items', '- **Bold start\n- end**\n'),
+      // PR #132 review: an item starts with 0 or 2 spaces only.
+      ('an item with 3 spaces', '- Item\n   - sub\n'),
+      ('an item with 1 space', ' - Item\n'),
     ]) {
       test('$name is outside the format (criterion 3)', () {
         expect(usesOnlyKnownMarks(text), isFalse);
