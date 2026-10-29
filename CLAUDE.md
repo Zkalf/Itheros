@@ -16,7 +16,9 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 ## Commands (Windows, PowerShell 5.1)
 Run repo scripts directly, e.g. `.\scripts\check.ps1`. Never via `powershell -File …`: a nested interpreter can't be
 auto-approved by permission rules (headless and eval runs deny it).
-- `.\scripts\check.ps1` — format, analyze, tests. The definition of green.
+- `.\scripts\check.ps1` — format, analyze, tests. The definition of green. The pacing sims (tag `pacing`) run only
+  when the change touches `packages/` (compared with `origin/main`) or with `-Pacing`; `release.ps1` always passes
+  `-Pacing`. Each step prints its time.
 - `.\scripts\check.ps1 -Release` — also builds the owner's release APK (with test walk) and runs
   `scripts\apk-check.ps1` on it (fails on INTERNET or cloud backup).
 - `.\scripts\release.ps1 [-Fix] [-DryRun]` — releases to friends (spec 0007): version bump, check, friend APK (no

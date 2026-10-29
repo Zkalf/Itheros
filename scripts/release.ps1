@@ -111,7 +111,8 @@ if ($sampled -ne 0) { Abort 'could not write the sample save' }
 # Windows frees the turn.
 . "$PSScriptRoot\check-turn.ps1"
 Enter-CheckTurn -Folder $root
-& "$PSScriptRoot\check.ps1"
+# -Pacing: a release always runs the pacing sims, whatever changed.
+& "$PSScriptRoot\check.ps1" -Pacing
 if ($LASTEXITCODE -ne 0) { Abort 'the check failed' }
 
 # 4. The friend build: no --dart-define=TEST_WALK (spec 0007 §4). Then check that exact file.
