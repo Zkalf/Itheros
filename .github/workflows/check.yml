@@ -49,6 +49,17 @@ jobs:
           else
             echo "build=true" >> "$GITHUB_OUTPUT"
           fi
+          # The release APK (about 5 minutes here) proves no INTERNET permission and no cloud backup. On a pull request
+          # it builds only when something that can change that changed: the Android files, a pubspec (the plugins), the
+          # scripts that build and check it, or this workflow. A push to main always builds it, and so does a diff that
+          # can't be read. A release builds and checks its own APK (release.ps1).
+          apk='^(app/android/|app/pubspec\.(yaml|lock)$|packages/[^/]+/pubspec\.(yaml|lock)$|scripts/(check|apk-check)\.ps1$|\.github/)'
+          if [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qE "$apk"; then
+            echo "No Android file, pubspec or build script changed; skipping the APK."
+            echo "apk=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "apk=true" >> "$GITHUB_OUTPUT"
+          fi
       # A draft intent, spec or plan never reaches main (CONTRIBUTING.md): Zkalf accepts it on the pull request, and
       # its Status line says accepted before the merge. Runs even when the build is skipped. A diff that can't be read
       # checks every file.
@@ -69,8 +80,9 @@ jobs:
           echo "No drafts."
       # Gradle's downloads stay between runs: a fresh machine took about 7 of the 11 minutes for the APK build. The key
       # is the hash of the Gradle files in app/android, so a change there starts a new cache.
+      # Java and the Gradle cache serve only the APK build.
       - uses: actions/setup-java@v4
-        if: steps.scope.outputs.build == 'true'
+        if: steps.scope.outputs.build == 'true' && steps.scope.outputs.apk == 'true'
         with:
           distribution: temurin
           java-version: '17'
@@ -87,6 +99,10 @@ jobs:
           cache: true
           pub-cache-path: D:\pub-cache
       - name: Format, analyze, tests, APK build and APK check
-        if: steps.scope.outputs.build == 'true'
+        if: steps.scope.outputs.build == 'true' && steps.scope.outputs.apk == 'true'
         shell: powershell
         run: .\scripts\check.ps1 -Release
+      - name: Format, analyze and tests (no APK)
+        if: steps.scope.outputs.build == 'true' && steps.scope.outputs.apk != 'true'
+        shell: powershell
+        run: .\scripts\check.ps1
