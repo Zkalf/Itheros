@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -84,13 +86,15 @@ class ActionTile extends StatelessWidget {
         (true, _) => () {
           final from = startFrom;
           if (from != null) Navigator.pop(context);
-          changeAction(from ?? context, controller, 0);
+          unawaited(changeAction(from ?? context, controller, 0));
         },
         (false, false) => null,
         (false, true) => () {
           final from = startFrom;
           if (from != null) Navigator.pop(context);
-          startAction(from ?? context, controller, activity, deadly: deadly);
+          unawaited(
+            startAction(from ?? context, controller, activity, deadly: deadly),
+          );
         },
       },
     );

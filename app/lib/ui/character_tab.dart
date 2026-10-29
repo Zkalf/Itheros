@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'bag_grid.dart';
@@ -229,7 +231,7 @@ class _RankTitleState extends State<_RankTitle> {
     final c = ControllerScope.of(context);
     if (!c.testWalkAllowed) return;
     final on = !c.testWalkOn;
-    c.setTestWalk(on);
+    unawaited(c.setTestWalk(on));
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text('Test walk ${on ? 'on' : 'off'}')));

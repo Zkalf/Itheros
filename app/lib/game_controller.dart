@@ -452,7 +452,7 @@ class GameController extends ChangeNotifier {
     final interval = syncInterval;
     if (interval == null || !_foreground) return;
     _timer = Timer.periodic(interval, (_) {
-      if (_foreground) syncNow();
+      if (_foreground) unawaited(syncNow());
     });
   }
 

@@ -24,8 +24,8 @@ void main() {
 
   for (final f in fixtures) {
     final name = f.uri.pathSegments.last;
-    final saved =
-        (jsonDecode(f.readAsStringSync())['game'] as Map)['version'] as int;
+    final file = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
+    final saved = (file['game']! as Map<String, Object?>)['version']! as int;
     test('$name loads with level, XP, bank and items kept', () {
       final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
       final raw = json['game'] as Map<String, Object?>;
@@ -146,7 +146,7 @@ void main() {
 
     // Spec 0018 criteria 32-33: a save from before version 4 has no last
     // version; a save of version 4 keeps it.
-    final saveVersion = jsonDecode(f.readAsStringSync())['version'] as int;
+    final saveVersion = file['version']! as int;
     test('$name loads with an empty last version', () {
       final json = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;
       final save = SaveData.fromJson(json);
