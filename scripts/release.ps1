@@ -92,8 +92,8 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 # them under the new version, and the app carries them as a copy (plan 0029). Undo puts next.md back.
 Repo mv releases/next.md "releases/$version.md"
 if ($LASTEXITCODE -ne 0) { Abort 'could not rename releases\next.md' }
-& "$PSScriptRoot\copy-notes.ps1"
-if ($LASTEXITCODE -ne 0) { Abort 'could not copy the release notes into the app' }
+# copy-notes.ps1 stops on an error; catch it, so that Undo still runs.
+try { & "$PSScriptRoot\copy-notes.ps1" } catch { Abort "could not copy the release notes into the app: $_" }
 
 # The sample save of this version, before the check, so the check runs the save tests on it too (#60). Undo
 # removes it again, also on a dry run.
