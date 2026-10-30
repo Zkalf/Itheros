@@ -48,7 +48,7 @@ try {
       $script:failed += $name
     } finally {
       Pop-Location
-      Write-Host ("    {0:N0} s" -f $time.Elapsed.TotalSeconds) -ForegroundColor DarkGray
+      Write-Host ("    {0:0} s" -f $time.Elapsed.TotalSeconds) -ForegroundColor DarkGray
     }
   }
 
@@ -136,4 +136,4 @@ if ($failed.Count) {
   Write-Host "`nCHECK FAILED: $($failed -join ', ')" -ForegroundColor Red
   exit 1
 }
-Write-Host ("`nCHECK PASSED in {0:N0} s" -f $total.Elapsed.TotalSeconds) -ForegroundColor Green
+Write-Host ("`nCHECK PASSED in {0:0} s" -f $total.Elapsed.TotalSeconds) -ForegroundColor Green
