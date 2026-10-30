@@ -1,0 +1,217 @@
+{
+  "version": 4,
+  "firstDay": "2026-10-18",
+  "credited": {
+    "2026-10-18": 5000,
+    "2026-10-19": 5000,
+    "2026-10-20": 5000
+  },
+  "nextGoalHidden": false,
+  "seen": [
+    "camp",
+    "goblin_woods"
+  ],
+  "journal": [
+    {
+      "started": "2026-10-20T18:30:00.000",
+      "summary": {
+        "walked": 15000,
+        "activitySteps": 15000,
+        "boostUsed": 4800,
+        "banked": 4800,
+        "lost": 0,
+        "actions": [
+          {
+            "activity": {
+              "kind": "travel",
+              "target": "goblin_woods"
+            },
+            "wins": 0,
+            "xp": 0,
+            "items": {},
+            "losses": [],
+            "ended": "arrived",
+            "skipped": null,
+            "missing": {},
+            "next": null,
+            "walkSteps": 200
+          },
+          {
+            "activity": {
+              "kind": "fight",
+              "target": "goblin"
+            },
+            "wins": 535,
+            "xp": 3008,
+            "items": {
+              "goblin_hide": 271,
+              "rusty_dagger": 20,
+              "rusty_dagger@uncommon": 6,
+              "rusty_dagger@rare": 1,
+              "rusty_dagger@legendary": 1
+            },
+            "losses": [],
+            "ended": null,
+            "skipped": null,
+            "missing": {},
+            "next": null
+          }
+        ],
+        "levelsReached": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "achievements": [
+          "lucky_find",
+          "rare_find",
+          "first_steps",
+          "epic_find",
+          "legendary_find"
+        ],
+        "lostAchievements": [],
+        "lore": [
+          "lore_goblin_brute"
+        ],
+        "learned": [
+          "goblin"
+        ],
+        "slayers": [
+          "goblin"
+        ],
+        "professionLevels": [],
+        "finds": [],
+        "rerolls": [],
+        "trophyFish": [],
+        "records": [],
+        "charts": [],
+        "bottleItems": [],
+        "chests": [],
+        "mealsEaten": [],
+        "mealsOut": [],
+        "route": [
+          "goblin_woods"
+        ]
+      },
+      "testWalk": false
+    }
+  ],
+  "testWalk": false,
+  "lastVersion": null,
+  "game": {
+    "version": 12,
+    "location": "goblin_woods",
+    "xp": 3008,
+    "bank": 0,
+    "activity": {
+      "kind": "fight",
+      "target": "goblin",
+      "stop": {
+        "kind": "untilGrey"
+      },
+      "progress": 0,
+      "fight": {
+        "playerHp": 80,
+        "enemyHp": 19,
+        "round": 1
+      },
+      "leg": null,
+      "lossStreak": 0,
+      "crafted": 0,
+      "won": 535,
+      "lost": 0,
+      "records": 0,
+      "gained": {
+        "goblin_hide": 271,
+        "rusty_dagger": 20,
+        "rusty_dagger@uncommon+hp5": 1,
+        "rusty_dagger@rare+crit2+crit2": 1,
+        "rusty_dagger@uncommon+crit1": 2,
+        "rusty_dagger@uncommon+crit2": 2,
+        "rusty_dagger@legendary+hp7+hp7+hp6+hp6": 1,
+        "rusty_dagger@uncommon+hp4": 1
+      },
+      "log": [
+        {
+          "round": 3,
+          "dealt": 8,
+          "mine": "hit",
+          "outcome": "won"
+        },
+        {
+          "round": 1,
+          "dealt": 9,
+          "taken": 1,
+          "mine": "hit",
+          "theirs": "hit"
+        },
+        {
+          "round": 2,
+          "dealt": 11,
+          "mine": "hit",
+          "outcome": "won"
+        },
+        {
+          "round": 1,
+          "dealt": 0,
+          "taken": 0,
+          "mine": "miss",
+          "theirs": "miss"
+        }
+      ]
+    },
+    "queue": [],
+    "inventory": {
+      "goblin_hide": 271,
+      "rusty_dagger": 20,
+      "rusty_dagger@uncommon+hp5": 1,
+      "rusty_dagger@rare+crit2+crit2": 1,
+      "rusty_dagger@uncommon+crit1": 2,
+      "rusty_dagger@uncommon+crit2": 2,
+      "rusty_dagger@legendary+hp7+hp7+hp6+hp6": 1,
+      "rusty_dagger@uncommon+hp4": 1
+    },
+    "equipment": {},
+    "rng": 3126310626,
+    "counters": {
+      "visited.camp": 1,
+      "areas.visited": 2,
+      "steps.walked": 15000,
+      "visited.goblin_woods": 1,
+      "kills.goblin": 535,
+      "quality.best": 5,
+      "found.goblin.goblin_hide": 1,
+      "found.goblin.rusty_dagger": 1
+    },
+    "achievements": [
+      "epic_find",
+      "first_steps",
+      "legendary_find",
+      "lucky_find",
+      "rare_find"
+    ],
+    "explored": [
+      "camp",
+      "goblin_woods"
+    ],
+    "fought": [
+      "goblin"
+    ],
+    "lore": [
+      "lore_goblin_brute"
+    ],
+    "professions": {},
+    "learned": [],
+    "tools": {},
+    "tips": [],
+    "professionRng": 1374120156,
+    "records": {},
+    "meal": null,
+    "autoEat": null,
+    "revealed": [],
+    "bottles": 0,
+    "character": null
+  }
+}
