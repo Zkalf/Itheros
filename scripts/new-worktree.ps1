@@ -5,7 +5,7 @@
 .DESCRIPTION
   Several sessions can work on this computer at once, each in its own worktree. The main folder stays on main for
   the owner's release builds and installs (only it has the release key). The new folder sits beside the main one
-  and is named after the branch: fix/eat-without-meal gives ..\walk-sun-goose-fix-eat-without-meal.
+  and is named after the branch: fix/eat-without-meal gives ..\Itheros-fix-eat-without-meal.
   scripts\merge.sh removes the worktree and the branch when the owner merges its pull request.
 
 .EXAMPLE
