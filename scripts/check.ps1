@@ -9,8 +9,8 @@
   health data stays on the device; spec 0007 §6).
   -Root: check another checkout (the eval grader checks throwaway worktrees with
   this repo's copy of the script, so an agent can't weaken the check it is graded by).
-  One check at a time on this computer: a second one waits for its turn
-  (scripts\check-turn.ps1), so two sessions in two worktrees don't run it at once.
+  At most two checks at a time on this computer: a third one waits for a turn
+  (scripts\check-turn.ps1), so sessions in several worktrees don't run the PC out of memory.
   The pacing sims (game_core tests with the tag `pacing`) run only when the change touches packages\ (the game
   rules, data\*.json, the sim), compared with origin/main, or with -Pacing. release.ps1 passes -Pacing. When git
   cannot tell what changed, they run. Each step prints its time.
@@ -30,7 +30,7 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [En
 if ($env:JAVA_HOME) { $env:JAVA_HOME = $env:JAVA_HOME.TrimEnd('\') }
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = [Environment]::GetEnvironmentVariable('ANDROID_HOME', 'User') }
 
-# One full check at a time on this computer: it uses a lot of memory (scripts\check-turn.ps1).
+# At most two full checks at a time on this computer: each uses a lot of memory (scripts\check-turn.ps1).
 . "$PSScriptRoot\check-turn.ps1"
 # The turn goes back in finally, so an error or Ctrl+C cannot keep it while this shell stays open.
 Enter-CheckTurn -Folder $root

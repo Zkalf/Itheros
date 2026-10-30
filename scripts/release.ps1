@@ -106,8 +106,8 @@ Pop-Location
 if ($sampled -ne 0) { Abort 'could not write the sample save' }
 
 # 3. The full check (format, analyze, tests: the save fixtures and the version line included). The turn holds the
-# check and the friend build, so no other full check runs beside them (scripts\check-turn.ps1). The check inside
-# takes the same turn again, which a mutex allows to the process that holds it; an Abort ends the process, and
+# check and the friend build, so at most one other full check runs beside them (scripts\check-turn.ps1). The check
+# inside takes the same turn again, which a mutex allows to the process that holds it; an Abort ends the process, and
 # Windows frees the turn.
 . "$PSScriptRoot\check-turn.ps1"
 Enter-CheckTurn -Folder $root
