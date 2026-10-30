@@ -11,7 +11,7 @@
 param(
   [switch]$Install,
   [int]$WaitSeconds = 6,
-  [string]$OutDir = (Join-Path $env:TEMP 'walk-sun-goose-smoke')
+  [string]$OutDir = (Join-Path $env:TEMP 'Itheros-smoke')
 )
 
 # Native tools (adb) write progress to stderr; with 'Stop', PowerShell 5.1 would treat that as fatal. Exit codes

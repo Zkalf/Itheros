@@ -51,7 +51,7 @@ if (git -C $repo status --porcelain) {
 }
 $configHash = & (Join-Path $repo 'scripts\config-hash.ps1') -Root $repo
 $runId = '{0:yyyyMMdd-HHmmss}' -f (Get-Date)
-$runDir = Join-Path $env:LOCALAPPDATA "walk-sun-goose-evals\$runId"
+$runDir = Join-Path $env:LOCALAPPDATA "Itheros-evals\$runId"
 New-Item -ItemType Directory -Force $runDir | Out-Null
 $claude = (Get-Command claude -ErrorAction SilentlyContinue).Source
 if (-not $NoAgent -and -not $claude) { Write-Host 'claude CLI not found.' -ForegroundColor Red; exit 1 }
