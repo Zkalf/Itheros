@@ -123,8 +123,11 @@ $free = Test-TurnFree
 Set-Content -LiteralPath $go -Value 'done'
 Exit-CheckTurn
 $other | Wait-Job | Remove-Job
-Remove-Item -LiteralPath (@($inner, $go) + $ready) -ErrorAction SilentlyContinue
 Case 'the holder keeps its turn after the inner script' (-not $free)
+
+# The test's files in TEMP (turn notes, signal files, the inner script) go, so checks don't pile them up (#147).
+Remove-Item -Path (Join-Path $env:TEMP "$name*")
+Case 'the test leaves no files in TEMP' (-not (Test-Path (Join-Path $env:TEMP "$name*")))
 
 if ($bad) { exit 1 }
 Write-Host "CHECK TURN TESTS PASSED: $cases cases"
