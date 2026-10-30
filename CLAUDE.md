@@ -50,7 +50,7 @@ auto-approved by permission rules (headless and eval runs deny it).
   merges the PR. A session told mid-change that another one now runs finishes its change on its branch in the main
   folder (no switch to `main` or another branch) and makes its next change in a worktree; the owner's builds wait
   until the main folder is back on `main`. An eval run already works in a throwaway worktree: it stays there.
-- One full check runs at a time on this PC: `check.ps1` (and `release.ps1`) waits its turn while another runs
+- At most two full checks run at a time on this PC: a third `check.ps1` (or `release.ps1`) waits for a turn
   (memory; `scripts\check-turn.ps1`). A wait adds the other check's time, so start a full check in the background.
 - `gh` is `C:\Program Files\GitHub CLI\gh.exe` (signed in as the owner); shells started before its install don't have
   it on PATH.
