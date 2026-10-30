@@ -1,4 +1,4 @@
-# walk-sun-goose (the game: Itheros)
+# Itheros
 
 Android-first mobile combat RPG where real-world steps (Health Connect) drive all progress.
 Built with the AI-native SDLC playbook: intent → spec → plan → code, each accepted by the product owner (Zkalf).
@@ -42,7 +42,7 @@ auto-approved by permission rules (headless and eval runs deny it).
   path. When unsure, PR.
 - **Parallel sessions, only when the owner says so.** By default one session runs, and it works on a short branch in
   the main folder. When the owner says that sessions run in parallel, each change gets its own worktree:
-  `.\scripts\new-worktree.ps1 <branch>` makes `..\walk-sun-goose-<branch>` from the latest `origin/main`. Then never
+  `.\scripts\new-worktree.ps1 <branch>` makes `..\Itheros-<branch>` from the latest `origin/main`. Then never
   switch branches or leave edits in the main folder: it stays on `main` for reading and for the owner's release
   builds and installs (only it has the release key). Start sessions in the main folder; work in the worktree: run its
   scripts with the shell there (`.\scripts\check.ps1`), or by full path from elsewhere; push with the shell there and
