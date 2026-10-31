@@ -8,12 +8,17 @@ import 'controller_scope.dart';
 import 'images.dart';
 import 'paper_doll.dart';
 import 'socket.dart';
+import 'talents_tab.dart';
 import 'text_size.dart';
 import 'theme.dart';
 
-/// Who am I (spec 0008 §3.5): level, stats and rank above two small tabs,
-/// Gear (the paper doll) and Bag. Talents join them with their spec.
-/// Equipping costs no steps.
+/// Who am I (spec 0008 §3.5): level, stats and rank above three small tabs,
+/// Gear (the paper doll), Bag and Talents (spec 0015 §3.1). Equipping costs
+/// no steps.
+
+/// The three tabs of Character.
+enum _Pane { gear, bag, talents }
+
 class CharacterTab extends StatefulWidget {
   const CharacterTab({super.key});
 
@@ -22,7 +27,7 @@ class CharacterTab extends StatefulWidget {
 }
 
 class _CharacterTabState extends State<CharacterTab> {
-  var _bag = false;
+  var _pane = _Pane.gear;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +39,7 @@ class _CharacterTabState extends State<CharacterTab> {
     final meal = game.mealBonus(s);
     final level = game.level(s);
     final rank = game.rank(level).name;
-    final points = game.talentPoints(level);
+    final points = game.talentPointsLeft(s);
     final text = Theme.of(context).textTheme;
     final who = s.character;
 
@@ -112,8 +117,8 @@ class _CharacterTabState extends State<CharacterTab> {
                 if (points > 0) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '$points talent point${points == 1 ? '' : 's'} waiting. '
-                    'Talents arrive in a later update.',
+                    '$points talent point${points == 1 ? '' : 's'} to spend',
+                    key: const ValueKey('talent-line'),
                     style: text.bodySmall,
                   ),
                 ],
@@ -126,30 +131,39 @@ class _CharacterTabState extends State<CharacterTab> {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(gutter),
-            child: SegmentedButton<bool>(
+            child: SegmentedButton<_Pane>(
               expandedInsets: EdgeInsets.zero,
               segments: const [
                 ButtonSegment(
-                  value: false,
+                  value: _Pane.gear,
                   label: Text('Gear', key: ValueKey('tab-gear')),
                   icon: Icon(Icons.accessibility_new),
                 ),
                 ButtonSegment(
-                  value: true,
+                  value: _Pane.bag,
                   label: Text('Bag', key: ValueKey('tab-bag')),
                   icon: Icon(Icons.backpack),
                 ),
+                ButtonSegment(
+                  value: _Pane.talents,
+                  label: Text('Talents', key: ValueKey('tab-talents')),
+                  icon: Icon(Icons.auto_awesome),
+                ),
               ],
-              selected: {_bag},
+              selected: {_pane},
               showSelectedIcon: false,
-              onSelectionChanged: (v) => setState(() => _bag = v.single),
+              onSelectionChanged: (v) => setState(() => _pane = v.single),
             ),
           ),
         ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(10),
-            child: _bag ? BagGrid(controller: c) : PaperDoll(controller: c),
+            child: switch (_pane) {
+              _Pane.gear => PaperDoll(controller: c),
+              _Pane.bag => BagGrid(controller: c),
+              _Pane.talents => TalentsTab(controller: c),
+            },
           ),
         ),
       ],

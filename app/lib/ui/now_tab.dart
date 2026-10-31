@@ -12,6 +12,7 @@ import 'item_square.dart';
 import 'meals.dart';
 import 'socket.dart';
 import 'teacher_sheet.dart';
+import 'trainer_sheet.dart';
 import 'theme.dart';
 
 /// What am I doing, and what can I do here (spec 0008 §3.2): the running
@@ -663,6 +664,20 @@ class _Here extends StatelessWidget {
                 : Badge(key: ValueKey('teacher-dot-${p.id}')),
             onTap: () => showTeacher(context, c, p.id),
           ),
+      // The Guild trainer resets the talents (spec 0015 §2.7), a dot when
+      // points are left.
+      if (game.data.trainer.location == s.location)
+        ListTile(
+          key: const ValueKey('trainer'),
+          leading: const Icon(Icons.auto_awesome),
+          title: Text(trainerName(game.data.trainer)),
+          titleTextStyle: nameStyle(context),
+          subtitle: const Text('Talents'),
+          trailing: game.talentPointsLeft(s) > 0
+              ? const Badge(key: ValueKey('trainer-dot'))
+              : null,
+          onTap: () => showTrainer(context, c),
+        ),
       if (place.crafting && onOpenProfessions != null)
         ListTile(
           key: const ValueKey('here-forge'),

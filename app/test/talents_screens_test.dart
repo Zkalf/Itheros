@@ -167,7 +167,8 @@ void main() {
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.talents, isEmpty);
-      expect(find.text('There. Walk a new road.'), findsOneWidget);
+      // In quotes, like the teachers' lines.
+      expect(find.text('"There. Walk a new road."'), findsOneWidget);
       c.state.talents['might'] = 1;
       await closeSheet(t);
       await t.tap(find.byKey(const ValueKey('trainer')));

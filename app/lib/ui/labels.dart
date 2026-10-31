@@ -558,9 +558,7 @@ class Labels {
     NewsKind.rank => fill(data.ranks.firstWhere((r) => r.name == n.id).line),
     NewsKind.gatheringSpot => 'You can now ${_verbs(n.id).$3} ${_spot(n.id)}',
     NewsKind.recipe => 'New recipe: ${recipe(n.id)}',
-    NewsKind.talentPoint =>
-      '+1 talent point. Talents arrive in a later update; your points wait '
-          'for you.',
+    NewsKind.talentPoint => '+1 talent point.',
     NewsKind.yourLevel => 'The ${enemy(n.id)} is now your level',
     NewsKind.turnedGrey =>
       'The ${enemy(n.id)} turned grey: little XP, but it still drops its loot',

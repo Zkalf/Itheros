@@ -156,7 +156,8 @@ Widget enemyTile(
         ],
       ),
     ),
-    deadly: band.colour == LevelColour.red || band.colour == LevelColour.skull,
+    // Red and skull, and orange with Wary (spec 0015 §2.4).
+    deadly: game.deadlyWarning(c.state, enemy),
     startFrom: startFrom,
   );
 }
