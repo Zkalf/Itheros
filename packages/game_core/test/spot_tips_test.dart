@@ -107,9 +107,8 @@ void main() {
       for (final (_, t) in spotTips) {
         final text = t.text.toLowerCase();
         for (final c in data.nodes[t.node]!.catches.take(2)) {
-          final name = catchName(c);
-          // "Red deer" may be "red deer"; "Wild boar" is "wild boar's".
-          expect(text, contains(name.split(' ').last), reason: t.id);
+          // "Wild boar" is "wild boar's"; "Eel" is "eels".
+          expect(text, contains(catchName(c)), reason: t.id);
         }
       }
     });
@@ -169,6 +168,15 @@ void main() {
 
     test("criterion 18: a level unlike the spot's is refused", () {
       refused({'level': 5, 'node': 'deer_trail'});
+    });
+
+    test('a tip about an unknown spot is refused', () {
+      refused({'level': 1, 'node': 'deer_trial'});
+    });
+
+    test('tips out of level order are refused', () {
+      // Sigrun's first tip moved to level 20, before her level 1 tips.
+      refused({'level': 20, 'node': 'high_crags'});
     });
 
     test('the real data loads', () {

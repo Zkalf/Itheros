@@ -105,7 +105,7 @@ void main() {
 
     // Spot tips (spec 0010 amendment 8) are in spot_tips_test.dart.
     test('Sigrun tells monster tips at Hunting 1, 10 and 20; Wen and Marta '
-        'none', () {
+        'tell no monster tips', () {
       List<TipDef> monsterTips(String p) => [
         for (final t in data.professions[p]!.tips)
           if (t.enemy != null) t,

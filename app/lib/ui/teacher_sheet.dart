@@ -54,11 +54,7 @@ class TeacherSheet extends StatelessWidget {
       final text = Theme.of(context).textTheme;
       final learned = s.learned.contains(profession);
       final level = game.professionLevel(s, profession);
-      // A tip about a spot not yet revealed is not named as the next one
-      // (spec 0010 amendment 8 §4).
-      final next = p.tips
-          .where((t) => t.level > level && !game.tipHidden(s, t))
-          .firstOrNull;
+      final next = game.nextTip(s, profession);
       const italic = TextStyle(fontStyle: FontStyle.italic);
       return SafeArea(
         child: SingleChildScrollView(
@@ -132,11 +128,12 @@ class TipCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tip.title, style: text.titleMedium),
-            Text(switch ((tip.enemy, tip.node)) {
-              (final e?, _) => 'About the ${labels.enemy(e)}',
-              (_, final n?) => 'About ${labels.node(n)}',
-              _ => '',
-            }, style: text.bodySmall),
+            Text(
+              tip.enemy != null
+                  ? 'About the ${labels.enemy(tip.enemy!)}'
+                  : 'About ${labels.node(tip.node!)}',
+              style: text.bodySmall,
+            ),
             const SizedBox(height: 8),
             Text(labels.fill(tip.text)),
           ],

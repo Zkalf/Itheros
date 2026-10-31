@@ -866,7 +866,10 @@ class GameData {
       check(items.containsKey(dustOf(q.id)), 'no dust item for ${q.id}');
     }
     for (final p in professions.values) {
+      var last = 0;
       for (final t in p.tips) {
+        check(t.level >= last, '${p.id} tips: lowest level first');
+        last = t.level;
         check(
           (t.enemy == null) != (t.node == null),
           'tip ${t.id}: needs either enemy or node',
@@ -876,8 +879,9 @@ class GameData {
         }
         if (t.node case final n?) {
           final spot = nodes[n];
-          check(spot?.profession == p.id, 'tip ${t.id}: not a ${p.id} spot');
-          check(spot?.level == t.level, "tip ${t.id}: not the spot's level");
+          check(spot != null, 'tip ${t.id}: unknown spot');
+          check(spot!.profession == p.id, 'tip ${t.id}: not a ${p.id} spot');
+          check(spot.level == t.level, "tip ${t.id}: not the spot's level");
         }
       }
     }

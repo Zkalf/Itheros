@@ -167,12 +167,23 @@ extension GameProgress on Game {
     ];
   }
 
-  /// Whether [tip] is about a spot in a hidden area not yet revealed: it
-  /// waits for the reveal (spec 0010 amendment 8 §4).
+  /// The next tip [profession]'s teacher will tell at a higher level, or
+  /// null. A tip about a spot not yet revealed is not named (spec 0010
+  /// amendment 8 §4).
+  TipDef? nextTip(GameState s, String profession) {
+    final level = professionLevel(s, profession);
+    return data.professions[profession]!.tips
+        .where((t) => t.level > level && !tipHidden(s, t))
+        .firstOrNull;
+  }
+
+  /// Whether [tip] is about a spot whose every area is hidden and not yet
+  /// revealed: it waits for the reveal (spec 0010 amendment 8 §4).
   bool tipHidden(GameState s, TipDef tip) => switch (tip.node) {
-    final n? => data.locations.values.any(
-      (l) => l.nodes.contains(n) && isHidden(s, l.id),
-    ),
+    final n? =>
+      data.locations.values
+          .where((l) => l.nodes.contains(n))
+          .every((l) => isHidden(s, l.id)),
     null => false,
   };
 
