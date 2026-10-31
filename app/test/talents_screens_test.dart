@@ -1,5 +1,7 @@
 // The talent screens and the trainer: spec 0015 criteria 13, 31-32 (on
 // screen), 39-40 (on screen) and 48-54 (plan 0031 M2).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
@@ -129,16 +131,22 @@ void main() {
 
   group('review of PR 152', () {
     testWidgets('a double tap on Learn takes one rank', (t) async {
-      final (c, _) = await pumpGame(t, level: 12);
+      final (c, source) = await pumpGame(t, level: 12);
       await openTalents(t);
       await t.tap(find.byKey(const ValueKey('talent-might')));
       await t.pumpAndSettle();
+      // The sync before the rank waits, as on a phone: the second tap
+      // comes while the first one is on its way.
+      final sync = Completer<void>();
+      source.gate = sync.future;
       await t.tap(find.byKey(const ValueKey('learn-talent')));
       await t.pump();
       await t.tap(
         find.byKey(const ValueKey('learn-talent')),
         warnIfMissed: false,
       );
+      source.gate = null;
+      sync.complete();
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.talents['might'], 1);

@@ -78,6 +78,8 @@ class _TrainerSheetState extends State<TrainerSheet> {
       final left = game.talentPointsLeft(s);
       final price = game.resetPriceNow(s);
       final ranks = s.talents.values.any((r) => r > 0);
+      // Too few steps: the price shows up front, not after Forget.
+      final short = s.bank < price;
       return SafeArea(
         child: SingleChildScrollView(
           key: const ValueKey('trainer-sheet'),
@@ -100,7 +102,13 @@ class _TrainerSheetState extends State<TrainerSheet> {
                   1 => '1 talent point left.',
                   _ => '$left talent points left.',
                 }),
-                if (ranks) ...[
+                if (ranks && short) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'You need ${fmt(price)} steps in the bank.',
+                    style: text.bodySmall,
+                  ),
+                ] else if (ranks) ...[
                   const SizedBox(height: 12),
                   FilledButton(
                     key: const ValueKey('reset-talents'),
@@ -109,7 +117,7 @@ class _TrainerSheetState extends State<TrainerSheet> {
                     child: Text(
                       price == 0
                           ? 'Forget my talents'
-                          : 'Forget my talents · ${_grouped(price)} steps',
+                          : 'Forget my talents · ${fmt(price)} steps',
                     ),
                   ),
                 ],
@@ -121,6 +129,3 @@ class _TrainerSheetState extends State<TrainerSheet> {
     },
   );
 }
-
-String _grouped(int n) =>
-    n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');

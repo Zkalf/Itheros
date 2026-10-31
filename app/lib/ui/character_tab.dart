@@ -12,12 +12,12 @@ import 'talents_tab.dart';
 import 'text_size.dart';
 import 'theme.dart';
 
+/// The three tabs of Character.
+enum CharacterPane { gear, bag, talents }
+
 /// Who am I (spec 0008 §3.5): level, stats and rank above three small tabs,
 /// Gear (the paper doll), Bag and Talents (spec 0015 §3.1). Equipping costs
 /// no steps.
-
-/// The three tabs of Character.
-enum CharacterPane { gear, bag, talents }
 
 class CharacterTab extends StatefulWidget {
   const CharacterTab({super.key});

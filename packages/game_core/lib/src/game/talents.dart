@@ -5,9 +5,12 @@ enum QualityRoll { drop, craft, reroll }
 
 /// Talent trees: points, ranks, effects and the reset (spec 0015).
 extension GameTalents on Game {
-  /// Points earned by level and not yet spent (spec 0015 §2.1).
-  int talentPointsLeft(GameState s) =>
-      talentPoints(level(s)) - s.talents.values.fold(0, (a, b) => a + b);
+  /// Points earned by level and not yet spent (spec 0015 §2.1); never below
+  /// 0, also when a data change leaves more ranks than points.
+  int talentPointsLeft(GameState s) => math.max(
+    0,
+    talentPoints(level(s)) - s.talents.values.fold(0, (a, b) => a + b),
+  );
 
   /// Ranks taken in [tree].
   int ranksIn(GameState s, String tree) => [

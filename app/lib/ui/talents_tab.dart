@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'labels.dart' show fmt;
 import 'theme.dart';
 
 /// Character's Talents tab (spec 0015 §3.1, the look of spec 0014 §4.3): the
@@ -114,17 +115,17 @@ class _TalentPlate extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Material(
-        color: Quiet.slateLow,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: Quiet.plate,
+        shape: plateShape(),
         child: InkWell(
           key: ValueKey('talent-${talent.id}'),
-          borderRadius: BorderRadius.circular(12),
+          customBorder: plateShape(),
           onTap: () => showTalent(context, c, talent.id),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Icon(talentIcon(talent.image), size: 32, color: Quiet.teal),
+                TalentSocket(talent.image),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -149,6 +150,25 @@ class _TalentPlate extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A talent's icon in a 48 dp dark socket (spec 0014 §2.3), until art
+/// comes (spec 0015 §6).
+class TalentSocket extends StatelessWidget {
+  const TalentSocket(this.image, {super.key});
+
+  final String image;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 48,
+    height: 48,
+    decoration: BoxDecoration(
+      color: Quiet.socket,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Icon(talentIcon(image), size: 28, color: Quiet.teal),
+  );
 }
 
 /// One teal pip per rank; a taken rank is filled (spec 0014 §4.3).
@@ -217,11 +237,12 @@ String talentEffect(GameData data, TalentDef talent, int rank) {
     TalentEffect.dropQuality => '+${pct(v)} better drops',
     TalentEffect.critDamage =>
       'Crits deal ${_trim(data.combat.critDamage + v)}×',
-    TalentEffect.bankCap => '+${_grouped(v.round())} bank cap',
+    TalentEffect.bankCap => '+${fmt(v.round())} bank cap',
     TalentEffect.professionSteps => '${pct(v)} fewer steps to gather and craft',
     TalentEffect.extraGather => '${pct(v)} chance of one more',
     TalentEffect.lossXpShare =>
-      'A lost fight pays ${pct(data.lossXpShare + v)} of its XP',
+      'A lost fight pays ${pct(data.lossXpShare + v)} of the XP for the '
+          'health knocked off',
     TalentEffect.craftQuality => '+${pct(v)} better crafts',
     TalentEffect.queueSlot => '+${v.round()} queue slot',
     TalentEffect.travelSteps => '${pct(v)} fewer travel steps',
@@ -236,9 +257,6 @@ String _trim(double v) {
   return r == r.roundToDouble() ? '${r.round()}' : r.toStringAsFixed(1);
 }
 
-String _grouped(int n) =>
-    n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-
 /// Opens the sheet of [talent] (spec 0015 §3.1).
 Future<void> showTalent(
   BuildContext context,
@@ -252,7 +270,7 @@ Future<void> showTalent(
 
 /// A talent's name, line and rank, what it gives now and next, and Learn,
 /// or why not.
-class TalentSheet extends StatelessWidget {
+class TalentSheet extends StatefulWidget {
   const TalentSheet({
     super.key,
     required this.controller,
@@ -267,10 +285,21 @@ class TalentSheet extends StatelessWidget {
   final BuildContext host;
 
   @override
+  State<TalentSheet> createState() => _TalentSheetState();
+}
+
+class _TalentSheetState extends State<TalentSheet> {
+  /// A rank is on its way: Learn waits, so a double tap spends one point.
+  var _busy = false;
+
+  String get talent => widget.talent;
+  BuildContext get host => widget.host;
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: widget.controller,
     builder: (context, _) {
-      final c = controller;
+      final c = widget.controller;
       final game = c.game;
       final s = c.state;
       final t = game.data.talents[talent]!;
@@ -290,7 +319,7 @@ class TalentSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(talentIcon(t.image), size: 32, color: Quiet.teal),
+                  TalentSocket(t.image),
                   const SizedBox(width: 12),
                   Expanded(child: Text(t.name, style: text.titleLarge)),
                 ],
@@ -311,16 +340,23 @@ class TalentSheet extends StatelessWidget {
                 FilledButton(
                   key: const ValueKey('learn-talent'),
                   style: slateButton,
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(host);
-                    try {
-                      await c.takeRank(talent);
-                    } on ActivityError catch (e) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text(e.message)),
-                      );
-                    }
-                  },
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          // A second tap in the same frame finds it busy.
+                          if (_busy) return;
+                          final messenger = ScaffoldMessenger.of(host);
+                          setState(() => _busy = true);
+                          try {
+                            await c.takeRank(talent);
+                          } on ActivityError catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(e.message)),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _busy = false);
+                          }
+                        },
                   child: const Text('Learn · 1 point'),
                 )
               else
