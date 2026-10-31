@@ -2,7 +2,8 @@
 
 The record of spec 0015 criterion 62, as [amendment 1](../specs/0015-talent-trees.amendment-1.md) change 4 has it
 (criterion 68). Run: `dart run tool/talents.dart --seeds 12` in `packages/game_core`, at 5,000 steps a day, the mean
-of 12 seeds. Date: 2026-10-31.
+of 12 seeds. Date: 2026-10-31. Run again on 2026-11-01 after the review fixes of PR 151 (rerolls without
+Master crafter, one fight cost in the walker): the same numbers.
 
 ## Part A: a new character, 120 days
 

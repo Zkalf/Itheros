@@ -21,7 +21,8 @@ extension GameTalents on Game {
   /// Why the player cannot take a rank of [talent] now, in the words of
   /// spec 0015 §3.1, or null when they can.
   String? whyNotRank(GameState s, String talent) {
-    final t = data.talents[talent]!;
+    final t = data.talents[talent];
+    if (t == null) return 'No talent $talent';
     final taken = s.talents[talent] ?? 0;
     if (taken >= t.ranks) return 'All ranks taken';
     if (ranksIn(s, t.tree) < rowOpensAt(t.row)) {
@@ -70,14 +71,14 @@ extension GameTalents on Game {
   }
 
   /// The factor on the Uncommon-or-better chances of [roll] (spec 0015
-  /// §2.2). A reroll multiplies the craft and reroll talents.
+  /// §2.2).
   double qualityBoost(GameState s, QualityRoll roll) {
     double f(TalentEffect e) => 1 + talentSum(s, e);
     return switch (roll) {
       QualityRoll.drop => f(TalentEffect.dropQuality),
       QualityRoll.craft => f(TalentEffect.craftQuality),
-      QualityRoll.reroll =>
-        f(TalentEffect.craftQuality) * f(TalentEffect.rerollQuality),
+      // Lucky hammer only (spec 0015 amendment 2).
+      QualityRoll.reroll => f(TalentEffect.rerollQuality),
     };
   }
 
@@ -131,6 +132,7 @@ extension GameTalents on Game {
     if (s.talentResets == 0) return 0;
     final r = data.talentReset;
     final off = r.step * (s.walkedSinceReset ~/ r.cooldownSteps);
+    // A saved price of 0: none paid yet, so the base.
     return math.max(r.base, s.resetPrice - off);
   }
 
@@ -141,7 +143,7 @@ extension GameTalents on Game {
     final trainer = data.trainer;
     if (s.location != trainer.location) {
       throw ActivityError(
-        '${trainer.name} is in ${data.locations[trainer.location]?.name}',
+        '${trainer.name} is in ${data.locations[trainer.location]!.name}',
       );
     }
     if (s.talents.values.every((r) => r == 0)) {
@@ -168,8 +170,9 @@ extension GameTalents on Game {
   /// Ranks of talents the data no longer holds go, and their points come
   /// back (spec 0015 §4).
   GameState _migrateTalents(GameState s) {
-    s.talents.removeWhere((id, _) => !data.talents.containsKey(id));
-    return s;
+    if (s.talents.keys.every(data.talents.containsKey)) return s;
+    return s.copy()
+      ..talents.removeWhere((id, _) => !data.talents.containsKey(id));
   }
 }
 

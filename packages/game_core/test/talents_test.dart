@@ -520,8 +520,11 @@ void main() {
         const Activity.gather('copper_vein'),
       );
       s = game.applySteps(s, 3).state;
+      // The 3 steps drew 3 from the bank as a boost; the stop takes no more.
+      final before = s.bank;
+      expect(before, 16997);
       s = game.stopActivity(s);
-      expect(s.bank, greaterThanOrEqualTo(17000));
+      expect(s.bank, greaterThanOrEqualTo(before));
     });
 
     test('planned walks show the steps the travel talents leave', () {

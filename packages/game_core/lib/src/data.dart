@@ -612,6 +612,10 @@ class GameData {
         'talents: $tree holds $points points, fewer than $talentTreeAtLeast',
       );
     }
+    check(
+      locations.containsKey(trainer.location),
+      'talents: the trainer is in an unknown location',
+    );
     final r = talentReset;
     check(
       talentRowEvery > 0 &&

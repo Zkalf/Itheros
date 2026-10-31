@@ -578,6 +578,11 @@ class SensiblePlayer {
 
   int _have(GameState s, String item) => game.owned(s, item);
 
+  /// The steps a fight of [rounds] costs: Swift strikes gives part back
+  /// (spec 0015 §2.3).
+  int _fightSteps(GameState s, int rounds) =>
+      rounds * data.combatRoundSteps - game.fightStepsBack(s, rounds);
+
   /// Gear rank with quality (spec 0005 criterion 7).
   int _score(String? key) => key == null ? 0 : data.scoreOf(key);
 
@@ -1006,10 +1011,7 @@ class SensiblePlayer {
           .where((d) => d.item == item)
           .fold(0.0, (sum, d) => sum + d.chance * d.count);
       if (per == 0 || !_canFight(s, e)) continue;
-      best = math.min(
-        best,
-        _armed(s, e).$3.rounds * data.combatRoundSteps / per,
-      );
+      best = math.min(best, _fightSteps(s, _armed(s, e).$3.rounds) / per);
     }
     return best;
   }
@@ -1033,7 +1035,7 @@ class SensiblePlayer {
           .fold(0.0, (sum, d) => sum + d.chance * d.count);
       if (per == 0 || !_canFight(s, e)) continue;
       final rounds = _armed(s, e).$3.rounds;
-      final rate = per / (rounds * data.combatRoundSteps);
+      final rate = per / _fightSteps(s, rounds);
       if (rate > bestRate) (best, bestRate) = (Activity.fight(e.id), rate);
     }
     return best;
@@ -1046,10 +1048,7 @@ class SensiblePlayer {
       if (!_canFight(s, e)) continue;
       final f = _armed(s, e).$3;
       final xp = e.xp * game.enemyBand(s, e.id).xpPercent / 100;
-      // Swift strikes gives part of the steps back (spec 0015 §2.3).
-      final steps =
-          f.rounds * data.combatRoundSteps - game.fightStepsBack(s, f.rounds);
-      final rate = math.max(1, xp) / steps;
+      final rate = math.max(1, xp) / _fightSteps(s, f.rounds);
       if (rate > bestRate) (best, bestRate) = (e, rate);
     }
     return Activity.fight((best ?? data.enemies.values.first).id);

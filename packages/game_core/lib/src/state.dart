@@ -267,7 +267,7 @@ class GameState {
     this.professionRng = 0,
     Map<String, int>? talents,
     this.talentResets = 0,
-    this.resetPrice = 2000,
+    this.resetPrice = 0,
     this.walkedSinceReset = 0,
     this.loadedVersion = schemaVersion,
   }) : talents = talents ?? {},
@@ -349,7 +349,7 @@ class GameState {
       // Before version 13: no ranks or resets (spec 0015 §4).
       talents: json['talents'] == null ? null : _intMap(json['talents']),
       talentResets: json['talentResets'] as int? ?? 0,
-      resetPrice: json['resetPrice'] as int? ?? 2000,
+      resetPrice: json['resetPrice'] as int? ?? 0,
       walkedSinceReset: json['walkedSinceReset'] as int? ?? 0,
     );
   }
@@ -447,7 +447,8 @@ class GameState {
   /// Talent resets so far: the first is free (spec 0015 §2.6).
   int talentResets;
 
-  /// The saved price of the next paid reset, before walking lowers it.
+  /// The saved price of the next paid reset, before walking lowers it; 0
+  /// until a reset is paid, which means the base price of the data.
   int resetPrice;
 
   /// Steps walked since the last reset, or since version 13.
