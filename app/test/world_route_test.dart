@@ -1425,12 +1425,12 @@ void criterion26() {
     summary: const AwaySummary(walked: 800, route: _route),
   );
 
-  // Spec 0016 §6 raised GameState to 11 and spec 0017 to 12; the route
-  // changes no version. Spec 0018 §4 raised SaveData to 4.
+  // Spec 0016 §6 raised GameState to 11, spec 0017 to 12 and spec 0015 to
+  // 13; the route changes no version. Spec 0018 §4 raised SaveData to 4.
   group('spec 0014 criterion 26: old entries load with no route, the save '
-      'versions stay at 12 and 4, and each fixture loads', () {
-    test('GameState.schemaVersion is 12 and SaveData.version is 4', () {
-      expect(GameState.schemaVersion, 12);
+      'versions stay at 13 and 4, and each fixture loads', () {
+    test('GameState.schemaVersion is 13 and SaveData.version is 4', () {
+      expect(GameState.schemaVersion, 13);
       expect(SaveData.version, 4);
     });
 
@@ -1457,7 +1457,7 @@ void criterion26() {
 
       test('$name loads, and its journal entries have no route if it is older '
           'than 0.4.0; with an entry with a route, the save keeps the route at '
-          'versions 12 and 4', () {
+          'versions 13 and 4', () {
         final save = SaveData.fromJson(
           jsonDecode(text) as Map<String, Object?>,
         );
@@ -1477,7 +1477,7 @@ void criterion26() {
           ),
         ) as Map<String, Object?>;
         expect(saved['version'], 4);
-        expect((saved['game']! as Map<String, Object?>)['version'], 12);
+        expect((saved['game']! as Map<String, Object?>)['version'], 13);
         final back = SaveData.fromJson(saved);
         expect(back.journal.first.summary.route, _route);
         expect([for (final e in back.journal.skip(1)) e.summary.route], routes);
