@@ -163,9 +163,18 @@ extension GameProgress on Game {
     final level = professionLevel(s, profession);
     return [
       for (final t in data.professions[profession]!.tips)
-        if (t.level <= level && !s.tips.contains(t.id)) t,
+        if (t.level <= level && !s.tips.contains(t.id) && !tipHidden(s, t)) t,
     ];
   }
+
+  /// Whether [tip] is about a spot in a hidden area not yet revealed: it
+  /// waits for the reveal (spec 0010 amendment 8 §4).
+  bool tipHidden(GameState s, TipDef tip) => switch (tip.node) {
+    final n? => data.locations.values.any(
+      (l) => l.nodes.contains(n) && isHidden(s, l.id),
+    ),
+    null => false,
+  };
 
   /// Talks to [profession]'s teacher, who must be here: every waiting tip
   /// is told.

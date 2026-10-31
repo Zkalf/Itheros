@@ -867,7 +867,18 @@ class GameData {
     }
     for (final p in professions.values) {
       for (final t in p.tips) {
-        check(enemies.containsKey(t.enemy), 'tip ${t.id}: unknown monster');
+        check(
+          (t.enemy == null) != (t.node == null),
+          'tip ${t.id}: needs either enemy or node',
+        );
+        if (t.enemy case final e?) {
+          check(enemies.containsKey(e), 'tip ${t.id}: unknown monster');
+        }
+        if (t.node case final n?) {
+          final spot = nodes[n];
+          check(spot?.profession == p.id, 'tip ${t.id}: not a ${p.id} spot');
+          check(spot?.level == t.level, "tip ${t.id}: not the spot's level");
+        }
       }
     }
     check(rerollSteps > 0 && rerollDust > 0, 'reroll: steps and dust > 0');

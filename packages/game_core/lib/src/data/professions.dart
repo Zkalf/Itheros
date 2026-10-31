@@ -27,19 +27,22 @@ class TeacherDef {
   final List<TipDef> tips;
 }
 
-/// A teacher's tip about [enemy], told from profession [level]: it reveals
-/// the monster's armour and weakness (spec 0010 §6.2).
+/// A teacher's tip, told from profession [level]: about monster [enemy],
+/// which reveals its armour and weakness (spec 0010 §6.2), or about
+/// gathering spot [node], which only tells what lives there (amendment 8).
 class TipDef {
   TipDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       level = _int(j, 'level'),
-      enemy = _str(j, 'enemy'),
+      enemy = j['enemy'] as String?,
+      node = j['node'] as String?,
       title = _str(j, 'title'),
       text = _str(j, 'text');
 
   final String id;
   final int level;
-  final String enemy;
+  final String? enemy;
+  final String? node;
   final String title;
   final String text;
 }
