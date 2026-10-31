@@ -107,12 +107,22 @@ void main() {
 
   group('combat effects', () {
     // Level 20, no gear: Attack 24, HP 220, Defense 21.
+    // The percents follow the data: amendment 1 lets the sim tune them
+    // (plan 0031 results).
+    /// [talent] with all its ranks, as a share: Might 0.04 for +4%.
+    double fullShare(String talent) =>
+        data.talents[talent]!.value * data.talents[talent]!.ranks;
+
+    /// [v] times [talent]'s full share, rounded down.
+    int of(int v, String talent) => (v * fullShare(talent) + 1e-9).floor();
+
     test('criteria 14-16: Might, Toughness and Guard, rounded down', () {
       final plain = game.stats(at(20));
       final s = game.stats(at(20, {'might': 5, 'toughness': 5, 'guard': 3}));
-      expect(s.attack, plain.attack + plain.attack * 10 ~/ 100);
-      expect(s.hp, plain.hp + plain.hp * 15 ~/ 100);
-      expect(s.defense, plain.defense + plain.defense * 6 ~/ 100);
+      expect(s.attack, plain.attack + of(plain.attack, 'might'));
+      expect(s.hp, plain.hp + of(plain.hp, 'toughness'));
+      expect(s.defense, plain.defense + of(plain.defense, 'guard'));
+      expect(s.hp, greaterThan(plain.hp));
     });
 
     test('criterion 17: Keen eye, Precision and Evasion add points', () {
@@ -131,22 +141,24 @@ void main() {
       return arena.startActivity(s, const Activity.fight('dummy'));
     }
 
-    test('criterion 18: Swift strikes gives 9 steps back after 6 rounds', () {
+    // Spec 0015 had 15% (9 steps); the sim tuned it (plan 0031 results).
+    test('criterion 18: Swift strikes gives steps back after 6 rounds', () {
       final r = arena.applySteps(fighter({'swift_strikes': 5}), 60);
       expect(r.events.whereType<FightWon>(), hasLength(1));
-      expect(r.state.activity!.progress, 9);
+      expect(r.state.activity!.progress, of(60, 'swift_strikes'));
       final plain = arena.applySteps(fighter({}), 60);
       expect(plain.state.activity!.progress, 0);
     });
 
     test('criterion 19: a lost fight also gives its steps back', () {
-      final tough = arenaGame([monster('brute', hp: 1000, attack: 100)]);
+      // 3 damage a round against 30 HP: lost in round 10, after 100 steps.
+      final tough = arenaGame([monster('brute', hp: 1000, attack: 4)]);
       var s = tough.newGame(seed: 1)..talents['swift_strikes'] = 5;
       s = tough.startActivity(s, const Activity.fight('brute'));
-      final r = tough.applySteps(s, 10);
+      final r = tough.applySteps(s, 100);
       expect(r.events.whereType<FightLost>(), hasLength(1));
-      // One round of 10 steps: 1 step back.
-      expect(r.state.activity!.progress, 1);
+      expect(r.state.activity!.progress, of(100, 'swift_strikes'));
+      expect(r.state.activity!.progress, greaterThan(0));
     });
 
     test('criterion 20: Treasure hunter boosts drop quality by 1.3', () {
@@ -239,10 +251,12 @@ void main() {
       );
     }
 
-    test('amendment 1 criterion 66: Practised hands, +12% profession XP', () {
+    // Amendment 1 starts at +12%; the sim tuned it (plan 0031 results).
+    test('amendment 1 criterion 66: Practised hands, more profession XP', () {
       final (plain, _) = mine({});
       final (more, _) = mine({'practised_hands': 3});
-      expect(more, plain * 112 ~/ 100);
+      final share = data.talents['practised_hands']!.value * 3;
+      expect(more, (plain * (1 + share) + 1e-9).floor());
       expect(more, greaterThan(plain));
     });
 
@@ -259,10 +273,16 @@ void main() {
       );
     });
 
-    test('criterion 26: Nimble hands: 100 steps become 90', () {
+    // Spec 0015 had 90 (10% off); the sim tuned it (plan 0031 results).
+    test('criterion 26: Nimble hands: fewer steps for 100', () {
       final s = at(20, {'nimble_hands': 5});
       expect(game.professionSteps(at(20), 'mining', 100), 100);
-      expect(game.professionSteps(s, 'mining', 100), 90);
+      final share = data.talents['nimble_hands']!.value * 5;
+      expect(
+        game.professionSteps(s, 'mining', 100),
+        (100 * (1 - share) - 1e-9).ceil(),
+      );
+      expect(game.professionSteps(s, 'mining', 100), lessThan(100));
     });
 
     test('criterion 27: Nimble hands leaves travel and fights', () {

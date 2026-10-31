@@ -554,8 +554,11 @@ class _Run {
   int _practise(String profession, int level, int xp, int base) {
     final fade = game.professionFade(s, profession, level);
     final before = game.professionLevel(s, profession);
+    // Practised hands multiplies the faded XP (spec 0015 amendment 1).
+    final more = 1 + game.talentSum(s, TalentEffect.professionXp);
     s.professions[profession] =
-        (s.professions[profession] ?? 0) + xp * fade ~/ 100;
+        (s.professions[profession] ?? 0) +
+        (xp * fade ~/ 100 * more + 1e-9).floor();
     final after = game.professionLevel(s, profession);
     for (var l = before + 1; l <= after; l++) {
       events.add(ProfessionLevelUp(profession, l));

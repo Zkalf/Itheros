@@ -1,58 +1,40 @@
-// The talent builds of spec 0015 §5 (plan 0031 M1).
+// The talent builds of spec 0015 §5 as amendment 1 has it (plan 0031 M1).
 //
-//   dart run tool/talents.dart [--build none|combat|utility|split]
-//                              [--days 120] [--steps-per-day 5000]
-//                              [--seeds 1] [--xp-day 50]
+//   dart run tool/talents.dart [--seeds 12] [--data <folder>]
 //
-// Prints the days to level 25, the level on the last day and the Rare-or-
-// better monster drops. Without --build it runs all four, one after the
-// other; run them in parallel with one --build each.
+// Part A: a new character plays 120 days with each build. Part B: the
+// no-talent walker of part A on day 120 takes each build and plays 60 more
+// days. Prints the means over the seeds and checks the targets.
 import 'dart:io';
 
 import 'package:game_core/game_core.dart';
 import 'package:game_core/simulation.dart';
 
 /// The walker's talent order per build: each point goes to the first
-/// talent in the list that can take it (spec 0015 §5).
-const builds = {
-  'none': <String>[],
-  'combat': [
-    'might',
-    'toughness',
-    'guard',
-    'keen_eye',
-    'swift_strikes',
-    'precision',
-    'evasion',
-    'treasure_hunter',
-    'impale',
-  ],
-  'utility': [
-    'deep_pockets',
-    'nimble_hands',
-    'bountiful',
-    'wary',
-    'master_crafter',
-    'quartermaster',
-    'light_pack',
-    'lucky_hammer',
-    'wayfarer',
-  ],
-  'split': [
+/// talent in the list that can take it (spec 0015 §5). Combat and Utility
+/// go row by row, in data order within a row.
+Map<String, List<String>> buildsOf(GameData data) {
+  List<String> tree(String id) =>
+      (data.talents.values.where((t) => t.tree == id).toList()
+            ..sort((a, b) => a.row.compareTo(b.row)))
+          .map((t) => t.id)
+          .toList();
+  final combat = tree('combat');
+  final split = [
     'might',
     'toughness',
     'deep_pockets',
     'nimble_hands',
     'quartermaster',
-    'guard',
-    'keen_eye',
-    'swift_strikes',
-    'precision',
-    'evasion',
-    'treasure_hunter',
-    'impale',
-  ],
-};
+    ...combat.where((t) => t != 'might' && t != 'toughness'),
+  ];
+  return {
+    'none': const [],
+    'combat': combat,
+    'utility': tree('utility'),
+    'split': split,
+  };
+}
 
 void main(List<String> args) {
   String? opt(String name) {
@@ -60,44 +42,99 @@ void main(List<String> args) {
     return i >= 0 && i + 1 < args.length ? args[i + 1] : null;
   }
 
-  final days = int.parse(opt('days') ?? '120');
-  final stepsPerDay = int.parse(opt('steps-per-day') ?? '5000');
-  final only = opt('build');
+  final seeds = int.parse(opt('seeds') ?? '12');
+  // Another data folder, for a tuning try.
+  final dir = opt('data') ?? 'data';
   final files = {
-    for (final f in Directory('data').listSync().whereType<File>())
+    for (final f in Directory(dir).listSync().whereType<File>())
       if (f.path.endsWith('.json'))
         f.uri.pathSegments.last.replaceAll('.json', ''): f.readAsStringSync(),
   };
   final game = Game(GameData.fromJsonStrings(files));
+  final builds = buildsOf(game.data);
+  double mean(Iterable<num> v) => v.fold(0.0, (a, b) => a + b) / v.length;
+  String pct(double a, double b) =>
+      '${a >= b ? '+' : ''}${((a / b - 1) * 100).toStringAsFixed(1)}%';
 
-  final seeds = int.parse(opt('seeds') ?? '1');
-  final at = int.parse(opt('xp-day') ?? '50');
-  stdout.writeln(
-    'build    day L25  day L30  level  rare+ drops  xp day $at   '
-    '(mean of $seeds seeds)',
+  // Part A.
+  final a = <String, List<SimulationResult>>{
+    for (final MapEntry(key: name, value: order) in builds.entries)
+      name: [
+        for (var seed = 1; seed <= seeds; seed++)
+          simulate(
+            game,
+            stepsPerDay: 5000,
+            days: 120,
+            seed: seed,
+            talentOrder: order,
+          ),
+      ],
+  };
+  double xp50(String b) => mean(a[b]!.map((r) => r.days[49].xp));
+  double prof60(String b) => mean(
+    a[b]!.map((r) => r.days[59].professions.values.fold(0, (x, y) => x + y)),
   );
-  for (final MapEntry(key: name, value: order) in builds.entries) {
-    if (only != null && only != name) continue;
-    var day25 = 0.0, day30 = 0.0, level = 0.0, rare = 0.0, xp = 0.0;
-    for (var seed = 1; seed <= seeds; seed++) {
-      final r = simulate(
-        game,
-        stepsPerDay: stepsPerDay,
-        days: days,
-        seed: seed,
-        talentOrder: order,
-      );
-      day25 += (r.dayReached(25) ?? days + 1) / seeds;
-      day30 += (r.dayReached(30) ?? days + 1) / seeds;
-      level += r.days.last.level / seeds;
-      rare += r.rareDrops / seeds;
-      xp += r.days[at - 1].xp / seeds;
-    }
-    String f(double v) => v.toStringAsFixed(1);
+  stdout.writeln('Part A: a new character, 120 days, mean of $seeds seeds');
+  stdout.writeln('build    xp day 50   vs none  professions day 60  rare+');
+  for (final b in builds.keys) {
     stdout.writeln(
-      '${name.padRight(8)} ${f(day25).padLeft(7)}  ${f(day30).padLeft(7)}  '
-      '${f(level).padLeft(5)}  '
-      '${f(rare).padLeft(11)}  ${xp.round().toString().padLeft(9)}',
+      '${b.padRight(8)} ${xp50(b).round().toString().padLeft(9)}  '
+      '${pct(xp50(b), xp50('none')).padLeft(7)}  '
+      '${prof60(b).toStringAsFixed(1).padLeft(18)}  '
+      '${mean(a[b]!.map((r) => r.rareDrops)).toStringAsFixed(1).padLeft(5)}',
     );
+  }
+
+  // Part B.
+  final gained = <String, double>{};
+  final rare = <String, double>{};
+  for (final MapEntry(key: name, value: order) in builds.entries) {
+    final xp = <int>[], drops = <int>[];
+    for (final start in a['none']!) {
+      final player = SensiblePlayer(game, talentOrder: order);
+      var s = start.finalState.copy();
+      final before = s.xp;
+      for (var step = 0; step < 60 * 5000; step += 100) {
+        s = player.decide(s);
+        final r = game.applySteps(s, 100);
+        player.observe(r);
+        s = r.state;
+      }
+      xp.add(s.xp - before);
+      drops.add(player.rareDrops);
+    }
+    gained[name] = mean(xp);
+    rare[name] = mean(drops);
+  }
+  stdout.writeln();
+  stdout.writeln('Part B: full builds from day 120, 60 more days');
+  stdout.writeln('build    xp gained   vs none  vs utility  rare+');
+  for (final b in builds.keys) {
+    stdout.writeln(
+      '${b.padRight(8)} ${gained[b]!.round().toString().padLeft(9)}  '
+      '${pct(gained[b]!, gained['none']!).padLeft(7)}  '
+      '${pct(gained[b]!, gained['utility']!).padLeft(10)}  '
+      '${rare[b]!.toStringAsFixed(1).padLeft(5)}',
+    );
+  }
+
+  // The targets of amendment 1, change 4.
+  final gap = gained['combat']! / gained['utility']! - 1;
+  final checks = {
+    '1. B: Combat +10-15% XP over Utility': gap >= 0.10 && gap <= 0.15,
+    '2. B: Combat rare+ >= Utility': rare['combat']! >= rare['utility']!,
+    '3. B: no build 2% under none': builds.keys.every(
+      (b) => gained[b]! >= gained['none']! * 0.98,
+    ),
+    '4. A: Combat XP day 50 > Utility': xp50('combat') > xp50('utility'),
+    '5. A: no build 2% under none on day 50': builds.keys.every(
+      (b) => xp50(b) >= xp50('none') * 0.98,
+    ),
+    '6. A: Utility professions day 60 > none':
+        prof60('utility') > prof60('none'),
+  };
+  stdout.writeln();
+  for (final MapEntry(:key, :value) in checks.entries) {
+    stdout.writeln('${value ? 'met    ' : 'NOT MET'}  $key');
   }
 }

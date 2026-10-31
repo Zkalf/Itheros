@@ -20,6 +20,7 @@ enum TalentEffect {
   queueSlot,
   travelSteps,
   rerollQuality,
+  professionXp,
 }
 
 /// A talent tree: Combat or Utility (spec 0015 §2.3, §2.4).
