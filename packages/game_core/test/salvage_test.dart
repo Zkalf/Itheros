@@ -21,9 +21,9 @@ void main() {
       s = game.talk(s, 'mining');
       expect(s.tips, {first.id});
       expect(game.tipsWaiting(s, 'mining'), isEmpty);
-      expect(game.knowledge(s, first.enemy).armour, isTrue);
-      expect(game.knowledge(s, first.enemy).weakness, isTrue);
-      expect(game.knowledge(s, first.enemy).stats, isFalse);
+      expect(game.knowledge(s, first.enemy!).armour, isTrue);
+      expect(game.knowledge(s, first.enemy!).weakness, isTrue);
+      expect(game.knowledge(s, first.enemy!).stats, isFalse);
     });
 
     test('three monster tips each, at levels 1, 10 and 20', () {
