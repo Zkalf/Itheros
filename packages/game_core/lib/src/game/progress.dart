@@ -129,9 +129,14 @@ extension GameProgress on Game {
 
   /// Steps one action of [profession] costs, [base] times the worn tool's
   /// share, rounded up (spec 0010 §3.2).
-  /// A fewer-steps meal multiplies in (spec 0011 §5.3).
+  /// A fewer-steps meal multiplies in (spec 0011 §5.3), and so does Nimble
+  /// hands (spec 0015 §2.4).
   int professionSteps(GameState s, String profession, int base) =>
-      (base * toolFactor(s.tools[profession]) * (1 - mealStepShare(s)) - 1e-9)
+      (base *
+                  toolFactor(s.tools[profession]) *
+                  (1 - mealStepShare(s)) *
+                  professionStepShare(s) -
+              1e-9)
           .ceil();
 
   /// The share of an action's steps the tool with [key] costs: its tier's,
@@ -218,7 +223,8 @@ extension GameProgress on Game {
     for (final r in _rewards(s)) {
       if (r case BankCapReward(:final amount)) cap += amount;
     }
-    return cap;
+    // Deep pockets (spec 0015 §2.4).
+    return cap + talentSum(s, TalentEffect.bankCap).round();
   }
 
   /// The rewards of the earned achievements (spec 0017 §3.4).
@@ -227,10 +233,12 @@ extension GameProgress on Game {
       if (data.achievements[id] case final a?) a.reward,
   ];
 
-  /// The character's stats: level, gear, the running meal and the bonuses
-  /// of the earned feats (spec 0017 §3.4).
-  Stats stats(GameState s) =>
-      _gearStats(s) + mealBonus(s) + achievementBonus(s);
+  /// The character's stats: level, gear, the running meal, the bonuses
+  /// of the earned feats (spec 0017 §3.4) and the talents (spec 0015 §2.2).
+  Stats stats(GameState s) {
+    final gear = _gearStats(s);
+    return gear + mealBonus(s) + achievementBonus(s) + talentBonus(s, gear);
+  }
 
   /// The bonuses of the earned feats; two bonuses to one stat add up.
   Stats achievementBonus(GameState s) {
@@ -479,6 +487,6 @@ extension GameProgress on Game {
     if (s.loadedVersion < 8) n = _migrateProfessions(n.copy());
     if (s.loadedVersion < 11) n = _migrateWalks(n.copy());
     if (s.loadedVersion < 12) n = _migrateQualityFound(n.copy());
-    return _freeOffHand(n);
+    return _migrateTalents(_freeOffHand(n));
   }
 }

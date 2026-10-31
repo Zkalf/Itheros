@@ -423,7 +423,7 @@ void main() {
     });
 
     test('criterion 45: too few steps in the bank: refused, no change', () {
-      var s = reset(ready(bank: 1999));
+      final s = reset(ready(bank: 1999));
       s.talents['might'] = 1;
       expect(
         () => reset(s),

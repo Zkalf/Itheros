@@ -22,6 +22,7 @@ class _Run {
 
   void step() {
     s.count('steps.walked');
+    s.walkedSinceReset++;
     final act = s.activity;
     if (act != null) {
       final boost = s.bank > 0 ? 1 : 0;
@@ -98,7 +99,8 @@ class _Run {
   }
 
   void _arrive(String area) {
-    final steps = game.data.route(s.location, area)?.steps ?? 0;
+    final route = game.data.route(s.location, area)?.steps ?? 0;
+    final steps = game.travelCost(s, route);
     s.location = area;
     game._visit(s, area);
     events.add(Arrived(area, steps: steps));
@@ -132,6 +134,13 @@ class _Run {
         s.addItem(node.item);
         _gain(act, node.item);
         s.count('gathered.${node.item}');
+        // Bountiful: one more, on the profession stream (spec 0015 §2.4).
+        final extra = game.talentSum(s, TalentEffect.extraGather);
+        if (extra > 0 && stream.nextDouble() < extra) {
+          s.addItem(node.item);
+          _gain(act, node.item);
+          s.count('gathered.${node.item}');
+        }
         events.add(Gathered(node.item, xp));
         _gainXp(xp);
         return null;
@@ -174,6 +183,7 @@ class _Run {
         stream,
         playerLevel: crafting,
         itemLevel: recipe.level,
+        talentBoost: game.qualityBoost(s, QualityRoll.craft),
       );
       return data.keyFor(out.id, q);
     }
@@ -185,6 +195,7 @@ class _Run {
       recipe.level,
       playerLevel: crafting,
       with_: rare ? stream : rng,
+      boost: game.qualityBoost(s, QualityRoll.craft),
     );
   }
 
@@ -208,6 +219,7 @@ class _Run {
         stream,
         playerLevel: game.professionLevel(s, 'crafting'),
         itemLevel: itemLevel,
+        talentBoost: game.qualityBoost(s, QualityRoll.reroll),
       );
       final now = data.qualities.indexWhere((q) => q.id == rolled);
       after = now <= was
@@ -395,7 +407,7 @@ class _Run {
     final factor = data.combat.typeFactor(game.damageType(s), enemy.armour);
     final hit = _damage(me.attack, enemy.stats.defense, factor);
     if (_chance(game.critChance(s))) {
-      return (Swing.crit, (hit * data.combat.critDamage).round());
+      return (Swing.crit, (hit * game.critDamage(s)).round());
     }
     return (Swing.hit, hit);
   }
@@ -424,6 +436,12 @@ class _Run {
     return (Swing.hit, hit);
   }
 
+  /// Swift strikes: a fight that ends gives part of its steps back to the
+  /// action as progress (spec 0015 §2.3).
+  void _stepsBack(RunningActivity act) {
+    act.progress += game.fightStepsBack(s, act.fight!.round);
+  }
+
   /// Adds [key] to the running action's tally.
   void _gain(RunningActivity act, String key) {
     act.gained[key] = (act.gained[key] ?? 0) + 1;
@@ -431,6 +449,7 @@ class _Run {
   }
 
   EndReason? _win(RunningActivity act, EnemyDef enemy) {
+    _stepsBack(act);
     act.fight = null;
     s.fought.add(enemy.id);
     act.lossStreak = 0;
@@ -438,7 +457,11 @@ class _Run {
     final drops = <String, int>{};
     void drop(DropDef d) {
       for (var i = 0; i < d.count; i++) {
-        final key = _withQuality(d.item, enemy.level);
+        final key = _withQuality(
+          d.item,
+          enemy.level,
+          boost: game.qualityBoost(s, QualityRoll.drop),
+        );
         drops[key] = (drops[key] ?? 0) + 1;
         s.addItem(key);
         _gain(act, key);
@@ -481,15 +504,19 @@ class _Run {
   /// (spec 0003 §5).
   EndReason? _lose(RunningActivity act, EnemyDef enemy) {
     final share = (enemy.stats.hp - act.fight!.enemyHp) / enemy.stats.hp;
+    _stepsBack(act);
     act.fight = null;
     s.fought.add(enemy.id);
     final pct = data.bandFor(enemy.level, game.level(s)).xpPercent;
+    // Wary (spec 0015 §2.4).
+    final lossShare =
+        data.lossXpShare + game.talentSum(s, TalentEffect.lossXpShare);
     final xp = share <= 0
         ? 0
         : math.max(
             1,
             // The epsilon keeps 26.9999... from rounding down to 26.
-            (enemy.xp * data.lossXpShare * share * pct / 100 + 1e-9).floor(),
+            (enemy.xp * lossShare * share * pct / 100 + 1e-9).floor(),
           );
     act.lost++;
     events.add(FightLost(enemy.id, xp, share));
@@ -506,6 +533,7 @@ class _Run {
     int itemLevel, {
     int? playerLevel,
     Rng? with_,
+    double boost = 1,
   }) {
     if (data.items[item]!.slot == null) return item;
     final from = with_ ?? rng;
@@ -513,6 +541,7 @@ class _Run {
       from,
       playerLevel: playerLevel ?? game.level(s),
       itemLevel: itemLevel,
+      talentBoost: boost,
     );
     final own = Rng.fromState(from.nextUint32());
     return data.keyFor(item, q, game.rollBonus(own, item, q, itemLevel));

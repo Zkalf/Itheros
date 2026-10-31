@@ -265,8 +265,13 @@ class GameState {
     this.bottles = 0,
     this.character,
     this.professionRng = 0,
+    Map<String, int>? talents,
+    this.talentResets = 0,
+    this.resetPrice = 2000,
+    this.walkedSinceReset = 0,
     this.loadedVersion = schemaVersion,
-  }) : queue = queue ?? [],
+  }) : talents = talents ?? {},
+       queue = queue ?? [],
        inventory = inventory ?? {},
        equipment = equipment ?? {},
        counters = counters ?? {},
@@ -341,9 +346,16 @@ class GameState {
         final Map<String, Object?> m => Character.fromJson(m),
         _ => null,
       },
+      // Before version 13: no ranks or resets (spec 0015 §4).
+      talents: json['talents'] == null ? null : _intMap(json['talents']),
+      talentResets: json['talentResets'] as int? ?? 0,
+      resetPrice: json['resetPrice'] as int? ?? 2000,
+      walkedSinceReset: json['walkedSinceReset'] as int? ?? 0,
     );
   }
 
+  /// 13: talent ranks, resets, the reset price and the steps since the
+  /// last reset (spec 0015 §4).
   /// 12: the achievements of spec 0017 and the quality counter (§3.2); same
   /// format as 11.
   /// 11: walks take a slot in the queue (spec 0016 §6); same format as 10.
@@ -360,7 +372,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 12;
+  static const schemaVersion = 13;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -429,6 +441,18 @@ class GameState {
   /// it, never from [rngState] (spec 0010 §9.1).
   int professionRng;
 
+  /// Talent ranks taken, by talent id (spec 0015 §2.1).
+  final Map<String, int> talents;
+
+  /// Talent resets so far: the first is free (spec 0015 §2.6).
+  int talentResets;
+
+  /// The saved price of the next paid reset, before walking lowers it.
+  int resetPrice;
+
+  /// Steps walked since the last reset, or since version 13.
+  int walkedSinceReset;
+
   /// Lifetime counters such as `steps.walked` and `kills.goblin`.
   final Map<String, int> counters;
   final Set<String> achievements;
@@ -462,6 +486,10 @@ class GameState {
     'revealed': revealed.toList()..sort(),
     'bottles': bottles,
     'character': character?.toJson(),
+    'talents': Map.of(talents),
+    'talentResets': talentResets,
+    'resetPrice': resetPrice,
+    'walkedSinceReset': walkedSinceReset,
   };
 
   void addItem(String item, [int count = 1]) {

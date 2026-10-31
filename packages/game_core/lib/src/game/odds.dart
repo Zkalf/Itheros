@@ -136,17 +136,19 @@ extension GameOdds on Game {
       math.min(data.combat.dodgeCap, data.enemies[enemy]!.stats.dodge);
 
   /// Picks a quality id for gear of [itemLevel] made or found by a player of
-  /// [playerLevel] (spec 0005 §3). Uses one roll of [rng].
+  /// [playerLevel] (spec 0005 §3). Uses one roll of [rng]. A talent's
+  /// [talentBoost] multiplies in (spec 0015 §2.2).
   String rollQuality(
     Rng rng, {
     required int playerLevel,
     required int itemLevel,
+    double talentBoost = 1,
   }) {
     final above = math.min(
       data.qualityMaxLevels,
       math.max(0, playerLevel - itemLevel),
     );
-    final boost = 1 + data.qualityPerLevel * above;
+    final boost = (1 + data.qualityPerLevel * above) * talentBoost;
     var roll = rng.nextDouble();
     for (final q in data.qualities.reversed) {
       if (q == data.qualities.first) break;

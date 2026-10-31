@@ -4,10 +4,16 @@ part of '../game.dart';
 extension GameWorld on Game {
   int _costOf(GameState s, RunningActivity act) {
     final a = act.activity;
-    if (act.leg case final leg?) return data.route(s.location, leg)!.steps;
+    // Light pack and Wayfarer (spec 0015 §2.4).
+    if (act.leg case final leg?) {
+      return travelCost(s, data.route(s.location, leg)!.steps);
+    }
     return switch (a.kind) {
       // A version 2 save walking to a neighbour, with no leg set.
-      ActivityKind.travel => data.route(s.location, a.target)!.steps,
+      ActivityKind.travel => travelCost(
+        s,
+        data.route(s.location, a.target)!.steps,
+      ),
       ActivityKind.fight => data.combatRoundSteps,
       ActivityKind.gather => switch (data.nodes[a.target]!) {
         final n => professionSteps(s, n.profession, n.steps),
