@@ -127,6 +127,44 @@ void main() {
     });
   });
 
+  group('review of PR 152', () {
+    testWidgets('a double tap on Learn takes one rank', (t) async {
+      final (c, _) = await pumpGame(t, level: 12);
+      await openTalents(t);
+      await t.tap(find.byKey(const ValueKey('talent-might')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('learn-talent')));
+      await t.pump();
+      await t.tap(
+        find.byKey(const ValueKey('learn-talent')),
+        warnIfMissed: false,
+      );
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.talents['might'], 1);
+    });
+
+    testWidgets('too few steps in the bank: the price shows, no button', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        level: 12,
+        prepare: (s) => s
+          ..talents['might'] = 1
+          ..talentResets = 1
+          ..bank = 1500,
+      );
+      await t.tap(find.byKey(const ValueKey('trainer')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reset-talents')), findsNothing);
+      expect(
+        within('trainer-sheet', find.text('You need 2,000 steps in the bank.')),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('Ysolde, the trainer', () {
     testWidgets('criterion 53: in Camp, with a dot when points are left', (
       t,
