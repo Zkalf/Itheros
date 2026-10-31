@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:walkingrpg/ui/character_tab.dart' show CharacterPane;
 import 'package:walkingrpg/ui/theme.dart'
     show ControlBox, ghostButton, slateButton, tealButton;
 
@@ -63,7 +64,7 @@ void main() {
       await pumpGame(t);
       await openTab(t, 'character');
       final segments = find.descendant(
-        of: find.byType(SegmentedButton<bool>),
+        of: find.byType(SegmentedButton<CharacterPane>),
         matching: _buttons,
       );
       Finder segment(String label) =>

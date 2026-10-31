@@ -510,8 +510,8 @@ void criterion8() {
       }
       expect(
         find.text(
-          '${game.talentPoints(level)} talent points waiting. Talents arrive '
-          'in a later update.',
+          // Spec 0015 §3.1: the points left to spend.
+          '${game.talentPoints(level)} talent points to spend',
         ),
         findsOneWidget,
       );

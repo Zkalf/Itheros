@@ -17,7 +17,7 @@ import 'theme.dart';
 /// no steps.
 
 /// The three tabs of Character.
-enum _Pane { gear, bag, talents }
+enum CharacterPane { gear, bag, talents }
 
 class CharacterTab extends StatefulWidget {
   const CharacterTab({super.key});
@@ -27,7 +27,7 @@ class CharacterTab extends StatefulWidget {
 }
 
 class _CharacterTabState extends State<CharacterTab> {
-  var _pane = _Pane.gear;
+  var _pane = CharacterPane.gear;
 
   @override
   Widget build(BuildContext context) {
@@ -131,21 +131,21 @@ class _CharacterTabState extends State<CharacterTab> {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(gutter),
-            child: SegmentedButton<_Pane>(
+            child: SegmentedButton<CharacterPane>(
               expandedInsets: EdgeInsets.zero,
               segments: const [
                 ButtonSegment(
-                  value: _Pane.gear,
+                  value: CharacterPane.gear,
                   label: Text('Gear', key: ValueKey('tab-gear')),
                   icon: Icon(Icons.accessibility_new),
                 ),
                 ButtonSegment(
-                  value: _Pane.bag,
+                  value: CharacterPane.bag,
                   label: Text('Bag', key: ValueKey('tab-bag')),
                   icon: Icon(Icons.backpack),
                 ),
                 ButtonSegment(
-                  value: _Pane.talents,
+                  value: CharacterPane.talents,
                   label: Text('Talents', key: ValueKey('tab-talents')),
                   icon: Icon(Icons.auto_awesome),
                 ),
@@ -160,9 +160,9 @@ class _CharacterTabState extends State<CharacterTab> {
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: switch (_pane) {
-              _Pane.gear => PaperDoll(controller: c),
-              _Pane.bag => BagGrid(controller: c),
-              _Pane.talents => TalentsTab(controller: c),
+              CharacterPane.gear => PaperDoll(controller: c),
+              CharacterPane.bag => BagGrid(controller: c),
+              CharacterPane.talents => TalentsTab(controller: c),
             },
           ),
         ),
