@@ -105,6 +105,22 @@ void main() {
     });
   });
 
+  // The numbers the sim tuned, as amendment 2 has them: the tests of
+  // criteria 14, 18, 26 and 66 follow the data, so these pin it.
+  test('amendment 2 criteria 70-74: the tuned numbers', () {
+    expect(data.talents['might']!.value, 0.008);
+    expect(data.talents['swift_strikes']!.value, 0.005);
+    expect(data.talents['nimble_hands']!.value, 0.01);
+    expect(data.talents['practised_hands']!.value, 0.02);
+    expect(data.talents['practised_hands']!.row, 2);
+    expect(data.talents['impale']!.value, 0.5);
+    // Criterion 72: 100 steps with a starter tool cost 95.
+    expect(
+      game.professionSteps(at(20, {'nimble_hands': 5}), 'mining', 100),
+      95,
+    );
+  });
+
   group('combat effects', () {
     // Level 20, no gear: Attack 24, HP 220, Defense 21.
     // The percents follow the data: amendment 1 lets the sim tune them
@@ -402,11 +418,9 @@ void main() {
     test('criterion 38: Lucky hammer boosts a reroll by 1.45', () {
       final s = at(20, {'lucky_hammer': 3});
       expect(game.qualityBoost(s, QualityRoll.reroll), closeTo(1.45, 1e-9));
+      // Amendment 2: Master crafter does not multiply in.
       final both = at(20, {'lucky_hammer': 3, 'master_crafter': 3});
-      expect(
-        game.qualityBoost(both, QualityRoll.reroll),
-        closeTo(1.3 * 1.45, 1e-9),
-      );
+      expect(game.qualityBoost(both, QualityRoll.reroll), closeTo(1.45, 1e-9));
     });
   });
 
@@ -492,6 +506,71 @@ void main() {
     });
   });
 
+  group('review of PR 151', () {
+    test('a reset never takes banked steps that Deep pockets held', () {
+      // A cap of 14,500 + 3,000 with 17,000 banked; a reset drops the cap.
+      var s = at(10, {'deep_pockets': 5})..bank = 17000;
+      expect(game.bankCap(s), 17500);
+      s = game.resetTalents(s);
+      expect(game.bankCap(s), 14500);
+      expect(s.bank, 17000);
+      // The next action that ends with progress left keeps the bank.
+      s = game.startActivity(
+        s..location = 'copper_hills',
+        const Activity.gather('copper_vein'),
+      );
+      s = game.applySteps(s, 3).state;
+      s = game.stopActivity(s);
+      expect(s.bank, greaterThanOrEqualTo(17000));
+    });
+
+    test('planned walks show the steps the travel talents leave', () {
+      final s = at(20, {'light_pack': 5, 'wayfarer': 1});
+      expect(game.walkSteps(s, 'camp', 'old_graveyard'), 200);
+      expect(game.openLocationsByDistance(s)['old_graveyard'], 200);
+    });
+
+    test('migrate does not change the state it is given', () {
+      final s = GameState.fromJson(
+        at(12, {'might': 1, 'gone_talent': 1}).toJson(),
+      );
+      game.migrate(s);
+      expect(s.talents, {'might': 1, 'gone_talent': 1});
+    });
+
+    test('an unknown talent id is an ActivityError', () {
+      expect(
+        () => game.takeRank(at(12), 'gone_talent'),
+        throwsA(isA<ActivityError>()),
+      );
+    });
+
+    test("the trainer's place must be known", () {
+      final json = dataJson('talents');
+      (json['trainer']! as Map<String, Object?>)['location'] = 'Camp';
+      expect(
+        () => loadGameData(overrides: {'talents': json}),
+        throwsFormatException,
+      );
+    });
+
+    test('the first paid reset costs the base of the data', () {
+      final json = dataJson('talents');
+      (json['reset']! as Map<String, Object?>)['base'] = 1000;
+      final cheap = Game(loadGameData(overrides: {'talents': json}));
+      var s = stateAt(cheap, level: 20)
+        ..talents['might'] = 1
+        ..bank = 50000;
+      s = cheap.resetTalents(s);
+      expect(cheap.resetPriceNow(s), 1000);
+    });
+
+    test('amendment 2: Master crafter does not boost a reroll', () {
+      final s = at(20, {'master_crafter': 3});
+      expect(game.qualityBoost(s, QualityRoll.reroll), 1);
+    });
+  });
+
   group('save', () {
     test('criterion 55: an old save loads with no ranks and its points', () {
       final json = at(12).toJson()
@@ -503,7 +582,8 @@ void main() {
       final s = game.migrate(GameState.fromJson(json));
       expect(s.talents, isEmpty);
       expect(s.talentResets, 0);
-      expect(s.resetPrice, 2000);
+      // No saved price yet: the first paid reset costs the base.
+      expect(game.resetPriceNow(s.copy()..talentResets = 1), 2000);
       expect(s.walkedSinceReset, 0);
       expect(game.talentPointsLeft(s), 3);
     });
