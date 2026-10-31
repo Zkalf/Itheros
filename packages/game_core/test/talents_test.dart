@@ -65,17 +65,14 @@ void main() {
       expect(game.whyNotRank(s, 'might'), 'All ranks taken');
     });
 
-    test('criterion 8: each tree holds 30 points', () {
-      for (final tree in data.talentTrees.keys) {
-        expect(
-          [
-            for (final t in data.talents.values)
-              if (t.tree == tree) t.ranks,
-          ].fold(0, (a, b) => a + b),
-          30,
-          reason: tree,
-        );
-      }
+    // Criterion 8 as amendment 1 has it (criterion 65).
+    test('criteria 8, 65: Combat holds 30 points, Utility 33', () {
+      int points(String tree) => [
+        for (final t in data.talents.values)
+          if (t.tree == tree) t.ranks,
+      ].fold(0, (a, b) => a + b);
+      expect(points('combat'), 30);
+      expect(points('utility'), 33);
     });
 
     test('criteria 9-10: Impale needs Keen eye 3/3', () {
@@ -229,6 +226,32 @@ void main() {
   });
 
   group('utility effects', () {
+    // One copper vein action from Mining 1: its profession and character XP.
+    (int, int) mine(Map<String, int> ranks) {
+      var s = stateAt(game, location: 'copper_hills', professionLevel: 1)
+        ..talents.addAll(ranks);
+      s = game.startActivity(s, const Activity.gather('copper_vein'));
+      final before = s.professions['mining'] ?? 0;
+      final r = game.applySteps(s, 100);
+      return (
+        (r.state.professions['mining'] ?? 0) - before,
+        r.events.whereType<Gathered>().first.xp,
+      );
+    }
+
+    test('amendment 1 criterion 66: Practised hands, +12% profession XP', () {
+      final (plain, _) = mine({});
+      final (more, _) = mine({'practised_hands': 3});
+      expect(more, plain * 112 ~/ 100);
+      expect(more, greaterThan(plain));
+    });
+
+    test('amendment 1 criterion 67: the same character XP', () {
+      final (_, plain) = mine({});
+      final (_, more) = mine({'practised_hands': 3});
+      expect(more, plain);
+    });
+
     test('criterion 25: Deep pockets adds 3,000 to the bank cap', () {
       expect(
         game.bankCap(at(20, {'deep_pockets': 5})),
@@ -517,7 +540,7 @@ void main() {
     });
 
     test('a talent that needs one of a lower row is fine; the real data', () {
-      expect(loadGameData().talents, hasLength(18));
+      expect(loadGameData().talents, hasLength(19));
       expect(data.talents['impale']!.needs, 'keen_eye');
       expect(data.talents['lucky_hammer']!.needs, 'master_crafter');
       expect(data.talents['wayfarer']!.needs, 'light_pack');
