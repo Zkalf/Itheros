@@ -44,7 +44,16 @@
         "learnLine": "Take my old rod. Bring me back some fish.",
         "greeting": "Fish biting, {name}?",
         "kinLine": "A coast {lad|lass|friend}! Salt in your hair, {name}. Take my old rod; you'll not need telling how.",
-        "tips": []
+        "tips": [
+        { "id": "wen_lake_shore", "level": 1, "node": "lake_shore", "title": "Mirror Lake",
+          "text": "\"Perch bite all day at Mirror Lake. One in five is a pike, and now and then a golden carp. Something old and green rolls out there at dawn. We call him Old Mossback.\"" },
+        { "id": "wen_under_the_bridge", "level": 10, "node": "under_the_bridge", "title": "Under the bridge",
+          "text": "\"Brown trout hold under Troll Bridge, and eels, one in five. A silver salmon, if you're lucky. The trolls say a river king lives under the middle arch. Trolls lie, mostly.\"" },
+        { "id": "wen_cove_rocks", "level": 15, "node": "cove_rocks", "title": "Smugglers' Cove",
+          "text": "\"So the chart was true. Sea bass off the rocks, mackerel one in five, a moonfish now and then. The old smugglers swore by a fish with one eye, big as a man. And by a chest they lost off the jetty.\"" },
+        { "id": "wen_cold_tarn", "level": 20, "node": "cold_tarn", "title": "The cold tarn",
+          "text": "\"Arctic char in the cold tarn, and frostfin, one in five. Glacier pike, if you're patient. Something pale moves deep under the ice. I don't fish there alone.\"" }
+        ]
       }
     },
     {
@@ -58,10 +67,16 @@
         "tips": [
         { "id": "sigrun_1", "level": 1, "enemy": "goblin_brute", "title": "Goblin hide",
           "text": "\"Brutes wear goblin hide and nothing else. An edge does the work; just don't let it get its arms round you.\"" },
+        { "id": "sigrun_deer_trail", "level": 1, "node": "deer_trail", "title": "The deer trail",
+          "text": "\"Red deer feed along the deer trail. One track in four is a wild boar's. And they say a golden stag walks there at dusk. Few hunters ever see it, fewer bring home its antler.\"" },
         { "id": "sigrun_10", "level": 10, "enemy": "wolf", "title": "Thin pelt",
           "text": "\"I've skinned a hundred wolves. Thin pelt over lean meat. Cut, don't poke.\"" },
+        { "id": "sigrun_moor_tracks", "level": 10, "node": "moor_tracks", "title": "Tracks on the moor",
+          "text": "\"Moor elk graze the Grey Moor, with black boar among them, one in four. The herders talk of Old Tusk, a boar as big as a cart. Nobody I know has brought back his tusk.\"" },
         { "id": "sigrun_20", "level": 20, "enemy": "wyvern", "title": "Roof tiles",
-          "text": "\"Wyvern scales lie like roof tiles. Swing and you slide off. Find the seam with a point.\"" }
+          "text": "\"Wyvern scales lie like roof tiles. Swing and you slide off. Find the seam with a point.\"" },
+        { "id": "sigrun_high_crags", "level": 20, "node": "high_crags", "title": "Up in the crags",
+          "text": "\"Ibex climb the crags above the pass, and snow grouse nest there, one in four. Watch the snow for a lynx's print. I've seen one, once. Its pelt is worth a season.\"" }
         ]
       }
     },

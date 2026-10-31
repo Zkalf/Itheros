@@ -866,8 +866,23 @@ class GameData {
       check(items.containsKey(dustOf(q.id)), 'no dust item for ${q.id}');
     }
     for (final p in professions.values) {
+      var last = 0;
       for (final t in p.tips) {
-        check(enemies.containsKey(t.enemy), 'tip ${t.id}: unknown monster');
+        check(t.level >= last, '${p.id} tips: lowest level first');
+        last = t.level;
+        check(
+          (t.enemy == null) != (t.node == null),
+          'tip ${t.id}: needs either enemy or node',
+        );
+        if (t.enemy case final e?) {
+          check(enemies.containsKey(e), 'tip ${t.id}: unknown monster');
+        }
+        if (t.node case final n?) {
+          final spot = nodes[n];
+          check(spot != null, 'tip ${t.id}: unknown spot');
+          check(spot!.profession == p.id, 'tip ${t.id}: not a ${p.id} spot');
+          check(spot.level == t.level, "tip ${t.id}: not the spot's level");
+        }
       }
     }
     check(rerollSteps > 0 && rerollDust > 0, 'reroll: steps and dust > 0');

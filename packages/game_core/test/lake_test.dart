@@ -103,19 +103,27 @@ void main() {
       }
     });
 
-    test('Sigrun tells tips at Hunting 1, 10 and 20; Wen and Marta none', () {
-      final tips = data.professions['hunting']!.tips;
+    // Spot tips (spec 0010 amendment 8) are in spot_tips_test.dart.
+    test('Sigrun tells monster tips at Hunting 1, 10 and 20; Wen and Marta '
+        'tell no monster tips', () {
+      List<TipDef> monsterTips(String p) => [
+        for (final t in data.professions[p]!.tips)
+          if (t.enemy != null) t,
+      ];
       expect(
-        [for (final t in tips) (t.level, t.enemy)],
+        [for (final t in monsterTips('hunting')) (t.level, t.enemy)],
         [(1, 'goblin_brute'), (10, 'wolf'), (20, 'wyvern')],
       );
-      expect(data.professions['fishing']!.tips, isEmpty);
+      expect(monsterTips('fishing'), isEmpty);
       expect(data.professions['cooking']!.tips, isEmpty);
       final s = stateAt(game, professionLevel: 10);
-      expect(game.tipsWaiting(s, 'hunting').map((t) => t.enemy), [
-        'goblin_brute',
-        'wolf',
-      ]);
+      expect(
+        [
+          for (final t in game.tipsWaiting(s, 'hunting'))
+            if (t.enemy != null) t.enemy,
+        ],
+        ['goblin_brute', 'wolf'],
+      );
       final told = game.talk(s, 'hunting');
       expect(game.knowledge(told, 'wolf').weakness, isTrue);
     });

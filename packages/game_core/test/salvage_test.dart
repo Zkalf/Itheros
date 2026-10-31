@@ -21,16 +21,24 @@ void main() {
       s = game.talk(s, 'mining');
       expect(s.tips, {first.id});
       expect(game.tipsWaiting(s, 'mining'), isEmpty);
-      expect(game.knowledge(s, first.enemy).armour, isTrue);
-      expect(game.knowledge(s, first.enemy).weakness, isTrue);
-      expect(game.knowledge(s, first.enemy).stats, isFalse);
+      expect(game.knowledge(s, first.enemy!).armour, isTrue);
+      expect(game.knowledge(s, first.enemy!).weakness, isTrue);
+      expect(game.knowledge(s, first.enemy!).stats, isFalse);
     });
 
-    test('three tips each, at levels 1, 10 and 20', () {
-      // Of spec 0011's teachers only Sigrun tells tips (decision 7).
+    test('three monster tips each, at levels 1, 10 and 20', () {
+      // Of spec 0011's teachers only Sigrun tells monster tips (decision 7);
+      // spot tips (spec 0010 amendment 8) are in spot_tips_test.dart.
       for (final p in data.professions.values) {
         if (const {'fishing', 'cooking'}.contains(p.id)) continue;
-        expect(p.tips.map((t) => t.level), [1, 10, 20], reason: p.id);
+        expect(
+          [
+            for (final t in p.tips)
+              if (t.enemy != null) t.level,
+          ],
+          [1, 10, 20],
+          reason: p.id,
+        );
       }
       final s = stateAt(game, professionLevel: 10);
       expect(game.tipsWaiting(s, 'crafting'), hasLength(2));

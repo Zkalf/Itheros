@@ -54,7 +54,7 @@ class TeacherSheet extends StatelessWidget {
       final text = Theme.of(context).textTheme;
       final learned = s.learned.contains(profession);
       final level = game.professionLevel(s, profession);
-      final next = p.tips.where((t) => t.level > level).firstOrNull;
+      final next = game.nextTip(s, profession);
       const italic = TextStyle(fontStyle: FontStyle.italic);
       return SafeArea(
         child: SingleChildScrollView(
@@ -128,7 +128,12 @@ class TipCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tip.title, style: text.titleMedium),
-            Text('About the ${labels.enemy(tip.enemy)}', style: text.bodySmall),
+            Text(
+              tip.enemy != null
+                  ? 'About the ${labels.enemy(tip.enemy!)}'
+                  : 'About ${labels.node(tip.node!)}',
+              style: text.bodySmall,
+            ),
             const SizedBox(height: 8),
             Text(labels.fill(tip.text)),
           ],
