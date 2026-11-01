@@ -179,12 +179,15 @@ void main() {
 
   // The walkers start Mining at 5 as Miner's children (spec 0012 amendment
   // 1), so it may reach 10 from day 5. The supply chest's Crafting materials
-  // move Crafting 10 to day 6 at the soonest (spec 0013 amendment 1).
+  // move Crafting 10 to day 6 and Crafting 20 to day 40 at the soonest
+  // (spec 0013 amendments 1 and 2).
   test('spec 0010 amendment 1: Mining and Crafting 10 by day 6-22 (Mining '
-      '5-22), 20 by day 45-65 (medians)', () {
+      '5-22), 20 by day 40-65 (Mining 45-65) (medians)', () {
     for (final p in ['mining', 'crafting']) {
       for (final l in [10, 20]) {
-        final range = l == 10 ? (p == 'mining' ? 5 : 6, 22) : (45, 65);
+        final range = l == 10
+            ? (p == 'mining' ? 5 : 6, 22)
+            : (p == 'mining' ? 45 : 40, 65);
         expect(
           median(walker.values.map((r) => r.professionDay(p, l))),
           inInclusiveRange(range.$1, range.$2),
