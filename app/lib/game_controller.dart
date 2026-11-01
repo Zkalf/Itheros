@@ -315,6 +315,36 @@ class GameController extends ChangeNotifier {
   /// Talks to [profession]'s teacher here: every waiting tip is told.
   Future<void> talk(String profession) => _act((s) => game.talk(s, profession));
 
+  /// Today's steps into actions and whether today paid its supply chest
+  /// (spec 0013 §3.2).
+  ({int steps, bool paid}) get supplyToday =>
+      game.supplyToday(state, dayKey(now));
+
+  /// Opens the oldest supply chest, after a sync, and returns what it held
+  /// (spec 0013 §2.6).
+  Future<Map<String, int>> openSupplyChest() async {
+    var items = const <String, int>{};
+    await _act((s) {
+      final opened = game.openSupplyChest(s);
+      items = s.supplyChests.first.items;
+      return opened;
+    });
+    return items;
+  }
+
+  /// Opens every waiting supply chest and returns what they held together.
+  Future<Map<String, int>> openAllSupplyChests() async {
+    final items = <String, int>{};
+    await _act((s) {
+      final opened = game.openAllSupplyChests(s);
+      for (final c in s.supplyChests) {
+        c.items.forEach((k, v) => items[k] = (items[k] ?? 0) + v);
+      }
+      return opened;
+    });
+    return items;
+  }
+
   /// Takes one rank of [talent] (spec 0015 §2.1): anywhere, no steps.
   Future<void> takeRank(String talent) => _act((s) => game.takeRank(s, talent));
 

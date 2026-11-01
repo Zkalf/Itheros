@@ -70,6 +70,11 @@ List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   for (final item in s.bottleItems)
     (ItemThing(item), labels.bottle(item: item)),
   for (final key in s.chests) (ItemThing(key), labels.chest(key)),
+  // Spec 0013 §3.4: the contents show when the player opens the chest.
+  if (s.supplyChests == 1)
+    (null, 'Supply chest earned')
+  else if (s.supplyChests > 1)
+    (null, '${s.supplyChests} supply chests earned'),
 ];
 
 List<Widget> reportBanners(AwaySummary s, Labels labels) => [
