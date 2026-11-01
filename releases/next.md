@@ -12,3 +12,4 @@ Talents, and new tips from the hunter and the fisherman.
   anywhere to go back. Taps and scrolling work as before.
 - **Less text:** the step bank explains itself when you tap it, and the hints under it, at the bottom of Now and
   under the World map are gone.
+- **Fixed:** in the Journal, the tab you swipe to now lights up while you swipe, not only after.
