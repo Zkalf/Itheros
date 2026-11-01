@@ -96,11 +96,13 @@ class _TabBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = DefaultTabController.of(context);
+    // The animation, not the index: the index changes only once a swipe has
+    // settled, so the lit tab follows the finger from halfway on.
+    final tabs = DefaultTabController.of(context).animation!;
     return ListenableBuilder(
       listenable: tabs,
       builder: (context, _) => ControlBox(
-        fill: tabs.index == index ? Quiet.selected : Quiet.slate,
+        fill: tabs.value.round() == index ? Quiet.selected : Quiet.slate,
         child: SizedBox.expand(child: Center(child: Text(label))),
       ),
     );
