@@ -488,9 +488,14 @@ void main() {
       }
       expect(s.supplyChests.any((c) => gearIn(c.items).isNotEmpty), isTrue);
       final back = game.migrate(GameState.fromJson(s.toJson()));
+      // Maps inside records compare by identity, so each part on its own.
       expect(
-        [for (final c in back.supplyChests) (c.day, c.items)],
-        [for (final c in s.supplyChests) (c.day, c.items)],
+        [for (final c in back.supplyChests) c.day],
+        [for (final c in s.supplyChests) c.day],
+      );
+      expect(
+        [for (final c in back.supplyChests) c.items],
+        [for (final c in s.supplyChests) c.items],
       );
     });
 
