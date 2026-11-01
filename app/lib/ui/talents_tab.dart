@@ -20,15 +20,12 @@ class TalentsTab extends StatefulWidget {
 }
 
 class _TalentsTabState extends State<TalentsTab> {
-  String? _tree;
-
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
     final game = c.game;
     final s = c.state;
     final data = game.data;
-    final tree = _tree ?? data.talentTrees.keys.first;
     final text = Theme.of(context).textTheme;
     final left = game.talentPointsLeft(s);
     final heading = game.level(s) < data.talentPointsFrom
@@ -38,6 +35,7 @@ class _TalentsTabState extends State<TalentsTab> {
             1 => '1 point left',
             _ => '$left points left',
           };
+    final trees = data.talentTrees.values.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -46,25 +44,31 @@ class _TalentsTabState extends State<TalentsTab> {
           key: const ValueKey('talents-heading'),
           style: text.titleMedium,
         ),
-        const SizedBox(height: 8),
-        SegmentedButton<String>(
-          expandedInsets: EdgeInsets.zero,
-          segments: [
-            for (final t in data.talentTrees.values)
-              ButtonSegment(
-                value: t.id,
-                label: Text(
-                  '${t.name} · ${game.ranksIn(s, t.id)}',
-                  key: ValueKey('tree-${t.id}'),
+        const SizedBox(height: 12),
+        // Both trees at once, side by side (amendment 6).
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final (i, t) in trees.indexed) ...[
+              if (i > 0) const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '${t.name} · ${game.ranksIn(s, t.id)}',
+                      key: ValueKey('tree-${t.id}'),
+                      textAlign: TextAlign.center,
+                      style: text.labelLarge?.copyWith(color: Quiet.teal),
+                    ),
+                    const SizedBox(height: 12),
+                    TalentGrid(controller: c, tree: t.id),
+                  ],
                 ),
               ),
+            ],
           ],
-          selected: {tree},
-          showSelectedIcon: false,
-          onSelectionChanged: (v) => setState(() => _tree = v.single),
         ),
-        const SizedBox(height: 16),
-        TalentGrid(controller: c, tree: tree),
       ],
     );
   }
@@ -79,7 +83,7 @@ class TalentGrid extends StatelessWidget {
   final GameController controller;
   final String tree;
 
-  /// The socket of an icon.
+  /// The socket of an icon at most; a narrow grid has smaller sockets.
   static const socket = 56.0;
 
   /// The space between the name of one row and the icons of the next.
@@ -91,18 +95,18 @@ class TalentGrid extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final data = game.data;
-    final text = Theme.of(context).textTheme;
     final talents = [
       for (final t in data.talents.values)
         if (t.tree == tree) t,
     ];
     final lastRow = talents.fold(1, (n, t) => math.max(n, t.row));
-    final nameStyle = text.bodySmall!.copyWith(color: Quiet.muted);
     final scaler = MediaQuery.textScalerOf(context);
 
     return LayoutBuilder(
       builder: (context, box) {
         final cell = box.maxWidth / 3;
+        final socket = math.min(TalentGrid.socket, cell - 16);
+        final nameStyle = nameStyleOf(context, cell);
         // Each row is as tall as its longest name, at most 2 lines at the
         // phone's text size.
         final names = <int, double>{};
@@ -112,7 +116,7 @@ class TalentGrid extends StatelessWidget {
             textScaler: scaler,
             textDirection: TextDirection.ltr,
             maxLines: 2,
-          )..layout(maxWidth: cell);
+          )..layout(maxWidth: cell + 8);
           names[t.row] = math.max(names[t.row] ?? 0, name.height);
           name.dispose();
         }
@@ -136,7 +140,7 @@ class TalentGrid extends StatelessWidget {
               ),
         ];
         return SizedBox(
-          key: const ValueKey('talent-grid'),
+          key: ValueKey('talent-grid-$tree'),
           height: height,
           child: Stack(
             clipBehavior: Clip.none,
@@ -171,10 +175,15 @@ class TalentGrid extends StatelessWidget {
                 ),
               for (final t in talents)
                 Positioned(
-                  left: (t.column - 1) * cell,
+                  left: (t.column - 1) * cell - 4,
                   top: top(t.row),
-                  width: cell,
-                  child: TalentNode(controller: c, talent: t),
+                  width: cell + 8,
+                  child: TalentNode(
+                    controller: c,
+                    talent: t,
+                    socket: socket,
+                    nameStyle: nameStyle,
+                  ),
                 ),
             ],
           ),
@@ -182,6 +191,16 @@ class TalentGrid extends StatelessWidget {
       },
     );
   }
+}
+
+/// The name under an icon: smaller in a narrow grid.
+TextStyle nameStyleOf(BuildContext context, double cell) {
+  final small = Theme.of(context).textTheme.bodySmall!;
+  return small.copyWith(
+    color: Quiet.muted,
+    fontSize: cell < 90 ? 11.5 : small.fontSize,
+    height: 1.2,
+  );
 }
 
 /// The lines between talents: plain 2 dp strokes, no blur (#121).
@@ -213,10 +232,20 @@ enum NodeState { closed, open, learn, full }
 /// One talent on the grid: its image in a 56 dp socket, the ranks badge, and
 /// its name under it. A tap opens the talent sheet.
 class TalentNode extends StatelessWidget {
-  const TalentNode({super.key, required this.controller, required this.talent});
+  const TalentNode({
+    super.key,
+    required this.controller,
+    required this.talent,
+    required this.socket,
+    required this.nameStyle,
+  });
 
   final GameController controller;
   final TalentDef talent;
+
+  /// The size of the socket.
+  final double socket;
+  final TextStyle nameStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -255,17 +284,21 @@ class TalentNode extends StatelessWidget {
               children: [
                 Container(
                   key: ValueKey('node-${state.name}-${t.id}'),
-                  width: TalentGrid.socket,
-                  height: TalentGrid.socket,
+                  width: socket,
+                  height: socket,
                   decoration: BoxDecoration(
                     color: Quiet.socket,
                     borderRadius: BorderRadius.circular(12),
                     border: ring,
                   ),
-                  child: Icon(talentIcon(t.image), size: 32, color: Quiet.teal),
+                  child: Icon(
+                    talentIcon(t.image),
+                    size: socket * .57,
+                    color: Quiet.teal,
+                  ),
                 ),
                 Positioned(
-                  right: -12,
+                  right: -14,
                   bottom: -8,
                   child: _RankBadge(
                     key: ValueKey('badge-${t.id}'),
@@ -281,8 +314,7 @@ class TalentNode extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Quiet.muted),
+              style: nameStyle,
             ),
           ],
         ),

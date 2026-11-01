@@ -37,7 +37,7 @@ void main() {
       ];
       expect(x[0] < x[1] && x[1] < x[2], isTrue);
       expect(find.text('3 points left'), findsOneWidget);
-      expect(find.textContaining('Combat · 0'), findsOneWidget);
+      expect(find.text('Combat · 0'), findsOneWidget);
       expect(find.textContaining('Utility · 0'), findsOneWidget);
     });
 
@@ -100,7 +100,7 @@ void main() {
     testWidgets('criteria 77-78: icons at their rows and columns', (t) async {
       await pumpGame(t, level: 12);
       await openTalents(t);
-      expect(find.byKey(const ValueKey('talent-grid')), findsOneWidget);
+      expect(find.byKey(const ValueKey('talent-grid-combat')), findsOneWidget);
       final might = at(t, 'might'); // row 1, column 1
       final toughness = at(t, 'toughness'); // row 1, column 3
       final guard = at(t, 'guard'); // row 2, column 1
@@ -111,8 +111,17 @@ void main() {
       expect(guard.dy, greaterThan(might.dy));
       expect(swift.dy, greaterThan(guard.dy));
       expect(swift.dx, closeTo((might.dx + toughness.dx) / 2, 1));
-      // One tree at a time: no Utility talent shows.
-      expect(find.byKey(const ValueKey('talent-deep_pockets')), findsNothing);
+      // Amendment 6 criteria 121-122: both trees at once, Utility on the
+      // right, its row 1 level with Combat's.
+      final pockets = at(t, 'deep_pockets'); // Utility row 1, column 1
+      expect(pockets.dy, might.dy);
+      expect(pockets.dx, greaterThan(toughness.dx));
+      expect(
+        t.getCenter(find.byKey(const ValueKey('tree-utility'))).dx,
+        greaterThan(t.getCenter(find.byKey(const ValueKey('tree-combat'))).dx),
+      );
+      // Amendment 6 criterion 123: no switch between the trees.
+      expect(find.byType(SegmentedButton<String>), findsNothing);
     });
 
     testWidgets('criteria 79-80: the name and the ranks of each icon', (
@@ -185,7 +194,8 @@ void main() {
     testWidgets('criteria 89, 92, 94: one faint line in Combat', (t) async {
       await pumpGame(t, level: 12);
       await openTalents(t);
-      expect(keyed('line-'), findsOneWidget);
+      // Both trees show: 1 line in Combat, 2 in Utility.
+      expect(keyed('line-'), findsNWidgets(3));
       final line = find.byKey(const ValueKey('line-keen_eye-impale-faint'));
       expect(line, findsOneWidget);
       // The line starts under Keen eye's name and ends above Impale.
@@ -215,9 +225,6 @@ void main() {
     testWidgets('criteria 90-91, 94: two lines in Utility', (t) async {
       await pumpGame(t, level: 12);
       await openTalents(t);
-      await t.tap(find.byKey(const ValueKey('tree-utility')));
-      await t.pumpAndSettle();
-      expect(keyed('line-'), findsNWidgets(2));
       expect(
         find.byKey(const ValueKey('line-master_crafter-lucky_hammer-faint')),
         findsOneWidget,
@@ -234,9 +241,6 @@ void main() {
       final (c, _) = await pumpGame(t, level: 20);
       await openTalents(t);
       expect(find.text(c.game.data.talentTrees['combat']!.line), findsNothing);
-      expect(find.textContaining('Opens at'), findsNothing);
-      await t.tap(find.byKey(const ValueKey('tree-utility')));
-      await t.pumpAndSettle();
       expect(find.text(c.game.data.talentTrees['utility']!.line), findsNothing);
       expect(find.textContaining('Opens at'), findsNothing);
     });
