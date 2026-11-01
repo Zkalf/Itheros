@@ -440,7 +440,7 @@ void main() {
     test('criterion 31: a level up does not change the contents', () {
       final (s, c) = earnGear();
       final up = s.copy()..xp = data.xpForLevel(30);
-      final opened = game.openSupplyChest(up);
+      final opened = game.openSupplyChest(up).state;
       for (final e in c.items.entries) {
         expect(
           (opened.inventory[e.key] ?? 0) - (up.inventory[e.key] ?? 0),
@@ -481,7 +481,7 @@ void main() {
     test('criterion 33: Open moves the oldest chest into the bag', () {
       final s = twoChests();
       final oldest = s.supplyChests.first;
-      final opened = game.openSupplyChest(s);
+      final opened = game.openSupplyChest(s).state;
       expect([for (final c in opened.supplyChests) c.day], [day2]);
       for (final e in oldest.items.entries) {
         expect(
@@ -497,7 +497,7 @@ void main() {
       for (final c in s.supplyChests) {
         c.items.forEach((k, v) => all[k] = (all[k] ?? 0) + v);
       }
-      final opened = game.openAllSupplyChests(s);
+      final opened = game.openAllSupplyChests(s).state;
       expect(opened.supplyChests, isEmpty);
       for (final e in all.entries) {
         expect(
@@ -509,11 +509,29 @@ void main() {
 
     test('criterion 35: opening uses no steps', () {
       final s = twoChests();
-      final opened = game.openAllSupplyChests(s);
+      final opened = game.openAllSupplyChests(s).state;
       expect(opened.bank, s.bank);
       expect(opened.activity!.progress, s.activity!.progress);
       expect(opened.supplySteps, s.supplySteps);
       expect(opened.supplyRng, s.supplyRng);
+    });
+
+    test('Open returns one chest and what it held (#169)', () {
+      final s = twoChests();
+      final r = game.openSupplyChest(s);
+      expect(r.count, 1);
+      expect(r.items, s.supplyChests.first.items);
+    });
+
+    test('Open all returns how many chests and what they held (#169)', () {
+      final s = twoChests();
+      final all = <String, int>{};
+      for (final c in s.supplyChests) {
+        c.items.forEach((k, v) => all[k] = (all[k] ?? 0) + v);
+      }
+      final r = game.openAllSupplyChests(s);
+      expect(r.count, 2);
+      expect(r.items, all);
     });
 
     test('with no chest waiting, Open is refused', () {
