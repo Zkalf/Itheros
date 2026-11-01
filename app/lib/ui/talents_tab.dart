@@ -63,8 +63,6 @@ class _TalentsTabState extends State<TalentsTab> {
           showSelectedIcon: false,
           onSelectionChanged: (v) => setState(() => _tree = v.single),
         ),
-        const SizedBox(height: 8),
-        Text(data.talentTrees[tree]!.line, style: text.bodySmall),
         const SizedBox(height: 16),
         TalentGrid(controller: c, tree: tree),
       ],
@@ -72,9 +70,9 @@ class _TalentsTabState extends State<TalentsTab> {
   }
 }
 
-/// One tree as a grid of 3 columns, row 1 at the top (spec 0015 amendment 3):
-/// an icon per talent, a line from each talent to the one it needs, and the
-/// "Opens at" line above the first closed row.
+/// One tree as a grid of 3 columns, row 1 at the top (spec 0015 amendments 3
+/// and 4): an icon per talent, and a line from each talent to the one it
+/// needs.
 class TalentGrid extends StatelessWidget {
   const TalentGrid({super.key, required this.controller, required this.tree});
 
@@ -86,9 +84,6 @@ class TalentGrid extends StatelessWidget {
 
   /// The space between the name of one row and the icons of the next.
   static const gap = 14.0;
-
-  /// The height of the "Opens at" line.
-  static const band = 30.0;
 
   @override
   Widget build(BuildContext context) {
@@ -102,11 +97,6 @@ class TalentGrid extends StatelessWidget {
         if (t.tree == tree) t,
     ];
     final lastRow = talents.fold(1, (n, t) => math.max(n, t.row));
-    final ranks = game.ranksIn(s, tree);
-    final closedFrom = [
-      for (var r = 1; r <= lastRow; r++)
-        if (ranks < game.rowOpensAt(r)) r,
-    ].firstOrNull;
     final nameStyle = text.bodySmall!.copyWith(color: Quiet.muted);
     final scaler = MediaQuery.textScalerOf(context);
 
@@ -129,8 +119,7 @@ class TalentGrid extends StatelessWidget {
         double rowHeight(int row) => socket + 6 + (names[row] ?? 0) + gap;
         double top(int row) =>
             [for (var r = 1; r < row; r++) rowHeight(r)]
-                .fold(0.0, (a, b) => a + b) +
-            (closedFrom != null && row >= closedFrom ? band : 0);
+                .fold(0.0, (a, b) => a + b);
         final height = top(lastRow) + rowHeight(lastRow) - gap;
         // A line starts under the needed talent's name and ends a little
         // above the socket of the talent that needs it.
@@ -177,21 +166,6 @@ class TalentGrid extends StatelessWidget {
                         'line-${l.need.id}-${l.talent.id}-'
                         '${l.teal ? 'teal' : 'faint'}',
                       ),
-                    ),
-                  ),
-                ),
-              if (closedFrom != null)
-                Positioned(
-                  key: const ValueKey('opens-at'),
-                  left: 0,
-                  right: 0,
-                  top: top(closedFrom) - band,
-                  height: band,
-                  child: Center(
-                    child: Text(
-                      'Opens at ${game.rowOpensAt(closedFrom)} points in '
-                      '${data.talentTrees[tree]!.name}',
-                      style: text.bodySmall?.copyWith(color: Quiet.faint),
                     ),
                   ),
                 ),
