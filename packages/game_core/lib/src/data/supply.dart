@@ -10,7 +10,9 @@ class SupplyChestRules {
       gearChance = _num(j, 'gearChance'),
       shardChance = _num(j, 'shardChance'),
       qualityBoost = _num(j, 'qualityBoost'),
+      qualityBoostFrom = _str(j, 'qualityBoostFrom'),
       gearWindow = _int(j, 'gearWindow'),
+      keptDays = _int(j, 'keptDays'),
       exclude = Set.unmodifiable(_strList(j, 'exclude'));
 
   /// The steps into actions of one local day that earn its chest.
@@ -28,6 +30,12 @@ class SupplyChestRules {
 
   /// Multiplies the chances of rare and better qualities of chest gear.
   final double qualityBoost;
+
+  /// The lowest quality [qualityBoost] applies to: it and every better one.
+  final String qualityBoostFrom;
+
+  /// How many of the most recent days the count and the paid days keep.
+  final int keptDays;
 
   /// Gear comes from the player's level minus this up to the level.
   final int gearWindow;

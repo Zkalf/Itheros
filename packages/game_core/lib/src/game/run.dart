@@ -69,7 +69,7 @@ class _Run {
     s.rngState = rng.state;
     s.professionRng = stream.state;
     s.supplyRng = supply.state;
-    if (day != null) game._pruneSupply(s);
+    if (day case final d?) game._pruneSupply(s, d);
     return StepReport(
       state: s,
       walked: walked,

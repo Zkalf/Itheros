@@ -152,8 +152,10 @@ extension GameOdds on Game {
       math.max(0, playerLevel - itemLevel),
     );
     final boost = (1 + data.qualityPerLevel * above) * talentBoost;
-    // Rare is the third quality: common and uncommon keep their chances.
-    const firstHigh = 2;
+    // Common and uncommon keep their chances (spec 0013 §2.5).
+    final firstHigh = data.qualities.indexWhere(
+      (q) => q.id == data.supplyChest.qualityBoostFrom,
+    );
     var roll = rng.nextDouble();
     for (final (i, q) in data.qualities.indexed.toList().reversed) {
       if (i == 0) break;

@@ -987,6 +987,22 @@ class GameData {
     );
     check(sc.qualityBoost >= 1, 'supplyChest: qualityBoost must be >= 1');
     check(sc.gearWindow >= 0, 'supplyChest: gearWindow must be >= 0');
+    check(
+      sc.keptDays >= 7,
+      'supplyChest: keptDays must cover the sync window of 7 days',
+    );
+    check(
+      qualities.any((q) => q.id == sc.qualityBoostFrom),
+      'supplyChest: unknown quality ${sc.qualityBoostFrom}',
+    );
+    // A chest's meal comes from the meal tier of the player's bonus tier.
+    for (var t = 0; t < bonusTiers.length; t++) {
+      final tier = math.min(t + 1, mealPercent.length);
+      check(
+        items.values.any((i) => i.meal?.tier == tier),
+        'supplyChest: no meal of tier $tier',
+      );
+    }
     for (final id in sc.exclude) {
       check(
         items[id]?.slot != null,

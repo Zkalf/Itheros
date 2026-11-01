@@ -802,10 +802,14 @@ class SensiblePlayer {
       walker == Walker.gatherer ? const {'steps'} : const {'attack', 'hp'};
 
   /// Meals in the bag, of any kind.
+  /// The meals it holds that it would eat. A supply chest's meals with
+  /// another buff (Crit, Defense, fewer steps) piled up, and the walker
+  /// never cooked again (plan 0037).
   int _mealsHeld(GameState s) {
     var n = 0;
     s.inventory.forEach((key, count) {
-      if (data.itemOf(key)?.meal != null) n += count;
+      final meal = data.itemOf(key)?.meal;
+      if (meal != null && meal.buffs.any(_mealBuffs.contains)) n += count;
     });
     return n;
   }

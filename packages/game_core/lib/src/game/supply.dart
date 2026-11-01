@@ -3,10 +3,6 @@ part of '../game.dart';
 /// The supply chest (spec 0013): the daily goal of steps into actions, the
 /// contents rolled when a chest is earned, and opening.
 extension GameSupply on Game {
-  /// How many of the most recent days the count and the paid days keep
-  /// (spec 0013 §4).
-  static const keptDays = 14;
-
   /// The supply stream's first state, a fixed hash of [from] (a game seed,
   /// or an old save's generator state): no draw from the shared generator
   /// (spec 0013 §2.3).
@@ -73,8 +69,10 @@ extension GameSupply on Game {
     final gearRng = Rng.fromState(rng.nextUint32());
     final shardRoll = rng.nextDouble();
 
-    final window = supplyWindow(level);
-    if (gearRoll < rules.gearChance && window.isNotEmpty) {
+    final window = gearRoll < rules.gearChance
+        ? supplyWindow(level)
+        : const <String>[];
+    if (window.isNotEmpty) {
       final id = window[(gearPick * window.length).floor()];
       final itemLevel = data.itemLevel(id);
       final q = rollQuality(
@@ -106,14 +104,15 @@ extension GameSupply on Game {
     ];
   }
 
-  /// The spot of [profession] with the highest level the player can work,
-  /// or null for a profession without spots (Crafting, Cooking).
+  /// The spot of [profession] with the highest level the player can work:
+  /// open to its level and out of the fog. Null for a profession without
+  /// spots (Crafting, Cooking).
   NodeDef? _bestSpot(GameState s, String profession) {
-    final at = professionLevel(s, profession);
     NodeDef? best;
     for (final n in data.nodes.values) {
       if (n.profession == profession &&
-          n.level <= at &&
+          nodeLevelMet(s, n.id) &&
+          !nodeFogged(s, n.id) &&
           (best == null || n.level > best.level)) {
         best = n;
       }
@@ -152,14 +151,15 @@ extension GameSupply on Game {
     });
   }
 
-  /// Keeps the count and the paid days of the [keptDays] most recent days.
-  void _pruneSupply(GameState s) {
-    for (final days in [s.supplySteps.keys, s.supplyPaid]) {
-      final sorted = days.toList()..sort();
-      if (sorted.length <= keptDays) continue;
-      final old = sorted.take(sorted.length - keptDays).toSet();
-      s.supplySteps.removeWhere((d, _) => old.contains(d));
-      s.supplyPaid.removeAll(old);
-    }
+  /// Drops the count and the paid days from before the `keptDays` days
+  /// that end on [day]. Later days stay: a clock once set ahead must never
+  /// push out the day being walked, or it could pay again.
+  void _pruneSupply(GameState s, String day) {
+    final from = DateTime.parse(day)
+        .subtract(Duration(days: data.supplyChest.keptDays - 1));
+    String two(int n) => '$n'.padLeft(2, '0');
+    final cutoff = '${from.year}-${two(from.month)}-${two(from.day)}';
+    s.supplySteps.removeWhere((d, _) => d.compareTo(cutoff) < 0);
+    s.supplyPaid.removeWhere((d) => d.compareTo(cutoff) < 0);
   }
 }
