@@ -70,7 +70,7 @@ class _HomeShellState extends State<HomeShell> {
       });
     }
     return Scaffold(
-      // No title: the lit tab names the screen (spec 0014 §4.1). The three
+      // No title: the lit tab names the screen (spec 0014 §4.1). The
       // buttons stand on one plate (§2.2).
       appBar: AppBar(
         actions: [

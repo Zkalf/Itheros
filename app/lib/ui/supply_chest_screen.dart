@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
-import 'away_summary_card.dart';
 import 'controller_scope.dart';
 import 'item_card.dart';
 import 'labels.dart';
@@ -97,10 +97,14 @@ class SupplyChestScreen extends StatelessWidget {
     GameController c, {
     required bool all,
   }) async {
-    final count = all ? c.state.supplyChests.length : 1;
-    final items = all
-        ? await c.openAllSupplyChests()
-        : await c.openSupplyChest();
+    final ({int count, Map<String, int> items}) opened;
+    try {
+      opened = all ? await c.openAllSupplyChests() : await c.openSupplyChest();
+    } on ActivityError {
+      // A second tap after the first open took the last chest.
+      return;
+    }
+    final (:count, :items) = opened;
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -150,7 +154,8 @@ class _ChestSheet extends StatelessWidget {
               ListTile(
                 title: Text(
                   '${labels.item(key)} ×$n',
-                  style: TextStyle(color: qualityColour(data.qualityOf(key))),
+                  // As on the item card: Common in the normal text colour.
+                  style: TextStyle(color: itemColour(data, key)),
                 ),
                 onTap: () => showItemCard(host, controller, key),
               )
