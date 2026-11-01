@@ -171,10 +171,12 @@ void main() {
     expect(median(level30(walker)), inInclusiveRange(80, 100));
   });
 
-  test('spec 0011 Â§9.3 target 5: with meals the median level 30 day is no '
-      'later than without, and at most 5 days sooner', () {
+  // With supply chests meals neither help nor hurt the pace: 32 seeds give
+  // about 0 days, and 8 seeds swing by several (spec 0013 amendment 3).
+  test('spec 0011 target 5 (spec 0013 amendment 3): with meals the median '
+      'level 30 day is at most 5 days later and at most 5 days sooner', () {
     final gain = median(level30(noMeals)) - median(level30(withMeals));
-    expect(gain, inInclusiveRange(0, 5));
+    expect(gain, inInclusiveRange(-5, 5));
   });
 
   // The walkers start Mining at 5 as Miner's children (spec 0012 amendment
