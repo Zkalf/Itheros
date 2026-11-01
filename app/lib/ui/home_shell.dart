@@ -13,6 +13,7 @@ import 'now_tab.dart';
 import 'profession_screen.dart' show RecipeFilter;
 import 'professions_tab.dart';
 import 'settings_screen.dart';
+import 'supply_chest_screen.dart';
 import 'theme.dart';
 import 'world_tab.dart';
 
@@ -69,12 +70,28 @@ class _HomeShellState extends State<HomeShell> {
       });
     }
     return Scaffold(
-      // No title: the lit tab names the screen (spec 0014 §4.1). The three
+      // No title: the lit tab names the screen (spec 0014 §4.1). The
       // buttons stand on one plate (§2.2).
       appBar: AppBar(
         actions: [
           BarPlate(
             children: [
+              // Spec 0013 §3.1: left of Achievements, a dot while a chest
+              // waits.
+              IconButton(
+                key: const ValueKey('supply-chest-button'),
+                icon: Badge(
+                  key: const ValueKey('supply-chest-dot'),
+                  isLabelVisible: c.state.supplyChests.isNotEmpty,
+                  child: const Icon(Icons.inventory_2),
+                ),
+                tooltip: 'Supply chest',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SupplyChestScreen(),
+                  ),
+                ),
+              ),
               IconButton(
                 key: const ValueKey('achievements-button'),
                 icon: Badge(

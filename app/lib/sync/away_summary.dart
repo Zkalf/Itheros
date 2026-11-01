@@ -135,6 +135,7 @@ class AwaySummary {
     this.charts = const [],
     this.bottleItems = const [],
     this.chests = const [],
+    this.supplyChests = 0,
     this.mealsEaten = const [],
     this.mealsOut = const [],
     this.route = const [],
@@ -157,6 +158,7 @@ class AwaySummary {
     final rerolls = <(String, String)>[];
     final records = <(String, int, int)>[];
     final charts = <String>[], bottleItems = <String>[], chests = <String>[];
+    var supplyChests = 0;
     final mealsEaten = <(String, int)>[];
     final mealsOut = <String>[];
     final route = <String>[];
@@ -263,9 +265,9 @@ class AwaySummary {
           mealsEaten.add((key, left));
         case MealsOut(:final meal):
           mealsOut.add(meal);
-        // The summary line comes with the screens (plan 0037 M2).
+        // Spec 0013 §3.4: how many, not what is in them.
         case SupplyChestEarned():
-          break;
+          supplyChests++;
       }
     }
     final running = started ?? r.state.activity?.activity;
@@ -291,6 +293,7 @@ class AwaySummary {
       charts: charts,
       bottleItems: bottleItems,
       chests: chests,
+      supplyChests: supplyChests,
       mealsEaten: mealsEaten,
       mealsOut: mealsOut,
       route: route,
@@ -333,6 +336,9 @@ class AwaySummary {
   final List<String> charts;
   final List<String> bottleItems;
   final List<String> chests;
+
+  /// Supply chests earned (spec 0013 §3.4).
+  final int supplyChests;
   final List<(String, int)> mealsEaten;
   final List<String> mealsOut;
 
@@ -368,6 +374,7 @@ class AwaySummary {
       charts.isNotEmpty ||
       bottleItems.isNotEmpty ||
       chests.isNotEmpty ||
+      supplyChests > 0 ||
       mealsEaten.isNotEmpty ||
       mealsOut.isNotEmpty;
 
@@ -426,6 +433,8 @@ class AwaySummary {
     charts: _strings(j['charts']),
     bottleItems: _strings(j['bottleItems']),
     chests: _strings(j['chests']),
+    // Entries from before spec 0013 have none.
+    supplyChests: j['supplyChests'] as int? ?? 0,
     mealsEaten: [
       for (final m in j['mealsEaten'] as List<Object?>? ?? const [])
         if (m case [final String key, final int left]) (key, left),
@@ -472,6 +481,7 @@ class AwaySummary {
     'charts': charts,
     'bottleItems': bottleItems,
     'chests': chests,
+    'supplyChests': supplyChests,
     'mealsEaten': [
       for (final (key, left) in mealsEaten) [key, left],
     ],
@@ -511,6 +521,7 @@ class AwaySummary {
       charts: [...charts, ...o.charts],
       bottleItems: [...bottleItems, ...o.bottleItems],
       chests: [...chests, ...o.chests],
+      supplyChests: supplyChests + o.supplyChests,
       mealsEaten: [...mealsEaten, ...o.mealsEaten],
       mealsOut: [...mealsOut, ...o.mealsOut],
       // The place where one route ends and the next starts shows once.

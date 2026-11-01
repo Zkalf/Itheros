@@ -79,7 +79,9 @@ class SyncService {
       final key = dayKey(d);
       final delta = totals[key]! - (credited[key] ?? 0);
       if (delta <= 0) continue;
-      final report = game.applySteps(state, delta);
+      // The day's steps into actions count toward its supply chest (spec
+      // 0013 §2.1).
+      final report = game.applySteps(state, delta, day: key);
       reports.add(report);
       state = report.state;
       credited[key] = totals[key]!;

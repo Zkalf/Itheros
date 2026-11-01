@@ -469,8 +469,14 @@ void main() {
       now = DateTime(2026, 10, 18, 11);
       await c.syncNow();
 
+      // The sync passes each batch's day (spec 0013 §2.1).
+      const day = '2026-10-18';
       final expected = game
-          .applySteps(game.applySteps(before, 700).state, 800)
+          .applySteps(
+            game.applySteps(before, 700, day: day).state,
+            800,
+            day: day,
+          )
           .state;
       expect(
         jsonEncode(c.state.toJson()),
