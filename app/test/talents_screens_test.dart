@@ -36,7 +36,9 @@ void main() {
           t.getTopLeft(find.byKey(ValueKey(k))).dx,
       ];
       expect(x[0] < x[1] && x[1] < x[2], isTrue);
-      expect(find.text('3 points left'), findsOneWidget);
+      // Amendment 6 criterion 127: the points left show in the header only.
+      expect(find.text('3 talent points to spend'), findsOneWidget);
+      expect(find.textContaining('points left'), findsNothing);
       expect(find.text('Combat · 0'), findsOneWidget);
       expect(find.textContaining('Utility · 0'), findsOneWidget);
     });
@@ -62,7 +64,7 @@ void main() {
       expect(within('talent-sheet', find.text('Rank 1 of 5')), findsOneWidget);
       await closeSheet(t);
       expect(within('badge-might', find.text('1/5')), findsOneWidget);
-      expect(find.text('2 points left'), findsOneWidget);
+      expect(find.text('2 talent points to spend'), findsOneWidget);
     });
 
     testWidgets('a talent with no points left says why', (t) async {

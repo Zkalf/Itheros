@@ -156,8 +156,8 @@ class _CharacterTabState extends State<CharacterTab> {
             ),
           ),
         ),
-        // With the cards look, each talent tree is its own plate.
-        if (_pane == CharacterPane.talents && treeLook == TreeLook.cards)
+        // Each talent tree is a plate of its own (spec 0015 amendment 6).
+        if (_pane == CharacterPane.talents)
           TalentsTab(controller: c)
         else
           Card(
@@ -166,7 +166,7 @@ class _CharacterTabState extends State<CharacterTab> {
               child: switch (_pane) {
                 CharacterPane.gear => PaperDoll(controller: c),
                 CharacterPane.bag => BagGrid(controller: c),
-                CharacterPane.talents => TalentsTab(controller: c),
+                CharacterPane.talents => const SizedBox.shrink(),
               },
             ),
           ),

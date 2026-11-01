@@ -24,46 +24,32 @@ class _TalentsTabState extends State<TalentsTab> {
   Widget build(BuildContext context) {
     final c = widget.controller;
     final game = c.game;
-    final s = c.state;
     final data = game.data;
-    final text = Theme.of(context).textTheme;
-    final left = game.talentPointsLeft(s);
-    final heading = game.level(s) < data.talentPointsFrom
-        ? 'Talents open at level ${data.talentPointsFrom}.'
-        : switch (left) {
-            0 => 'No points left',
-            1 => '1 point left',
-            _ => '$left points left',
-          };
     final trees = data.talentTrees.values.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          heading,
-          key: const ValueKey('talents-heading'),
-          style: text.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        // Both trees at once, side by side (amendment 6).
+        // The points left show in the Character header (amendment 6). Before
+        // level 10 the header says nothing of talents, so this line does.
+        if (game.level(c.state) < data.talentPointsFrom)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Talents open at level ${data.talentPointsFrom}.',
+              key: const ValueKey('talents-heading'),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        // Both trees at once, side by side, each a plate of its own
+        // (amendment 6).
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final (i, t) in trees.indexed) ...[
               if (i > 0) const SizedBox(width: 6),
               Expanded(
-                child: treeLook == TreeLook.line && i > 0
-                    // The separator: a line on the left of the tree.
-                    ? DecoratedBox(
-                        decoration: const BoxDecoration(
-                          border: Border(left: BorderSide(color: Quiet.faint)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: _Tree(controller: c, tree: t),
-                        ),
-                      )
-                    : _Tree(controller: c, tree: t),
+                child: _Tree(controller: c, tree: t),
               ),
             ],
           ],
@@ -73,12 +59,7 @@ class _TalentsTabState extends State<TalentsTab> {
   }
 }
 
-/// How the two trees are set apart; a trial (amendment 6).
-enum TreeLook { line, boxes, banners, cards }
-
-var treeLook = TreeLook.cards;
-
-/// One tree with its heading "Combat · 12", in the look of [treeLook].
+/// One tree as a plate: a title bar "Combat · 12" over its grid.
 class _Tree extends StatelessWidget {
   const _Tree({required this.controller, required this.tree});
 
@@ -86,82 +67,32 @@ class _Tree extends StatelessWidget {
   final TalentTreeDef tree;
 
   @override
-  Widget build(BuildContext context) {
-    final game = controller.game;
-    final text = Theme.of(context).textTheme;
-    final heading = Text(
-      '${tree.name} · ${game.ranksIn(controller.state, tree.id)}',
-      key: ValueKey('tree-${tree.id}'),
-      textAlign: TextAlign.center,
-      style: text.labelLarge?.copyWith(color: Quiet.teal),
-    );
-    final grid = TalentGrid(controller: controller, tree: tree.id);
-    return switch (treeLook) {
-      TreeLook.line => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [heading, const SizedBox(height: 12), grid],
-      ),
-      TreeLook.boxes => DecoratedBox(
-        decoration: BoxDecoration(
-          color: Quiet.caseBlack,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Quiet.hairline),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [heading, const SizedBox(height: 12), grid],
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: plateDecoration,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: Quiet.deepTeal,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+          ),
+          child: Text(
+            '${tree.name} · ${controller.game.ranksIn(controller.state, tree.id)}',
+            key: ValueKey('tree-${tree.id}'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelLarge
+                ?.copyWith(color: Quiet.teal),
           ),
         ),
-      ),
-      // Each tree is a plate of its own, with no plate around both.
-      TreeLook.cards => DecoratedBox(
-        decoration: plateDecoration,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                color: Quiet.deepTeal,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-              ),
-              child: heading,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-              child: grid,
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+          child: TalentGrid(controller: controller, tree: tree.id),
         ),
-      ),
-      TreeLook.banners => DecoratedBox(
-        decoration: BoxDecoration(
-          color: Quiet.caseBlack,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Quiet.hairline),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                color: Quiet.deepTeal,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
-              ),
-              child: heading,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-              child: grid,
-            ),
-          ],
-        ),
-      ),
-    };
-  }
+      ],
+    ),
+  );
 }
 
 /// One tree as a grid of 3 columns, row 1 at the top (spec 0015 amendments 3
