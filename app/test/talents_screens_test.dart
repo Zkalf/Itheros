@@ -417,16 +417,18 @@ void main() {
       await t.tap(find.byKey(const ValueKey('trainer')));
       await t.pumpAndSettle();
       expect(
-        within('trainer-sheet', find.text('Forget my talents')),
+        within('trainer-sheet', find.text('Reset my talents')),
         findsOneWidget,
       );
       await t.tap(find.byKey(const ValueKey('reset-talents')));
       await t.pumpAndSettle();
       expect(
-        find.text('Forget every talent? Your points come back to spend again.'),
+        find.text('Reset every talent? Your points come back to spend again.'),
         findsOneWidget,
       );
-      await t.tap(find.text('Forget'));
+      // Amendment 7 criterion 133: no "Forget" anywhere.
+      expect(find.textContaining('Forget'), findsNothing);
+      await t.tap(find.text('Reset'));
       await settle(t, c);
       await t.pumpAndSettle();
       expect(c.state.talents, isEmpty);
@@ -437,7 +439,7 @@ void main() {
       await t.tap(find.byKey(const ValueKey('trainer')));
       await t.pumpAndSettle();
       expect(
-        within('trainer-sheet', find.text('Forget my talents · 2,000 steps')),
+        within('trainer-sheet', find.text('Reset my talents · 2,000 steps')),
         findsOneWidget,
       );
     });
