@@ -1,12 +1,12 @@
 # Spec 0015 amendment 6: both trees side by side, each a card
 
-Status: draft
+Status: accepted
 Amends: [spec 0015](0015-talent-trees.md) §3.1 (the heading and the two tabs) and criterion 49, and
 [amendment 3](0015-talent-trees.amendment-3.md) change 2 (the 56 dp socket) and change 6 (one tree at a time)
 Issue: #153
 Product owner: Zkalf (2026-11-01: "I meant A, but I see your concern about space. I do want to try it out to see how
 it looks and we can revert if the space is a problem." After three looks on the phone: "I like trees as cards now with
-more space. Also drop that line and save some height.")
+more space. Also drop that line and save some height." Accepted on the phone: "accepted".)
 Date: 2026-11-01
 
 ## Why
