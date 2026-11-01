@@ -1,6 +1,6 @@
 // The talent screens and the trainer: spec 0015 criteria 31-32 (on screen),
 // 39-40 (on screen), 48-49 and 52-54 (plan 0031 M2), and the tree of
-// amendment 3, criteria 77-97 (plan 0032).
+// amendment 3, criteria 77-94 (plan 0032), and amendment 4, criteria 105-107.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -226,51 +226,37 @@ void main() {
       );
     });
 
-    testWidgets('criteria 51, 95-96: one "Opens at" line, above row 2', (
+    testWidgets('amendment 4 criteria 105-106: no tree line, no "Opens at"', (
       t,
     ) async {
-      await pumpGame(t, level: 20);
+      final (c, _) = await pumpGame(t, level: 20);
       await openTalents(t);
-      expect(find.textContaining('Opens at'), findsOneWidget);
-      final opens = find.byKey(const ValueKey('opens-at'));
-      expect(
-        find.descendant(
-          of: opens,
-          matching: find.text('Opens at 5 points in Combat'),
-        ),
-        findsOneWidget,
-      );
-      final y = t.getCenter(opens).dy;
-      expect(y, greaterThan(at(t, 'might').dy));
-      expect(y, lessThan(at(t, 'guard').dy));
+      expect(find.text(c.game.data.talentTrees['combat']!.line), findsNothing);
+      expect(find.textContaining('Opens at'), findsNothing);
+      await t.tap(find.byKey(const ValueKey('tree-utility')));
+      await t.pumpAndSettle();
+      expect(find.text(c.game.data.talentTrees['utility']!.line), findsNothing);
+      expect(find.textContaining('Opens at'), findsNothing);
     });
 
-    testWidgets('criterion 95: the number follows the ranks', (t) async {
+    testWidgets('amendment 4 criterion 107: the sheet says the points', (
+      t,
+    ) async {
       await pumpGame(
         t,
         level: 20,
-        prepare: (s) => s.talents.addAll({'might': 5, 'toughness': 2}),
+        prepare: (s) => s.talents.addAll({'might': 3, 'toughness': 1}),
       );
       await openTalents(t);
-      expect(find.text('Opens at 10 points in Combat'), findsOneWidget);
-    });
-
-    testWidgets('criterion 97: all rows open, no "Opens at" line', (t) async {
-      await pumpGame(
-        t,
-        level: 40,
-        prepare: (s) => s.talents.addAll({
-          'might': 5,
-          'toughness': 5,
-          'guard': 3,
-          'keen_eye': 3,
-          'swift_strikes': 5,
-          'precision': 3,
-          'evasion': 1,
-        }),
+      await t.tap(find.byKey(const ValueKey('talent-guard')));
+      await t.pumpAndSettle();
+      expect(
+        within(
+          'talent-sheet',
+          find.text('Opens at 5 points in Combat. You have 4/5.'),
+        ),
+        findsOneWidget,
       );
-      await openTalents(t);
-      expect(find.textContaining('Opens at'), findsNothing);
     });
   });
 

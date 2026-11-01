@@ -45,7 +45,11 @@ void main() {
 
     test('criterion 4: a row 2 talent needs 5 ranks in its tree', () {
       final s = at(20, {'might': 4});
-      expect(game.whyNotRank(s, 'guard'), 'Opens at 5 points in Combat');
+      // Amendment 4 criterion 107: the points in the tree too.
+      expect(
+        game.whyNotRank(s, 'guard'),
+        'Opens at 5 points in Combat. You have 4/5.',
+      );
     });
 
     test('criterion 5: a row 2 talent opens with 5 ranks', () {
@@ -56,7 +60,11 @@ void main() {
     test('criterion 6: Utility ranks open no Combat row', () {
       final s = at(30, {'deep_pockets': 5, 'nimble_hands': 5});
       expect(game.ranksIn(s, 'combat'), 0);
-      expect(game.whyNotRank(s, 'guard'), 'Opens at 5 points in Combat');
+      // Amendment 4 criterion 108: no ranks in Combat.
+      expect(
+        game.whyNotRank(s, 'guard'),
+        'Opens at 5 points in Combat. You have 0/5.',
+      );
       expect(game.whyNotRank(s, 'bountiful'), isNull);
     });
 
