@@ -1,6 +1,6 @@
 # Spec 0015 amendment 2: the numbers that the sim tuned
 
-Status: draft
+Status: accepted
 Amends: [spec 0015](0015-talent-trees.md) §2.3, §2.4, §4 and criteria 14, 18, 26 and 38, and
 [amendment 1](0015-talent-trees.amendment-1.md) change 1, change 3 and criterion 66
 Issue: #55
