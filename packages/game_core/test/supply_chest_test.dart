@@ -2,6 +2,7 @@
 // M1). The screens, the sync and the test walk (criteria 7, 36-51, 54) are
 // in the app's tests.
 import 'package:game_core/game_core.dart';
+import 'package:game_core/simulation.dart';
 import 'package:test/test.dart';
 
 import 'support.dart';
@@ -217,6 +218,26 @@ void main() {
       }
     });
 
+    // "Best spot that the player can work" (spec 0013 §2.4 point 21): a spot
+    // in the fog is not one the player can work.
+    test('criterion 16: the best spot is never one in the fog', () {
+      final s = noCrafting(stateAt(game, level: 20));
+      expect(game.nodeFogged(s, 'mithril_vein'), isTrue);
+      final ores = {
+        for (final c in roll(s, 600))
+          for (final k in commonOf(c).keys)
+            if (data.nodes.values.any(
+              (n) => n.profession == 'mining' && n.item == k,
+            ))
+              k,
+      };
+      expect(ores, isNotEmpty);
+      expect(ores, isNot(contains('mithril_ore')));
+      s.explored.add('mithril_deep');
+      final open = {for (final c in roll(s, 600)) ...commonOf(c).keys};
+      expect(open, contains('mithril_ore'));
+    });
+
     test('criterion 16: a profession gives 5 of its best spot\'s item', () {
       expect(chest.materials, 5);
       final s = noCrafting(stateAt(game, level: 12));
@@ -321,6 +342,8 @@ void main() {
         'chieftains_amulet',
         'dragons_heart',
         'golden_antler_mantle',
+        'tusk_mantle',
+        'lynx_mantle',
         'drowned_captains_ring',
       });
       for (var level = 1; level <= 40; level++) {
@@ -553,6 +576,25 @@ void main() {
         '2026-10-07',
       );
     });
+
+    // A clock once set ahead leaves later day keys behind; they must not
+    // push out the day being walked, or it could pay again.
+    test('later day keys never prune the day being walked', () {
+      var s = mining();
+      for (var d = 1; d <= 14; d++) {
+        s = walk(s, 100, '2027-01-${'$d'.padLeft(2, '0')}');
+      }
+      s = walk(s, 5000, day);
+      expect(s.supplyPaid, contains(day));
+      s = walk(s, 5000, day);
+      expect(s.supplyChests.where((c) => c.day == day), hasLength(1));
+    });
+  });
+
+  test('criterion 56: the pacing walkers earn and open chests', () {
+    final r = simulate(game, stepsPerDay: 5000, days: 3);
+    expect(r.chestDays, 3);
+    expect(r.finalState.supplyChests, hasLength(lessThanOrEqualTo(1)));
   });
 }
 
