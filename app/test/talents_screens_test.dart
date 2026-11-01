@@ -1,6 +1,7 @@
 // The talent screens and the trainer: spec 0015 criteria 31-32 (on screen),
 // 39-40 (on screen), 48-49 and 52-54 (plan 0031 M2), and the tree of
-// amendment 3, criteria 77-94 (plan 0032), and amendment 4, criteria 105-107.
+// amendment 3 (criteria 77-94), amendment 4 (105-106) and amendment 5
+// (111-118), plan 0032.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:game_core/game_core.dart';
 
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/level_up_screen.dart';
+import 'package:walkingrpg/ui/theme.dart';
 
 import 'support.dart';
 import 'ui_test.dart' show closeSheet, openTab, pumpGame, settle;
@@ -238,25 +240,90 @@ void main() {
       expect(find.text(c.game.data.talentTrees['utility']!.line), findsNothing);
       expect(find.textContaining('Opens at'), findsNothing);
     });
+  });
 
-    testWidgets('amendment 4 criterion 107: the sheet says the points', (
-      t,
+  group('the needs on the sheet (amendment 5)', () {
+    /// Opens the sheet of [talent] for a level 40 player with [ranks].
+    Future<void> sheetOf(
+      WidgetTester t,
+      String talent,
+      Map<String, int> ranks,
     ) async {
-      await pumpGame(
-        t,
-        level: 20,
-        prepare: (s) => s.talents.addAll({'might': 3, 'toughness': 1}),
-      );
+      await pumpGame(t, level: 40, prepare: (s) => s.talents.addAll(ranks));
       await openTalents(t);
-      await t.tap(find.byKey(const ValueKey('talent-guard')));
+      await t.ensureVisible(find.byKey(ValueKey('talent-$talent')));
       await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey('talent-$talent')));
+      await t.pumpAndSettle();
+    }
+
+    /// The colour of the need with [key] on the sheet, and checks its words.
+    Color? need(WidgetTester t, String key, String words) {
+      final f = within('talent-sheet', find.byKey(ValueKey(key)));
+      expect(f, findsOneWidget);
+      final text = t.widget<Text>(f);
+      expect(text.data, words);
+      return text.style?.color;
+    }
+
+    // Ranks for a Combat tree at 25 points, Keen eye at [keen].
+    Map<String, int> combat25(int keen) => {
+      'might': 5,
+      'toughness': 5,
+      'guard': 3,
+      'keen_eye': keen,
+      'swift_strikes': 5,
+      'precision': 3,
+      'evasion': 2,
+      if (keen < 3) 'treasure_hunter': 3 - keen,
+    };
+
+    testWidgets('criteria 111, 117: points not met, red, no Learn', (t) async {
+      await sheetOf(t, 'guard', {'might': 4});
       expect(
-        within(
-          'talent-sheet',
-          find.text('Opens at 5 points in Combat. You have 4/5.'),
-        ),
-        findsOneWidget,
+        need(t, 'need-points', 'Needs 5 points in Combat (4/5)'),
+        Quiet.short,
       );
+      expect(find.byKey(const ValueKey('learn-talent')), findsNothing);
+      // The red line says why: no second line.
+      expect(find.textContaining('Opens at'), findsNothing);
+    });
+
+    testWidgets('criteria 112, 118: points met, green, Learn', (t) async {
+      await sheetOf(t, 'guard', {'might': 5, 'toughness': 2});
+      expect(
+        need(t, 'need-points', 'Needs 5 points in Combat (5/5)'),
+        Quiet.met,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsOneWidget);
+    });
+
+    testWidgets('criteria 113, 115: Impale, Keen eye not met, red', (t) async {
+      await sheetOf(t, 'impale', combat25(2));
+      expect(
+        need(t, 'need-points', 'Needs 25 points in Combat (25/25)'),
+        Quiet.met,
+      );
+      expect(
+        need(t, 'need-talent', 'Needs 3 ranks of Keen eye (2/3)'),
+        Quiet.short,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsNothing);
+    });
+
+    testWidgets('criterion 114: Impale, Keen eye met, green', (t) async {
+      await sheetOf(t, 'impale', combat25(3));
+      expect(
+        need(t, 'need-talent', 'Needs 3 ranks of Keen eye (3/3)'),
+        Quiet.met,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsOneWidget);
+    });
+
+    testWidgets('criterion 116: Might lists no needs', (t) async {
+      await sheetOf(t, 'might', {});
+      expect(find.byKey(const ValueKey('need-points')), findsNothing);
+      expect(find.byKey(const ValueKey('need-talent')), findsNothing);
     });
   });
 
