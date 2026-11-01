@@ -463,6 +463,30 @@ class _TalentSheetState extends State<TalentSheet> {
       final next = taken >= t.ranks
           ? null
           : talentEffect(game.data, t, taken + 1);
+      // What the talent needs, met or not (amendment 5).
+      final opensAt = game.rowOpensAt(t.row);
+      final inTree = math.min(game.ranksIn(s, t.tree), opensAt);
+      final need = t.needs == null ? null : game.data.talents[t.needs]!;
+      final needTaken = need == null ? 0 : s.talents[need.id] ?? 0;
+      final needs = [
+        if (opensAt > 0)
+          (
+            key: 'need-points',
+            words:
+                'Needs $opensAt points in '
+                '${game.data.talentTrees[t.tree]!.name} ($inTree/$opensAt)',
+            met: inTree >= opensAt,
+          ),
+        if (need != null)
+          (
+            key: 'need-talent',
+            words:
+                'Needs ${need.ranks} ranks of ${need.name} '
+                '($needTaken/${need.ranks})',
+            met: needTaken >= need.ranks,
+          ),
+      ];
+      final allMet = needs.every((n) => n.met);
       return SafeArea(
         child: SingleChildScrollView(
           key: const ValueKey('talent-sheet'),
@@ -488,8 +512,19 @@ class _TalentSheetState extends State<TalentSheet> {
                   if (next != null) 'Next: $next',
                 ].join(' · '),
               ),
+              for (final n in needs) ...[
+                const SizedBox(height: 4),
+                Text(
+                  n.words,
+                  key: ValueKey(n.key),
+                  style: TextStyle(color: n.met ? Quiet.met : Quiet.short),
+                ),
+              ],
               const SizedBox(height: 12),
-              if (why == null)
+              // A need not met: the red line says why.
+              if (!allMet)
+                const SizedBox.shrink()
+              else if (why == null)
                 FilledButton(
                   key: const ValueKey('learn-talent'),
                   style: slateButton,
