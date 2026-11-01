@@ -1,7 +1,8 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
+
+import 'swipe_back.dart';
 
 /// The colours of spec 0014 §2.1, and the neutrals that the spec uses without
 /// a hex value (plan 0017). The look has no other colour, apart from the
@@ -498,9 +499,10 @@ ThemeData _quietTheme() {
     // A new screen slides in from the side (#136, the owner's choice). The
     // default on Android fades both whole screens: each fade costs an extra
     // layer, and on the Fairphone a frame of 33-50 ms at each screen change.
-    // The slide only moves the screens: no frame missed.
+    // The slide only moves the screens: no frame missed. A swipe to the
+    // right from anywhere goes back (spec 0014 amendment 5).
     pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+      builders: {TargetPlatform.android: SwipeBackPageTransitionsBuilder()},
     ),
     colorScheme: scheme,
     fontFamily: Fonts.body,

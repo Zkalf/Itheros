@@ -8,3 +8,5 @@ Talents, and new tips from the hunter and the fisherman.
   and whisper about the rare ones. Wen has a story about one water you have to find first.
 - **Low XP:** a monster far below your level (grey) now says "Low XP" on its row. It still gives 5% of its XP, and
   at least 1.
+- **Swipe back:** on a screen that slides in, such as a profession, the Journal or Settings, swipe to the right
+  anywhere to go back. Taps and scrolling work as before.
