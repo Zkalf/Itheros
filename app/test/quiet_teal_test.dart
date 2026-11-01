@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:walkingrpg/ui/character_tab.dart';
 import 'package:walkingrpg/game_controller.dart';
 import 'package:walkingrpg/persistence/save_store.dart';
 import 'package:walkingrpg/steps/fake_step_source.dart';
@@ -292,7 +293,7 @@ void criterion2() {
 
       await openTab(t, 'character');
       final segments = find.descendant(
-        of: find.byType(SegmentedButton<bool>),
+        of: find.byType(SegmentedButton<CharacterPane>),
         matching: _buttons,
       );
       for (final (label, selected) in [('Gear', true), ('Bag', false)]) {
@@ -1053,7 +1054,7 @@ void criterion4() {
 
       await pumpGame(t);
       await openTab(t, 'character');
-      expect(find.byType(SegmentedButton<bool>), findsOneWidget);
+      expect(find.byType(SegmentedButton<CharacterPane>), findsOneWidget);
       expectBordersOnScreen(t, 'Character');
     });
 

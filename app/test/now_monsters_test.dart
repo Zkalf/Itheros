@@ -1107,7 +1107,13 @@ void criterion22() {
       for (final n in monsters) {
         expectSocketFirst(t, row(n), MonsterThing(n.id), 48, labels.news(n));
       }
-      final point = row(const LevelNews(NewsKind.talentPoint, ''));
+      // The level-up line of spec 0015 §3.2.
+      final point = find
+          .ancestor(
+            of: find.text(talentPointLine(1)),
+            matching: find.byType(ListTile),
+          )
+          .first;
       expect(inside(point, find.byIcon(Icons.auto_awesome)), findsOneWidget);
       expect(inside(point, find.byType(PictureSocket)), findsNothing);
     });

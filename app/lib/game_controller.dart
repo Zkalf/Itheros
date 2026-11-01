@@ -315,6 +315,12 @@ class GameController extends ChangeNotifier {
   /// Talks to [profession]'s teacher here: every waiting tip is told.
   Future<void> talk(String profession) => _act((s) => game.talk(s, profession));
 
+  /// Takes one rank of [talent] (spec 0015 §2.1): anywhere, no steps.
+  Future<void> takeRank(String talent) => _act((s) => game.takeRank(s, talent));
+
+  /// Resets both talent trees at the trainer (spec 0015 §2.6).
+  Future<void> resetTalents() => _act(game.resetTalents);
+
   /// Wears the tool [key] from the bag; the one worn goes to the bag.
   Future<void> useTool(String key) => _act((s) => game.equipTool(s, key));
 

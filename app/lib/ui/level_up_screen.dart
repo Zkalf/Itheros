@@ -165,12 +165,7 @@ class _LevelCard extends StatelessWidget {
             ListTile(
               dense: true,
               leading: _newsIcon(Icons.auto_awesome),
-              title: Text(
-                points == 1
-                    ? labels.news(const LevelNews(NewsKind.talentPoint, ''))
-                    : '+$points talent points. Talents arrive in a later '
-                          'update; your points wait for you.',
-              ),
+              title: Text(talentPointLine(points)),
             ),
         ],
       ],
@@ -215,3 +210,8 @@ class NewsTile extends StatelessWidget {
 /// The icon of a "What's new" row, in the middle of the place of a socket,
 /// so that the text of each row starts at the same place.
 Widget _newsIcon(IconData icon) => SizedBox(width: 48, child: Icon(icon));
+
+/// The level-up line of [n] new talent points (spec 0015 §3.2).
+String talentPointLine(int n) => n == 1
+    ? '+1 talent point. Spend it on Character → Talents.'
+    : '+$n talent points. Spend them on Character → Talents.';

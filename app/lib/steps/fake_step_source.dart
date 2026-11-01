@@ -16,6 +16,9 @@ class FakeStepSource implements StepSource, StepPermissions {
   /// When set, the next [stepsBetween] call throws.
   bool failNext = false;
 
+  /// When set, [stepsBetween] waits for it: a test holds a sync open.
+  Future<void>? gate;
+
   final _records = <(DateTime, int)>[];
 
   void walk(DateTime at, int steps) => _records.add((at, steps));
@@ -33,6 +36,7 @@ class FakeStepSource implements StepSource, StepPermissions {
 
   @override
   Future<int> stepsBetween(DateTime start, DateTime end) async {
+    if (gate case final g?) await g;
     if (failNext) {
       failNext = false;
       throw StepSourceException('fake failure');
