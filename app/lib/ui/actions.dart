@@ -140,6 +140,15 @@ Widget enemyTile(
             ),
             TextSpan(text: ' · '),
           ],
+          // A grey monster gives little XP: the grey band of `levelBands` in
+          // economy.json (spec 0002 amendment 2).
+          if (band.colour == LevelColour.grey) ...const [
+            TextSpan(
+              text: 'Low XP',
+              style: TextStyle(color: Quiet.lowXp),
+            ),
+            TextSpan(text: ' · '),
+          ],
           TextSpan(
             text:
                 [
