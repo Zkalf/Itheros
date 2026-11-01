@@ -32,10 +32,17 @@ A new rule or system starts as an **intent**: copy `intent/TEMPLATE.md` to the n
 player is missing and why it matters, and open a pull request with it (status `draft`). Once Zkalf accepts it, a
 spec and a plan follow, then the code. Accepted intent, spec and plan files are never edited.
 
-Each kind of file has a template: `intent/TEMPLATE.md`, `specs/TEMPLATE.md`, `specs/AMENDMENT-TEMPLATE.md` and
-`plans/TEMPLATE.md`. They are guides, not forms. Each says what to keep: in an intent the problem and the outcome,
-in a spec or an amendment the acceptance criteria, in a plan the milestones with their proof. Leave out the sections
-that do not fit.
+Each kind of file has a template, and each folder has one for its amendments:
+
+| Folder | New file | Amendment |
+|---|---|---|
+| `intent/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
+| `specs/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
+| `plans/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
+
+They are guides, not forms. Each says what to keep: in an intent the problem and the outcome, in a spec or a spec
+amendment the acceptance criteria, in a plan the milestones with their proof, in any amendment why and what changes.
+Leave out the sections that do not fit.
 
 How a draft becomes accepted in a pull request:
 1. The pull request holds the file with `Status: draft`. The discussion and the review happen on the pull request.
