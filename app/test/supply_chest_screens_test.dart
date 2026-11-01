@@ -179,6 +179,46 @@ void main() {
       expect(c.state.supplyChests, isEmpty);
     });
 
+    testWidgets('Common gear is drawn as on its item card: in the normal '
+        'text colour', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        prepare: chests([
+          {'bone_sword': 1},
+        ]),
+      );
+      await openScreen(t);
+      await t.tap(find.byKey(const ValueKey('supply-open')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      final line = find.text('${Labels(c.game.data).item('bone_sword')} ×1');
+      expect(t.widget<Text>(line).style?.color, isNull);
+    });
+
+    testWidgets('a double tap on Open opens one chest and throws nothing', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(
+        t,
+        prepare: chests([
+          {'iron_ore': 5},
+        ]),
+      );
+      await openScreen(t);
+      // Two presses before the first open is done: on the phone the sync
+      // inside Open leaves time for a second tap.
+      final open = t.widget<FilledButton>(
+        find.byKey(const ValueKey('supply-open')),
+      );
+      open.onPressed!();
+      open.onPressed!();
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(c.state.inventory['iron_ore'], 5);
+      expect(find.text('Supply chest'), findsOneWidget);
+    });
+
     testWidgets('criterion 48: a tap on gear opens its item card', (t) async {
       final (c, _) = await pumpGame(
         t,
