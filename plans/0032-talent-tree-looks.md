@@ -1,6 +1,6 @@
 # Plan 0032: Build "the talents look like a tree" (spec 0015 amendment 3)
 
-Status: draft
+Status: accepted
 Spec: `specs/0015-talent-trees.amendment-3.md` · Product owner: Zkalf · Date: 2026-11-01
 
 Names of files, widgets and tests refer to `main` at `6328bfb`.
