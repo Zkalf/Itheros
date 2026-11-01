@@ -74,6 +74,16 @@ class SalvageResult {
   final String? shard;
 }
 
+/// What an open of supply chests did (spec 0013 §2.6): the new state, how
+/// many chests it opened and what they held together.
+class SupplyOpenResult {
+  const SupplyOpenResult(this.state, this.count, this.items);
+
+  final GameState state;
+  final int count;
+  final Map<String, int> items;
+}
+
 /// What the player knows about a monster (spec 0009 §7.1).
 class Knowledge {
   const Knowledge({

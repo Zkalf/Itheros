@@ -12,4 +12,8 @@ class ControllerScope extends InheritedNotifier<GameController> {
 
   static GameController of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ControllerScope>()!.notifier!;
+
+  /// The controller without a rebuild when it changes: for `initState`.
+  static GameController read(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<ControllerScope>()!.notifier!;
 }

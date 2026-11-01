@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -9,8 +11,20 @@ import 'theme.dart';
 
 /// The supply chest screen (spec 0013 §3.2): today's steps into actions
 /// toward the goal, and the waiting chests with Open and Open all.
-class SupplyChestScreen extends StatelessWidget {
+class SupplyChestScreen extends StatefulWidget {
   const SupplyChestScreen({super.key});
+
+  @override
+  State<SupplyChestScreen> createState() => _SupplyChestScreenState();
+}
+
+class _SupplyChestScreenState extends State<SupplyChestScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Today's steps as of now, not of the last sync (spec 0013 amendment 4).
+    unawaited(ControllerScope.read(context).syncNow());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,20 +111,19 @@ class SupplyChestScreen extends StatelessWidget {
     GameController c, {
     required bool all,
   }) async {
-    final ({int count, Map<String, int> items}) opened;
+    final SupplyOpenResult opened;
     try {
       opened = all ? await c.openAllSupplyChests() : await c.openSupplyChest();
     } on ActivityError {
       // A second tap after the first open took the last chest.
       return;
     }
-    final (:count, :items) = opened;
+    final SupplyOpenResult(:count, :items) = opened;
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _ChestSheet(
-        controller: c,
         title: count == 1 ? 'Supply chest' : '$count supply chests',
         items: items,
         host: context,
@@ -120,16 +133,15 @@ class SupplyChestScreen extends StatelessWidget {
 }
 
 /// What came out of the chests (spec 0013 §3.3): each item with its count,
-/// gear in its quality colour; a tap on gear opens its item card.
+/// gear in its quality colour; a tap on gear opens its item card. Gear that
+/// left the bag since stays, grey, with no tap (spec 0013 amendment 4).
 class _ChestSheet extends StatelessWidget {
   const _ChestSheet({
-    required this.controller,
     required this.title,
     required this.items,
     required this.host,
   });
 
-  final GameController controller;
   final String title;
   final Map<String, int> items;
 
@@ -138,6 +150,8 @@ class _ChestSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Through the scope, so the sheet rebuilds when the bag changes.
+    final controller = ControllerScope.of(context);
     final data = controller.game.data;
     final labels = Labels(data);
     return SafeArea(
@@ -150,7 +164,10 @@ class _ChestSheet extends StatelessWidget {
             child: Text(title, style: Theme.of(context).textTheme.titleLarge),
           ),
           for (final MapEntry(key: key, value: n) in items.entries)
-            if (data.itemOf(key)?.slot != null)
+            if (data.itemOf(key)?.slot != null &&
+                (controller.state.inventory[key] ?? 0) == 0)
+              ListTile(enabled: false, title: Text('${labels.item(key)} ×$n'))
+            else if (data.itemOf(key)?.slot != null)
               ListTile(
                 title: Text(
                   '${labels.item(key)} ×$n',

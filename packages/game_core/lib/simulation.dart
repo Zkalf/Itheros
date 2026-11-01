@@ -561,7 +561,7 @@ class SensiblePlayer {
     if (talentOrder.isNotEmpty) s = _spendTalents(s);
     // The contents are fixed when earned, so opening at once changes
     // nothing (spec 0013 §2.3, plan 0037).
-    if (s.supplyChests.isNotEmpty) s = game.openAllSupplyChests(s);
+    if (s.supplyChests.isNotEmpty) s = game.openAllSupplyChests(s).state;
     s = _settleRolls(s);
     s = _equipBest(s);
     s = _equipTools(s);
