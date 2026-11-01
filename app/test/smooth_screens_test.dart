@@ -1,19 +1,27 @@
 // Smooth screen changes and sheets (#136 step 1): a new screen slides in on
 // Android, and the World map is drawn as one image while a sheet covers it.
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/cupertino.dart' show CupertinoPageTransition;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walkingrpg/ui/swipe_back.dart';
 import 'package:walkingrpg/ui/theme.dart';
 import 'package:walkingrpg/ui/world_tab.dart';
 
-import 'ui_test.dart' show openTab, pumpGame;
+import 'ui_test.dart' show openProfession, openTab, pumpGame;
 
 void main() {
-  test('a new screen slides in on Android, without the default fade', () {
+  testWidgets('a new screen slides in on Android, without the default fade', (
+    t,
+  ) async {
+    // The slide of Flutter's Cupertino builder, with the swipe back of spec
+    // 0014 amendment 5 around it.
     expect(
       quietTheme.pageTransitionsTheme.builders[TargetPlatform.android],
-      isA<CupertinoPageTransitionsBuilder>(),
+      isA<SwipeBackPageTransitionsBuilder>(),
     );
+    await pumpGame(t);
+    await openProfession(t, 'crafting');
+    expect(find.byType(CupertinoPageTransition), findsWidgets);
   });
 
   testWidgets('the World map is one image while an area sheet covers it, and '
