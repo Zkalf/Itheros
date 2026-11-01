@@ -50,27 +50,96 @@ class _TalentsTabState extends State<TalentsTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final (i, t) in trees.indexed) ...[
-              if (i > 0) const SizedBox(width: 12),
+              if (i > 0) const SizedBox(width: 6),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '${t.name} · ${game.ranksIn(s, t.id)}',
-                      key: ValueKey('tree-${t.id}'),
-                      textAlign: TextAlign.center,
-                      style: text.labelLarge?.copyWith(color: Quiet.teal),
-                    ),
-                    const SizedBox(height: 12),
-                    TalentGrid(controller: c, tree: t.id),
-                  ],
-                ),
+                child: treeLook == TreeLook.line && i > 0
+                    // The separator: a line on the left of the tree.
+                    ? DecoratedBox(
+                        decoration: const BoxDecoration(
+                          border: Border(left: BorderSide(color: Quiet.faint)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: _Tree(controller: c, tree: t),
+                        ),
+                      )
+                    : _Tree(controller: c, tree: t),
               ),
             ],
           ],
         ),
       ],
     );
+  }
+}
+
+/// How the two trees are set apart; a trial (amendment 6).
+enum TreeLook { line, boxes, banners }
+
+var treeLook = TreeLook.banners;
+
+/// One tree with its heading "Combat · 12", in the look of [treeLook].
+class _Tree extends StatelessWidget {
+  const _Tree({required this.controller, required this.tree});
+
+  final GameController controller;
+  final TalentTreeDef tree;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = controller.game;
+    final text = Theme.of(context).textTheme;
+    final heading = Text(
+      '${tree.name} · ${game.ranksIn(controller.state, tree.id)}',
+      key: ValueKey('tree-${tree.id}'),
+      textAlign: TextAlign.center,
+      style: text.labelLarge?.copyWith(color: Quiet.teal),
+    );
+    final grid = TalentGrid(controller: controller, tree: tree.id);
+    return switch (treeLook) {
+      TreeLook.line => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [heading, const SizedBox(height: 12), grid],
+      ),
+      TreeLook.boxes => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Quiet.caseBlack,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Quiet.hairline),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(2, 10, 2, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [heading, const SizedBox(height: 12), grid],
+          ),
+        ),
+      ),
+      TreeLook.banners => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Quiet.caseBlack,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Quiet.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: const BoxDecoration(
+                color: Quiet.deepTeal,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+              ),
+              child: heading,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(2, 12, 2, 10),
+              child: grid,
+            ),
+          ],
+        ),
+      ),
+    };
   }
 }
 
@@ -107,10 +176,10 @@ class TalentGrid extends StatelessWidget {
         final cell = box.maxWidth / 3;
         final socket = math.min(TalentGrid.socket, cell - 16);
         final nameStyle = nameStyleOf(context, cell);
-        // Each row is as tall as its longest name, at most 2 lines at the
-        // phone's text size.
+        // Each row is as tall as the longest name of that row in either tree,
+        // at most 2 lines at the phone's text size: the trees line up.
         final names = <int, double>{};
-        for (final t in talents) {
+        for (final t in data.talents.values) {
           final name = TextPainter(
             text: TextSpan(text: t.name, style: nameStyle),
             textScaler: scaler,
