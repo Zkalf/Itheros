@@ -145,10 +145,14 @@ void main() {
   });
 
   group('contents', () {
-    // Level 1, every profession learned at 1: the window holds only the
-    // Rusty dagger, so its quality rolls get no level boost.
-    late final low = roll(stateAt(game), 100000);
-    late final mid = roll(stateAt(game, level: 16), 20000);
+    /// [s] without Crafting: its choice gives several inputs at once, and a
+    /// copper sword's (5 Copper ore) look like Mining's.
+    GameState noCrafting(GameState s) => s..learned.remove('crafting');
+
+    // Level 1, every profession but Crafting learned at 1: the window holds
+    // only the Rusty dagger, so its quality rolls get no level boost.
+    late final low = roll(noCrafting(stateAt(game)), 200000);
+    late final mid = roll(noCrafting(stateAt(game, level: 16)), 20000);
 
     Map<String, int> commonOf(Map<String, int> c) => {
       for (final e in c.entries)
@@ -161,29 +165,61 @@ void main() {
       }
     });
 
-    test('criterion 15: the common roll picks evenly among the learned '
-        'gathering professions and a meal', () {
+    test('criterion 15 (amendment 1 criterion 2): the common roll picks '
+        'evenly among the learned gathering professions, Crafting and a '
+        'meal', () {
+      // Crafting 30 and the rest at 1: its inputs are never 5 of one spot's
+      // item.
+      final s = stateAt(game)
+        ..professions['crafting'] = data.professionXpForLevel(30);
+      const spots = {'copper_ore', 'oak_log', 'lake_scale', 'deer_hide'};
       final picks = <String, int>{};
-      for (final c in low) {
-        final item = commonOf(c).keys.single;
-        final pick = data.itemOf(item)!.meal != null ? 'meal' : item;
+      final chests = roll(s, 60000);
+      for (final c in chests) {
+        final common = commonOf(c);
+        final first = common.keys.first;
+        final pick = data.itemOf(first)!.meal != null
+            ? 'meal'
+            : common.length == 1 && spots.contains(first) && common[first] == 5
+            ? first
+            : 'crafting';
         picks[pick] = (picks[pick] ?? 0) + 1;
       }
-      expect(picks.keys.toSet(), {
-        'copper_ore',
-        'oak_log',
-        'lake_scale',
-        'deer_hide',
-        'meal',
-      });
+      expect(picks.keys.toSet(), {...spots, 'crafting', 'meal'});
       for (final n in picks.values) {
-        expect(n / low.length, closeTo(0.2, 0.01));
+        expect(n / chests.length, closeTo(1 / 6, 0.01));
+      }
+    });
+
+    test('amendment 1 criteria 3 and 4: Crafting gives the inputs of one '
+        'gear recipe at its level, never one of a chase item', () {
+      for (final crafting in [1, 12, 20, 30]) {
+        final s = stateAt(game)
+          ..learned.removeAll(['mining', 'woodcutting', 'fishing', 'hunting'])
+          ..professions['crafting'] = data.professionXpForLevel(crafting);
+        final crafts = game.supplyCrafts(crafting);
+        expect(crafts, isNotEmpty, reason: 'Crafting $crafting');
+        for (final r in crafts) {
+          expect(data.items[r.output]!.slot, isNotNull);
+          expect(r.profession, 'crafting');
+          expect(r.craftingLevel, inInclusiveRange(crafting - 4, crafting));
+          expect(chest.exclude, isNot(contains(r.output)));
+        }
+        final seen = <String>{};
+        for (final c in roll(s, 600)) {
+          final common = commonOf(c);
+          if (data.itemOf(common.keys.first)!.meal != null) continue;
+          final r = crafts.where((r) => _same(r.inputs, common)).toList();
+          expect(r, isNotEmpty, reason: 'Crafting $crafting: $common');
+          seen.add(r.first.id);
+        }
+        expect(seen, isNotEmpty);
       }
     });
 
     test('criterion 16: a profession gives 5 of its best spot\'s item', () {
       expect(chest.materials, 5);
-      final s = stateAt(game, level: 12);
+      final s = noCrafting(stateAt(game, level: 12));
       final seen = <String>{};
       for (final c in roll(s, 500)) {
         final common = commonOf(c);
@@ -210,18 +246,25 @@ void main() {
       }
     });
 
-    test('criterion 18: no gathering profession always gives a meal', () {
+    test('criterion 18 (amendment 1 criterion 5): no gathering profession '
+        'and no Crafting always gives a meal', () {
       final s = game.newGame(seed: 1);
       expect(s.learned, isEmpty);
       for (final c in roll(s, 500)) {
         expect(data.itemOf(commonOf(c).keys.single)!.meal, isNotNull);
       }
+      // Cooking alone is not a choice either.
+      final cook = game.learn(game.newGame(seed: 1), 'cooking');
+      for (final c in roll(cook, 500)) {
+        expect(data.itemOf(commonOf(c).keys.single)!.meal, isNotNull);
+      }
     });
 
-    test('criterion 19: about 1 chest in 5 holds gear', () {
-      expect(chest.gearChance, 0.2);
+    test('criterion 19 (amendment 1 criterion 1): about 1 chest in 10 holds '
+        'gear', () {
+      expect(chest.gearChance, 0.1);
       final n = low.where((c) => gearIn(c).isNotEmpty).length;
-      expect(n / low.length, closeTo(0.2, 0.01));
+      expect(n / low.length, closeTo(0.1, 0.005));
     });
 
     test('criterion 20: about 1 chest in 50 holds a boss shard', () {
@@ -512,3 +555,7 @@ void main() {
     });
   });
 }
+
+/// Whether [a] and [b] hold the same items and counts.
+bool _same(Map<String, int> a, Map<String, int> b) =>
+    a.length == b.length && a.entries.every((e) => b[e.key] == e.value);
