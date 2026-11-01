@@ -127,6 +127,14 @@ void main() {
         t.getCenter(find.byKey(const ValueKey('tree-utility'))).dx,
         greaterThan(t.getCenter(find.byKey(const ValueKey('tree-combat'))).dx),
       );
+      // Amendment 6 criterion 125: no plate around both trees.
+      expect(
+        find.ancestor(
+          of: find.byKey(const ValueKey('talent-grid-combat')),
+          matching: find.byType(Card),
+        ),
+        findsNothing,
+      );
       // Amendment 6 criterion 123: no switch between the trees.
       expect(find.byType(SegmentedButton<String>), findsNothing);
     });

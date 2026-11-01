@@ -8,21 +8,16 @@ import '../game_controller.dart';
 import 'labels.dart' show fmt;
 import 'theme.dart';
 
-/// Character's Talents tab (spec 0015 §3.1 and amendment 3): the points
-/// left, then one tree at a time, as a grid of icons.
-class TalentsTab extends StatefulWidget {
+/// Character's Talents tab (spec 0015 §3.1, amendments 3 and 6): both trees
+/// side by side, each a plate with its grid of icons.
+class TalentsTab extends StatelessWidget {
   const TalentsTab({super.key, required this.controller});
 
   final GameController controller;
 
   @override
-  State<TalentsTab> createState() => _TalentsTabState();
-}
-
-class _TalentsTabState extends State<TalentsTab> {
-  @override
   Widget build(BuildContext context) {
-    final c = widget.controller;
+    final c = controller;
     final game = c.game;
     final data = game.data;
     final trees = data.talentTrees.values.toList();
@@ -268,8 +263,8 @@ class _Lines extends CustomPainter {
 /// The state of a talent's icon (spec 0015 amendment 3, change 3).
 enum NodeState { closed, open, learn, full }
 
-/// One talent on the grid: its image in a 56 dp socket, the ranks badge, and
-/// its name under it. A tap opens the talent sheet.
+/// One talent on the grid: its image in a socket of [socket] dp, the ranks
+/// badge, and its name under it. A tap opens the talent sheet.
 class TalentNode extends StatelessWidget {
   const TalentNode({
     super.key,
