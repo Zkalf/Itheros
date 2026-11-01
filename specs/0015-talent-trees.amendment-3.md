@@ -1,6 +1,6 @@
 # Spec 0015 amendment 3: the talents look like a tree
 
-Status: draft
+Status: accepted
 Amends: [spec 0015](0015-talent-trees.md) §2.8, §3.1, §6 and criteria 13, 50 and 51, and
 [spec 0014](0014-quiet-teal.md) §4.3 (the look of the talents)
 Issue: #153
@@ -114,10 +114,7 @@ These criteria replace criteria 13, 50 and 51 of spec 0015.
 103. Rules, numbers and the save do not change. The pacing test passes.
 104. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
 
-## Open questions for the owner
-- **One tree at a time** (as now, with the Combat and Utility tabs), or both trees side by side? Side by side makes
-  each icon about 36 dp on the phone, too small for the image and the name. This draft keeps one at a time.
-- **Names under the icons:** the trees of both games show icons only. This draft keeps the name, because the icon
-  set has few images and several talents share one (Nimble hands and Practised hands both use `profession`).
-- **The places of change 7:** move any talent you want. The data check only needs each line to run straight down an
-  empty column.
+## Owner decisions (2026-11-01)
+- **One tree at a time**, with the Combat and Utility tabs: "I like the idea of one tree."
+- **The name stays under each icon:** "Go with name under icon, maybe we change that after we get new assets."
+- **The places of change 7** stay as the table shows: "Fine".
