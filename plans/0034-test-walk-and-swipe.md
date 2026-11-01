@@ -1,6 +1,6 @@
 # Plan 0034: Build "bigger test walks" and "swipe right to go back"
 
-Status: draft
+Status: accepted
 Specs: `specs/0004-journal-and-test-walks.amendment-4.md`, `specs/0014-quiet-teal.amendment-5.md` · Product owner:
 Zkalf · Date: 2026-11-01
 
