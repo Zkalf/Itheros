@@ -487,6 +487,10 @@ extension GameProgress on Game {
     if (s.loadedVersion < 8) n = _migrateProfessions(n.copy());
     if (s.loadedVersion < 11) n = _migrateWalks(n.copy());
     if (s.loadedVersion < 12) n = _migrateQualityFound(n.copy());
+    // Saves before version 14 seed the supply stream (spec 0013 §4).
+    if (s.loadedVersion < 14) {
+      n = n.copy()..supplyRng = GameSupply.supplyStream(n.rngState);
+    }
     return _migrateTalents(_freeOffHand(n));
   }
 }

@@ -37,9 +37,13 @@ class SimulationResult {
     this.walkedToLevel2,
     this.finalState, {
     this.rareDrops = 0,
+    this.chestDays = 0,
   });
 
   final List<DayResult> days;
+
+  /// Days that paid a supply chest (spec 0013 §5).
+  final int chestDays;
 
   /// Gear of Rare quality or better that monsters dropped (spec 0015 §5).
   final int rareDrops;
@@ -555,6 +559,9 @@ class SensiblePlayer {
 
   GameState decide(GameState s) {
     if (talentOrder.isNotEmpty) s = _spendTalents(s);
+    // The contents are fixed when earned, so opening at once changes
+    // nothing (spec 0013 §2.3, plan 0037).
+    if (s.supplyChests.isNotEmpty) s = game.openAllSupplyChests(s);
     s = _settleRolls(s);
     s = _equipBest(s);
     s = _equipTools(s);
@@ -615,6 +622,7 @@ class SensiblePlayer {
     if (walker == Walker.fighter) return _bestFight(s);
     if (_rerollGoal(s) case final a?) return a;
     if (_mealGoal(s) case final a?) return a;
+    if (_milestoneGoal(s) case final a?) return a;
     int gain(RecipeDef r) => _gain(s, r.output);
     final level = game.level(s);
     final upgrades = data.recipes.values.where((r) {
@@ -648,6 +656,7 @@ class SensiblePlayer {
         if (_practise(s, n.profession) case final a?) return a;
       }
     }
+    if (_tierGoal(s) case final a?) return a;
     // Tools come when no gear upgrade waits: a pickaxe on day 1 would cost
     // more steps than it saves.
     if (_toolGoal(s) case final a?) return a;
@@ -793,10 +802,14 @@ class SensiblePlayer {
       walker == Walker.gatherer ? const {'steps'} : const {'attack', 'hp'};
 
   /// Meals in the bag, of any kind.
+  /// The meals it holds that it would eat. A supply chest's meals with
+  /// another buff (Crit, Defense, fewer steps) piled up, and the walker
+  /// never cooked again (plan 0037).
   int _mealsHeld(GameState s) {
     var n = 0;
     s.inventory.forEach((key, count) {
-      if (data.itemOf(key)?.meal != null) n += count;
+      final meal = data.itemOf(key)?.meal;
+      if (meal != null && meal.buffs.any(_mealBuffs.contains)) n += count;
     });
     return n;
   }
@@ -935,6 +948,60 @@ class SensiblePlayer {
         (e) => (s.inventory[e.key] ?? 0) < e.value,
       );
       if (_sourceOf(s, missing.key) case final a?) return a;
+    }
+    return null;
+  }
+
+  /// Gathers for a milestone of its stage that counts a gathered item, like
+  /// a player who chases achievements. A supply chest's materials fill a
+  /// recipe without gathering, and the walker skipped those spots (plan
+  /// 0037).
+  Activity? _milestoneGoal(GameState s) {
+    const milestoneLevels = 3;
+    for (final a in data.achievements.values) {
+      // Only in the last levels of its stage, when a player sees what is
+      // left: earlier it slowed the first steps of the game.
+      final end = featFrom[a.stage]!;
+      if (a.kind != AchievementKind.milestone ||
+          s.achievements.contains(a.id) ||
+          game.level(s) >= end ||
+          game.level(s) < end - milestoneLevels) {
+        continue;
+      }
+      if (a.criterion case CounterCriterion(:final counter)
+          when counter.startsWith('gathered.')) {
+        final item = counter.substring('gathered.'.length);
+        final spot = data.nodes.values
+            .where(
+              (n) =>
+                  n.item == item &&
+                  game.nodeLevelMet(s, n.id) &&
+                  !game.nodeFogged(s, n.id),
+            )
+            .firstOrNull;
+        if (spot != null) return Activity.gather(spot.id);
+      }
+    }
+    return null;
+  }
+
+  /// Practise for a learned gathering profession one level short of its
+  /// next tier, once the character's level has reached that tier. Without
+  /// it, a walker whose bag already held the inputs it needed (a supply
+  /// chest's materials) waited weeks at Mining 9 (plan 0037).
+  Activity? _tierGoal(GameState s) {
+    for (final p in data.professions.values) {
+      if (!s.learned.contains(p.id) ||
+          !data.nodes.values.any((n) => n.profession == p.id)) {
+        continue;
+      }
+      final at = game.professionLevel(s, p.id);
+      final short = p.tiers.any(
+        (t) => t.level == at + 1 && t.level <= game.level(s),
+      );
+      if (short) {
+        if (_practise(s, p.id) case final a?) return a;
+      }
     }
     return null;
   }
@@ -1136,6 +1203,7 @@ SimulationResult simulate(
   int mealsFrom = 10,
   String? feat,
   List<String> talentOrder = const [],
+  bool chests = true,
 }) {
   final player = SensiblePlayer(
     game,
@@ -1161,18 +1229,22 @@ SimulationResult simulate(
   }
   final results = <DayResult>[];
   var walked = 0;
+  var chestDays = 0;
   int? toLevel2;
 
   for (var day = 1; day <= days; day++) {
     var left = stepsPerDay;
+    // Each sim day earns its supply chest (spec 0013 §5).
+    final key = chests ? simDay(day) : null;
     while (left > 0) {
       s = player.decide(s);
       final n = math.min(checkEvery, left);
-      final r = game.applySteps(s, n);
+      final r = game.applySteps(s, n, day: key);
       if (toLevel2 == null && r.events.any((e) => e is LevelUp)) {
         toLevel2 = walked + _stepsUntilLevel(game, s, 2);
       }
       player.observe(r);
+      chestDays += r.events.whereType<SupplyChestEarned>().length;
       s = r.state;
       walked += n;
       left -= n;
@@ -1184,7 +1256,20 @@ SimulationResult simulate(
       }, Set.of(s.achievements)),
     );
   }
-  return SimulationResult(results, toLevel2, s, rareDrops: player.rareDrops);
+  return SimulationResult(
+    results,
+    toLevel2,
+    s,
+    rareDrops: player.rareDrops,
+    chestDays: chestDays,
+  );
+}
+
+/// The local day key (`yyyy-mm-dd`) of sim day [day], from 1.
+String simDay(int day) {
+  final d = DateTime.utc(2026).add(Duration(days: day - 1));
+  String two(int n) => '$n'.padLeft(2, '0');
+  return '${d.year}-${two(d.month)}-${two(d.day)}';
 }
 
 int _stepsUntilLevel(Game game, GameState s, int level) {

@@ -137,22 +137,29 @@ extension GameOdds on Game {
 
   /// Picks a quality id for gear of [itemLevel] made or found by a player of
   /// [playerLevel] (spec 0005 §3). Uses one roll of [rng]. A talent's
-  /// [talentBoost] multiplies in (spec 0015 §2.2).
+  /// [talentBoost] multiplies in (spec 0015 §2.2). [highBoost] multiplies
+  /// the chances of rare and better only: the supply chest's (spec 0013
+  /// §2.5).
   String rollQuality(
     Rng rng, {
     required int playerLevel,
     required int itemLevel,
     double talentBoost = 1,
+    double highBoost = 1,
   }) {
     final above = math.min(
       data.qualityMaxLevels,
       math.max(0, playerLevel - itemLevel),
     );
     final boost = (1 + data.qualityPerLevel * above) * talentBoost;
+    // Common and uncommon keep their chances (spec 0013 §2.5).
+    final firstHigh = data.qualities.indexWhere(
+      (q) => q.id == data.supplyChest.qualityBoostFrom,
+    );
     var roll = rng.nextDouble();
-    for (final q in data.qualities.reversed) {
-      if (q == data.qualities.first) break;
-      roll -= q.chance * boost;
+    for (final (i, q) in data.qualities.indexed.toList().reversed) {
+      if (i == 0) break;
+      roll -= q.chance * boost * (i >= firstHigh ? highBoost : 1);
       if (roll < 0) return q.id;
     }
     return data.qualities.first.id;

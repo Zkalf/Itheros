@@ -17,6 +17,7 @@ part 'game/achievements.dart';
 part 'game/queue.dart';
 part 'game/run.dart';
 part 'game/talents.dart';
+part 'game/supply.dart';
 
 /// The game rules. Stateless: every method takes a [GameState] and returns a
 /// new one, leaving its input untouched.
@@ -30,6 +31,7 @@ class Game {
       location: data.startLocation,
       rngState: Rng.seeded(seed).state,
       professionRng: professionStream(seed),
+      supplyRng: GameSupply.supplyStream(seed),
     ),
     data.startLocation,
   );

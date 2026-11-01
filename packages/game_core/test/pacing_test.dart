@@ -152,11 +152,12 @@ void main() {
       runs.values.map((r) => r.dayReached(30));
 
   // Days 16, 50 and 84: seed 1 before spec 0017. The run of seed 1 above is
-  // this run: the same seed, walker and meals.
+  // this run: the same seed, walker and meals. The supply chest moves level
+  // 10 to day 15 (spec 0013 amendment 1).
   test('spec 0017 criterion 31: without feats, seed 1 reaches levels 10, 20 '
-      'and 30 within 5% of days 16, 50 and 84', () {
+      'and 30 within 5% of days 15, 50 and 84', () {
     final seed1 = walker[1]!;
-    for (final (level, day) in [(10, 16), (20, 50), (30, 84)]) {
+    for (final (level, day) in [(10, 15), (20, 50), (30, 84)]) {
       expect(
         seed1.dayReached(level),
         inInclusiveRange(day * .95, day * 1.05),
@@ -170,19 +171,25 @@ void main() {
     expect(median(level30(walker)), inInclusiveRange(80, 100));
   });
 
-  test('spec 0011 Â§9.3 target 5: with meals the median level 30 day is no '
-      'later than without, and at most 5 days sooner', () {
+  // With supply chests meals neither help nor hurt the pace: 32 seeds give
+  // about 0 days, and 8 seeds swing by several (spec 0013 amendment 3).
+  test('spec 0011 target 5 (spec 0013 amendment 3): with meals the median '
+      'level 30 day is at most 5 days later and at most 5 days sooner', () {
     final gain = median(level30(noMeals)) - median(level30(withMeals));
-    expect(gain, inInclusiveRange(0, 5));
+    expect(gain, inInclusiveRange(-5, 5));
   });
 
   // The walkers start Mining at 5 as Miner's children (spec 0012 amendment
-  // 1), so it may reach 10 from day 5.
-  test('spec 0010 amendment 1: Mining and Crafting 10 by day 8-22 (Mining '
-      '5-22), 20 by day 45-65 (medians)', () {
+  // 1), so it may reach 10 from day 5. The supply chest's Crafting materials
+  // move Crafting 10 to day 6 and Crafting 20 to day 40 at the soonest
+  // (spec 0013 amendments 1 and 2).
+  test('spec 0010 amendment 1: Mining and Crafting 10 by day 6-22 (Mining '
+      '5-22), 20 by day 40-65 (Mining 45-65) (medians)', () {
     for (final p in ['mining', 'crafting']) {
       for (final l in [10, 20]) {
-        final range = l == 10 ? (p == 'mining' ? 5 : 8, 22) : (45, 65);
+        final range = l == 10
+            ? (p == 'mining' ? 5 : 6, 22)
+            : (p == 'mining' ? 45 : 40, 65);
         expect(
           median(walker.values.map((r) => r.professionDay(p, l))),
           inInclusiveRange(range.$1, range.$2),

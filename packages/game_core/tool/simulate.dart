@@ -2,6 +2,7 @@
 //
 //   dart run tool/simulate.dart [--steps-per-day 5000] [--days 14]
 //                               [--seed 1] [--check-every 100]
+//                               [--no-chests]
 import 'dart:io';
 
 import 'package:game_core/game_core.dart';
@@ -28,10 +29,12 @@ void main(List<String> args) {
     days: days,
     seed: opt('seed', 1),
     checkEvery: opt('check-every', 100),
+    chests: !args.contains('--no-chests'),
   );
 
   stdout.writeln('Steps per day: $stepsPerDay');
   stdout.writeln('Walked steps to level 2: ${result.walkedToLevel2}');
+  stdout.writeln('Days with a supply chest: ${result.chestDays} of $days');
   stdout.writeln('day  level     xp   bank  gear');
   for (final d in result.days) {
     stdout.writeln(

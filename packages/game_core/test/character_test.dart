@@ -298,8 +298,12 @@ void main() {
         ..remove('character');
       final s = game.migrate(GameState.fromJson(json));
       expect(s.character, isNull);
-      // The quality counter is new in version 12 (spec 0017 §3.2).
-      final kept = s.copy()..counters.remove(Game.foundQualityCounter);
+      // The quality counter is new in version 12 (spec 0017 §3.2); the
+      // supply stream of version 14 comes from the old save's generator
+      // (spec 0013 §4).
+      final kept = s.copy()
+        ..counters.remove(Game.foundQualityCounter)
+        ..supplyRng = old.supplyRng;
       expect(kept.toJson(), old.toJson());
     });
 

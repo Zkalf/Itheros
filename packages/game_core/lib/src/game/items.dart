@@ -235,9 +235,11 @@ extension GameItems on Game {
   }
 
   /// Applies [walked] real steps, one at a time, as spec 0001 §2.2 says.
-  StepReport applySteps(GameState input, int walked) {
+  /// The steps into actions count toward the supply chest of the local
+  /// [day] (`yyyy-mm-dd`); without a day nothing counts (spec 0013 §2.1).
+  StepReport applySteps(GameState input, int walked, {String? day}) {
     if (walked < 0) throw ArgumentError.value(walked, 'walked', 'negative');
-    final run = _Run(this, input.copy());
+    final run = _Run(this, input.copy(), day);
     for (var i = 0; i < walked; i++) {
       run.step();
     }
