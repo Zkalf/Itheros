@@ -119,7 +119,9 @@ class _CharacterTabState extends State<CharacterTab> {
                   Text(
                     '$points talent point${points == 1 ? '' : 's'} to spend',
                     key: const ValueKey('talent-line'),
-                    style: text.bodySmall,
+                    // Teal, so that a player does not miss it (spec 0015
+                    // amendment 6).
+                    style: text.bodyMedium?.copyWith(color: Quiet.teal),
                   ),
                 ],
               ],

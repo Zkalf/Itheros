@@ -39,6 +39,11 @@ void main() {
       // Amendment 6 criterion 127: the points left show in the header only.
       expect(find.text('3 talent points to spend'), findsOneWidget);
       expect(find.textContaining('points left'), findsNothing);
+      // Amendment 6 criterion 128: the line is teal, so it is not missed.
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('talent-line'))).style?.color,
+        Quiet.teal,
+      );
       expect(find.text('Combat · 0'), findsOneWidget);
       expect(find.textContaining('Utility · 0'), findsOneWidget);
     });

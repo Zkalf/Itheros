@@ -25,6 +25,9 @@ Date: 2026-11-01
 4. **No points heading:** the Talents tab no longer shows "3 points left". The Character header says it: "3 talent
    points to spend" (§3.1). Before level 10, the Talents tab still says "Talents open at level 10.", because the
    header says nothing of talents then.
+   The header's line "3 talent points to spend" is teal and in body text, not small text, so that a player does not
+   miss it (the owner: "I feel one could easily miss "1 talent point to spend". Maybe we use a color if you have
+   talent points to spend?"). With no points left, the header shows no line, as before.
 5. **The socket fits the grid:** a socket is 56 dp at most, and 16 dp narrower than its column. The image is 57% of
    the socket. A badge hangs 4 dp past the socket's right edge.
 6. **The names:** in a column narrower than 90 dp, the name is 11 dp, with a line height of 1.2. A name may use 4 dp
@@ -43,7 +46,8 @@ These criteria replace criterion 49 of spec 0015.
 125. No plate stands around both trees.
 126. Before level 10, the Talents tab says "Talents open at level 10."
 127. From level 10, the Talents tab shows no "points left" line, and the Character header shows the points.
+128. The header's line of talent points to spend is teal.
 
 **Check and release**
-128. Rules, numbers and the save do not change. The pacing test passes.
-129. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
+129. Rules, numbers and the save do not change. The pacing test passes.
+130. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
