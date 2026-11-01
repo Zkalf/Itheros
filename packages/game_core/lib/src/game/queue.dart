@@ -534,7 +534,8 @@ extension GameQueue on Game {
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
         if (isFogged(s, to)) continue;
-        final d = dist[at]! + data.route(at, to)!.steps;
+        // What the road costs with the travel talents (spec 0015 §2.4).
+        final d = dist[at]! + travelCost(s, data.route(at, to)!.steps);
         if (d < (dist[to] ?? 1 << 30)) {
           dist[to] = d;
           previous[to] = at;
@@ -577,7 +578,9 @@ extension GameQueue on Game {
   /// cap. Mutates and returns [s].
   GameState _refundProgress(GameState s) {
     final progress = s.activity?.progress ?? 0;
-    s.bank = math.min(bankCap(s), s.bank + progress);
+    // Never below the bank it had: a talent reset can leave it above the
+    // cap (spec 0015 §2.6).
+    s.bank = math.max(s.bank, math.min(bankCap(s), s.bank + progress));
     s.activity?.progress = 0;
     return s;
   }

@@ -565,8 +565,9 @@ void main() {
       expect(now.counters[Game.foundQualityCounter], isNull);
     });
 
-    test('criterion 25 (game_core part): the save version is 12', () {
-      expect(GameState.schemaVersion, 12);
+    test('criterion 25 (game_core part): the save version is 12 or later', () {
+      // 13 since spec 0015 (the talents).
+      expect(GameState.schemaVersion, greaterThanOrEqualTo(12));
     });
   });
 

@@ -87,8 +87,9 @@ Map<String, Object?> monster(
 };
 
 /// A game from the real data with [overrides]. A test world of its own
-/// gets the teachers at its start (spec 0010 §6.1); test monsters of their
-/// own keep only the tips about them (§6.2).
+/// gets the teachers and the trainer at its start (spec 0010 §6.1, spec
+/// 0015 §2.7); test monsters of their own keep only the tips about them
+/// (§6.2).
 Game newTestGame({Map<String, Object> overrides = const {}}) {
   final world = overrides['world'];
   final enemies = overrides['enemies'];
@@ -102,6 +103,14 @@ Game newTestGame({Map<String, Object> overrides = const {}}) {
   return Game(
     loadGameData(
       overrides: {
+        if (world is Map<String, Object?> && !overrides.containsKey('talents'))
+          'talents': {
+            ...dataJson('talents'),
+            'trainer': {
+              ...dataJson('talents')['trainer']! as Map<String, Object?>,
+              'location': world['startLocation'],
+            },
+          },
         ...overrides,
         'professions': {
           'professions': [

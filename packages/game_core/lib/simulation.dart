@@ -32,9 +32,17 @@ class DayResult {
 }
 
 class SimulationResult {
-  SimulationResult(this.days, this.walkedToLevel2, this.finalState);
+  SimulationResult(
+    this.days,
+    this.walkedToLevel2,
+    this.finalState, {
+    this.rareDrops = 0,
+  });
 
   final List<DayResult> days;
+
+  /// Gear of Rare quality or better that monsters dropped (spec 0015 §5).
+  final int rareDrops;
 
   /// Walked steps from a new game until level 2, or null if never reached.
   final int? walkedToLevel2;
@@ -83,7 +91,7 @@ FightEstimate estimateFight(Game game, GameState s, EnemyDef e) {
       hit(me.attack, e.stats.defense) *
       c.typeFactor(game.damageType(s), e.armour) *
       lands(c.hitChance(level - e.level, me.hit + slayerHit), e.stats.dodge) *
-      (1 + crit * (c.critDamage - 1));
+      (1 + crit * (game.critDamage(s) - 1));
   final theirs =
       hit(e.stats.attack, e.has(Trait.ghostly) ? 0 : me.defense) *
       lands(c.hitChance(e.level - level, 0), me.dodge) *
@@ -481,7 +489,15 @@ class SensiblePlayer {
     this.mealBatch = 10,
     this.mealsFrom = 10,
     this.feat,
+    this.talentOrder = const [],
   });
+
+  /// The talents it takes, in order, a rank as soon as it can (spec 0015
+  /// §5). Empty: it spends no points, as before talents.
+  final List<String> talentOrder;
+
+  /// Gear of Rare quality or better that monsters dropped so far.
+  var rareDrops = 0;
 
   final Game game;
   final Walker walker;
@@ -512,12 +528,33 @@ class SensiblePlayer {
   GameData get data => game.data;
 
   void observe(StepReport r) {
+    final rare = data.qualities.indexWhere((q) => q.id == 'rare');
     for (final e in r.events) {
       if (e is FightLost) _lostAtLevel[e.enemy] = game.level(r.state);
+      if (e is FightWon) {
+        for (final MapEntry(:key, :value) in e.drops.entries) {
+          if (data.itemOf(key)?.slot == null) continue;
+          if (data.qualities.indexOf(data.qualityOf(key)) >= rare) {
+            rareDrops += value;
+          }
+        }
+      }
     }
   }
 
+  /// Takes ranks in [talentOrder] while points are left.
+  GameState _spendTalents(GameState s) {
+    for (final id in talentOrder) {
+      while (game.whyNotRank(s, id) == null) {
+        s = game.takeRank(s, id);
+      }
+      if (game.talentPointsLeft(s) == 0) break;
+    }
+    return s;
+  }
+
   GameState decide(GameState s) {
+    if (talentOrder.isNotEmpty) s = _spendTalents(s);
     s = _settleRolls(s);
     s = _equipBest(s);
     s = _equipTools(s);
@@ -540,6 +577,11 @@ class SensiblePlayer {
   }
 
   int _have(GameState s, String item) => game.owned(s, item);
+
+  /// The steps a fight of [rounds] costs: Swift strikes gives part back
+  /// (spec 0015 §2.3).
+  int _fightSteps(GameState s, int rounds) =>
+      rounds * data.combatRoundSteps - game.fightStepsBack(s, rounds);
 
   /// Gear rank with quality (spec 0005 criterion 7).
   int _score(String? key) => key == null ? 0 : data.scoreOf(key);
@@ -969,10 +1011,7 @@ class SensiblePlayer {
           .where((d) => d.item == item)
           .fold(0.0, (sum, d) => sum + d.chance * d.count);
       if (per == 0 || !_canFight(s, e)) continue;
-      best = math.min(
-        best,
-        _armed(s, e).$3.rounds * data.combatRoundSteps / per,
-      );
+      best = math.min(best, _fightSteps(s, _armed(s, e).$3.rounds) / per);
     }
     return best;
   }
@@ -996,7 +1035,7 @@ class SensiblePlayer {
           .fold(0.0, (sum, d) => sum + d.chance * d.count);
       if (per == 0 || !_canFight(s, e)) continue;
       final rounds = _armed(s, e).$3.rounds;
-      final rate = per / (rounds * data.combatRoundSteps);
+      final rate = per / _fightSteps(s, rounds);
       if (rate > bestRate) (best, bestRate) = (Activity.fight(e.id), rate);
     }
     return best;
@@ -1009,7 +1048,7 @@ class SensiblePlayer {
       if (!_canFight(s, e)) continue;
       final f = _armed(s, e).$3;
       final xp = e.xp * game.enemyBand(s, e.id).xpPercent / 100;
-      final rate = math.max(1, xp) / (f.rounds * data.combatRoundSteps);
+      final rate = math.max(1, xp) / _fightSteps(s, f.rounds);
       if (rate > bestRate) (best, bestRate) = (e, rate);
     }
     return Activity.fight((best ?? data.enemies.values.first).id);
@@ -1096,6 +1135,7 @@ SimulationResult simulate(
   int mealBatch = 10,
   int mealsFrom = 10,
   String? feat,
+  List<String> talentOrder = const [],
 }) {
   final player = SensiblePlayer(
     game,
@@ -1104,6 +1144,7 @@ SimulationResult simulate(
     mealBatch: mealBatch,
     mealsFrom: mealsFrom,
     feat: feat,
+    talentOrder: talentOrder,
   );
   // Every walker is a Miner's child (spec 0012 §5.2).
   var s = game.makeCharacter(
@@ -1143,7 +1184,7 @@ SimulationResult simulate(
       }, Set.of(s.achievements)),
     );
   }
-  return SimulationResult(results, toLevel2, s);
+  return SimulationResult(results, toLevel2, s, rareDrops: player.rareDrops);
 }
 
 int _stepsUntilLevel(Game game, GameState s, int level) {

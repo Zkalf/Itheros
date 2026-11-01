@@ -400,8 +400,9 @@ void main() {
       final s = fightThenMine();
       final t = game.migrate(GameState.fromJson(s.toJson()));
       expect(planned(t), planned(s));
-      // Version 12 (spec 0017) keeps the format of 11.
-      expect(GameState.schemaVersion, 12);
+      // Version 12 (spec 0017) keeps the format of 11; 13 (spec 0015)
+      // adds the talents.
+      expect(GameState.schemaVersion, 13);
     });
   });
 }

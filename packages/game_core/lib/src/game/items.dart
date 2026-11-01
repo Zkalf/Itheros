@@ -198,9 +198,12 @@ extension GameItems on Game {
 
   /// How many actions the queue holds, the running one and walks included
   /// (spec 0016 §2).
-  /// Chieftain's Bane adds one (spec 0017 §3.4).
+  /// Chieftain's Bane adds one (spec 0017 §3.4), and so does Quartermaster
+  /// (spec 0015 §2.4).
   int queueSlots(GameState s) =>
-      data.queueSlots + _rewards(s).whereType<QueueSlotReward>().length;
+      data.queueSlots +
+      _rewards(s).whereType<QueueSlotReward>().length +
+      talentSum(s, TalentEffect.queueSlot).round();
 
   /// The change in stats from wearing [item] in [slot] instead of what it
   /// takes off.

@@ -7,6 +7,7 @@ part 'data/enemies.dart';
 part 'data/items.dart';
 part 'data/professions.dart';
 part 'data/achievements.dart';
+part 'data/talents.dart';
 
 /// All tunable game content, loaded from `data/*.json`.
 class GameData {
@@ -18,6 +19,7 @@ class GameData {
     required Map<String, Object?> achievements,
     required Map<String, Object?> professions,
     required Map<String, Object?> origins,
+    required Map<String, Object?> talents,
   }) : bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
        bankCapPerLevel = _int(_map(economy, 'bankCap'), 'perLevel'),
        combatRoundSteps = _int(economy, 'combatRoundSteps'),
@@ -126,8 +128,17 @@ class GameData {
          _maps(professions, 'professions').map(ProfessionDef._),
          (d) => d.id,
        ),
-       origins = _byId(
-         _maps(origins, 'origins').map(OriginDef._),
+       origins = _byId(_maps(origins, 'origins').map(OriginDef._), (d) => d.id),
+       talentRowEvery = _int(talents, 'rowEvery'),
+       talentTreeAtLeast = _int(talents, 'treeAtLeast'),
+       trainer = TrainerDef._(_map(talents, 'trainer')),
+       talentReset = ResetRules._(_map(talents, 'reset')),
+       talentTrees = _byId(
+         _maps(talents, 'trees').map(TalentTreeDef._),
+         (d) => d.id,
+       ),
+       talents = _byId(
+         _maps(talents, 'talents').map(TalentDef._),
          (d) => d.id,
        ) {
     _validate();
@@ -158,8 +169,21 @@ class GameData {
       achievements: file('achievements'),
       professions: file('professions'),
       origins: file('origins'),
+      talents: file('talents'),
     );
   }
+
+  /// Each this many ranks in a tree open its next row (spec 0015 §2.1).
+  final int talentRowEvery;
+
+  /// The fewest points a tree holds: the points at the soft cap.
+  final int talentTreeAtLeast;
+  final TrainerDef trainer;
+  final ResetRules talentReset;
+  final Map<String, TalentTreeDef> talentTrees;
+
+  /// In data order: by tree, then row.
+  final Map<String, TalentDef> talents;
 
   final int bankCapBase;
   final int bankCapPerLevel;
@@ -565,6 +589,44 @@ class GameData {
       .where((r) => r.from == from || r.to == from)
       .map((r) => r.from == from ? r.to : r.from);
 
+  /// The data checks of spec 0015 §2.8.
+  void _validateTalents(void Function(bool, String) check) {
+    for (final t in talents.values) {
+      check(t.effect != null, 'talent ${t.id}: unknown effect ${t.effectName}');
+      check(talentTrees.containsKey(t.tree), 'talent ${t.id}: unknown tree');
+      check(t.row >= 1 && t.row <= 6, 'talent ${t.id}: row must be 1-6');
+      check(t.ranks >= 1, 'talent ${t.id}: at least 1 rank');
+      if (t.needs case final n?) {
+        final need = talents[n];
+        check(need != null, 'talent ${t.id}: needs an unknown talent');
+        check(need!.tree == t.tree, 'talent ${t.id}: needs another tree');
+        check(need.row < t.row, 'talent ${t.id}: needs a lower row');
+      }
+    }
+    for (final tree in talentTrees.keys) {
+      final points = talents.values
+          .where((t) => t.tree == tree)
+          .fold(0, (n, t) => n + t.ranks);
+      check(
+        points >= talentTreeAtLeast,
+        'talents: $tree holds $points points, fewer than $talentTreeAtLeast',
+      );
+    }
+    check(
+      locations.containsKey(trainer.location),
+      'talents: the trainer is in an unknown location',
+    );
+    final r = talentReset;
+    check(
+      talentRowEvery > 0 &&
+          r.base > 0 &&
+          r.step > 0 &&
+          r.cooldownSteps > 0 &&
+          r.cap >= r.base,
+      'talents: reset numbers must be positive, the cap at least the base',
+    );
+  }
+
   void _validate() {
     void check(bool ok, String message) {
       if (!ok) throw FormatException('Invalid game data: $message');
@@ -886,6 +948,7 @@ class GameData {
       }
     }
     check(rerollSteps > 0 && rerollDust > 0, 'reroll: steps and dust > 0');
+    _validateTalents(check);
     for (final row in combat.typeFactors.values) {
       check(
         row.keys.toSet().containsAll(combat.damageTypes),
