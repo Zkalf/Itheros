@@ -240,7 +240,10 @@ void main() {
 
     test('criterion 16: a profession gives 5 of its best spot\'s item', () {
       expect(chest.materials, 5);
-      final s = noCrafting(stateAt(game, level: 12));
+      // The level 10 spots, out of the fog (point 21: spots the player can
+      // work).
+      final s = noCrafting(stateAt(game, level: 12))
+        ..explored.addAll(['iron_ridge', 'grey_moor', 'troll_bridge']);
       final seen = <String>{};
       for (final c in roll(s, 500)) {
         final common = commonOf(c);
