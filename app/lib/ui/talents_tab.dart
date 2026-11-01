@@ -108,7 +108,7 @@ class _Tree extends StatelessWidget {
           border: Border.all(color: Quiet.hairline),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(2, 10, 2, 10),
+          padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [heading, const SizedBox(height: 12), grid],
@@ -133,7 +133,7 @@ class _Tree extends StatelessWidget {
               child: heading,
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(2, 12, 2, 10),
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
               child: grid,
             ),
           ],
@@ -175,17 +175,35 @@ class TalentGrid extends StatelessWidget {
       builder: (context, box) {
         final cell = box.maxWidth / 3;
         final socket = math.min(TalentGrid.socket, cell - 16);
-        final nameStyle = nameStyleOf(context, cell);
+        final base = nameStyleOf(context, cell);
+        // A name whose longest word does not fit is smaller, so that no word
+        // breaks ("Quartermaster").
+        final styles = <String, TextStyle>{};
+        for (final t in data.talents.values) {
+          var widest = 0.0;
+          for (final word in t.name.split(' ')) {
+            final w = TextPainter(
+              text: TextSpan(text: word, style: base),
+              textScaler: scaler,
+              textDirection: TextDirection.ltr,
+            )..layout();
+            widest = math.max(widest, w.width);
+            w.dispose();
+          }
+          styles[t.id] = widest <= cell + 4
+              ? base
+              : base.copyWith(fontSize: base.fontSize! * (cell + 4) / widest);
+        }
         // Each row is as tall as the longest name of that row in either tree,
         // at most 2 lines at the phone's text size: the trees line up.
         final names = <int, double>{};
         for (final t in data.talents.values) {
           final name = TextPainter(
-            text: TextSpan(text: t.name, style: nameStyle),
+            text: TextSpan(text: t.name, style: styles[t.id]),
             textScaler: scaler,
             textDirection: TextDirection.ltr,
             maxLines: 2,
-          )..layout(maxWidth: cell + 8);
+          )..layout(maxWidth: cell + 4);
           names[t.row] = math.max(names[t.row] ?? 0, name.height);
           name.dispose();
         }
@@ -244,14 +262,14 @@ class TalentGrid extends StatelessWidget {
                 ),
               for (final t in talents)
                 Positioned(
-                  left: (t.column - 1) * cell - 4,
+                  left: (t.column - 1) * cell - 2,
                   top: top(t.row),
-                  width: cell + 8,
+                  width: cell + 4,
                   child: TalentNode(
                     controller: c,
                     talent: t,
                     socket: socket,
-                    nameStyle: nameStyle,
+                    nameStyle: styles[t.id]!,
                   ),
                 ),
             ],
@@ -267,7 +285,7 @@ TextStyle nameStyleOf(BuildContext context, double cell) {
   final small = Theme.of(context).textTheme.bodySmall!;
   return small.copyWith(
     color: Quiet.muted,
-    fontSize: cell < 90 ? 11.5 : small.fontSize,
+    fontSize: cell < 90 ? 11 : small.fontSize,
     height: 1.2,
   );
 }
@@ -367,7 +385,7 @@ class TalentNode extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  right: -14,
+                  right: -4,
                   bottom: -8,
                   child: _RankBadge(
                     key: ValueKey('badge-${t.id}'),
