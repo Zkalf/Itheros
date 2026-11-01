@@ -362,17 +362,21 @@ class _ActionSheetState extends State<ActionSheet> {
                   spacing: 16,
                   runSpacing: 8,
                   children: [
-                    FilledButton.icon(
-                      key: const ValueKey('start-now'),
-                      onPressed: () => Navigator.pop(context, (_stop, true)),
-                      icon: const Icon(Icons.play_arrow),
-                      // Start now clears the queue (spec 0016 §5).
-                      label: Text(switch (s) {
-                        GameState(activity: null) => 'Start',
-                        GameState(queue: []) => 'Start now',
-                        _ => 'Start now, clear queue',
-                      }),
-                    ),
+                    // A walk back to where the character stands only fits
+                    // in the queue (#162).
+                    if (!(a.kind == ActivityKind.travel &&
+                        a.target == s.location))
+                      FilledButton.icon(
+                        key: const ValueKey('start-now'),
+                        onPressed: () => Navigator.pop(context, (_stop, true)),
+                        icon: const Icon(Icons.play_arrow),
+                        // Start now clears the queue (spec 0016 §5).
+                        label: Text(switch (s) {
+                          GameState(activity: null) => 'Start',
+                          GameState(queue: []) => 'Start now',
+                          _ => 'Start now, clear queue',
+                        }),
+                      ),
                     if (room)
                       FilledButton.icon(
                         key: const ValueKey('add-to-queue'),
