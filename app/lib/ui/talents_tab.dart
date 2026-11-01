@@ -74,9 +74,9 @@ class _TalentsTabState extends State<TalentsTab> {
 }
 
 /// How the two trees are set apart; a trial (amendment 6).
-enum TreeLook { line, boxes, banners }
+enum TreeLook { line, boxes, banners, cards }
 
-var treeLook = TreeLook.banners;
+var treeLook = TreeLook.cards;
 
 /// One tree with its heading "Combat · 12", in the look of [treeLook].
 class _Tree extends StatelessWidget {
@@ -113,6 +113,27 @@ class _Tree extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [heading, const SizedBox(height: 12), grid],
           ),
+        ),
+      ),
+      // Each tree is a plate of its own, with no plate around both.
+      TreeLook.cards => DecoratedBox(
+        decoration: plateDecoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: const BoxDecoration(
+                color: Quiet.deepTeal,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+              ),
+              child: heading,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+              child: grid,
+            ),
+          ],
         ),
       ),
       TreeLook.banners => DecoratedBox(

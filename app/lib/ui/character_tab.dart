@@ -156,16 +156,20 @@ class _CharacterTabState extends State<CharacterTab> {
             ),
           ),
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: switch (_pane) {
-              CharacterPane.gear => PaperDoll(controller: c),
-              CharacterPane.bag => BagGrid(controller: c),
-              CharacterPane.talents => TalentsTab(controller: c),
-            },
+        // With the cards look, each talent tree is its own plate.
+        if (_pane == CharacterPane.talents && treeLook == TreeLook.cards)
+          TalentsTab(controller: c)
+        else
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: switch (_pane) {
+                CharacterPane.gear => PaperDoll(controller: c),
+                CharacterPane.bag => BagGrid(controller: c),
+                CharacterPane.talents => TalentsTab(controller: c),
+              },
+            ),
           ),
-        ),
       ],
     );
   }
