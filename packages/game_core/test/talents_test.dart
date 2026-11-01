@@ -648,5 +648,64 @@ void main() {
       expect(data.talents['lucky_hammer']!.needs, 'master_crafter');
       expect(data.talents['wayfarer']!.needs, 'light_pack');
     });
+
+    /// Sets the column of talent [id] in [json].
+    void column(Map<String, Object?> json, String id, int column) =>
+        talentsOf(json).firstWhere((t) => t['id'] == id)['column'] = column;
+
+    test('criterion 98: each talent has a column from 1 to 3', () {
+      for (final t in data.talents.values) {
+        expect(t.column, inInclusiveRange(1, 3), reason: t.id);
+      }
+      // The places of amendment 3, change 7.
+      final places = {
+        for (final t in data.talents.values) t.id: (t.row, t.column),
+      };
+      expect(places, {
+        'might': (1, 1),
+        'toughness': (1, 3),
+        'guard': (2, 1),
+        'keen_eye': (2, 3),
+        'swift_strikes': (3, 2),
+        'precision': (4, 1),
+        'evasion': (4, 2),
+        'treasure_hunter': (5, 2),
+        'impale': (6, 3),
+        'deep_pockets': (1, 1),
+        'nimble_hands': (1, 3),
+        'practised_hands': (2, 1),
+        'bountiful': (2, 2),
+        'wary': (2, 3),
+        'master_crafter': (3, 1),
+        'quartermaster': (3, 3),
+        'light_pack': (4, 3),
+        'lucky_hammer': (5, 1),
+        'wayfarer': (6, 3),
+      });
+    });
+
+    test('criterion 99: a talent in column 4 is refused', () {
+      refused((j) => column(j, 'might', 4));
+    });
+
+    test('a talent with no column is refused', () {
+      refused(
+        (j) =>
+            talentsOf(j).firstWhere((t) => t['id'] == 'might').remove('column'),
+      );
+    });
+
+    test('criterion 100: two talents at one place are refused', () {
+      refused((j) => column(j, 'toughness', 1));
+    });
+
+    test('criterion 101: a needed talent in another column is refused', () {
+      refused((j) => column(j, 'impale', 1));
+    });
+
+    test('criterion 102: a talent on the line between two is refused', () {
+      // Precision in row 4 of column 3, between Keen eye and Impale.
+      refused((j) => column(j, 'precision', 3));
+    });
   });
 }
