@@ -162,8 +162,8 @@ class _Discoveries extends StatelessWidget {
   }
 }
 
-/// Pretend steps for testing at home (spec 0004 §3). Shown while the
-/// hidden switch on the Character tab is on.
+/// Pretend steps for testing at home (spec 0004 §3, amendment 4). Shown
+/// while the hidden switch on the Character tab is on.
 class _TestWalkCard extends StatelessWidget {
   const _TestWalkCard({required this.controller});
 
@@ -183,8 +183,9 @@ class _TestWalkCard extends StatelessWidget {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
-              for (final n in const [100, 1000, 5000])
+              for (final n in const [100, 1000, 5000, 25000, 100000])
                 FilledButton.tonal(
                   style: slateButton,
                   onPressed: () => controller.testWalk(n),
