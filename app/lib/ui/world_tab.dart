@@ -1103,6 +1103,10 @@ class _AreaSheet extends StatelessWidget {
     }
 
     final steps = game.openLocationsByDistance(s)[area];
+    // A walk is planned from where the queue ends, so it can lead back here
+    // (spec 0016 §3.1, §3.2; #162).
+    final end = game.queuePlaces(s).last;
+    final walk = area == end ? null : game.walkSteps(s, end, area);
     final enemies = game.enemiesAt(s, area);
     final nodes = game.nodesAt(s, area);
     return SafeArea(
@@ -1145,14 +1149,14 @@ class _AreaSheet extends StatelessWidget {
                 leading: Icon(Icons.local_fire_department),
                 title: Text('A forge: crafting happens here'),
               ),
-            if (steps != null && steps > 0)
+            if (walk != null)
               ActionTile(
                 controller: c,
                 activity: Activity.travel(area),
                 leading: const Icon(Icons.signpost),
                 title: 'Walk here',
                 titleIsName: false,
-                subtitle: Text('${fmt(steps)} steps'),
+                subtitle: Text('${fmt(walk)} steps'),
                 startFrom: host,
               ),
           ],

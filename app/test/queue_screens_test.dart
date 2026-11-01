@@ -81,6 +81,34 @@ void main() {
       expect(find.text('Travel here'), findsNothing);
     });
 
+    // Spec 0016 §3.1, §3.2: a walk is planned from the end place, and only
+    // a walk to the end place is refused (#162).
+    testWidgets('the World map plans a walk back from where the queue '
+        'ends', (t) async {
+      final (c, _) = await pumpGame(t, location: 'goblin_woods');
+      await c.addAction(goblins, stop: someHides);
+      await c.addAction(mining, stop: someOre);
+      await settle(t, c);
+      // The queue ends at Copper Hills: no walk there.
+      await openArea(t, 'copper_hills');
+      expect(find.text('Walk here'), findsNothing);
+      await closeSheet(t);
+      // Back to where the character stands, from Copper Hills.
+      await openArea(t, 'goblin_woods');
+      expect(find.text('Walk here'), findsOneWidget);
+      expect(find.text('300 steps'), findsOneWidget);
+      await t.tap(option('travel', 'goblin_woods'));
+      await t.pumpAndSettle();
+      // Start now can't walk to where the character stands.
+      expect(find.byKey(const ValueKey('start-now')), findsNothing);
+      await t.tap(find.byKey(const ValueKey('add-to-queue')));
+      await settle(t, c);
+      expect(
+        c.state.queue.last.activity,
+        const Activity.travel('goblin_woods'),
+      );
+    });
+
     testWidgets('the remove button of a needed walk says why it stays', (
       t,
     ) async {
@@ -158,18 +186,15 @@ void main() {
       expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
     });
 
-    testWidgets('a walk to where the queue ends shows why it is refused', (
-      t,
-    ) async {
+    // Criterion 9 refuses the walk; the owner chose to hide it instead of
+    // explaining it (#162).
+    testWidgets('a walk to where the queue ends is not offered', (t) async {
       final (c, _) = await pumpGame(t, location: 'goblin_woods');
       await c.addAction(goblins, stop: someHides);
       await c.addAction(const Activity.travel('camp'));
       await settle(t, c);
       await openArea(t, 'camp');
-      await t.tap(option('travel', 'camp'));
-      await t.pumpAndSettle();
-      expect(find.text('The queue already ends at Camp.'), findsOneWidget);
-      expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
+      expect(option('travel', 'camp'), findsNothing);
     });
 
     testWidgets('with no room for the walk, it shows the refusal', (t) async {
