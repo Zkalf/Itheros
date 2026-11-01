@@ -5,7 +5,7 @@
     "name": "Ysolde", "title": "the Guild trainer", "location": "camp",
     "greeting": "Steps make the body, {name}. Talents make the fighter.",
     "early": "Come back when the Guild names you Adventurer.",
-    "confirm": "Forget every talent? Your points come back to spend again.",
+    "confirm": "Reset every talent? Your points come back to spend again.",
     "done": "There. Walk a new road."
   },
   "reset": { "base": 2000, "step": 2000, "cap": 10000, "cooldownSteps": 35000 },

@@ -49,7 +49,7 @@ class _TrainerSheetState extends State<TrainerSheet> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Forget'),
+            child: const Text('Reset'),
           ),
         ],
       ),
@@ -78,7 +78,7 @@ class _TrainerSheetState extends State<TrainerSheet> {
       final left = game.talentPointsLeft(s);
       final price = game.resetPriceNow(s);
       final ranks = s.talents.values.any((r) => r > 0);
-      // Too few steps: the price shows up front, not after Forget.
+      // Too few steps: the price shows up front, not after Reset.
       final short = s.bank < price;
       return SafeArea(
         child: SingleChildScrollView(
@@ -116,8 +116,8 @@ class _TrainerSheetState extends State<TrainerSheet> {
                     onPressed: () => _reset(trainer),
                     child: Text(
                       price == 0
-                          ? 'Forget my talents'
-                          : 'Forget my talents · ${fmt(price)} steps',
+                          ? 'Reset my talents'
+                          : 'Reset my talents · ${fmt(price)} steps',
                     ),
                   ),
                 ],
