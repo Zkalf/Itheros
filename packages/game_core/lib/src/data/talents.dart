@@ -35,13 +35,16 @@ class TalentTreeDef {
   final String line;
 }
 
-/// A talent of [tree] in [row], with [ranks] of [value] each (spec 0015
-/// §2.8). [needs] names a talent that must have all its ranks first.
+/// A talent of [tree] in [row] and [column], with [ranks] of [value] each
+/// (spec 0015 §2.8, amendment 3). [needs] names a talent that must have all
+/// its ranks first.
 class TalentDef {
   TalentDef._(Map<String, Object?> j)
     : id = _str(j, 'id'),
       tree = _str(j, 'tree'),
       row = _int(j, 'row'),
+      // No column reads as 0, which the data check refuses.
+      column = (j['column'] as num?)?.toInt() ?? 0,
       ranks = _int(j, 'ranks'),
       name = _str(j, 'name'),
       line = _str(j, 'line'),
@@ -56,6 +59,9 @@ class TalentDef {
   final String id;
   final String tree;
   final int row;
+
+  /// Its place in the row on the Talents tab, 1-3.
+  final int column;
   final int ranks;
   final String name;
   final String line;

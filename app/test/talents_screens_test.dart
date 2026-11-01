@@ -1,5 +1,7 @@
-// The talent screens and the trainer: spec 0015 criteria 13, 31-32 (on
-// screen), 39-40 (on screen) and 48-54 (plan 0031 M2).
+// The talent screens and the trainer: spec 0015 criteria 31-32 (on screen),
+// 39-40 (on screen), 48-49 and 52-54 (plan 0031 M2), and the tree of
+// amendment 3 (criteria 77-94), amendment 4 (105-106) and amendment 5
+// (111-118), plan 0032.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:game_core/game_core.dart';
 
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/level_up_screen.dart';
+import 'package:walkingrpg/ui/theme.dart';
 
 import 'support.dart';
 import 'ui_test.dart' show closeSheet, openTab, pumpGame, settle;
@@ -33,8 +36,15 @@ void main() {
           t.getTopLeft(find.byKey(ValueKey(k))).dx,
       ];
       expect(x[0] < x[1] && x[1] < x[2], isTrue);
-      expect(find.text('3 points left'), findsOneWidget);
-      expect(find.textContaining('Combat · 0'), findsOneWidget);
+      // Amendment 6 criterion 127: the points left show in the header only.
+      expect(find.text('3 talent points to spend'), findsOneWidget);
+      expect(find.textContaining('points left'), findsNothing);
+      // Amendment 6 criterion 128: the line is teal, so it is not missed.
+      expect(
+        t.widget<Text>(find.byKey(const ValueKey('talent-line'))).style?.color,
+        Quiet.teal,
+      );
+      expect(find.text('Combat · 0'), findsOneWidget);
       expect(find.textContaining('Utility · 0'), findsOneWidget);
     });
 
@@ -44,35 +54,137 @@ void main() {
       expect(find.text('Talents open at level 10.'), findsOneWidget);
     });
 
-    testWidgets('criterion 50: one pip per rank, the taken ones filled', (
+    testWidgets('criteria 52, 88: Learn takes a rank and raises the badge', (
       t,
     ) async {
-      await pumpGame(t, level: 20, prepare: (s) => s.talents['might'] = 2);
+      final (c, _) = await pumpGame(t, level: 12);
       await openTalents(t);
-      expect(
-        within('talent-might', find.byKey(const ValueKey('pip-on'))),
-        findsNWidgets(2),
-      );
-      expect(
-        within('talent-might', find.byKey(const ValueKey('pip-off'))),
-        findsNWidgets(3),
-      );
+      await t.tap(find.byKey(const ValueKey('talent-might')));
+      await t.pumpAndSettle();
+      expect(within('talent-sheet', find.text('Rank 0 of 5')), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('learn-talent')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.talents['might'], 1);
+      expect(within('talent-sheet', find.text('Rank 1 of 5')), findsOneWidget);
+      await closeSheet(t);
+      expect(within('badge-might', find.text('1/5')), findsOneWidget);
+      expect(find.text('2 talent points to spend'), findsOneWidget);
     });
 
-    testWidgets('criterion 51: a closed row says when it opens', (t) async {
-      await pumpGame(t, level: 20);
+    testWidgets('a talent with no points left says why', (t) async {
+      await pumpGame(t, level: 9);
       await openTalents(t);
+      await t.tap(find.byKey(const ValueKey('talent-might')));
+      await t.pumpAndSettle();
       expect(
-        within('row-combat-2', find.text('Opens at 5 points in Combat')),
+        within('talent-sheet', find.text('No points left')),
         findsOneWidget,
       );
+      expect(find.byKey(const ValueKey('learn-talent')), findsNothing);
+    });
+  });
+
+  group('the tree (amendment 3)', () {
+    /// Every widget whose key starts with [prefix].
+    Finder keyed(String prefix) => find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith(prefix),
+    );
+
+    Offset at(WidgetTester t, String id) =>
+        t.getCenter(find.byKey(ValueKey('talent-$id')));
+
+    /// The talent's icon in [state]: closed, open, learn or full.
+    Finder node(String state, String id) =>
+        find.byKey(ValueKey('node-$state-$id'));
+
+    double opacityOf(WidgetTester t, String id) => t
+        .widget<Opacity>(within('talent-$id', find.byType(Opacity)).first)
+        .opacity;
+
+    testWidgets('criteria 77-78: icons at their rows and columns', (t) async {
+      await pumpGame(t, level: 12);
+      await openTalents(t);
+      expect(find.byKey(const ValueKey('talent-grid-combat')), findsOneWidget);
+      final might = at(t, 'might'); // row 1, column 1
+      final toughness = at(t, 'toughness'); // row 1, column 3
+      final guard = at(t, 'guard'); // row 2, column 1
+      final swift = at(t, 'swift_strikes'); // row 3, column 2
+      expect(toughness.dy, might.dy);
+      expect(toughness.dx, greaterThan(might.dx));
+      expect(guard.dx, might.dx);
+      expect(guard.dy, greaterThan(might.dy));
+      expect(swift.dy, greaterThan(guard.dy));
+      expect(swift.dx, closeTo((might.dx + toughness.dx) / 2, 1));
+      // Amendment 6 criteria 121-122: both trees at once, Utility on the
+      // right, its row 1 level with Combat's.
+      final pockets = at(t, 'deep_pockets'); // Utility row 1, column 1
+      expect(pockets.dy, might.dy);
+      expect(pockets.dx, greaterThan(toughness.dx));
       expect(
-        within('row-combat-1', find.textContaining('Opens at')),
+        t.getCenter(find.byKey(const ValueKey('tree-utility'))).dx,
+        greaterThan(t.getCenter(find.byKey(const ValueKey('tree-combat'))).dx),
+      );
+      // Amendment 6 criterion 125: no plate around both trees.
+      expect(
+        find.ancestor(
+          of: find.byKey(const ValueKey('talent-grid-combat')),
+          matching: find.byType(Card),
+        ),
         findsNothing,
       );
+      // Amendment 6 criterion 123: no switch between the trees.
+      expect(find.byType(SegmentedButton<String>), findsNothing);
     });
 
-    testWidgets('criterion 13: a plate says what it needs', (t) async {
+    testWidgets('criteria 79-80: the name and the ranks of each icon', (
+      t,
+    ) async {
+      await pumpGame(t, level: 12, prepare: (s) => s.talents['might'] = 2);
+      await openTalents(t);
+      expect(within('talent-might', find.text('Might')), findsOneWidget);
+      expect(within('badge-might', find.text('2/5')), findsOneWidget);
+      expect(within('badge-guard', find.text('0/3')), findsOneWidget);
+    });
+
+    testWidgets('criteria 81-82: the line only on the sheet; a tap opens it', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 12);
+      await openTalents(t);
+      final line = c.game.data.talents['might']!.line;
+      expect(find.text(line), findsNothing);
+      await t.tap(find.byKey(const ValueKey('talent-might')));
+      await t.pumpAndSettle();
+      expect(within('talent-sheet', find.text(line)), findsOneWidget);
+      expect(within('talent-sheet', find.text('Might')), findsOneWidget);
+    });
+
+    testWidgets('criteria 83, 85: a closed row; an icon that can learn', (
+      t,
+    ) async {
+      await pumpGame(t, level: 12);
+      await openTalents(t);
+      expect(node('learn', 'might'), findsOneWidget);
+      expect(node('closed', 'guard'), findsOneWidget);
+      expect(opacityOf(t, 'guard'), .4);
+      expect(opacityOf(t, 'might'), 1);
+    });
+
+    testWidgets('criterion 87: no points left, an open icon has no ring', (
+      t,
+    ) async {
+      await pumpGame(t, level: 10, prepare: (s) => s.talents['might'] = 1);
+      await openTalents(t);
+      expect(node('open', 'might'), findsOneWidget);
+      expect(node('open', 'toughness'), findsOneWidget);
+    });
+
+    testWidgets('criteria 84, 86: a needed talent not full; a full one', (
+      t,
+    ) async {
       await pumpGame(
         t,
         level: 40,
@@ -87,45 +199,150 @@ void main() {
         }),
       );
       await openTalents(t);
-      await t.scrollUntilVisible(
-        find.byKey(const ValueKey('talent-impale')),
-        200,
+      expect(node('full', 'might'), findsOneWidget);
+      expect(node('learn', 'keen_eye'), findsOneWidget);
+      // Row 6 opens at 25 ranks, but Keen eye has 2 of 3.
+      expect(node('closed', 'impale'), findsOneWidget);
+      expect(opacityOf(t, 'impale'), .4);
+    });
+
+    testWidgets('criteria 89, 92, 94: one faint line in Combat', (t) async {
+      await pumpGame(t, level: 12);
+      await openTalents(t);
+      // Both trees show: 1 line in Combat, 2 in Utility.
+      expect(keyed('line-'), findsNWidgets(3));
+      final line = find.byKey(const ValueKey('line-keen_eye-impale-faint'));
+      expect(line, findsOneWidget);
+      // The line starts under Keen eye's name and ends above Impale.
+      expect(
+        t.getTopLeft(line).dy,
+        greaterThan(
+          t.getBottomLeft(within('talent-keen_eye', find.text('Keen eye'))).dy,
+        ),
       );
       expect(
-        within('talent-impale', find.text('Needs Keen eye 3/3')),
+        t.getBottomLeft(line).dy,
+        lessThan(t.getTopLeft(find.byKey(const ValueKey('talent-impale'))).dy),
+      );
+    });
+
+    testWidgets('criterion 93: a line is teal when its talent is full', (
+      t,
+    ) async {
+      await pumpGame(t, level: 20, prepare: (s) => s.talents['keen_eye'] = 3);
+      await openTalents(t);
+      expect(
+        find.byKey(const ValueKey('line-keen_eye-impale-teal')),
         findsOneWidget,
       );
     });
 
-    testWidgets('criterion 52: Learn takes a rank and fills a pip', (t) async {
-      final (c, _) = await pumpGame(t, level: 12);
+    testWidgets('criteria 90-91, 94: two lines in Utility', (t) async {
+      await pumpGame(t, level: 12);
       await openTalents(t);
-      await t.tap(find.byKey(const ValueKey('talent-might')));
-      await t.pumpAndSettle();
-      expect(within('talent-sheet', find.text('Rank 0 of 5')), findsOneWidget);
-      await t.tap(find.byKey(const ValueKey('learn-talent')));
-      await settle(t, c);
-      await t.pumpAndSettle();
-      expect(c.state.talents['might'], 1);
-      expect(within('talent-sheet', find.text('Rank 1 of 5')), findsOneWidget);
-      await closeSheet(t);
       expect(
-        within('talent-might', find.byKey(const ValueKey('pip-on'))),
+        find.byKey(const ValueKey('line-master_crafter-lucky_hammer-faint')),
         findsOneWidget,
       );
-      expect(find.text('2 points left'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('line-light_pack-wayfarer-faint')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('a talent with no points left says why', (t) async {
-      await pumpGame(t, level: 9);
+    testWidgets('amendment 4 criteria 105-106: no tree line, no "Opens at"', (
+      t,
+    ) async {
+      final (c, _) = await pumpGame(t, level: 20);
       await openTalents(t);
-      await t.tap(find.byKey(const ValueKey('talent-might')));
+      expect(find.text(c.game.data.talentTrees['combat']!.line), findsNothing);
+      expect(find.text(c.game.data.talentTrees['utility']!.line), findsNothing);
+      expect(find.textContaining('Opens at'), findsNothing);
+    });
+  });
+
+  group('the needs on the sheet (amendment 5)', () {
+    /// Opens the sheet of [talent] for a level 40 player with [ranks].
+    Future<void> sheetOf(
+      WidgetTester t,
+      String talent,
+      Map<String, int> ranks,
+    ) async {
+      await pumpGame(t, level: 40, prepare: (s) => s.talents.addAll(ranks));
+      await openTalents(t);
+      await t.ensureVisible(find.byKey(ValueKey('talent-$talent')));
       await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey('talent-$talent')));
+      await t.pumpAndSettle();
+    }
+
+    /// The colour of the need with [key] on the sheet, and checks its words.
+    Color? need(WidgetTester t, String key, String words) {
+      final f = within('talent-sheet', find.byKey(ValueKey(key)));
+      expect(f, findsOneWidget);
+      final text = t.widget<Text>(f);
+      expect(text.data, words);
+      return text.style?.color;
+    }
+
+    // Ranks for a Combat tree at 25 points, Keen eye at [keen].
+    Map<String, int> combat25(int keen) => {
+      'might': 5,
+      'toughness': 5,
+      'guard': 3,
+      'keen_eye': keen,
+      'swift_strikes': 5,
+      'precision': 3,
+      'evasion': 2,
+      if (keen < 3) 'treasure_hunter': 3 - keen,
+    };
+
+    testWidgets('criteria 111, 117: points not met, red, no Learn', (t) async {
+      await sheetOf(t, 'guard', {'might': 4});
       expect(
-        within('talent-sheet', find.text('No points left')),
-        findsOneWidget,
+        need(t, 'need-points', 'Needs 5 points in Combat (4/5)'),
+        Quiet.short,
       );
       expect(find.byKey(const ValueKey('learn-talent')), findsNothing);
+      // The red line says why: no second line.
+      expect(find.textContaining('Opens at'), findsNothing);
+    });
+
+    testWidgets('criteria 112, 118: points met, green, Learn', (t) async {
+      await sheetOf(t, 'guard', {'might': 5, 'toughness': 2});
+      expect(
+        need(t, 'need-points', 'Needs 5 points in Combat (5/5)'),
+        Quiet.met,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsOneWidget);
+    });
+
+    testWidgets('criteria 113, 115: Impale, Keen eye not met, red', (t) async {
+      await sheetOf(t, 'impale', combat25(2));
+      expect(
+        need(t, 'need-points', 'Needs 25 points in Combat (25/25)'),
+        Quiet.met,
+      );
+      expect(
+        need(t, 'need-talent', 'Needs 3 ranks of Keen eye (2/3)'),
+        Quiet.short,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsNothing);
+    });
+
+    testWidgets('criterion 114: Impale, Keen eye met, green', (t) async {
+      await sheetOf(t, 'impale', combat25(3));
+      expect(
+        need(t, 'need-talent', 'Needs 3 ranks of Keen eye (3/3)'),
+        Quiet.met,
+      );
+      expect(find.byKey(const ValueKey('learn-talent')), findsOneWidget);
+    });
+
+    testWidgets('criterion 116: Might lists no needs', (t) async {
+      await sheetOf(t, 'might', {});
+      expect(find.byKey(const ValueKey('need-points')), findsNothing);
+      expect(find.byKey(const ValueKey('need-talent')), findsNothing);
     });
   });
 

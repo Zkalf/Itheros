@@ -45,6 +45,9 @@ abstract final class Quiet {
   static const short = Color(0xFFE08A7C);
   static const risky = Color(0xFFFBB15A);
 
+  /// A need of a talent that the player meets (spec 0015 amendment 5).
+  static const met = Color(0xFF8FC98A);
+
   /// The border of each control (spec 0014 §2.2).
   static const black = Colors.black;
   static const white = Colors.white;

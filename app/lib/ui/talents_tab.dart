@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -5,155 +8,400 @@ import '../game_controller.dart';
 import 'labels.dart' show fmt;
 import 'theme.dart';
 
-/// Character's Talents tab (spec 0015 §3.1, the look of spec 0014 §4.3): the
-/// points left, then one tree at a time, row by row. Each talent is a plate
-/// with its image, name, line and one teal pip per rank.
-class TalentsTab extends StatefulWidget {
+/// Character's Talents tab (spec 0015 §3.1, amendments 3 and 6): both trees
+/// side by side, each a plate with its grid of icons.
+class TalentsTab extends StatelessWidget {
   const TalentsTab({super.key, required this.controller});
 
   final GameController controller;
 
   @override
-  State<TalentsTab> createState() => _TalentsTabState();
-}
-
-class _TalentsTabState extends State<TalentsTab> {
-  String? _tree;
-
-  @override
   Widget build(BuildContext context) {
-    final c = widget.controller;
+    final c = controller;
     final game = c.game;
-    final s = c.state;
     final data = game.data;
-    final tree = _tree ?? data.talentTrees.keys.first;
-    final text = Theme.of(context).textTheme;
-    final left = game.talentPointsLeft(s);
-    final heading = game.level(s) < data.talentPointsFrom
-        ? 'Talents open at level ${data.talentPointsFrom}.'
-        : switch (left) {
-            0 => 'No points left',
-            1 => '1 point left',
-            _ => '$left points left',
-          };
-    final rows = {
-      for (final t in data.talents.values)
-        if (t.tree == tree) t.row,
-    }.toList()..sort();
+    final trees = data.talentTrees.values.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          heading,
-          key: const ValueKey('talents-heading'),
-          style: text.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        SegmentedButton<String>(
-          expandedInsets: EdgeInsets.zero,
-          segments: [
-            for (final t in data.talentTrees.values)
-              ButtonSegment(
-                value: t.id,
-                label: Text(
-                  '${t.name} · ${game.ranksIn(s, t.id)}',
-                  key: ValueKey('tree-${t.id}'),
-                ),
-              ),
-          ],
-          selected: {tree},
-          showSelectedIcon: false,
-          onSelectionChanged: (v) => setState(() => _tree = v.single),
-        ),
-        const SizedBox(height: 8),
-        Text(data.talentTrees[tree]!.line, style: text.bodySmall),
-        for (final row in rows) _row(context, tree, row),
-      ],
-    );
-  }
-
-  Widget _row(BuildContext context, String tree, int row) {
-    final c = widget.controller;
-    final game = c.game;
-    final opensAt = game.rowOpensAt(row);
-    final open = game.ranksIn(c.state, tree) >= opensAt;
-    return Opacity(
-      key: ValueKey('row-$tree-$row'),
-      opacity: open ? 1 : .5,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 12),
-          if (!open)
-            Text(
-              'Opens at $opensAt points in ${game.data.talentTrees[tree]!.name}',
-              style: Theme.of(context).textTheme.bodySmall,
+        // The points left show in the Character header (amendment 6). Before
+        // level 10 the header says nothing of talents, so this line does.
+        if (game.level(c.state) < data.talentPointsFrom)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Talents open at level ${data.talentPointsFrom}.',
+              key: const ValueKey('talents-heading'),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          for (final t in game.data.talents.values)
-            if (t.tree == tree && t.row == row) _TalentPlate(c, t),
-        ],
-      ),
+          ),
+        // Both trees at once, side by side, each a plate of its own
+        // (amendment 6).
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final (i, t) in trees.indexed) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: _Tree(controller: c, tree: t),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }
 
-/// One talent: image, name, line, pips, and what it needs (spec 0015 §3.1).
-class _TalentPlate extends StatelessWidget {
-  const _TalentPlate(this.c, this.talent);
+/// One tree as a plate: a title bar "Combat · 12" over its grid.
+class _Tree extends StatelessWidget {
+  const _Tree({required this.controller, required this.tree});
 
-  final GameController c;
-  final TalentDef talent;
+  final GameController controller;
+  final TalentTreeDef tree;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: plateDecoration,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: Quiet.deepTeal,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+          ),
+          child: Text(
+            '${tree.name} · ${controller.game.ranksIn(controller.state, tree.id)}',
+            key: ValueKey('tree-${tree.id}'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelLarge
+                ?.copyWith(color: Quiet.teal),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+          child: TalentGrid(controller: controller, tree: tree.id),
+        ),
+      ],
+    ),
+  );
+}
+
+/// One tree as a grid of 3 columns, row 1 at the top (spec 0015 amendments 3
+/// and 4): an icon per talent, and a line from each talent to the one it
+/// needs.
+class TalentGrid extends StatelessWidget {
+  const TalentGrid({super.key, required this.controller, required this.tree});
+
+  final GameController controller;
+  final String tree;
+
+  /// The socket of an icon at most; a narrow grid has smaller sockets.
+  static const socket = 56.0;
+
+  /// The space between the name of one row and the icons of the next.
+  static const gap = 14.0;
 
   @override
   Widget build(BuildContext context) {
+    final c = controller;
     final game = c.game;
     final s = c.state;
-    final text = Theme.of(context).textTheme;
-    final taken = s.talents[talent.id] ?? 0;
-    final need = talent.needs == null ? null : game.data.talents[talent.needs]!;
-    final needs = need != null && (s.talents[need.id] ?? 0) < need.ranks;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Material(
-        color: Quiet.plate,
-        shape: plateShape(),
-        child: InkWell(
-          key: ValueKey('talent-${talent.id}'),
-          customBorder: plateShape(),
-          onTap: () => showTalent(context, c, talent.id),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+    final data = game.data;
+    final talents = [
+      for (final t in data.talents.values)
+        if (t.tree == tree) t,
+    ];
+    final lastRow = talents.fold(1, (n, t) => math.max(n, t.row));
+    final scaler = MediaQuery.textScalerOf(context);
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final cell = box.maxWidth / 3;
+        final socket = math.min(TalentGrid.socket, cell - 16);
+        final base = nameStyleOf(context, cell);
+        // A name whose longest word does not fit is smaller, so that no word
+        // breaks ("Quartermaster").
+        final styles = <String, TextStyle>{};
+        for (final t in data.talents.values) {
+          var widest = 0.0;
+          for (final word in t.name.split(' ')) {
+            final w = TextPainter(
+              text: TextSpan(text: word, style: base),
+              textScaler: scaler,
+              textDirection: TextDirection.ltr,
+            )..layout();
+            widest = math.max(widest, w.width);
+            w.dispose();
+          }
+          styles[t.id] = widest <= cell + 4
+              ? base
+              : base.copyWith(fontSize: base.fontSize! * (cell + 4) / widest);
+        }
+        // Each row is as tall as the longest name of that row in either tree,
+        // at most 2 lines at the phone's text size: the trees line up.
+        final names = <int, double>{};
+        for (final t in data.talents.values) {
+          final name = TextPainter(
+            text: TextSpan(text: t.name, style: styles[t.id]),
+            textScaler: scaler,
+            textDirection: TextDirection.ltr,
+            maxLines: 2,
+          )..layout(maxWidth: cell + 4);
+          names[t.row] = math.max(names[t.row] ?? 0, name.height);
+          name.dispose();
+        }
+        double rowHeight(int row) => socket + 6 + (names[row] ?? 0) + gap;
+        double top(int row) =>
+            [for (var r = 1; r < row; r++) rowHeight(r)]
+                .fold(0.0, (a, b) => a + b);
+        final height = top(lastRow) + rowHeight(lastRow) - gap;
+        // A line starts under the needed talent's name and ends a little
+        // above the socket of the talent that needs it.
+        double lineFrom(int row) => top(row) + rowHeight(row) - gap + 2;
+        double lineTo(int row) => top(row) - 4;
+        double centre(int column) => (column - .5) * cell;
+        final lines = [
+          for (final t in talents)
+            if (t.needs case final n?)
+              (
+                need: data.talents[n]!,
+                talent: t,
+                teal: (s.talents[n] ?? 0) >= data.talents[n]!.ranks,
+              ),
+        ];
+        return SizedBox(
+          key: ValueKey('talent-grid-$tree'),
+          height: height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _Lines([
+                    for (final l in lines)
+                      (
+                        x: centre(l.talent.column),
+                        from: lineFrom(l.need.row),
+                        to: lineTo(l.talent.row),
+                        teal: l.teal,
+                      ),
+                  ]),
+                ),
+              ),
+              for (final l in lines)
+                Positioned(
+                  left: centre(l.talent.column) - 1,
+                  top: lineFrom(l.need.row),
+                  width: 2,
+                  height: lineTo(l.talent.row) - lineFrom(l.need.row),
+                  child: ExcludeSemantics(
+                    child: SizedBox(
+                      key: ValueKey(
+                        'line-${l.need.id}-${l.talent.id}-'
+                        '${l.teal ? 'teal' : 'faint'}',
+                      ),
+                    ),
+                  ),
+                ),
+              for (final t in talents)
+                Positioned(
+                  left: (t.column - 1) * cell - 2,
+                  top: top(t.row),
+                  width: cell + 4,
+                  child: TalentNode(
+                    controller: c,
+                    talent: t,
+                    socket: socket,
+                    nameStyle: styles[t.id]!,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The name under an icon: smaller in a narrow grid.
+TextStyle nameStyleOf(BuildContext context, double cell) {
+  final small = Theme.of(context).textTheme.bodySmall!;
+  return small.copyWith(
+    color: Quiet.muted,
+    fontSize: cell < 90 ? 11 : small.fontSize,
+    height: 1.2,
+  );
+}
+
+/// The lines between talents: plain 2 dp strokes, no blur (#121).
+class _Lines extends CustomPainter {
+  _Lines(this.lines);
+
+  final List<({double x, double from, double to, bool teal})> lines;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final l in lines) {
+      canvas.drawLine(
+        Offset(l.x, l.from),
+        Offset(l.x, l.to),
+        Paint()
+          ..color = l.teal ? Quiet.teal : Quiet.faint
+          ..strokeWidth = 2,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_Lines old) => !listEquals(old.lines, lines);
+}
+
+/// The state of a talent's icon (spec 0015 amendment 3, change 3).
+enum NodeState { closed, open, learn, full }
+
+/// One talent on the grid: its image in a socket of [socket] dp, the ranks
+/// badge, and its name under it. A tap opens the talent sheet.
+class TalentNode extends StatelessWidget {
+  const TalentNode({
+    super.key,
+    required this.controller,
+    required this.talent,
+    required this.socket,
+    required this.nameStyle,
+  });
+
+  final GameController controller;
+  final TalentDef talent;
+
+  /// The size of the socket.
+  final double socket;
+  final TextStyle nameStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller;
+    final game = c.game;
+    final s = c.state;
+    final t = talent;
+    final taken = s.talents[t.id] ?? 0;
+    final need = t.needs == null ? null : game.data.talents[t.needs]!;
+    final closed =
+        game.ranksIn(s, t.tree) < game.rowOpensAt(t.row) ||
+        (need != null && (s.talents[need.id] ?? 0) < need.ranks);
+    final state = closed
+        ? NodeState.closed
+        : taken >= t.ranks
+        ? NodeState.full
+        : game.whyNotRank(s, t.id) == null
+        ? NodeState.learn
+        : NodeState.open;
+    final ring = switch (state) {
+      NodeState.learn => Border.all(color: Quiet.teal),
+      NodeState.full => Border.all(color: Quiet.teal, width: 2),
+      _ => null,
+    };
+    return InkWell(
+      key: ValueKey('talent-${t.id}'),
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => showTalent(context, c, t.id),
+      child: Opacity(
+        opacity: closed ? .4 : 1,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                TalentSocket(talent.image),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(talent.name, style: text.titleMedium),
-                      Text(talent.line, style: text.bodySmall),
-                      if (needs)
-                        Text(
-                          'Needs ${need.name} ${need.ranks}/${need.ranks}',
-                          style: text.bodySmall?.copyWith(color: Quiet.risky),
-                        ),
-                      const SizedBox(height: 6),
-                      Pips(taken: taken, of: talent.ranks),
-                    ],
+                Container(
+                  key: ValueKey('node-${state.name}-${t.id}'),
+                  width: socket,
+                  height: socket,
+                  decoration: BoxDecoration(
+                    color: Quiet.socket,
+                    borderRadius: BorderRadius.circular(12),
+                    border: ring,
+                  ),
+                  child: Icon(
+                    talentIcon(t.image),
+                    size: socket * .57,
+                    color: Quiet.teal,
+                  ),
+                ),
+                Positioned(
+                  right: -4,
+                  bottom: -8,
+                  child: _RankBadge(
+                    key: ValueKey('badge-${t.id}'),
+                    taken: taken,
+                    of: t.ranks,
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 6),
+            Text(
+              t.name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: nameStyle,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// A talent's icon in a 48 dp dark socket (spec 0014 §2.3), until art
-/// comes (spec 0015 §6).
+/// The ranks "2/5" in the style of the count badge (spec 0014 §2.3), the
+/// number in teal once a rank is taken.
+class _RankBadge extends StatelessWidget {
+  const _RankBadge({super.key, required this.taken, required this.of});
+
+  final int taken;
+  final int of;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(minWidth: 30, minHeight: 21),
+    padding: const EdgeInsets.symmetric(horizontal: 6),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Quiet.slate, Quiet.slateLow],
+      ),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(width: 2),
+    ),
+    child: Text(
+      '$taken/$of',
+      maxLines: 1,
+      textScaler: TextScaler.noScaling,
+      style: TextStyle(
+        fontFamily: Fonts.number,
+        fontWeight: FontWeight.w700,
+        fontSize: 12.5,
+        height: 17 / 12.5,
+        leadingDistribution: TextLeadingDistribution.even,
+        letterSpacing: 0,
+        color: taken > 0 ? Quiet.teal : Quiet.text,
+        fontFeatures: const [
+          FontFeature.liningFigures(),
+          FontFeature.tabularFigures(),
+        ],
+      ),
+    ),
+  );
+}
+
+/// A talent's icon in a 48 dp dark socket (spec 0014 §2.3) on the talent
+/// sheet, until art comes (spec 0015 §6).
 class TalentSocket extends StatelessWidget {
   const TalentSocket(this.image, {super.key});
 
@@ -168,35 +416,6 @@ class TalentSocket extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
     ),
     child: Icon(talentIcon(image), size: 28, color: Quiet.teal),
-  );
-}
-
-/// One teal pip per rank; a taken rank is filled (spec 0014 §4.3).
-class Pips extends StatelessWidget {
-  const Pips({super.key, required this.taken, required this.of});
-
-  final int taken;
-  final int of;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 6,
-    children: [
-      for (var i = 0; i < of; i++)
-        KeyedSubtree(
-          key: ValueKey(i),
-          child: Container(
-            key: ValueKey(i < taken ? 'pip-on' : 'pip-off'),
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: i < taken ? Quiet.teal : Quiet.transparent,
-              border: Border.all(color: Quiet.teal, width: 1.5),
-            ),
-          ),
-        ),
-    ],
   );
 }
 
@@ -310,6 +529,30 @@ class _TalentSheetState extends State<TalentSheet> {
       final next = taken >= t.ranks
           ? null
           : talentEffect(game.data, t, taken + 1);
+      // What the talent needs, met or not (amendment 5).
+      final opensAt = game.rowOpensAt(t.row);
+      final inTree = math.min(game.ranksIn(s, t.tree), opensAt);
+      final need = t.needs == null ? null : game.data.talents[t.needs]!;
+      final needTaken = need == null ? 0 : s.talents[need.id] ?? 0;
+      final needs = [
+        if (opensAt > 0)
+          (
+            key: 'need-points',
+            words:
+                'Needs $opensAt points in '
+                '${game.data.talentTrees[t.tree]!.name} ($inTree/$opensAt)',
+            met: inTree >= opensAt,
+          ),
+        if (need != null)
+          (
+            key: 'need-talent',
+            words:
+                'Needs ${need.ranks} ranks of ${need.name} '
+                '($needTaken/${need.ranks})',
+            met: needTaken >= need.ranks,
+          ),
+      ];
+      final allMet = needs.every((n) => n.met);
       return SafeArea(
         child: SingleChildScrollView(
           key: const ValueKey('talent-sheet'),
@@ -335,8 +578,19 @@ class _TalentSheetState extends State<TalentSheet> {
                   if (next != null) 'Next: $next',
                 ].join(' · '),
               ),
+              for (final n in needs) ...[
+                const SizedBox(height: 4),
+                Text(
+                  n.words,
+                  key: ValueKey(n.key),
+                  style: TextStyle(color: n.met ? Quiet.met : Quiet.short),
+                ),
+              ],
               const SizedBox(height: 12),
-              if (why == null)
+              // A need not met: the red line says why.
+              if (!allMet)
+                const SizedBox.shrink()
+              else if (why == null)
                 FilledButton(
                   key: const ValueKey('learn-talent'),
                   style: slateButton,

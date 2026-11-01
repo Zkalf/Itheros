@@ -119,7 +119,9 @@ class _CharacterTabState extends State<CharacterTab> {
                   Text(
                     '$points talent point${points == 1 ? '' : 's'} to spend',
                     key: const ValueKey('talent-line'),
-                    style: text.bodySmall,
+                    // Teal, so that a player does not miss it (spec 0015
+                    // amendment 6).
+                    style: text.bodyMedium?.copyWith(color: Quiet.teal),
                   ),
                 ],
               ],
@@ -156,16 +158,20 @@ class _CharacterTabState extends State<CharacterTab> {
             ),
           ),
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: switch (_pane) {
-              CharacterPane.gear => PaperDoll(controller: c),
-              CharacterPane.bag => BagGrid(controller: c),
-              CharacterPane.talents => TalentsTab(controller: c),
-            },
+        // Each talent tree is a plate of its own (spec 0015 amendment 6).
+        if (_pane == CharacterPane.talents)
+          TalentsTab(controller: c)
+        else
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: switch (_pane) {
+                CharacterPane.gear => PaperDoll(controller: c),
+                CharacterPane.bag => BagGrid(controller: c),
+                CharacterPane.talents => const SizedBox.shrink(),
+              },
+            ),
           ),
-        ),
       ],
     );
   }

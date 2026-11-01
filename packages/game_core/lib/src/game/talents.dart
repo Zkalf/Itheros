@@ -22,15 +22,17 @@ extension GameTalents on Game {
   int rowOpensAt(int row) => data.talentRowEvery * (row - 1);
 
   /// Why the player cannot take a rank of [talent] now, in the words of
-  /// spec 0015 §3.1, or null when they can.
+  /// spec 0015 §3.1 and amendment 4, or null when they can.
   String? whyNotRank(GameState s, String talent) {
     final t = data.talents[talent];
     if (t == null) return 'No talent $talent';
     final taken = s.talents[talent] ?? 0;
     if (taken >= t.ranks) return 'All ranks taken';
-    if (ranksIn(s, t.tree) < rowOpensAt(t.row)) {
-      return 'Opens at ${rowOpensAt(t.row)} points in '
-          '${data.talentTrees[t.tree]!.name}';
+    final ranks = ranksIn(s, t.tree);
+    final opensAt = rowOpensAt(t.row);
+    if (ranks < opensAt) {
+      return 'Opens at $opensAt points in '
+          '${data.talentTrees[t.tree]!.name}. You have $ranks/$opensAt.';
     }
     if (t.needs case final n?) {
       final need = data.talents[n]!;

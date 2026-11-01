@@ -596,12 +596,34 @@ class GameData {
       check(talentTrees.containsKey(t.tree), 'talent ${t.id}: unknown tree');
       check(t.row >= 1 && t.row <= 6, 'talent ${t.id}: row must be 1-6');
       check(t.ranks >= 1, 'talent ${t.id}: at least 1 rank');
+      check(
+        t.column >= 1 && t.column <= 3,
+        'talent ${t.id}: column must be 1-3',
+      );
       if (t.needs case final n?) {
         final need = talents[n];
         check(need != null, 'talent ${t.id}: needs an unknown talent');
         check(need!.tree == t.tree, 'talent ${t.id}: needs another tree');
         check(need.row < t.row, 'talent ${t.id}: needs a lower row');
+        // The line runs straight down the column (amendment 3, change 8).
+        check(need.column == t.column, 'talent ${t.id}: needs another column');
+        for (final o in talents.values) {
+          check(
+            o.tree != t.tree ||
+                o.column != t.column ||
+                o.row <= need.row ||
+                o.row >= t.row,
+            'talent ${o.id}: sits on the line from ${need.id} to ${t.id}',
+          );
+        }
       }
+    }
+    final places = <(String, int, int)>{};
+    for (final t in talents.values) {
+      check(
+        places.add((t.tree, t.row, t.column)),
+        'talent ${t.id}: another talent has its row and column',
+      );
     }
     for (final tree in talentTrees.keys) {
       final points = talents.values
