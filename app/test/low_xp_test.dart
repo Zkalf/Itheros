@@ -43,7 +43,10 @@ void main() {
     // It comes first, before the stats.
     final text = all.map((p) => p.$1).join();
     expect(text, contains('Low XP · '));
-    expect(text.indexOf('Low XP'), lessThan(text.indexOf('HP ')));
+    // The stats: "HP …" when known, "Stats unknown" before the first fight.
+    final stats = text.indexOf(RegExp('HP |Stats unknown'));
+    expect(stats, greaterThan(-1));
+    expect(text.indexOf('Low XP'), lessThan(stats));
   });
 
   testWidgets('criterion 15: yellow and orange rows do not say "Low XP"', (

@@ -140,6 +140,14 @@ Widget enemyTile(
             ),
             TextSpan(text: ' · '),
           ],
+          // A grey monster gives 5% of its XP (spec 0002 amendment 2).
+          if (band.colour == LevelColour.grey) ...const [
+            TextSpan(
+              text: 'Low XP',
+              style: TextStyle(color: Quiet.lowXp),
+            ),
+            TextSpan(text: ' · '),
+          ],
           TextSpan(
             text:
                 [

@@ -45,6 +45,10 @@ abstract final class Quiet {
   static const short = Color(0xFFE08A7C);
   static const risky = Color(0xFFFBB15A);
 
+  /// The words "Low XP" on a grey monster: the grey of `LevelBadge`
+  /// (spec 0002 amendment 2).
+  static const lowXp = Color(0xFF9E9E9E);
+
   /// A need of a talent that the player meets (spec 0015 amendment 5).
   static const met = Color(0xFF8FC98A);
 
