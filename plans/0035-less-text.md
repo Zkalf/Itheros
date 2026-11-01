@@ -1,6 +1,6 @@
 # Plan 0035: Build "fewer words on Now and World" (spec 0014 amendment 6)
 
-Status: draft
+Status: accepted
 Spec: `specs/0014-quiet-teal.amendment-6.md` · Product owner: Zkalf · Date: 2026-11-01
 
 Names of files, widgets and tests refer to `main` at `46bae46`.
