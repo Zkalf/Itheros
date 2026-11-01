@@ -105,6 +105,13 @@ class ChestFound extends GameEvent {
   final String key;
 }
 
+/// The steps into actions of [day] reached the goal: a supply chest waits
+/// (spec 0013 §2.2).
+class SupplyChestEarned extends GameEvent {
+  const SupplyChestEarned(this.day);
+  final String day;
+}
+
 /// The meal [key] was eaten by auto-eat, with [left] of its kind in the
 /// bag (spec 0011 §5.4).
 class MealEaten extends GameEvent {

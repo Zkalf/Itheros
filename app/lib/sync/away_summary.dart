@@ -263,6 +263,9 @@ class AwaySummary {
           mealsEaten.add((key, left));
         case MealsOut(:final meal):
           mealsOut.add(meal);
+        // The summary line comes with the screens (plan 0037 M2).
+        case SupplyChestEarned():
+          break;
       }
     }
     final running = started ?? r.state.activity?.activity;

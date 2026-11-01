@@ -210,6 +210,22 @@ class AutoEat {
   Map<String, Object?> toJson() => {'meal': meal, 'keep': keep};
 }
 
+/// A supply chest earned on [day] and not opened: its contents, rolled
+/// when it was earned (spec 0013 §2.3). Gear keys hold their quality and
+/// bonus stats.
+class SupplyChest {
+  SupplyChest(this.day, Map<String, int> items)
+    : items = Map.unmodifiable(items);
+
+  factory SupplyChest.fromJson(Map<String, Object?> json) =>
+      SupplyChest(json['day'] as String, _intMap(json['items']));
+
+  final String day;
+  final Map<String, int> items;
+
+  Map<String, Object?> toJson() => {'day': day, 'items': Map.of(items)};
+}
+
 /// Picks the word in gendered data lines (spec 0012 §2.3).
 enum Gender { male, female, neither }
 
@@ -269,8 +285,15 @@ class GameState {
     this.talentResets = 0,
     this.resetPrice = 0,
     this.walkedSinceReset = 0,
+    Map<String, int>? supplySteps,
+    Set<String>? supplyPaid,
+    List<SupplyChest>? supplyChests,
+    this.supplyRng = 0,
     this.loadedVersion = schemaVersion,
   }) : talents = talents ?? {},
+       supplySteps = supplySteps ?? {},
+       supplyPaid = supplyPaid ?? {},
+       supplyChests = supplyChests ?? [],
        queue = queue ?? [],
        inventory = inventory ?? {},
        equipment = equipment ?? {},
@@ -351,9 +374,20 @@ class GameState {
       talentResets: json['talentResets'] as int? ?? 0,
       resetPrice: json['resetPrice'] as int? ?? 0,
       walkedSinceReset: json['walkedSinceReset'] as int? ?? 0,
+      // Before version 14: no supply chest; `Game.migrate` seeds its stream
+      // (spec 0013 §4).
+      supplySteps: _intMap(json['supplySteps'] ?? const <String, Object?>{}),
+      supplyPaid: _stringSet(json['supplyPaid']),
+      supplyChests: [
+        for (final c in json['supplyChests'] as List<Object?>? ?? const [])
+          SupplyChest.fromJson(c! as Map<String, Object?>),
+      ],
+      supplyRng: json['supplyRng'] as int? ?? 0,
     );
   }
 
+  /// 14: the supply chest: the steps into actions per day, the days paid,
+  /// the waiting chests and their stream (spec 0013 §4).
   /// 13: talent ranks, resets, the reset price and the steps since the
   /// last reset (spec 0015 §4).
   /// 12: the achievements of spec 0017 and the quality counter (§3.2); same
@@ -372,7 +406,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 13;
+  static const schemaVersion = 14;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -454,6 +488,20 @@ class GameState {
   /// Steps walked since the last reset, or since version 13.
   int walkedSinceReset;
 
+  /// Steps into actions per local day (`yyyy-mm-dd`), for the supply chest's
+  /// goal; the 14 most recent days (spec 0013 §2.1, §4).
+  final Map<String, int> supplySteps;
+
+  /// The days that paid a supply chest; the 14 most recent days.
+  final Set<String> supplyPaid;
+
+  /// Supply chests earned and not opened, in the order earned.
+  final List<SupplyChest> supplyChests;
+
+  /// State of the supply chest's stream: chest rolls never draw from
+  /// [rngState] (spec 0013 §2.3).
+  int supplyRng;
+
   /// Lifetime counters such as `steps.walked` and `kills.goblin`.
   final Map<String, int> counters;
   final Set<String> achievements;
@@ -491,6 +539,10 @@ class GameState {
     'talentResets': talentResets,
     'resetPrice': resetPrice,
     'walkedSinceReset': walkedSinceReset,
+    'supplySteps': Map.of(supplySteps),
+    'supplyPaid': supplyPaid.toList()..sort(),
+    'supplyChests': [for (final c in supplyChests) c.toJson()],
+    'supplyRng': supplyRng,
   };
 
   void addItem(String item, [int count = 1]) {

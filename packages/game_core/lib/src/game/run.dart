@@ -2,9 +2,10 @@ part of '../game.dart';
 
 /// Mutable bookkeeping for one [Game.applySteps] call.
 class _Run {
-  _Run(this.game, this.s)
+  _Run(this.game, this.s, this.day)
     : rng = Rng.fromState(s.rngState),
-      stream = Rng.fromState(s.professionRng);
+      stream = Rng.fromState(s.professionRng),
+      supply = Rng.fromState(s.supplyRng);
 
   final Game game;
   final GameState s;
@@ -12,6 +13,12 @@ class _Run {
 
   /// The profession stream: every roll spec 0010 adds (spec 0010 §9.1).
   final Rng stream;
+
+  /// The supply chest's stream (spec 0013 §2.3).
+  final Rng supply;
+
+  /// The local day the steps count toward, or null (spec 0013 §2.1).
+  final String? day;
   final events = <GameEvent>[];
   var activitySteps = 0;
   var boostUsed = 0;
@@ -31,6 +38,7 @@ class _Run {
       activitySteps += 1 + boost;
       act.progress += 1 + boost;
       _countMeal(1 + boost);
+      _countSupply(1 + boost);
       _advance(act);
     } else if (s.bank < game.bankCap(s)) {
       s.bank++;
@@ -41,9 +49,27 @@ class _Run {
     _checkAchievements();
   }
 
+  /// Adds [n] steps into an action to the day's count; the step that
+  /// reaches the goal earns the day's chest and rolls it at once (spec 0013
+  /// §2.2, §2.3).
+  void _countSupply(int n) {
+    final d = day;
+    if (d == null) return;
+    final count = (s.supplySteps[d] ?? 0) + n;
+    s.supplySteps[d] = count;
+    if (count < data.supplyChest.goal || s.supplyPaid.contains(d)) return;
+    s.supplyPaid.add(d);
+    // One draw seeds the chest, so its rolls never shift the next chest.
+    final own = Rng.fromState(supply.nextUint32());
+    s.supplyChests.add(SupplyChest(d, game.rollSupplyChest(s, own)));
+    events.add(SupplyChestEarned(d));
+  }
+
   StepReport report(int walked) {
     s.rngState = rng.state;
     s.professionRng = stream.state;
+    s.supplyRng = supply.state;
+    if (day != null) game._pruneSupply(s);
     return StepReport(
       state: s,
       walked: walked,
