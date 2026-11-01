@@ -184,9 +184,18 @@ void main() {
       await pumpGame(t, level: 12);
       await openTalents(t);
       expect(keyed('line-'), findsOneWidget);
+      final line = find.byKey(const ValueKey('line-keen_eye-impale-faint'));
+      expect(line, findsOneWidget);
+      // The line starts under Keen eye's name and ends above Impale.
       expect(
-        find.byKey(const ValueKey('line-keen_eye-impale-faint')),
-        findsOneWidget,
+        t.getTopLeft(line).dy,
+        greaterThan(
+          t.getBottomLeft(within('talent-keen_eye', find.text('Keen eye'))).dy,
+        ),
+      );
+      expect(
+        t.getBottomLeft(line).dy,
+        lessThan(t.getTopLeft(find.byKey(const ValueKey('talent-impale'))).dy),
       );
     });
 

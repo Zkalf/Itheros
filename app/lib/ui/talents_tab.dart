@@ -85,7 +85,7 @@ class TalentGrid extends StatelessWidget {
   static const socket = 56.0;
 
   /// The space between the name of one row and the icons of the next.
-  static const gap = 18.0;
+  static const gap = 14.0;
 
   /// The height of the "Opens at" line.
   static const band = 30.0;
@@ -107,22 +107,35 @@ class TalentGrid extends StatelessWidget {
       for (var r = 1; r <= lastRow; r++)
         if (ranks < game.rowOpensAt(r)) r,
     ].firstOrNull;
-    // The name under an icon takes at most 2 lines, at the phone's text size.
     final nameStyle = text.bodySmall!.copyWith(color: Quiet.muted);
-    final nameHeight =
-        MediaQuery.textScalerOf(context).scale(nameStyle.fontSize!) *
-            (nameStyle.height ?? 1.4) *
-            2 +
-        6;
-    final rowHeight = socket + nameHeight + gap;
-    double top(int row) =>
-        (row - 1) * rowHeight +
-        (closedFrom != null && row >= closedFrom ? band : 0);
-    final height = top(lastRow) + rowHeight - gap;
+    final scaler = MediaQuery.textScalerOf(context);
 
     return LayoutBuilder(
       builder: (context, box) {
         final cell = box.maxWidth / 3;
+        // Each row is as tall as its longest name, at most 2 lines at the
+        // phone's text size.
+        final names = <int, double>{};
+        for (final t in talents) {
+          final name = TextPainter(
+            text: TextSpan(text: t.name, style: nameStyle),
+            textScaler: scaler,
+            textDirection: TextDirection.ltr,
+            maxLines: 2,
+          )..layout(maxWidth: cell);
+          names[t.row] = math.max(names[t.row] ?? 0, name.height);
+          name.dispose();
+        }
+        double rowHeight(int row) => socket + 6 + (names[row] ?? 0) + gap;
+        double top(int row) =>
+            [for (var r = 1; r < row; r++) rowHeight(r)]
+                .fold(0.0, (a, b) => a + b) +
+            (closedFrom != null && row >= closedFrom ? band : 0);
+        final height = top(lastRow) + rowHeight(lastRow) - gap;
+        // A line starts under the needed talent's name and ends a little
+        // above the socket of the talent that needs it.
+        double lineFrom(int row) => top(row) + rowHeight(row) - gap + 2;
+        double lineTo(int row) => top(row) - 4;
         double centre(int column) => (column - .5) * cell;
         final lines = [
           for (final t in talents)
@@ -139,15 +152,14 @@ class TalentGrid extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // The lines first: the sockets cover their ends.
               Positioned.fill(
                 child: CustomPaint(
                   painter: _Lines([
                     for (final l in lines)
                       (
                         x: centre(l.talent.column),
-                        from: top(l.need.row) + socket,
-                        to: top(l.talent.row),
+                        from: lineFrom(l.need.row),
+                        to: lineTo(l.talent.row),
                         teal: l.teal,
                       ),
                   ]),
@@ -156,9 +168,9 @@ class TalentGrid extends StatelessWidget {
               for (final l in lines)
                 Positioned(
                   left: centre(l.talent.column) - 1,
-                  top: top(l.need.row) + socket,
+                  top: lineFrom(l.need.row),
                   width: 2,
-                  height: top(l.talent.row) - top(l.need.row) - socket,
+                  height: lineTo(l.talent.row) - lineFrom(l.need.row),
                   child: ExcludeSemantics(
                     child: SizedBox(
                       key: ValueKey(
