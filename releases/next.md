@@ -10,3 +10,5 @@ Talents, and new tips from the hunter and the fisherman.
   at least 1.
 - **Swipe back:** on a screen that slides in, such as a profession, the Journal or Settings, swipe to the right
   anywhere to go back. Taps and scrolling work as before.
+- **Less text:** the step bank explains itself when you tap it, and the hints under it, at the bottom of Now and
+  under the World map are gone.

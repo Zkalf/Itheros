@@ -54,13 +54,6 @@ class NowTab extends StatelessWidget {
             labels: labels,
             onOpenProfessions: onOpenProfessions,
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Steps arrive from Health Connect about once a minute. '
-            'Pull down to check now.',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -250,19 +243,18 @@ class _StatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             // The step bank is mist; other bars are steel (spec 0014 §2.3).
-            _Bar(
-              label: 'Step bank ${fmt(s.bank)} / ${fmt(cap)}',
-              value: s.bank / cap,
-              colour: Quiet.mist,
+            // A tap opens what it does (spec 0014 amendment 6).
+            InkWell(
+              key: const ValueKey('step-bank'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _showStepBank(context),
+              child: _Bar(
+                label: 'Step bank ${fmt(s.bank)} / ${fmt(cap)}',
+                value: s.bank / cap,
+                colour: Quiet.mist,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Steps walked while resting are saved here. During an '
-              'activity, each step you walk uses one banked step and '
-              'counts double.',
-              style: text.bodySmall,
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               'Walked today: ${fmt(controller.stepsToday)}',
               key: const ValueKey('walked-today'),
@@ -709,6 +701,36 @@ class _Here extends StatelessWidget {
 }
 
 /// A bar with its number in Spectral (spec 0014 §2.2, §2.3).
+/// What the step bank does, and when steps arrive (spec 0014 amendment 6).
+Future<void> _showStepBank(BuildContext context) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  builder: (context) => SafeArea(
+    child: Padding(
+      key: const ValueKey('step-bank-sheet'),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Step bank', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          const Text(
+            'Steps walked while resting are saved here. During an '
+            'activity, each step you walk uses one banked step and '
+            'counts double.',
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Steps arrive from Health Connect about once a minute. '
+            'Pull down to check now.',
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+
 class _Bar extends StatelessWidget {
   const _Bar({required this.label, required this.value, this.colour});
 
