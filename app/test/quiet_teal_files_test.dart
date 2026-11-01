@@ -76,6 +76,10 @@ const spec21Rgb = {
 /// colours.
 const bandRgb = {0x9E9E9E, 0x43A047, 0xFBC02D, 0xFB8C00, 0xE53935, 0x8E0000};
 
+/// The green of a need that the player meets: spec 0015 amendment 5 adds it
+/// to the colours of spec 0014 §2.1, for the talent sheet only.
+const metRgb = 0x8FC98A;
+
 /// Black and white, the neutrals of plan 0017. Transparent has the RGB of
 /// black.
 const neutralRgb = {0x000000, 0xFFFFFF};
@@ -88,6 +92,7 @@ Set<int> allowedRgb(Game game) => {
     int.parse(q.colour.substring(1), radix: 16),
   ...bandRgb,
   ...neutralRgb,
+  metRgb,
 };
 
 /// The RGB of [c]. The alpha does not count: steel at 85% is steel.
