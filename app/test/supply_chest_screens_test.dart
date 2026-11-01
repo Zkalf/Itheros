@@ -1,9 +1,11 @@
-// The supply chest in the app: spec 0013 criteria 7, 11 and 36-51 (plan
-// 0037 M2): the top bar button and its dot, the supply chest screen, the
-// chest sheet, the away summary, the journal, the sync and the test walk.
+// The supply chest in the app: spec 0013 criteria 11 and 36-51 (plan 0037
+// M2) and amendment 4 (plan 0038): the top bar button and its dot, the
+// supply chest screen, the chest sheet, the away summary, the journal, the
+// sync and the test walk.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:walkingrpg/game_controller.dart';
 import 'package:walkingrpg/steps/fake_step_source.dart';
 import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/sync/day_key.dart';
@@ -304,10 +306,10 @@ void main() {
 
   group('the sync and the test walk', () {
     test(
-      'criterion 11: a sync of 2 days that reach the goal earns 2 chests',
+      'criterion 11: a sync of 3 days that reach the goal earns 3 chests',
       () async {
         final game = loadTestGame();
-        var now = DateTime(2026, 10, 17, 8);
+        var now = DateTime(2026, 10, 16, 8);
         final source = FakeStepSource();
         final sync = SyncService(game: game, source: source, clock: () => now);
         final base = await sync.newSave(seed: 1);
@@ -318,26 +320,117 @@ void main() {
             ..tools['mining'] = 'old_pick',
           const Activity.gather('copper_vein'),
         );
+        source.walk(DateTime(2026, 10, 16, 12), 6000);
         source.walk(DateTime(2026, 10, 17, 12), 6000);
         source.walk(DateTime(2026, 10, 18, 12), 6000);
         now = DateTime(2026, 10, 18, 20);
         final r = await sync.sync(base.withGame(mining));
         expect(
           [for (final c in r.save.game.supplyChests) c.day],
-          ['2026-10-17', '2026-10-18'],
+          ['2026-10-16', '2026-10-17', '2026-10-18'],
         );
-        expect(r.summary.supplyChests, 2);
+        expect(r.summary.supplyChests, 3);
       },
     );
 
-    testWidgets('criterion 7: a test walk earns no chest', (t) async {
+    testWidgets('amendment 4 criterion 1: a test walk counts toward '
+        "today's chest", (t) async {
+      final (c, _) = await pumpGame(t, location: 'copper_hills');
+      await c.startActivity(const Activity.gather('copper_vein'));
+      await settle(t, c);
+      await c.testWalk(3000);
+      await settle(t, c);
+      expect(c.supplyToday.steps, 3000);
+      expect(c.state.supplyChests, isEmpty);
+    });
+
+    testWidgets('amendment 4 criterion 2: a test walk of the goal earns '
+        "today's chest", (t) async {
       final (c, _) = await pumpGame(t, location: 'copper_hills');
       await c.startActivity(const Activity.gather('copper_vein'));
       await settle(t, c);
       await c.testWalk(6000);
       await settle(t, c);
-      expect(c.state.supplyChests, isEmpty);
-      expect(c.state.supplySteps, isEmpty);
+      expect([for (final s in c.state.supplyChests) s.day], [dayKey(now)]);
+      expect(c.supplyToday.paid, isTrue);
+    });
+  });
+
+  group('spec 0013 amendment 4', () {
+    testWidgets('criterion 3: the screen syncs when it opens', (t) async {
+      final (c, source) = await pumpGame(t, location: 'copper_hills');
+      await c.startActivity(const Activity.gather('copper_vein'));
+      await settle(t, c);
+      expect(c.supplyToday.steps, 0);
+      source.walk(DateTime(2026, 10, 18, 9, 30), 1200);
+      now = DateTime(2026, 10, 18, 10);
+      await openScreen(t);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(find.text('Today: 1,200 / 5,000 steps'), findsOneWidget);
+    });
+
+    Future<GameController> openGear(WidgetTester t) async {
+      final (c, _) = await pumpGame(
+        t,
+        prepare: chests([
+          {gear: 1, 'iron_ore': 5},
+        ]),
+      );
+      await openScreen(t);
+      await t.tap(find.byKey(const ValueKey('supply-open')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      return c;
+    }
+
+    ListTile row(WidgetTester t, GameController c) => t.widget<ListTile>(
+      find.ancestor(
+        of: find.text('${Labels(c.game.data).item(gear)} ×1'),
+        matching: find.byType(ListTile),
+      ),
+    );
+
+    testWidgets('criterion 4: worn gear stays in the sheet, grey', (t) async {
+      final c = await openGear(t);
+      await c.equip(gear);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(find.text('${Labels(c.game.data).item(gear)} ×1'), findsOneWidget);
+      expect(row(t, c).enabled, isFalse);
+    });
+
+    testWidgets('criterion 5: salvaged gear stays in the sheet, grey', (
+      t,
+    ) async {
+      final c = await openGear(t);
+      await c.salvage(gear);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(find.text('${Labels(c.game.data).item(gear)} ×1'), findsOneWidget);
+      expect(row(t, c).enabled, isFalse);
+    });
+
+    testWidgets('criterion 6: a tap on a grey row opens nothing', (t) async {
+      final c = await openGear(t);
+      await c.equip(gear);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      await t.tap(find.text('${Labels(c.game.data).item(gear)} ×1'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('item-card')), findsNothing);
+    });
+
+    testWidgets('criterion 7: gear still in the bag keeps its colour and '
+        'opens its card', (t) async {
+      final c = await openGear(t);
+      final line = find.text('${Labels(c.game.data).item(gear)} ×1');
+      final rare = c.game.data.qualities.firstWhere((q) => q.id == 'rare');
+      expect(t.widget<Text>(line).style?.color, qualityColour(rare));
+      expect(row(t, c).enabled, isNot(isFalse));
+      await t.tap(line);
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('item-card')), findsOneWidget);
     });
   });
 }

@@ -122,26 +122,30 @@ extension GameSupply on Game {
 
   /// Opens the oldest waiting chest: its contents go into the bag (spec
   /// 0013 §2.6). No steps, no roll. Throws [ActivityError] with none.
-  GameState openSupplyChest(GameState s) {
+  SupplyOpenResult openSupplyChest(GameState s) {
     if (s.supplyChests.isEmpty) {
       throw ActivityError('No supply chest waiting.');
     }
     final n = s.copy();
-    _unpack(n, n.supplyChests.removeAt(0));
-    return n;
+    final chest = n.supplyChests.removeAt(0);
+    _unpack(n, chest);
+    return SupplyOpenResult(n, 1, Map.of(chest.items));
   }
 
   /// Opens every waiting chest. Throws [ActivityError] with none.
-  GameState openAllSupplyChests(GameState s) {
+  SupplyOpenResult openAllSupplyChests(GameState s) {
     if (s.supplyChests.isEmpty) {
       throw ActivityError('No supply chest waiting.');
     }
     final n = s.copy();
+    final items = <String, int>{};
+    final count = n.supplyChests.length;
     for (final c in n.supplyChests) {
       _unpack(n, c);
+      c.items.forEach((k, v) => items[k] = (items[k] ?? 0) + v);
     }
     n.supplyChests.clear();
-    return n;
+    return SupplyOpenResult(n, count, items);
   }
 
   void _unpack(GameState s, SupplyChest c) {
