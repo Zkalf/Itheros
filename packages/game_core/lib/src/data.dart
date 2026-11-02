@@ -104,6 +104,7 @@ class GameData {
        qualityPerLevel = (economy['qualityPerLevel'] as num).toDouble(),
        qualityMaxLevels = _int(economy, 'qualityMaxLevels'),
        fightLogRounds = _int(economy, 'fightLogRounds'),
+       fightLogFights = _int(economy, 'fightLogFights'),
        combat = CombatRules._(_map(economy, 'combat')),
        bonusTiers = List.unmodifiable(
          _maps(economy, 'bonusStats').map(BonusTier._),
@@ -367,8 +368,12 @@ class GameData {
   final double qualityPerLevel;
   final int qualityMaxLevels;
 
-  /// Fight rounds the running action remembers (spec 0006 decision 8).
+  /// Rounds of the latest fight that the running action remembers (spec
+  /// 0019 §2.4).
   final int fightLogRounds;
+
+  /// Finished fights that the running action remembers (spec 0019 §2.2).
+  final int fightLogFights;
 
   /// Hit, crit, block and the type table (spec 0009 §2–§3).
   final CombatRules combat;
@@ -1036,6 +1041,7 @@ class GameData {
       );
     }
     check(fightLogRounds > 0, 'fightLogRounds must be > 0');
+    check(fightLogFights > 0, 'fightLogFights must be > 0');
     for (final p in [...mapRiver, for (final l in locations.values) ?l.map]) {
       check(
         p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1,

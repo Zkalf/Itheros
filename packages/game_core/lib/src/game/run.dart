@@ -402,6 +402,10 @@ class _Run {
           ? FightOutcome.won
           : (monsterTurn() ? FightOutcome.lost : null);
     }
+    // The round log holds the latest fight only (spec 0019 §2.3).
+    if (fight.round == 1) act.log.clear();
+    fight.taken += taken ?? 0;
+    if (mine == Swing.crit) fight.crits++;
     act.log.add(
       RoundLog(
         round: fight.round,
@@ -414,6 +418,21 @@ class _Run {
     );
     while (act.log.length > data.fightLogRounds) {
       act.log.removeAt(0);
+    }
+    // A summary of the fight that ended (spec 0019 §2.1). No roll.
+    if (outcome != null) {
+      act.fights.add(
+        FightSummary(
+          number: act.won + act.lost + 1,
+          outcome: outcome,
+          rounds: fight.round,
+          taken: fight.taken,
+          crits: fight.crits,
+        ),
+      );
+      while (act.fights.length > data.fightLogFights) {
+        act.fights.removeAt(0);
+      }
     }
     return switch (outcome) {
       FightOutcome.won => _win(act, enemy),

@@ -6,3 +6,6 @@
 - **Fixed:** you can now plan a walk back to the place you stand at. Queue goblins and mining from Camp, then open
   Camp on the World map: "Walk here" adds the walk home to the end of the queue. Its steps count from where the
   queue ends.
+- **New fight log:** the Now screen shows less during a fight: your health, the monster's health, how the last fight
+  ended, and a Fight details button. Fight details lists your last 10 fights (rounds, damage taken, crits) and the
+  latest fight round by round, from the top down. Crits, blocks, dodges and misses each have their own colour.

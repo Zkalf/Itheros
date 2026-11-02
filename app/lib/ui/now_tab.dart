@@ -5,6 +5,7 @@ import '../game_controller.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
 import 'controller_scope.dart';
+import 'fight_sheet.dart';
 import 'images.dart';
 import 'labels.dart';
 import 'item_card.dart';
@@ -422,17 +423,23 @@ class _QueueCard extends StatelessWidget {
             style: text.bodySmall,
           ),
         ],
-        if (run.log.isNotEmpty) ...[
+        // How the last fight ended and the fight sheet (spec 0019 §3.1).
+        if (run.fights.lastOrNull case final last?) ...[
           const SizedBox(height: 8),
-          Column(
-            key: const ValueKey('fight-log'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final line in labels.fightLog(run.log, run.activity.target))
-                Text(line, style: text.bodySmall),
-            ],
+          Text(
+            'Last fight: ${labels.lastFight(last, run.activity.target)}',
+            key: const ValueKey('last-fight'),
           ),
         ],
+        if (run.log.isNotEmpty || run.fights.isNotEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              key: const ValueKey('fight-details'),
+              onPressed: () => showFightSheet(context),
+              child: const Text('Fight details'),
+            ),
+          ),
         if (run.won + run.lost > 0 || run.gained.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text('So far', style: headingStyle(context)),

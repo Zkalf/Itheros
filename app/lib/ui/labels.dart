@@ -23,9 +23,6 @@ String genderName(Gender g) => switch (g) {
   Gender.neither => 'Neither',
 };
 
-/// The line between two fights in the fight log.
-const newFight = '── New fight ──';
-
 /// Display names from the game data.
 class Labels {
   Labels(this.data, [this.who]);
@@ -65,46 +62,80 @@ class Labels {
   String qualityName(String id) =>
       data.qualities.where((q) => q.id == id).firstOrNull?.name ?? id;
 
-  /// A round of the fight log, one line per swing (spec 0009 §8.1):
-  /// "Round 3: You hit for 9", "Skeleton misses", in the order they swung,
-  /// then who was beaten.
-  List<String> roundLines(RoundLog r, String enemyId) {
+  /// A round of the fight log, its swings in the order they swung, then who
+  /// was beaten (spec 0009 §8.1, spec 0019 §3.2): "You hit for 9",
+  /// "Skeleton misses". [playerHp] is the player's full HP: a hit for a
+  /// quarter of the full HP of the one who takes it is big (spec 0019
+  /// decision 6).
+  List<SwingLine> swings(RoundLog r, String enemyId, {required int playerHp}) {
     final name = enemy(enemyId);
+    final enemyHp = data.enemies[enemyId]?.stats.hp ?? 0;
+    bool big(int? damage, int full) =>
+        damage != null && damage > 0 && damage * 4 >= full;
     final mine = switch (r.mine) {
-      Swing.hit => 'You hit for ${r.dealt}',
-      Swing.crit => 'Critical hit for ${r.dealt}',
-      Swing.miss => 'You miss',
-      Swing.dodge => '$name dodges',
+      Swing.hit => SwingLine(
+        'You hit for ${r.dealt}',
+        SwingLook.hit,
+        big: big(r.dealt, enemyHp),
+      ),
+      Swing.crit => SwingLine(
+        'Critical hit for ${r.dealt}',
+        SwingLook.crit,
+        big: big(r.dealt, enemyHp),
+      ),
+      Swing.miss => const SwingLine('You miss', SwingLook.miss),
+      Swing.dodge => SwingLine('$name dodges', SwingLook.dodge),
       Swing.block || null => null,
     };
     final theirs = switch (r.theirs) {
-      Swing.hit || Swing.crit => '$name hits you for ${r.taken}',
-      Swing.miss => '$name misses',
-      Swing.dodge => 'You dodge',
-      Swing.block => 'You block: ${r.taken} damage',
+      Swing.hit || Swing.crit => SwingLine(
+        '$name hits you for ${r.taken}',
+        SwingLook.hitOnYou,
+        big: big(r.taken, playerHp),
+      ),
+      Swing.miss => SwingLine('$name misses', SwingLook.miss),
+      Swing.dodge => const SwingLine('You dodge', SwingLook.dodge),
+      Swing.block => SwingLine(
+        'You block: ${r.taken} damage',
+        SwingLook.block,
+        big: big(r.taken, playerHp),
+      ),
       null => null,
     };
     final quick = data.enemies[enemyId]?.has(Trait.quick) ?? false;
-    final lines = [
+    return [
       ...quick ? [?theirs, ?mine] : [?mine, ?theirs],
-      if (r.outcome == FightOutcome.won) '$name is beaten',
-      if (r.outcome == FightOutcome.lost) 'You are beaten',
+      if (r.outcome == FightOutcome.won)
+        SwingLine('$name is beaten', SwingLook.end),
+      if (r.outcome == FightOutcome.lost)
+        const SwingLine('You are beaten', SwingLook.end),
     ];
-    if (lines.isEmpty) return ['Round ${r.round}'];
-    return ['Round ${r.round}: ${lines.first}', ...lines.skip(1)];
   }
 
-  /// The fight log, newest round first, with [newFight] between fights
-  /// (playtest 3): a fight ends on a round with an outcome, or the next
-  /// round's number starts over.
-  List<String> fightLog(List<RoundLog> log, String enemyId) => [
-    for (var i = log.length - 1; i >= 0; i--) ...[
-      ...roundLines(log[i], enemyId),
-      if (i > 0 &&
-          (log[i - 1].outcome != null || log[i].round <= log[i - 1].round))
-        newFight,
-    ],
-  ];
+  /// "Goblin beaten in 4 rounds", "beaten by the Goblin in 6 rounds": how
+  /// the last fight ended, for the Now screen (spec 0019 §3.1).
+  String lastFight(FightSummary f, String enemyId) {
+    final rounds = f.rounds == 1 ? '1 round' : '${f.rounds} rounds';
+    return switch (f.outcome) {
+      FightOutcome.won => '${enemy(enemyId)} beaten in $rounds',
+      FightOutcome.lost => 'beaten by the ${enemy(enemyId)} in $rounds',
+    };
+  }
+
+  /// "Fight 3 · beaten in 4 rounds · took 9 damage · 1 crit": one finished
+  /// fight in the fight sheet (spec 0019 §3.2).
+  String fightSummary(FightSummary f) {
+    final rounds = f.rounds == 1 ? '1 round' : '${f.rounds} rounds';
+    return [
+      'Fight ${f.number}',
+      switch (f.outcome) {
+        FightOutcome.won => 'beaten in $rounds',
+        FightOutcome.lost => 'you are beaten in $rounds',
+      },
+      if (f.taken == 0) 'took no damage' else 'took ${f.taken} damage',
+      if (f.crits == 1) '1 crit' else if (f.crits > 1) '${f.crits} crits',
+    ].join(' · ');
+  }
 
   /// "+4 Defense", "+14 HP", "+25% Block": the stats a piece of gear adds.
   List<String> bonus(Stats b) => [
@@ -598,4 +629,34 @@ class Labels {
       'The ${this.enemy(enemy)} in ${homeOf(enemy)} '
           '${yourLevel ? 'is your level' : 'gives the most XP for your steps'}.',
   };
+}
+
+/// How a swing looks in the fight sheet (spec 0019 §3.3).
+enum SwingLook {
+  /// A hit of the player.
+  hit,
+
+  /// A hit on the player.
+  hitOnYou,
+  crit,
+  block,
+
+  /// A dodge, on either side.
+  dodge,
+
+  /// A miss, on either side.
+  miss,
+
+  /// Who was beaten.
+  end,
+}
+
+/// One swing of a round in the fight sheet: its words, its look, and whether
+/// it is a big hit (spec 0019 decision 6).
+class SwingLine {
+  const SwingLine(this.text, this.look, {this.big = false});
+
+  final String text;
+  final SwingLook look;
+  final bool big;
 }

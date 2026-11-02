@@ -543,9 +543,10 @@ void main() {
   });
 
   group('save', () {
-    test('criterion 52: the save version is 14', () {
-      expect(GameState.schemaVersion, 14);
-      expect(mining().toJson()['version'], 14);
+    // Spec 0013 raised the version to 14, spec 0019 to 15.
+    test('criterion 52: the save version is 15', () {
+      expect(GameState.schemaVersion, 15);
+      expect(mining().toJson()['version'], 15);
     });
 
     test('criterion 53: a version 13 save loads with no chest and no paid '

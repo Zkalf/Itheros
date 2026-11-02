@@ -401,8 +401,9 @@ void main() {
       final t = game.migrate(GameState.fromJson(s.toJson()));
       expect(planned(t), planned(s));
       // Version 12 (spec 0017) keeps the format of 11; 13 (spec 0015)
-      // adds the talents; 14 (spec 0013) the supply chest.
-      expect(GameState.schemaVersion, 14);
+      // adds the talents; 14 (spec 0013) the supply chest; 15 (spec 0019) the
+      // fight summaries.
+      expect(GameState.schemaVersion, 15);
     });
   });
 }
