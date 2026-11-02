@@ -50,6 +50,7 @@ void main(List<String> args) {
   final level30 = <int>[];
   final gaps = <int>[];
   final stores = <int>[];
+  final byKind = <String, int>{};
 
   for (var seed = 1; seed <= seeds; seed++) {
     final player = SensiblePlayer(game, walker: walker);
@@ -81,6 +82,8 @@ void main(List<String> args) {
         }
         final n = math.min(100, left);
         if (game.overloaded(s)) walkedOver += n;
+        final kind = s.activity?.activity.kind.name ?? 'idle';
+        byKind[kind] = (byKind[kind] ?? 0) + n;
         final r = game.applySteps(s, n, day: simDay(day));
         player.observe(r);
         s = r.state;
@@ -142,4 +145,8 @@ void main(List<String> args) {
     'per seed ${overShare.map(pct).join(', ')}',
   );
   stdout.writeln('Gap between days that stored: median ${median(gaps)} days');
+  final all = byKind.values.fold(0, (a, b) => a + b);
+  stdout.writeln(
+    'Steps by action: ${[for (final e in byKind.entries) '${e.key} ${pct(e.value / all)}'].join(', ')}',
+  );
 }

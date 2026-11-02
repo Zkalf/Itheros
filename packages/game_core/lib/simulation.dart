@@ -526,6 +526,10 @@ class SensiblePlayer {
   /// [mealBatch]; null when no batch is under way.
   String? _batch;
 
+  /// The recipe whose inputs the current goal gathers or fights for: before
+  /// it leaves a bank, it takes the ones stored there (spec 0021 point 22).
+  String? _aim;
+
   /// This decision's best arms per monster (see [bestArms]).
   final _arms = <String, (String?, String?, FightEstimate)>{};
 
@@ -570,6 +574,7 @@ class SensiblePlayer {
     s = _bank(s);
     _arms.clear();
     // Overloaded, it walks to Camp to bank (spec 0021 point 22).
+    _aim = null;
     final goal = _goBank(s) ? const Activity.travel('camp') : _goal(s);
     if (goal.kind == ActivityKind.fight) {
       final (main, off, _) = _armed(s, data.enemies[goal.target]!);
@@ -580,6 +585,7 @@ class SensiblePlayer {
 
     final where = _locationFor(s, goal);
     if (where == s.location) return game.startActivity(s, goal);
+    s = _takeInputs(s);
     final hop = Activity.travel(_nextHop(s, where));
     if (current == hop) return s;
     return game.startActivity(s, hop);
@@ -649,6 +655,7 @@ class SensiblePlayer {
         continue;
       }
       if (game.hasMaterials(s, r.id)) return Activity.craft(r.id);
+      _aim = r.id;
       final missing = r.inputs.entries.firstWhere(
         (e) => (s.inventory[e.key] ?? 0) < e.value,
       );
@@ -833,6 +840,18 @@ class SensiblePlayer {
     return s;
   }
 
+  /// At a bank, as it leaves: takes the inputs of [_aim] that the bank holds,
+  /// so it crafts with them where it is, not back at Camp.
+  GameState _takeInputs(GameState s) {
+    final id = _aim;
+    if (id == null || !game.hasBank(s.location)) return s;
+    for (final MapEntry(:key, :value) in data.recipes[id]!.inputs.entries) {
+      final n = math.min(value - (s.inventory[key] ?? 0), s.itemBank[key] ?? 0);
+      if (n > 0) s = game.take(s, key, n);
+    }
+    return s;
+  }
+
   /// Whether the bag alone lacks an input of [recipe] that the bank holds.
   bool _needsBank(GameState s, String recipe) {
     if (s.itemBank.isEmpty) return false;
@@ -992,6 +1011,7 @@ class SensiblePlayer {
       if (better.isEmpty) continue;
       final r = better.first;
       if (game.hasMaterials(s, r.id)) return Activity.craft(r.id);
+      _aim = r.id;
       final missing = r.inputs.entries.firstWhere(
         (e) => (s.inventory[e.key] ?? 0) < e.value,
       );
@@ -1099,6 +1119,7 @@ class SensiblePlayer {
     }
     if (best == null) return null;
     if (game.hasMaterials(s, best.id)) return Activity.craft(best.id);
+    _aim = best.id;
     final missing = best.inputs.entries.firstWhere(
       (e) => (s.inventory[e.key] ?? 0) < e.value,
     );
