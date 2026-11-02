@@ -547,8 +547,11 @@ extension GameQueue on Game {
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
         if (isFogged(s, to)) continue;
-        // What the road costs with the travel talents (spec 0015 §2.4).
-        final d = dist[at]! + travelCost(s, data.route(at, to)!.steps);
+        // What the road costs with the travel talents (spec 0015 §2.4) and
+        // the overload (spec 0021 rule 10).
+        final d =
+            dist[at]! +
+            travelCost(s, data.route(at, to)!.steps, load: 1 + overload(s));
         if (d < (dist[to] ?? 1 << 30)) {
           dist[to] = d;
           previous[to] = at;

@@ -623,7 +623,7 @@ class _Here extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                MonstersHeading(data: game.data),
+                MonstersHeading(steps: game.roundSteps(c.state)),
                 for (final id in enemies)
                   enemyTile(c, id, drops: dropsLine(game, c.state, labels, id)),
               ],

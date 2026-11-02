@@ -33,6 +33,14 @@ extension GameWorld on Game {
     };
   }
 
+  /// The steps one unit of [a] costs here, the overload included: what the
+  /// sheets show (spec 0021 rule 10). Not for travel.
+  int stepsFor(GameState s, Activity a) => _costOf(s, RunningActivity(a));
+
+  /// The steps of a fight round here, the overload included.
+  int roundSteps(GameState s) =>
+      (data.combatRoundSteps * (1 + overload(s)) - 1e-9).ceil();
+
   // Queries for the UI. Nothing is locked but gathering spots and recipes,
   // by profession (spec 0010 §2), which still show; fogged areas show
   // nothing.

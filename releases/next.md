@@ -13,3 +13,6 @@
   the Bank button under your bag anywhere. Crafting and cooking at Camp use what's in the bank too.
 - **Fixed:** queued rerolls no longer get stuck when your dust runs out (or sits in the bank). The rerolls without
   dust are skipped, and the report says why.
+- **Bag limit:** your bag holds 40 kinds of item. Each kind over 40 makes fights, gathering and walks cost 5% more
+  steps, up to 50%. Crafting, cooking and rerolls at Camp cost no more. Store items in the bank at Camp to make room.
+  The new Utility talent Bigger bag gives 2 more spaces per rank.

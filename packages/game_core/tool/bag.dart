@@ -73,9 +73,10 @@ void main(List<String> args) {
     for (var day = 1; day <= days; day++) {
       var left = steps;
       while (left > 0) {
-        final banked = s.itemBank.length;
+        int total() => s.itemBank.values.fold(0, (a, b) => a + b);
+        final banked = total();
         s = player.decide(s);
-        if (s.itemBank.length > banked) {
+        if (total() > banked) {
           if (lastStore != null && day > lastStore) gaps.add(day - lastStore);
           if (lastStore != day) stored++;
           lastStore = day;

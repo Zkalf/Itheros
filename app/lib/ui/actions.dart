@@ -212,7 +212,7 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     // A water or trail rolls its catch (spec 0011 §3.2, §4).
     subtitle: Text(
       game.lockedReason(c.state, Activity.gather(node)) ??
-          '${game.professionSteps(c.state, n.profession, n.steps)} steps per '
+          '${game.stepsFor(c.state, Activity.gather(node))} steps per '
               '${n.catches.isEmpty
                   ? labels.item(n.item)
                   : n.profession == 'fishing'
@@ -397,15 +397,16 @@ class Heading extends StatelessWidget {
 /// "Monsters · 10 steps per round" (spec 0014 §4.1). It is a list heading,
 /// so its number keeps the font of the phrase.
 class MonstersHeading extends StatelessWidget {
-  const MonstersHeading({super.key, required this.data});
+  const MonstersHeading({super.key, required this.steps});
 
-  final GameData data;
+  /// The steps of a round, the overload included (spec 0021 rule 10).
+  final int steps;
 
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
     child: Text(
-      'Monsters · ${data.combatRoundSteps} steps per round',
+      'Monsters · $steps steps per round',
       style: headingStyle(context),
     ),
   );
