@@ -2666,6 +2666,30 @@ void professionScreens() {
       expect(find.textContaining('Not enough'), findsNothing);
     });
 
+    // #178: the card refuses a reroll the dust after the queue can't pay.
+    testWidgets('Reroll is off when the queue already takes the dust', (
+      t,
+    ) async {
+      const key = 'bone_sword@uncommon+crit2';
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {key: 1, 'uncommon_dust': 3},
+      );
+      await c.addAction(const Activity.fight('goblin'));
+      await c.addAction(const Activity.reroll(key));
+      await t.pumpAndSettle();
+      await openItem(t, key);
+      final button = t.widget<ButtonStyleButton>(
+        card(find.byKey(const ValueKey('card-reroll'))),
+      );
+      expect(button.onPressed, isNull);
+      expect(
+        card(find.text('Not enough Uncommon dust after your queue')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('§7.3: a Legendary rerolls one chosen stat', (t) async {
       const key = 'iron_sword@legendary+crit2+crit1+hp11+hp10';
       final (c, _) = await pumpGame(

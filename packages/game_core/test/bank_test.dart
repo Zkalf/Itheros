@@ -311,6 +311,33 @@ void main() {
     );
   });
 
+  // #178: the item card offers a reroll only when the dust after the queue
+  // pays for it (spec 0010 amendment 5 §3.1 point 4).
+  group('the dust after the queue', () {
+    const vest = 'hide_vest@rare+hp10';
+    const reroll = Activity.reroll(vest);
+    final dust = data.rerollDust;
+
+    test('dust for one reroll pays the first, not a second', () {
+      var s = at('grey_moor', bag: {vest: 1, 'rare_dust': dust});
+      expect(game.rerollPaid(s, reroll), isTrue);
+      s = game.startActivity(s, const Activity.fight('goblin'));
+      s = game.addAction(s, reroll);
+      expect(game.rerollPaid(s, reroll), isFalse);
+    });
+
+    test("at Camp, the bank's dust pays too", () {
+      final s = at('camp', bag: {vest: 1}, itemBank: {'rare_dust': dust});
+      expect(game.rerollPaid(s, reroll), isTrue);
+      final away = at(
+        'grey_moor',
+        bag: {vest: 1},
+        itemBank: {'rare_dust': dust},
+      );
+      expect(game.rerollPaid(away, reroll), isFalse);
+    });
+  });
+
   group('save', () {
     test('criterion 26: the save version is 16', () {
       expect(GameState.schemaVersion, 16);
