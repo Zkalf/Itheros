@@ -74,13 +74,14 @@ void main() {
     });
 
     // Criterion 8 as amendment 1 has it (criterion 65).
-    test('criteria 8, 65: Combat holds 30 points, Utility 33', () {
+    test('criteria 8, 65: Combat holds 30 points, Utility 38', () {
       int points(String tree) => [
         for (final t in data.talents.values)
           if (t.tree == tree) t.ranks,
       ].fold(0, (a, b) => a + b);
       expect(points('combat'), 30);
-      expect(points('utility'), 33);
+      // Bigger bag adds 5 ranks (spec 0021 rule 11).
+      expect(points('utility'), 38);
     });
 
     test('criteria 9-10: Impale needs Keen eye 3/3', () {
@@ -205,14 +206,22 @@ void main() {
     (int drops, int better) swords(Map<String, int> ranks) {
       var s = dropper.newGame(seed: 3)..talents.addAll(ranks);
       s = dropper.startActivity(s, const Activity.fight('squire'));
-      final r = dropper.applySteps(s, 10 * 6000);
       var drops = 0, better = 0;
-      for (final MapEntry(:key, :value) in r.state.inventory.entries) {
-        if (dropper.data.itemOf(key)?.id != 'copper_sword') continue;
-        drops += value;
-        if (dropper.data.qualityOf(key) != dropper.data.qualities.first) {
-          better += value;
+      // The swords leave the bag after each chunk: a bag over its spaces
+      // would cost more steps a round (spec 0021).
+      for (var i = 0; i < 100; i++) {
+        s = dropper.applySteps(s, 600).state;
+        for (final MapEntry(:key, :value) in s.inventory.entries) {
+          if (dropper.data.itemOf(key)?.id != 'copper_sword') continue;
+          drops += value;
+          if (dropper.data.qualityOf(key) != dropper.data.qualities.first) {
+            better += value;
+          }
         }
+        s = s.copy()
+          ..inventory.removeWhere(
+            (k, _) => dropper.data.itemOf(k)?.id == 'copper_sword',
+          );
       }
       return (drops, better);
     }
@@ -652,7 +661,7 @@ void main() {
     });
 
     test('a talent that needs one of a lower row is fine; the real data', () {
-      expect(loadGameData().talents, hasLength(19));
+      expect(loadGameData().talents, hasLength(20));
       expect(data.talents['impale']!.needs, 'keen_eye');
       expect(data.talents['lucky_hammer']!.needs, 'master_crafter');
       expect(data.talents['wayfarer']!.needs, 'light_pack');
@@ -681,6 +690,7 @@ void main() {
         'treasure_hunter': (5, 2),
         'impale': (6, 3),
         'deep_pockets': (1, 1),
+        'bigger_bag': (1, 2),
         'nimble_hands': (1, 3),
         'practised_hands': (2, 1),
         'bountiful': (2, 2),

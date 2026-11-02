@@ -71,7 +71,7 @@ void main() {
   final walker = <int, SimulationResult>{};
   final withMeals = <int, SimulationResult>{};
   final noMeals = <int, SimulationResult>{};
-  late SimulationResult fighter;
+  final fighter = <int, SimulationResult>{};
   late SimulationResult gatherer;
 
   setUpAll(() async {
@@ -80,7 +80,8 @@ void main() {
       for (final seed in _seeds) _run(seed: seed, noBonuses: true),
       for (final seed in _seeds)
         _run(seed: seed, noBonuses: true, meals: false),
-      _run(days: 120, walker: Walker.fighter),
+      for (final seed in _seeds)
+        _run(seed: seed, days: 120, walker: Walker.fighter),
       _run(days: 90, walker: Walker.gatherer),
     ]);
     for (final (i, seed) in _seeds.indexed) {
@@ -88,8 +89,10 @@ void main() {
       withMeals[seed] = runs[_seeds.length + i];
       noMeals[seed] = runs[2 * _seeds.length + i];
     }
-    fighter = runs[3 * _seeds.length];
-    gatherer = runs[3 * _seeds.length + 1];
+    for (final (i, seed) in _seeds.indexed) {
+      fighter[seed] = runs[3 * _seeds.length + i];
+    }
+    gatherer = runs[4 * _seeds.length];
   });
 
   for (final seed in _seeds) {
@@ -151,13 +154,14 @@ void main() {
   Iterable<int?> level30(Map<int, SimulationResult> runs) =>
       runs.values.map((r) => r.dayReached(30));
 
-  // Days 16, 50 and 84: seed 1 before spec 0017. The run of seed 1 above is
+  // Days 16, 50 and 84: seed 1 before spec 0017; day 91 with the bag limit
+  // (spec 0021 amendment 1). The run of seed 1 above is
   // this run: the same seed, walker and meals. The supply chest moves level
   // 10 to day 15 (spec 0013 amendment 1).
   test('spec 0017 criterion 31: without feats, seed 1 reaches levels 10, 20 '
-      'and 30 within 5% of days 15, 50 and 84', () {
+      'and 30 within 5% of days 15, 50 and 91', () {
     final seed1 = walker[1]!;
-    for (final (level, day) in [(10, 15), (20, 50), (30, 84)]) {
+    for (final (level, day) in [(10, 15), (20, 50), (30, 91)]) {
       expect(
         seed1.dayReached(level),
         inInclusiveRange(day * .95, day * 1.05),
@@ -199,12 +203,12 @@ void main() {
     }
   });
 
-  test('spec 0010 Â§9.3 target 3: the fighter is at least 15% later to level '
-      '30 (seed 1)', () {
-    final day = fighter.dayReached(30);
-    if (day != null) {
-      expect(day, greaterThanOrEqualTo(median(level30(walker)) * 1.15));
-    }
+  // The 15% of target 3 is a hand-run sim on 16 seeds: on 8 the fighter's
+  // days spread too wide (spec 0021 amendment 1).
+  test('spec 0010 §9.3 target 3 (spec 0021 amendment 1): the fighter is '
+      'later to level 30 (medians of 8 seeds)', () {
+    final days = fighter.values.map((r) => r.dayReached(30) ?? 121);
+    expect(median(days), greaterThan(median(level30(walker))));
   });
 
   test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 6-10 '
