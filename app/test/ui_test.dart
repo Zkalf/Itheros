@@ -126,6 +126,13 @@ Future<void> openTab(WidgetTester tester, String screen) async {
   await tester.pumpAndSettle();
 }
 
+/// Opens Character on its Gear pane: it opens on Bag (#179).
+Future<void> openGear(WidgetTester tester) async {
+  await openTab(tester, 'character');
+  await tester.tap(find.byKey(const ValueKey('tab-gear')));
+  await tester.pumpAndSettle();
+}
+
 /// Opens Professions, then [profession]'s own screen (spec 0010
 /// amendment 4).
 Future<void> openProfession(WidgetTester tester, String profession) async {
@@ -861,7 +868,7 @@ void main() {
       t,
     ) async {
       final (c, _) = await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       await tapRank(t, 6);
       expect(c.testWalkOn, isFalse, reason: 'six is not enough');
       await tapRank(t, 1);
@@ -871,7 +878,7 @@ void main() {
       await openTab(t, 'now');
       expect(card, findsOneWidget);
 
-      await openTab(t, 'character');
+      await openGear(t);
       await tapRank(t, 7);
       expect(c.testWalkOn, isFalse);
       await openTab(t, 'now');
@@ -880,7 +887,7 @@ void main() {
 
     testWidgets('a friend build has no test walk (spec 0007 §4)', (t) async {
       final (c, _) = await pumpGame(t, testWalkAllowed: false);
-      await openTab(t, 'character');
+      await openGear(t);
       await tapRank(t, 7);
       expect(c.testWalkOn, isFalse);
       expect(find.text('Test walk on'), findsNothing);
@@ -1542,7 +1549,7 @@ void layoutScreens() {
 
     testWidgets('Character no longer holds settings', (t) async {
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       expect(find.byKey(const ValueKey('show-next-goal')), findsNothing);
       expect(find.byKey(const ValueKey('version')), findsNothing);
     });
@@ -1574,7 +1581,7 @@ void characterScreen() {
 
     testWidgets('the doll has 16 slots; worn gear sits in its slot', (t) async {
       await pumpGame(t, equipment: {'chest': 'hide_vest'});
-      await openTab(t, 'character');
+      await openGear(t);
       for (final g in game.data.gearSlots) {
         expect(find.byKey(ValueKey('slot-${g.id}')), findsOneWidget);
       }
@@ -1721,7 +1728,7 @@ void characterScreen() {
         inventory: {'mithril_helm': 1},
         equipment: {'head': 'iron_helm'},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       await openCard(t, 'slot-head');
       expect(find.byKey(const ValueKey('slot-sheet')), findsNothing);
       expect(card(find.byKey(const ValueKey('card-change'))), findsOneWidget);
@@ -1774,7 +1781,7 @@ void characterScreen() {
         'sheet', (t) async {
       // An old save can wear an item that later data renamed.
       await pumpGame(t, equipment: {'head': 'gone_helm'});
-      await openTab(t, 'character');
+      await openGear(t);
       await openCard(t, 'slot-head');
       expect(find.byKey(const ValueKey('slot-sheet')), findsOneWidget);
       expect(find.byKey(const ValueKey('sheet-unequip')), findsOneWidget);
@@ -1848,7 +1855,7 @@ void characterScreen() {
 
     testWidgets('amendment 3: the hands alone in the bottom row', (t) async {
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       Offset at(String id) => t.getTopLeft(find.byKey(ValueKey('slot-$id')));
       expect(at('mainHand').dy, at('offHand').dy);
       expect(at('mainHand').dy, greaterThan(at('trinket1').dy));
@@ -1863,7 +1870,7 @@ void characterScreen() {
         t,
         inventory: {'iron_helm': 1, 'mithril_helm': 1, 'hide_vest': 1},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       await openCard(t, 'slot-head');
       expect(find.byKey(const ValueKey('sheet-unequip')), findsNothing);
       expect(
@@ -1883,7 +1890,7 @@ void characterScreen() {
 
     testWidgets('amendment 3: nothing in the bag fits', (t) async {
       await pumpGame(t, inventory: {'goblin_hide': 1});
-      await openTab(t, 'character');
+      await openGear(t);
       await openCard(t, 'slot-neck');
       expect(
         t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
@@ -1938,7 +1945,7 @@ void characterScreen() {
           inventory: {'bone_shield': 1},
           equipment: {'mainHand': 'big_axe'},
         );
-        await openTab(t, 'character');
+        await openGear(t);
         // The greyed Off hand is empty: it opens its sheet (amendment 4,
         // criterion 3).
         await openCard(t, 'slot-offHand');
@@ -1969,7 +1976,7 @@ void characterScreen() {
           withGame: withGear,
           inventory: {'ring_a': 1},
         );
-        await openTab(t, 'character');
+        await openGear(t);
         await openCard(t, 'slot-ring2');
         expect(
           t.widget<Text>(find.byKey(const ValueKey('sheet-title'))).data,
@@ -2176,7 +2183,7 @@ void fightsWithDepth() {
         inventory: {other: 1},
         equipment: {'mainHand': worn, 'head': 'iron_helm'},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       final row = find.byKey(const ValueKey('sheet-worn'));
       // The lines of the row, without its Unequip button.
       List<String?> rowLines() => [
@@ -2330,7 +2337,7 @@ void fightsWithDepth() {
         level: 7,
         equipment: {'offHand': 'bone_shield', 'chest': 'hide_vest'},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       for (final (label, value) in [
         ('Crit', '5%'),
         ('Hit', '0%'),
@@ -2704,6 +2711,24 @@ void professionScreens() {
         card(find.text('Not enough Uncommon dust after your queue')),
         findsOneWidget,
       );
+    });
+
+    // #177: a reroll that goes into the queue says so.
+    testWidgets('a reroll added to the queue says so', (t) async {
+      const key = 'bone_sword@uncommon+crit2';
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {key: 1, 'uncommon_dust': 3},
+      );
+      await c.addAction(const Activity.fight('goblin'));
+      await t.pumpAndSettle();
+      await openItem(t, key);
+      await t.tap(card(find.byKey(const ValueKey('card-reroll'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.queue.last.activity, const Activity.reroll(key));
+      expect(find.textContaining('Added to the queue: '), findsOneWidget);
     });
 
     testWidgets('§7.3: a Legendary rerolls one chosen stat', (t) async {
@@ -3086,7 +3111,7 @@ void lakeAndHunt() {
     testWidgets('§8.3: Character marks the meal in its stats', (t) async {
       final (c, _) = await pumpGame(t, level: 5);
       c.state.meal = ActiveMeal('venison_skewer', 1850);
-      await openTab(t, 'character');
+      await openGear(t);
       final bonus = c.game.mealBonus(c.state).attack;
       expect(bonus, greaterThan(0));
       expect(
@@ -3316,7 +3341,7 @@ void yourCharacter() {
         ),
       );
       c.state.tips.add('bram_10');
-      await openTab(t, 'character');
+      await openGear(t);
       expect(textOf(t, 'character-origin'), "· Woodcutter's son");
       await openSettings(t);
       await t.tap(key('settings-gender'));
@@ -3386,7 +3411,7 @@ void yourCharacter() {
           origin: 'coast_fisher',
         ),
       );
-      await openTab(t, 'character');
+      await openGear(t);
       expect(textOf(t, 'character-name'), 'Zkalf');
       expect(find.text('Recruit'), findsOneWidget);
       expect(textOf(t, 'character-origin'), '· Fisher from the coast');

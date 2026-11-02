@@ -60,6 +60,7 @@ import 'ui_test.dart'
         ada,
         closeSheet,
         game,
+        openGear,
         now,
         openAchievements,
         openArea,
@@ -212,7 +213,7 @@ void criterion2() {
       await closeSheet(t);
 
       // Seven taps on the rank show the snack bar "Test walk on".
-      await openTab(t, 'character');
+      await openGear(t);
       final rank = find.text(game.rank(game.level(c.state)).name);
       for (var i = 0; i < 7; i++) {
         await t.tap(rank);
@@ -291,7 +292,7 @@ void criterion2() {
       }
       await closeSheet(t);
 
-      await openTab(t, 'character');
+      await openGear(t);
       final segments = find.descendant(
         of: find.byType(SegmentedButton<CharacterPane>),
         matching: _buttons,
@@ -690,7 +691,7 @@ void criterion3() {
       }
       await closeSheet(t);
 
-      await openTab(t, 'character');
+      await openGear(t);
       for (final stat in [
         'Level',
         'HP',
@@ -1053,7 +1054,7 @@ void criterion4() {
       expectBordersOnScreen(t, '"Who are you?"');
 
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       expect(find.byType(SegmentedButton<CharacterPane>), findsOneWidget);
       expectBordersOnScreen(t, 'Character');
     });
