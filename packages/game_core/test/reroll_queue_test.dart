@@ -12,11 +12,7 @@ void main() {
   test('a waiting reroll without dust is skipped, with why', () {
     final need = game.data.rerollDust;
     // Dust for one reroll only; four more wait.
-    var s = stateAt(
-      game,
-      level: 12,
-      inventory: {vest: 1, 'rare_dust': need},
-    );
+    var s = stateAt(game, level: 12, inventory: {vest: 1, 'rare_dust': need});
     s = game.startActivity(
       s,
       const Activity.reroll(vest),
