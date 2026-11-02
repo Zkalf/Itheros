@@ -121,10 +121,14 @@ class ItemCard extends StatelessWidget {
                 ),
                 TextButton(
                   key: ValueKey('card-reroll-stat-$i'),
-                  onPressed: () => _close(
-                    context,
-                    () => c.addAction(Activity.rerollStat(item, i)),
-                  ),
+                  // Off when the dust after the queue can't pay it (#178).
+                  onPressed:
+                      c.game.rerollPaid(c.state, Activity.rerollStat(item, i))
+                      ? () => _close(
+                          context,
+                          () => c.addAction(Activity.rerollStat(item, i)),
+                        )
+                      : null,
                   child: Text('Reroll (${_dust(item)})'),
                 ),
               ],
@@ -384,13 +388,21 @@ class ItemCard extends StatelessWidget {
       Wrap(
         spacing: 8,
         children: [
-          if (reroll)
+          if (reroll && game.rerollPaid(c.state, Activity.reroll(item)))
             _button(
               context,
               const ValueKey('card-reroll'),
               'Reroll (${_dust(item)})',
               // One roll: no stop condition to pick.
               () => c.addAction(Activity.reroll(item)),
+            )
+          // The dust after the queue can't pay it (#178).
+          else if (reroll)
+            FilledButton.tonal(
+              key: const ValueKey('card-reroll'),
+              style: slateButton,
+              onPressed: null,
+              child: Text('Reroll (${_dust(item)})'),
             ),
           if (salvage)
             OutlinedButton(
@@ -400,6 +412,11 @@ class ItemCard extends StatelessWidget {
             ),
         ],
       ),
+      if (reroll && !game.rerollPaid(c.state, Activity.reroll(item)))
+        Text(
+          'Not enough ${data.qualityOf(item).name} dust after your queue',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
     ];
   }
 
