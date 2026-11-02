@@ -29,7 +29,8 @@ class CharacterTab extends StatefulWidget {
 }
 
 class _CharacterTabState extends State<CharacterTab> {
-  var _pane = CharacterPane.gear;
+  // It opens on the bag (#179).
+  var _pane = CharacterPane.bag;
 
   @override
   Widget build(BuildContext context) {

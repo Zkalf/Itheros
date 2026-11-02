@@ -23,7 +23,7 @@ import 'quiet_teal_test.dart'
         rootStyle,
         sameRgb,
         styleOf;
-import 'ui_test.dart' show openProfession, openTab, option, pumpGame;
+import 'ui_test.dart' show openGear, openProfession, option, pumpGame;
 
 const _white = 0xFFFFFF;
 
@@ -62,7 +62,7 @@ void main() {
       t,
     ) async {
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       final segments = find.descendant(
         of: find.byType(SegmentedButton<CharacterPane>),
         matching: _buttons,
@@ -195,7 +195,7 @@ void main() {
 
     testWidgets('criterion 8: segments and Journal tabs', (t) async {
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       for (final label in ['Gear', 'Bag']) {
         _expectOutline(_labelOf(t, label), 'the segment $label');
       }

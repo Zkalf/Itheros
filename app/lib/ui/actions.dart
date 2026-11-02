@@ -288,30 +288,45 @@ Future<void> startAction(
       return;
     }
     // The player stays to plan more, so say what went in.
-    final labels = Labels(c.game.data);
-    final before = c.state.queue.length;
-    await c.addAction(a, stop: stop);
-    final s = c.state;
-    final walk = s.queue.length - before == 2
-        ? 'a walk to ${labels.location(s.queue[s.queue.length - 2].activity.target)}, then '
-        : '';
-    final name = labels.short(a);
-    final added = walk.isEmpty
-        ? '${name[0].toUpperCase()}${name.substring(1)}'
-        : '$walk$name';
-    messenger
-      ..removeCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Added to the queue: $added '
-            '(${1 + s.queue.length} of ${c.game.queueSlots(s)}).',
-          ),
-        ),
-      );
+    await addAndSay(c, messenger, a, stop: stop);
   } on ActivityError catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));
   }
+}
+
+/// Adds [a] with [stop] to the queue and says what went in: "Added to the
+/// queue: a walk to Grey Moor, then reroll of the Hide vest (3 of 5)."
+/// With nothing running, [a] starts now and nothing is said (#177).
+/// Throws [ActivityError] if the rules don't allow it.
+Future<void> addAndSay(
+  GameController c,
+  ScaffoldMessengerState messenger,
+  Activity a, {
+  StopCondition? stop,
+}) async {
+  final idle = c.state.activity == null;
+  final labels = Labels(c.game.data);
+  final before = c.state.queue.length;
+  await c.addAction(a, stop: stop);
+  if (idle) return;
+  final s = c.state;
+  final walk = s.queue.length - before == 2
+      ? 'a walk to ${labels.location(s.queue[s.queue.length - 2].activity.target)}, then '
+      : '';
+  final name = labels.short(a);
+  final added = walk.isEmpty
+      ? '${name[0].toUpperCase()}${name.substring(1)}'
+      : '$walk$name';
+  messenger
+    ..removeCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Added to the queue: $added '
+          '(${1 + s.queue.length} of ${c.game.queueSlots(s)}).',
+        ),
+      ),
+    );
 }
 
 /// Whether the player can change the stop condition of [a]: a walk ends on

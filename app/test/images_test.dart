@@ -36,7 +36,7 @@ import 'quiet_teal_test.dart'
         richIn,
         rootStyle,
         styleOf;
-import 'ui_test.dart' show ada, closeSheet, game, openTab, pumpGame;
+import 'ui_test.dart' show ada, closeSheet, game, openGear, openTab, pumpGame;
 
 void main() {
   // The test of the asset manifest reads the app bundle.
@@ -210,7 +210,7 @@ Future<({Rect rank, Rect origin, String text})> headerAt360(
   await pumpGame(t, level: adventurer.level, character: who);
   t.view.physicalSize = const Size(360, 4000);
   await t.pumpAndSettle();
-  await openTab(t, 'character');
+  await openGear(t);
   final origin = find.byKey(const ValueKey('character-origin'));
   return (
     rank: t.getRect(find.text(adventurer.name)),
@@ -487,7 +487,7 @@ void criterion8() {
         'stats, the talent line, and the portrait next to the name', (t) async {
       const level = 12;
       await pumpGame(t, level: level);
-      await openTab(t, 'character');
+      await openGear(t);
       String text(String key) =>
           t.widget<Text>(find.byKey(ValueKey(key))).data!;
       expect(text('character-name'), ada.name);
@@ -539,7 +539,7 @@ void criterion8() {
       t,
     ) async {
       final (c, _) = await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       for (var i = 0; i < 7; i++) {
         await t.tap(find.text(game.rank(1).name));
         await t.pump(const Duration(milliseconds: 100));
@@ -555,7 +555,7 @@ void criterion8() {
         'Cormorant Garamond', (t) async {
       const level = 12;
       await pumpGame(t, level: level);
-      await openTab(t, 'character');
+      await openGear(t);
       final body = quietTheme.textTheme.bodyMedium!;
       final origin = rootStyle(
         richIn(t, find.byKey(const ValueKey('character-origin'))),
@@ -633,7 +633,7 @@ void criterion9() {
         t,
         equipment: {'chest': 'hide_vest', 'mainHand': 'copper_sword'},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       expect(game.data.gearSlots, hasLength(16));
       for (final g in game.data.gearSlots) {
         expect(find.byKey(ValueKey('slot-${g.id}')), findsOneWidget);
@@ -710,7 +710,7 @@ void criterion9() {
         equipment: {'chest': 'hide_vest'},
         inventory: {'copper_sword': 1},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       for (final slot in ['chest', 'head']) {
         expectInkOnTop(t, find.byKey(ValueKey('slot-$slot')), 'slot $slot');
       }
@@ -1080,7 +1080,7 @@ final m2Screens = <(String, Future<void> Function(WidgetTester))>[
         images: diskImages,
         equipment: {'chest': 'hide_vest', 'ring1': bareRing},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       for (final (slot, item) in [
         ('chest', 'hide_vest'),
         ('ring1', bareRing),
@@ -1132,7 +1132,7 @@ final m2Screens = <(String, Future<void> Function(WidgetTester))>[
     'the Character header',
     (t) async {
       await pumpGame(t, images: diskImages);
-      await openTab(t, 'character');
+      await openGear(t);
       expectShows(
         t,
         find.byKey(const ValueKey('character-portrait')),
@@ -1197,7 +1197,7 @@ void criterion13() {
         images: diskImages,
         equipment: {'mainHand': 'iron_pike'},
       );
-      await openTab(t, 'character');
+      await openGear(t);
       for (final g in game.data.gearSlots) {
         if (g.id == 'mainHand') continue;
         final square = find.byKey(ValueKey('slot-${g.id}'));
@@ -1581,7 +1581,7 @@ void criterion23() {
         ]) {
           await t.pumpWidget(const SizedBox());
           await pumpGame(t, images: portraits, character: who);
-          await openTab(t, 'character');
+          await openGear(t);
           expect(
             imagesIn(t, find.byKey(const ValueKey('character-portrait'))),
             [assetOf('players/${who.origin}_${who.gender.name}')],
@@ -1599,7 +1599,7 @@ void criterion23() {
         expect(imagesIn(t, portraitOf(o)), [placeholder], reason: o);
       }
       await pumpGame(t);
-      await openTab(t, 'character');
+      await openGear(t);
       expect(imagesIn(t, find.byKey(const ValueKey('character-portrait'))), [
         placeholder,
       ]);

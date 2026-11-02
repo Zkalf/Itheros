@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'actions.dart';
 import 'away_summary_card.dart';
 import 'images.dart';
 import 'labels.dart';
@@ -126,7 +127,11 @@ class ItemCard extends StatelessWidget {
                       c.game.rerollPaid(c.state, Activity.rerollStat(item, i))
                       ? () => _close(
                           context,
-                          () => c.addAction(Activity.rerollStat(item, i)),
+                          () => addAndSay(
+                            c,
+                            ScaffoldMessenger.of(host),
+                            Activity.rerollStat(item, i),
+                          ),
                         )
                       : null,
                   child: Text('Reroll (${_dust(item)})'),
@@ -394,7 +399,11 @@ class ItemCard extends StatelessWidget {
               const ValueKey('card-reroll'),
               'Reroll (${_dust(item)})',
               // One roll: no stop condition to pick.
-              () => c.addAction(Activity.reroll(item)),
+              () => addAndSay(
+                c,
+                ScaffoldMessenger.of(host),
+                Activity.reroll(item),
+              ),
             )
           // The dust after the queue can't pay it (#178).
           else if (reroll)
