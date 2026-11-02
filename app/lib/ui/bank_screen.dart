@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'action_sheet.dart' show CountDialog;
 import 'bag_grid.dart';
+import 'bag_spaces.dart';
 import 'controller_scope.dart';
 import 'item_card.dart';
 import 'labels.dart';
@@ -95,6 +96,11 @@ class _ItemList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(gutter),
       children: [
+        // The bag's spaces (spec 0021 point 18).
+        if (!inBank) ...[
+          BagSpacesLine(game: controller.game, state: controller.state),
+          const SizedBox(height: 8),
+        ],
         Card(
           clipBehavior: Clip.antiAlias,
           child: Column(
