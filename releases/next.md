@@ -11,3 +11,5 @@
   latest fight round by round, from the top down. Crits, blocks, dodges and misses each have their own colour.
 - **Bank:** Camp has a bank. Store items there and take them back from the Bank card on Now, or look inside from
   the Bank button under your bag anywhere. Crafting and cooking at Camp use what's in the bank too.
+- **Fixed:** queued rerolls no longer get stuck when your dust runs out (or sits in the bank). The rerolls without
+  dust are skipped, and the report says why.

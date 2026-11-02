@@ -409,6 +409,19 @@ extension GameQueue on Game {
   int professionXpFor(GameState s, String profession, int level, int xp) =>
       xp * professionFade(s, profession, level) ~/ 100;
 
+  /// What [a] lacks to start: a craft's inputs, or a reroll's dust. A
+  /// reroll's target is an item key, not a recipe, so it never goes to
+  /// [missingFor].
+  Map<String, int> _missingToStart(GameState s, Activity a) {
+    if (a.kind == ActivityKind.craft) return missingFor(s, a.target);
+    if (a.kind == ActivityKind.reroll) {
+      final dust = _rerollDust(a);
+      final short = data.rerollDust - (s.inventory[dust] ?? 0);
+      return short > 0 ? {dust: short} : const {};
+    }
+    return const {};
+  }
+
   /// The dust a reroll takes: of the item's quality (spec 0010 §7.2).
   String _rerollDust(Activity a) =>
       GameData.dustOf(data.qualityOf(a.rerollKey).id);
@@ -561,7 +574,7 @@ extension GameQueue on Game {
             p.activity,
             why,
             missing: why == SkipReason.noMaterials
-                ? missingFor(s, p.activity.target)
+                ? _missingToStart(s, p.activity)
                 : const {},
           ),
         );
