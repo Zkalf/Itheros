@@ -307,7 +307,7 @@ void main() {
         s = walk(s, 10000);
         expect(game.owned(s, sword), 1);
         expect(s.itemBank['rare_dust'], isNull);
-        },
+      },
     );
   });
 

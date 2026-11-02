@@ -49,7 +49,7 @@ Game _game({bool noBonuses = false}) {
 /// One run of 5,000 steps a day, in an isolate of its own.
 Future<SimulationResult> _run({
   int seed = 1,
-  int days = 100,
+  int days = 105,
   Walker walker = Walker.mixed,
   bool meals = true,
   bool noBonuses = false,
@@ -138,9 +138,10 @@ void main() {
         },
       );
 
-      // A lucky walker may be up to 10 days sooner (spec 0009 amendment 1).
-      test('spec 0009 amendment 1: level 30 on day 70-100', () {
-        expect(result().dayReached(30), inInclusiveRange(70, 100));
+      // A lucky walker may be up to 10 days sooner (spec 0009 amendment 1),
+      // an unlucky one 5 days later than the median's end (amendment 3).
+      test('spec 0009 amendments 1, 3: level 30 on day 70-105', () {
+        expect(result().dayReached(30), inInclusiveRange(70, 105));
       });
     });
   }
