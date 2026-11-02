@@ -402,8 +402,8 @@ void main() {
       expect(planned(t), planned(s));
       // Version 12 (spec 0017) keeps the format of 11; 13 (spec 0015)
       // adds the talents; 14 (spec 0013) the supply chest; 15 (spec 0019) the
-      // fight summaries.
-      expect(GameState.schemaVersion, 15);
+      // fight summaries; 16 (spec 0020) the item bank.
+      expect(GameState.schemaVersion, 16);
     });
   });
 }

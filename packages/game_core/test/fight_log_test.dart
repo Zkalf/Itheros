@@ -133,9 +133,10 @@ void main() {
   });
 
   group('save', () {
-    test('criterion 35: the save version is 15', () {
-      expect(GameState.schemaVersion, 15);
-      expect(fighting('goblin').toJson()['version'], 15);
+    // Spec 0019 raised the version to 15; later specs raise it further.
+    test('criterion 35: the save version is 15 or later', () {
+      expect(GameState.schemaVersion, greaterThanOrEqualTo(15));
+      expect(fighting('goblin').toJson()['version'], GameState.schemaVersion);
     });
 
     test('criterion 36: a schema 14 save with a running fight loads with no '
