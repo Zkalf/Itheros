@@ -88,6 +88,17 @@ extension GameBank on Game {
     return bag + s.itemBank[dust]!;
   }
 
+  /// Whether the dust after the queue pays for reroll [a] added now: the
+  /// bag after the queue, and the bank when the reroll happens at a place
+  /// with a bank (spec 0010 amendment 5 §3.1, spec 0020 amendment 1, #178).
+  bool rerollPaid(GameState s, Activity a) {
+    final end = queuePlaces(s).last;
+    final place = _happensAt(end, a) ? end : _placeFor(s, a, from: end);
+    final withBank = place != null && hasBank(place);
+    final have = bagAfterQueue(s, withBank: withBank)[_rerollDust(a)] ?? 0;
+    return have >= data.rerollDust;
+  }
+
   /// The items that a craft of [recipe] can use: the bag, and the bank when
   /// the craft happens at a place with a bank.
   Map<String, int> materialsFor(GameState s, String recipe) {

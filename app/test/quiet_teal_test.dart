@@ -1258,7 +1258,8 @@ void criterion5() {
     testWidgets('ghost: Keep it; slate: Equip, Reroll and Salvage on the '
         'gear card, and Salvage in its dialog', (t) async {
       const sword = 'bone_sword@rare+crit2+hp10';
-      await pumpGame(t, inventory: {sword: 1});
+      // The dust for one reroll: without it Reroll is off (#178).
+      await pumpGame(t, inventory: {sword: 1, 'rare_dust': 3});
       await openItem(t, sword);
       expectSlate(t, buttonWith('Equip'), 'Equip');
       expectSlate(
