@@ -2609,6 +2609,22 @@ void professionScreens() {
       expect(c.state.inventory['rare_dust'], 1);
     });
 
+    // #176: a new salvage message replaces the one on screen.
+    testWidgets('the message of the last salvage shows at once', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        inventory: {'bone_sword': 1, 'copper_sword': 1},
+      );
+      for (final item in ['bone_sword', 'copper_sword']) {
+        await openItem(t, item);
+        await t.tap(card(find.byKey(const ValueKey('card-salvage'))));
+        await settle(t, c);
+        await t.pumpAndSettle();
+      }
+      expect(find.textContaining('Salvaged the Copper sword'), findsOneWidget);
+      expect(find.textContaining('Salvaged the Bone sword'), findsNothing);
+    });
+
     testWidgets('§8.3: away from a forge the card says where', (t) async {
       await pumpGame(t, location: 'goblin_woods', inventory: {'bone_sword': 1});
       await openItem(t, 'bone_sword');
