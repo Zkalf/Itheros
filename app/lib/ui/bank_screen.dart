@@ -31,7 +31,11 @@ class BankScreen extends StatelessWidget {
         appBar: AppBar(
           leading: const BackPlate(),
           title: const Text('Bank'),
+          // The tab shown is teal and underlined, the other muted.
           bottom: const TabBar(
+            indicatorColor: Quiet.teal,
+            labelColor: Quiet.teal,
+            unselectedLabelColor: Quiet.muted,
             tabs: [
               Tab(key: ValueKey('bank-tab-bag'), text: 'Bag'),
               Tab(key: ValueKey('bank-tab-bank'), text: 'Bank'),
