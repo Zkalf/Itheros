@@ -430,9 +430,11 @@ class ItemCard extends StatelessWidget {
       if (sure != true) return;
     }
     final result = await controller.salvage(item);
-    messenger.showSnackBar(
-      SnackBar(content: Text(labels.salvaged(item, result))),
-    );
+    // The new message replaces the one on screen, so quick salvages don't
+    // queue up their messages (#176).
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(labels.salvaged(item, result))));
   }
 
   /// What a reroll of [key] takes: "3 Rare dust".
