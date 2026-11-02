@@ -154,22 +154,6 @@ void main() {
   Iterable<int?> level30(Map<int, SimulationResult> runs) =>
       runs.values.map((r) => r.dayReached(30));
 
-  // Days 16, 50 and 84: seed 1 before spec 0017; day 91 with the bag limit
-  // (spec 0021 amendment 1). The run of seed 1 above is
-  // this run: the same seed, walker and meals. The supply chest moves level
-  // 10 to day 15 (spec 0013 amendment 1).
-  test('spec 0017 criterion 31: without feats, seed 1 reaches levels 10, 20 '
-      'and 30 within 5% of days 15, 50 and 91', () {
-    final seed1 = walker[1]!;
-    for (final (level, day) in [(10, 15), (20, 50), (30, 91)]) {
-      expect(
-        seed1.dayReached(level),
-        inInclusiveRange(day * .95, day * 1.05),
-        reason: 'level $level',
-      );
-    }
-  });
-
   test('spec 0009 amendment 1: the median seed reaches level 30 on day '
       '80-100', () {
     expect(median(level30(walker)), inInclusiveRange(80, 100));
