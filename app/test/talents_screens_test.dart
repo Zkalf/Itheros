@@ -378,7 +378,7 @@ void main() {
         prepare: (s) => s
           ..talents['might'] = 1
           ..talentResets = 1
-          ..bank = 1500,
+          ..stepBank = 1500,
       );
       await t.tap(find.byKey(const ValueKey('trainer')));
       await t.pumpAndSettle();
@@ -412,7 +412,7 @@ void main() {
         level: 12,
         prepare: (s) => s
           ..talents['might'] = 2
-          ..bank = 5000,
+          ..stepBank = 5000,
       );
       await t.tap(find.byKey(const ValueKey('trainer')));
       await t.pumpAndSettle();

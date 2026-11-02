@@ -66,9 +66,9 @@ extension GameAchievements on Game {
     switch (a.reward) {
       case BankCapReward():
         final cap = bankCap(s);
-        if (s.bank > cap) {
-          bankSteps = s.bank - cap;
-          s.bank = cap;
+        if (s.stepBank > cap) {
+          bankSteps = s.stepBank - cap;
+          s.stepBank = cap;
         }
       case ItemReward(item: final id, :final quality):
         final key = data.keyFor(id, quality);

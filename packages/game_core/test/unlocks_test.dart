@@ -88,7 +88,7 @@ void main() {
 
     s = game.startActivity(s, const Activity.travel('goblin_woods'));
     expect(s.activity!.progress, 0);
-    expect(s.bank, 100, reason: 'spec 0001 amendment 2');
+    expect(s.stepBank, 100, reason: 'spec 0001 amendment 2');
     expect(s.inventory['copper_ore'], 5);
   });
 

@@ -6,6 +6,7 @@ class LocationDef {
       name = _str(j, 'name'),
       crafting = j['crafting'] as bool? ?? false,
       fire = j['fire'] as bool? ?? false,
+      itemBank = j['itemBank'] as bool? ?? false,
       hidden = j['hidden'] as bool? ?? false,
       enemies = _strList(j, 'enemies'),
       nodes = _strList(j, 'nodes'),
@@ -21,6 +22,10 @@ class LocationDef {
 
   /// A camp fire: cooking happens only here (spec 0011 §5.1).
   final bool fire;
+
+  /// An item bank: items move between the bag and the bank only here (spec
+  /// 0020 §2).
+  final bool itemBank;
 
   /// Off the map, out of every list and route until revealed (spec 0011
   /// §6.2).

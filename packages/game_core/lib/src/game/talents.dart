@@ -155,12 +155,12 @@ extension GameTalents on Game {
       throw ActivityError('No talents to forget');
     }
     final price = resetPriceNow(s);
-    if (s.bank < price) {
+    if (s.stepBank < price) {
       throw ActivityError('You need ${_grouped(price)} steps in the bank.');
     }
     final n = s.copy()
       ..talents.clear()
-      ..bank = s.bank - price
+      ..stepBank = s.stepBank - price
       ..walkedSinceReset = 0
       ..talentResets = s.talentResets + 1;
     if (price > 0) {

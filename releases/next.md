@@ -9,3 +9,5 @@
 - **New fight log:** the Now screen shows less during a fight: your health, the monster's health, how the last fight
   ended, and a Fight details button. Fight details lists your last 10 fights (rounds, damage taken, crits) and the
   latest fight round by round, from the top down. Crits, blocks, dodges and misses each have their own colour.
+- **Bank:** Camp has a bank. Store items there and take them back from the Bank card on Now, or look inside from
+  the Bank button under your bag anywhere. Crafting and cooking at Camp use what's in the bank too.

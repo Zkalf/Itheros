@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'item_card.dart';
@@ -25,41 +26,6 @@ class BagGrid extends StatelessWidget {
         child: Text('Nothing yet. Fight and gather to find things.'),
       );
     }
-    // Ties fall back to data order, then quality order, so squares never
-    // move when something is equipped (spec 0005 §5).
-    final slotRank = <String, int>{};
-    for (final g in data.gearSlots) {
-      slotRank.putIfAbsent(g.kind, () => slotRank.length);
-    }
-    final itemRank = {for (final (i, id) in data.items.keys.indexed) id: i};
-    final qualityRank = {for (final (i, q) in data.qualities.indexed) q.id: i};
-    int stable(String a, String b) {
-      final byItem = (itemRank[data.itemOf(a)?.id] ?? 1 << 20).compareTo(
-        itemRank[data.itemOf(b)?.id] ?? 1 << 20,
-      );
-      if (byItem != 0) return byItem;
-      return qualityRank[data.qualityOf(a).id]!.compareTo(
-        qualityRank[data.qualityOf(b).id]!,
-      );
-    }
-
-    final gear =
-        [
-          for (final k in s.inventory.keys)
-            if (data.itemOf(k)?.slot != null) k,
-        ]..sort((a, b) {
-          final bySlot = slotRank[data.itemOf(a)!.slot]!.compareTo(
-            slotRank[data.itemOf(b)!.slot]!,
-          );
-          if (bySlot != 0) return bySlot;
-          final byScore = data.scoreOf(b).compareTo(data.scoreOf(a));
-          return byScore != 0 ? byScore : stable(a, b);
-        });
-    final materials = [
-      for (final k in s.inventory.keys)
-        if (data.itemOf(k)?.slot == null) k,
-    ]..sort(stable);
-
     return GridView.count(
       key: const ValueKey('bag'),
       crossAxisCount: columns,
@@ -68,7 +34,7 @@ class BagGrid extends StatelessWidget {
       mainAxisSpacing: 6,
       crossAxisSpacing: 6,
       children: [
-        for (final key in [...gear, ...materials])
+        for (final key in bagOrder(data, s.inventory.keys))
           ItemSquare(
             key: ValueKey('bag-$key'),
             data: data,
@@ -81,4 +47,46 @@ class BagGrid extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The bag's order (spec 0008 §3.5): gear first, by slot order then best
+/// first, then materials in data order. The bank screen uses it too (spec
+/// 0020 §3.2).
+List<String> bagOrder(GameData data, Iterable<String> keys) {
+  // Ties fall back to data order, then quality order, so squares never
+  // move when something is equipped (spec 0005 §5).
+  final slotRank = <String, int>{};
+  for (final g in data.gearSlots) {
+    slotRank.putIfAbsent(g.kind, () => slotRank.length);
+  }
+  final itemRank = {for (final (i, id) in data.items.keys.indexed) id: i};
+  final qualityRank = {for (final (i, q) in data.qualities.indexed) q.id: i};
+  int stable(String a, String b) {
+    final byItem = (itemRank[data.itemOf(a)?.id] ?? 1 << 20).compareTo(
+      itemRank[data.itemOf(b)?.id] ?? 1 << 20,
+    );
+    if (byItem != 0) return byItem;
+    return qualityRank[data.qualityOf(a).id]!.compareTo(
+      qualityRank[data.qualityOf(b).id]!,
+    );
+  }
+
+  final gear =
+      [
+        for (final k in keys)
+          if (data.itemOf(k)?.slot != null) k,
+      ]..sort((a, b) {
+        final bySlot = slotRank[data.itemOf(a)!.slot]!.compareTo(
+          slotRank[data.itemOf(b)!.slot]!,
+        );
+        if (bySlot != 0) return bySlot;
+        final byScore = data.scoreOf(b).compareTo(data.scoreOf(a));
+        return byScore != 0 ? byScore : stable(a, b);
+      });
+  final materials = [
+    for (final k in keys)
+      if (data.itemOf(k)?.slot == null) k,
+  ]..sort(stable);
+
+  return [...gear, ...materials];
 }

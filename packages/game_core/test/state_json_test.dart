@@ -11,7 +11,7 @@ void main() {
   final game = newTestGame();
 
   test('round trip mid-fight continues identically', () {
-    var s = stateAt(game, location: 'goblin_woods', bank: 40, seed: 99)
+    var s = stateAt(game, location: 'goblin_woods', stepBank: 40, seed: 99)
       ..inventory['copper_ore'] = 2
       ..equipment['mainHand'] = 'rusty_dagger';
     s = game.startActivity(s, const Activity.fight('goblin'));
@@ -92,7 +92,7 @@ void main() {
     final s = game.newGame(seed: 5);
     expect(s.location, 'camp');
     expect(game.level(s), 1);
-    expect(s.bank, 0);
+    expect(s.stepBank, 0);
     expect(s.activity, isNull);
     expect(s.inventory, isEmpty);
   });

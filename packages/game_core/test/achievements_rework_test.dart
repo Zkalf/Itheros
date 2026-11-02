@@ -459,12 +459,12 @@ void main() {
       final s = stateAt(game)
         ..counters['steps.walked'] = 50000
         ..achievements.addAll(['first_steps', 'marathon']);
-      s.bank = game.bankCap(s);
+      s.stepBank = game.bankCap(s);
       final loaded = game.load(saved(s));
       final lost = loaded.events.whereType<AchievementLost>().single;
       expect(lost.id, 'marathon');
       expect(game.bankCap(loaded.state), game.bankCap(s) - 500);
-      expect(loaded.state.bank, game.bankCap(loaded.state));
+      expect(loaded.state.stepBank, game.bankCap(loaded.state));
       expect(lost.bankSteps, 500);
     });
 

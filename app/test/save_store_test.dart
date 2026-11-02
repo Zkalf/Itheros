@@ -13,7 +13,7 @@ void main() {
   late SaveStore store;
 
   SaveData saveWithBank(int bank) => SaveData(
-    game: game.newGame(seed: 1)..bank = bank,
+    game: game.newGame(seed: 1)..stepBank = bank,
     firstDay: '2026-10-18',
     credited: {'2026-10-18': bank},
   );
@@ -38,7 +38,7 @@ void main() {
   test('a later save replaces the earlier one', () async {
     await store.save(saveWithBank(1));
     await store.save(saveWithBank(2));
-    expect((await store.load())!.game.bank, 2);
+    expect((await store.load())!.game.stepBank, 2);
   });
 
   test('a crash before the rename leaves the old save intact', () async {
@@ -47,10 +47,10 @@ void main() {
     await File('${dir.path}/save.json.tmp').writeAsString('{"version": 1, "fi');
 
     final loaded = await store.load();
-    expect(loaded!.game.bank, 7);
+    expect(loaded!.game.stepBank, 7);
 
     await store.save(saveWithBank(8));
-    expect((await store.load())!.game.bank, 8);
+    expect((await store.load())!.game.stepBank, 8);
   });
 
   test('a version 2 save loads with an empty journal (spec 0004)', () {
@@ -61,6 +61,6 @@ void main() {
     final loaded = SaveData.fromJson(json);
     expect(loaded.journal, isEmpty);
     expect(loaded.testWalk, isFalse);
-    expect(loaded.game.bank, 5);
+    expect(loaded.game.stepBank, 5);
   });
 }

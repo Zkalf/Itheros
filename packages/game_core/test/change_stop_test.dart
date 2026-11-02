@@ -72,13 +72,13 @@ void main() {
 
     test('no steps go to the bank when the goal is not reached', () {
       var s = game.applySteps(twoFights(), 25).state;
-      final bank = s.bank;
+      final bank = s.stepBank;
       s = game.changeStop(
         s,
         0,
         const StopCondition.untilHave('goblin_hide', 50),
       );
-      expect(s.bank, bank);
+      expect(s.stepBank, bank);
     });
 
     test('the change leaves the state it was given as it was', () {
@@ -180,7 +180,7 @@ void main() {
 
       expect(events.whereType<ActivityEnded>().single.reason, EndReason.enough);
       expect(events.whereType<ActionStarted>().single.activity, goblins);
-      expect(s.bank, 9);
+      expect(s.stepBank, 9);
       expect(s.activity!.activity, goblins);
       expect(s.activity!.stop, hides);
       expect(s.queue, isEmpty);

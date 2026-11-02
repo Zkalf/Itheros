@@ -39,7 +39,7 @@ void main(List<String> args) {
   for (final d in result.days) {
     stdout.writeln(
       '${d.day.toString().padLeft(3)}  ${d.level.toString().padLeft(5)}  '
-      '${d.xp.toString().padLeft(5)}  ${d.bank.toString().padLeft(5)}  '
+      '${d.xp.toString().padLeft(5)}  ${d.stepBank.toString().padLeft(5)}  '
       '${d.equipment.values.join(', ')}',
     );
   }

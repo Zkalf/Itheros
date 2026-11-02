@@ -292,12 +292,12 @@ void main() {
       );
       final rested = game.applySteps(s, 500).state;
       expect(rested.meal!.left, 3000);
-      expect(rested.bank, 500);
+      expect(rested.stepBank, 500);
       final walked = work(s, const Activity.travel('goblin_woods'), 200).state;
       expect(walked.meal!.left, 2800);
       // With the bank boosting, both steps of each walked step count.
       final boosted = work(
-        s..bank = 100,
+        s..stepBank = 100,
         const Activity.travel('goblin_woods'),
         100,
       ).state;
