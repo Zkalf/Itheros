@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'bank_screen.dart';
 import 'bag_grid.dart';
 import 'controller_scope.dart';
 import 'images.dart';
@@ -167,7 +168,23 @@ class _CharacterTabState extends State<CharacterTab> {
               padding: const EdgeInsets.all(10),
               child: switch (_pane) {
                 CharacterPane.gear => PaperDoll(controller: c),
-                CharacterPane.bag => BagGrid(controller: c),
+                CharacterPane.bag => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BagGrid(controller: c),
+                    const SizedBox(height: 10),
+                    // The item bank, open everywhere (spec 0020 §3.1).
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('bag-bank'),
+                        onPressed: () => openBank(context),
+                        icon: const Icon(Icons.account_balance),
+                        label: const Text('Bank'),
+                      ),
+                    ),
+                  ],
+                ),
                 CharacterPane.talents => const SizedBox.shrink(),
               },
             ),

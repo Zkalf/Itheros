@@ -338,6 +338,14 @@ class GameController extends ChangeNotifier {
     return result;
   }
 
+  /// Moves [count] of [key] from the bag to the item bank (spec 0020 §2).
+  Future<void> storeInBank(String key, int count) =>
+      _act((s) => game.store(s, key, count));
+
+  /// Moves [count] of [key] from the item bank to the bag.
+  Future<void> takeFromBank(String key, int count) =>
+      _act((s) => game.take(s, key, count));
+
   /// Takes one rank of [talent] (spec 0015 §2.1): anywhere, no steps.
   Future<void> takeRank(String talent) => _act((s) => game.takeRank(s, talent));
 

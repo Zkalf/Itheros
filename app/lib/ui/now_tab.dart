@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
+import 'bank_screen.dart';
 import 'controller_scope.dart';
 import 'fight_sheet.dart';
 import 'images.dart';
@@ -685,6 +686,21 @@ class _Here extends StatelessWidget {
           title: const Text('Forge'),
           subtitle: const Text('Craft gear in Professions'),
           onTap: () => onOpenProfessions!('crafting'),
+        ),
+      // The item bank (spec 0020 §3.1).
+      if (place.bank)
+        ListTile(
+          key: const ValueKey('bank-card'),
+          leading: const Icon(Icons.account_balance),
+          title: const Text('Bank'),
+          titleTextStyle: nameStyle(context),
+          subtitle: const Text('Store items and take them back'),
+          trailing: FilledButton(
+            key: const ValueKey('open-bank'),
+            onPressed: () => openBank(context),
+            child: const Text('Open bank'),
+          ),
+          onTap: () => openBank(context),
         ),
       // The camp fire opens Cooking (spec 0011 §5.1).
       if (place.fire && onOpenProfessions != null)

@@ -97,17 +97,23 @@ extension GameItems on Game {
         item,
   ];
 
-  bool hasMaterials(GameState s, String recipe) => data
-      .recipes[recipe]!
-      .inputs
-      .entries
-      .every((e) => (s.inventory[e.key] ?? 0) >= e.value);
+  /// Whether the bag (and the bank, for a craft at a place with a bank:
+  /// spec 0020) holds the inputs of [recipe].
+  bool hasMaterials(GameState s, String recipe) {
+    final have = materialsFor(s, recipe);
+    return data.recipes[recipe]!.inputs.entries.every(
+      (e) => (have[e.key] ?? 0) >= e.value,
+    );
+  }
 
   /// How many more of each input [recipe] needs, in recipe order.
-  Map<String, int> missingFor(GameState s, String recipe) => {
-    for (final e in data.recipes[recipe]!.inputs.entries)
-      if (e.value - (s.inventory[e.key] ?? 0) case final n when n > 0) e.key: n,
-  };
+  Map<String, int> missingFor(GameState s, String recipe) {
+    final have = materialsFor(s, recipe);
+    return {
+      for (final e in data.recipes[recipe]!.inputs.entries)
+        if (e.value - (have[e.key] ?? 0) case final n when n > 0) e.key: n,
+    };
+  }
 
   /// How many crafts of [recipe] [bag] allows; null for a recipe with no
   /// inputs (spec 0010 amendment 5 §2.1).
@@ -191,6 +197,10 @@ extension GameItems on Game {
     bool isIt(String key) => data.itemOf(key)?.id == item;
     var n = s.equipment.values.where(isIt).length;
     s.inventory.forEach((key, count) {
+      if (isIt(key)) n += count;
+    });
+    // Owning an item in the bank counts as owning it (spec 0020 rule 10).
+    s.bankItems.forEach((key, count) {
       if (isIt(key)) n += count;
     });
     return n;

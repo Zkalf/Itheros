@@ -485,6 +485,8 @@ class _RecipeTile extends StatelessWidget {
     // are gathered (spec 0003 §4, spec 0008 decision 7); only its Crafting
     // level holds it back (spec 0010 §2.2).
     final levelMet = game.recipeLevelMet(s, recipe);
+    // At a place with a bank, the bank counts too (spec 0020 §3.3).
+    final have = game.materialsFor(s, recipe);
     // A weapon says its damage type and hands before its stats, in place of
     // its slot (spec 0010 amendment 7).
     final weapon = labels.weaponLine(out.id);
@@ -520,15 +522,14 @@ class _RecipeTile extends StatelessWidget {
             for (final (i, e) in r.inputs.entries.indexed) ...[
               if (i > 0) const TextSpan(text: ', '),
               TextSpan(
-                text:
-                    '${labels.item(e.key)} ${s.inventory[e.key] ?? 0}/${e.value}',
-                style: (s.inventory[e.key] ?? 0) < e.value
+                text: '${labels.item(e.key)} ${have[e.key] ?? 0}/${e.value}',
+                style: (have[e.key] ?? 0) < e.value
                     ? const TextStyle(color: Quiet.short)
                     : null,
               ),
             ],
             // The crafts the bag of now allows (spec 0010 amendment 5 §2.1).
-            if (game.craftsAllowed(s.inventory, recipe) case final n?)
+            if (game.craftsAllowed(have, recipe) case final n?)
               TextSpan(
                 text: ' · Enough for $n',
                 style: n == 0 ? const TextStyle(color: Quiet.short) : null,

@@ -205,10 +205,10 @@ void main() {
       source.walk(DateTime(2026, 10, 18, 9, 30), 300);
       now = DateTime(2026, 10, 18, 10);
       expect(c.stepsToday, 0);
-      await c.store('iron_ore', 1);
+      await c.storeInBank('iron_ore', 1);
       expect(c.stepsToday, 300);
       expect(c.state.bankItems['iron_ore'], 1);
-      await c.take('iron_ore', 1);
+      await c.takeFromBank('iron_ore', 1);
       expect(c.state.inventory['iron_ore'], 2);
     });
   });

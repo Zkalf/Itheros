@@ -96,7 +96,7 @@ class _ActionSheetState extends State<ActionSheet> {
   Future<void> _typeCount() async {
     final n = await showDialog<int>(
       context: context,
-      builder: (_) => _CountDialog(_count),
+      builder: (_) => CountDialog(_count),
     );
     if (n != null && mounted) setState(() => _count = n);
   }
@@ -417,6 +417,13 @@ class _MaterialsTable extends StatelessWidget {
     // With an action running, the new one waits after the queue.
     final queued = state.activity != null;
     final bag = game.bagAfterQueue(state);
+    // A craft at a place with a bank counts the bank too (spec 0020 §2.7).
+    if (state.bankItems.isNotEmpty && game.craftUsesBank(state, recipe)) {
+      state.bankItems.forEach((key, n) {
+        final id = game.data.itemOf(key)?.id ?? key;
+        bag[id] = (bag[id] ?? 0) + n;
+      });
+    }
     final crafts = game.craftsFor(Activity.craft(recipe), stop, bag);
     final allowed = game.craftsAllowed(bag, recipe)!;
     final number = text.bodyMedium?.copyWith(fontFamily: Fonts.number);
@@ -527,18 +534,19 @@ class _MaterialsTable extends StatelessWidget {
   }
 }
 
-/// Types the number of "Until I have N" or "Until N crafted" (#115). Pops the
-/// number, at least 1, or null on Cancel.
-class _CountDialog extends StatefulWidget {
-  const _CountDialog(this.count);
+/// Types the number of "Until I have N" or "Until N crafted" (#115), or of a
+/// bank move (spec 0020 §3.2). Pops the number, at least 1, or null on
+/// Cancel.
+class CountDialog extends StatefulWidget {
+  const CountDialog(this.count, {super.key});
 
   final int count;
 
   @override
-  State<_CountDialog> createState() => _CountDialogState();
+  State<CountDialog> createState() => _CountDialogState();
 }
 
-class _CountDialogState extends State<_CountDialog> {
+class _CountDialogState extends State<CountDialog> {
   late final _field = TextEditingController(text: '${widget.count}')
     ..selection = TextSelection(
       baseOffset: 0,

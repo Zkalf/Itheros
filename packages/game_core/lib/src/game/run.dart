@@ -178,7 +178,7 @@ class _Run {
           recipe.xp,
           recipe.steps,
         );
-        recipe.inputs.forEach((item, n) => s.addItem(item, -n));
+        recipe.inputs.forEach((item, n) => game._useInput(s, item, n));
         final made = _crafted(recipe);
         s.addItem(made);
         _gain(act, made);

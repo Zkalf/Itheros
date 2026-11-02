@@ -328,6 +328,7 @@ class GameState {
     this.activity,
     List<PlannedAction>? queue,
     Map<String, int>? inventory,
+    Map<String, int>? bankItems,
     Map<String, String>? equipment,
     Map<String, int>? counters,
     Set<String>? achievements,
@@ -360,6 +361,7 @@ class GameState {
        supplyChests = supplyChests ?? [],
        queue = queue ?? [],
        inventory = inventory ?? {},
+       bankItems = bankItems ?? {},
        equipment = equipment ?? {},
        counters = counters ?? {},
        achievements = achievements ?? {},
@@ -392,6 +394,8 @@ class GameState {
           PlannedAction.fromJson(p! as Map<String, Object?>),
       ],
       inventory: _intMap(json['inventory']),
+      // Saves before version 16 have an empty bank (spec 0020 §4).
+      bankItems: json['bankItems'] == null ? null : _intMap(json['bankItems']),
       equipment: (json['equipment'] as Map<String, Object?>).map(
         (k, v) => MapEntry(k, v as String),
       ),
@@ -470,7 +474,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 15;
+  static const schemaVersion = 16;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -487,6 +491,10 @@ class GameState {
 
   /// Item id to count. Items with count 0 are removed.
   final Map<String, int> inventory;
+
+  /// The item bank (spec 0020): item key to count, as [inventory]. [bank] is
+  /// the step bank.
+  final Map<String, int> bankItems;
 
   /// Slot id (spec 0008 §2.1) to item key.
   final Map<String, String> equipment;
@@ -580,6 +588,7 @@ class GameState {
     'activity': activity?.toJson(),
     'queue': [for (final p in queue) p.toJson()],
     'inventory': Map.of(inventory),
+    'bankItems': Map.of(bankItems),
     'equipment': Map.of(equipment),
     'rng': rngState,
     'counters': Map.of(counters),
