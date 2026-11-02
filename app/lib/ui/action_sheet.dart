@@ -416,14 +416,12 @@ class _MaterialsTable extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     // With an action running, the new one waits after the queue.
     final queued = state.activity != null;
-    final bag = game.bagAfterQueue(state);
     // A craft at a place with a bank counts the bank too (spec 0020 §2.7).
-    if (state.bankItems.isNotEmpty && game.craftUsesBank(state, recipe)) {
-      state.bankItems.forEach((key, n) {
-        final id = game.data.itemOf(key)?.id ?? key;
-        bag[id] = (bag[id] ?? 0) + n;
-      });
-    }
+    final bag = game.bagAfterQueue(
+      state,
+      withBank:
+          state.bankItems.isNotEmpty && game.craftUsesBank(state, recipe),
+    );
     final crafts = game.craftsFor(Activity.craft(recipe), stop, bag);
     final allowed = game.craftsAllowed(bag, recipe)!;
     final number = text.bodyMedium?.copyWith(fontFamily: Fonts.number);

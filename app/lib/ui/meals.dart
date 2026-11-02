@@ -16,7 +16,7 @@ String? mealLine(Game game, GameState s, {bool withAuto = true}) {
     if (withAuto && auto != null)
       'auto-eat '
           '${auto.meal == game.data.itemOf(meal.key)?.id ? '' : '${labels.item(auto.meal)} '}'
-          '${autoEatMode(auto)} (${game.owned(s, auto.meal)})',
+          '${autoEatMode(auto)} (${game.inBag(s, auto.meal)})',
   ].join(' · ');
 }
 
@@ -30,5 +30,5 @@ String autoEatLine(Game game, GameState s) {
   final auto = s.autoEat;
   if (auto == null) return 'Auto-eat: off. Pick a meal in your bag.';
   return 'Auto-eat: ${Labels(game.data).item(auto.meal)}, '
-      '${autoEatMode(auto)} (${game.owned(s, auto.meal)} in the bag)';
+      '${autoEatMode(auto)} (${game.inBag(s, auto.meal)} in the bag)';
 }

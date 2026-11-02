@@ -336,8 +336,10 @@ extension GameProgress on Game {
       if (hasMaterials(s, r.id)) return CraftGoal(r.id);
     }
     for (final r in upgrades) {
+      // The bank counts for a craft at a place with a bank (spec 0020).
+      final have = materialsFor(s, r.id);
       for (final input in r.inputs.entries) {
-        final missing = input.value - (s.inventory[input.key] ?? 0);
+        final missing = input.value - (have[input.key] ?? 0);
         if (missing <= 0) continue;
         final source = _safeSource(s, input.key);
         if (source != null) return CollectGoal(input.key, missing, source);
@@ -390,8 +392,9 @@ extension GameProgress on Game {
     if (!recipeLevelMet(s, best.id)) {
       return need(best.profession, best.craftingLevel, Activity.craft(best.id));
     }
+    final have = materialsFor(s, best.id);
     for (final MapEntry(key: input, value: count) in best.inputs.entries) {
-      if ((s.inventory[input] ?? 0) >= count || _safeSource(s, input) != null) {
+      if ((have[input] ?? 0) >= count || _safeSource(s, input) != null) {
         continue;
       }
       for (final n in data.nodes.values) {
