@@ -41,10 +41,11 @@ void main() {
       );
     });
 
-    test('only the last fightLogRounds rounds are kept, across fights', () {
-      expect(game.data.fightLogRounds, 4);
+    // Spec 0019 rule 3 overrides "across fights": the log holds the latest
+    // fight only (fight_log_test.dart).
+    test('the log holds the rounds of the latest fight only', () {
       final s = game.applySteps(fight('rat'), 60).state;
-      expect([for (final r in s.activity!.log) r.round], [3, 1, 2, 3]);
+      expect([for (final r in s.activity!.log) r.round], [1, 2, 3]);
     });
 
     test('the log survives a reload', () {
