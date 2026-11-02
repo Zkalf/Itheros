@@ -203,6 +203,41 @@ void main() {
     });
   });
 
+  group('review of PR #172', () {
+    test('the next goal counts the bank in what is left to collect', () {
+      final s = at(
+        'camp',
+        level: 3,
+        bag: {'copper_ore': 1},
+        bank: {'copper_ore': 3},
+      );
+      expect(game.nextGoal(s), isA<CollectGoal>());
+      final goal = game.nextGoal(s)! as CollectGoal;
+      expect(goal.item, 'copper_ore');
+      expect(goal.count, 1, reason: '5 needed, 4 in the bag and the bank');
+    });
+
+    test('the bag after the queue takes a waiting craft out of the bank', () {
+      final s = at('camp', bank: {'copper_ore': 10})
+        ..activity = RunningActivity(
+          const Activity.craft(sword),
+          stop: const StopCondition.untilCrafted(1),
+        );
+      expect(game.bagAfterQueue(s, withBank: true)['copper_ore'], 5);
+      expect(game.bagAfterQueue(s)['copper_ore'] ?? 0, 0);
+    });
+
+    test('the bag count of a meal leaves out the bank', () {
+      final s = at(
+        'camp',
+        bag: {'grilled_perch': 1},
+        bank: {'grilled_perch': 4},
+      );
+      expect(game.inBag(s, 'grilled_perch'), 1);
+      expect(game.owned(s, 'grilled_perch'), 5);
+    });
+  });
+
   group('save', () {
     test('criterion 26: the save version is 16', () {
       expect(GameState.schemaVersion, 16);
