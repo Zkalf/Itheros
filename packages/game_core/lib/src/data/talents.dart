@@ -21,6 +21,9 @@ enum TalentEffect {
   travelSteps,
   rerollQuality,
   professionXp,
+
+  /// More bag spaces (spec 0021 rule 11).
+  bagSpaces,
 }
 
 /// A talent tree: Combat or Utility (spec 0015 §2.3, §2.4).

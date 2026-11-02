@@ -536,7 +536,7 @@ class _RecipeTile extends StatelessWidget {
               ),
             TextSpan(
               text: levelMet
-                  ? ' · ${game.professionSteps(s, r.profession, r.steps)} '
+                  ? ' · ${game.stepsFor(s, Activity.craft(recipe))} '
                         'steps · '
                         '${game.professionXpFor(s, r.profession, r.level, r.xp)} '
                         '${labels.profession(r.profession)} XP'

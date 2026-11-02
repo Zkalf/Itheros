@@ -126,7 +126,11 @@ class _Run {
 
   void _arrive(String area) {
     final route = game.data.route(s.location, area)?.steps ?? 0;
-    final steps = game.travelCost(s, route);
+    final steps = game.travelCost(
+      s,
+      route,
+      load: game.loadFactor(s, const Activity.travel(''), leg: true),
+    );
     s.location = area;
     game._visit(s, area);
     events.add(Arrived(area, steps: steps));

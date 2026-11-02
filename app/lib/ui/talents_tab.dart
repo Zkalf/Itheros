@@ -438,6 +438,7 @@ IconData talentIcon(String image) => switch (image) {
   'queue' => Icons.playlist_add,
   'travel' => Icons.hiking,
   'reroll' => Icons.casino,
+  'bag' => Icons.backpack,
   _ => Icons.auto_awesome,
 };
 
@@ -467,6 +468,7 @@ String talentEffect(GameData data, TalentDef talent, int rank) {
     TalentEffect.travelSteps => '${pct(v)} fewer travel steps',
     TalentEffect.rerollQuality => '+${pct(v)} better rerolls',
     TalentEffect.professionXp => '+${pct(v)} profession XP',
+    TalentEffect.bagSpaces => '+${v.round()} bag spaces',
   };
 }
 

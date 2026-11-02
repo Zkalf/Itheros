@@ -56,6 +56,9 @@ class GameData {
        shards = _strList(_map(economy, 'salvage'), 'shards'),
        rerollSteps = _int(_map(economy, 'reroll'), 'steps'),
        rerollDust = _int(_map(economy, 'reroll'), 'dust'),
+       bagSpaces = _int(_map(economy, 'bag'), 'spaces'),
+       bagOverloadStep = _num(_map(economy, 'bag'), 'overloadStep'),
+       bagOverloadMax = _num(_map(economy, 'bag'), 'overloadMax'),
        mealSteps = _int(_map(economy, 'meals'), 'steps'),
        mealPercent = List.unmodifiable(
          (_map(economy, 'meals')['percent'] as List<Object?>).cast<int>(),
@@ -245,6 +248,13 @@ class GameData {
   /// A reroll's forge steps and the dust it takes (spec 0010 §7.2).
   final int rerollSteps;
   final int rerollDust;
+
+  /// The bag's spaces before Bigger bag (spec 0021 rule 1).
+  final int bagSpaces;
+
+  /// The overload for each space over, and its most (spec 0021 rule 5).
+  final double bagOverloadStep;
+  final double bagOverloadMax;
 
   /// How long a meal lasts, in action and travel steps; a perfect dish
   /// twice as long (spec 0011 §5.3).
@@ -980,6 +990,10 @@ class GameData {
       }
     }
     check(rerollSteps > 0 && rerollDust > 0, 'reroll: steps and dust > 0');
+    check(
+      bagSpaces > 0 && bagOverloadStep >= 0 && bagOverloadMax >= 0,
+      'bag: spaces > 0, overload >= 0',
+    );
     final sc = supplyChest;
     check(sc.goal >= 1, 'supplyChest: goal must be >= 1');
     check(

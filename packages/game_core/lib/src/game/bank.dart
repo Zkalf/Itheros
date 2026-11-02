@@ -3,6 +3,34 @@ part of '../game.dart';
 /// The item bank (spec 0020): items move between the bag and the bank at a
 /// place with a bank, and crafts there use both.
 extension GameBank on Game {
+  /// The bag's spaces: the data's, plus Bigger bag's (spec 0021 rule 1).
+  int bagSpaces(GameState s) =>
+      data.bagSpaces + talentSum(s, TalentEffect.bagSpaces).round();
+
+  /// One space for each kind of item in the bag (spec 0021 rule 2). Worn
+  /// items, the bank and unopened supply chests are not in the bag.
+  int spacesUsed(GameState s) => s.inventory.values.where((c) => c > 0).length;
+
+  /// Whether the bag holds more kinds than its spaces (spec 0021 rule 3).
+  bool overloaded(GameState s) => spacesUsed(s) > bagSpaces(s);
+
+  /// The share that each unit costs more: a step for each space over, up to
+  /// the most (spec 0021 rule 5).
+  double overload(GameState s) => math.min(
+    data.bagOverloadMax,
+    data.bagOverloadStep * math.max(0, spacesUsed(s) - bagSpaces(s)),
+  );
+
+  /// The factor on the steps of a unit of [a] here: 1 + [overload], but 1
+  /// for a craft, cook or reroll at a place with a bank (spec 0021 rules 6,
+  /// 7). A travel leg always takes it.
+  double loadFactor(GameState s, Activity a, {bool leg = false}) {
+    final atBench =
+        !leg && (a.kind == ActivityKind.craft || a.kind == ActivityKind.reroll);
+    if (atBench && hasBank(s.location)) return 1;
+    return 1 + overload(s);
+  }
+
   /// Whether [location] has an item bank (spec 0020 decision 1).
   bool hasBank(String location) => data.locations[location]?.itemBank ?? false;
 

@@ -5,26 +5,41 @@ extension GameWorld on Game {
   int _costOf(GameState s, RunningActivity act) {
     final a = act.activity;
     // Light pack and Wayfarer (spec 0015 §2.4).
+    // An overloaded bag costs more (spec 0021 §2.2).
     if (act.leg case final leg?) {
-      return travelCost(s, data.route(s.location, leg)!.steps);
+      return travelCost(
+        s,
+        data.route(s.location, leg)!.steps,
+        load: loadFactor(s, a, leg: true),
+      );
     }
+    final load = loadFactor(s, a);
     return switch (a.kind) {
       // A version 2 save walking to a neighbour, with no leg set.
       ActivityKind.travel => travelCost(
         s,
         data.route(s.location, a.target)!.steps,
+        load: load,
       ),
-      ActivityKind.fight => data.combatRoundSteps,
+      ActivityKind.fight => (data.combatRoundSteps * load - 1e-9).ceil(),
       ActivityKind.gather => switch (data.nodes[a.target]!) {
-        final n => professionSteps(s, n.profession, n.steps),
+        final n => professionSteps(s, n.profession, n.steps, load: load),
       },
       ActivityKind.craft => switch (data.recipes[a.target]!) {
-        final r => professionSteps(s, r.profession, r.steps),
+        final r => professionSteps(s, r.profession, r.steps, load: load),
       },
       ActivityKind.reroll =>
-        (data.rerollSteps * (1 - mealStepShare(s)) - 1e-9).ceil(),
+        (data.rerollSteps * (1 - mealStepShare(s)) * load - 1e-9).ceil(),
     };
   }
+
+  /// The steps one unit of [a] costs here, the overload included: what the
+  /// sheets show (spec 0021 rule 10). Not for travel.
+  int stepsFor(GameState s, Activity a) => _costOf(s, RunningActivity(a));
+
+  /// The steps of a fight round here, the overload included.
+  int roundSteps(GameState s) =>
+      (data.combatRoundSteps * (1 + overload(s)) - 1e-9).ceil();
 
   // Queries for the UI. Nothing is locked but gathering spots and recipes,
   // by profession (spec 0010 §2), which still show; fogged areas show

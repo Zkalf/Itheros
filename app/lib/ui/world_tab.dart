@@ -1135,7 +1135,8 @@ class _AreaSheet extends StatelessWidget {
                 ),
               ),
             // One heading above the monster rows (spec 0014 §4.1).
-            if (enemies.isNotEmpty) MonstersHeading(data: game.data),
+            if (enemies.isNotEmpty)
+              MonstersHeading(steps: game.roundSteps(c.state)),
             for (final id in enemies)
               enemyTile(
                 c,

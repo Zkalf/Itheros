@@ -35,6 +35,8 @@
 
     { "id": "deep_pockets", "tree": "utility", "row": 1, "column": 1, "ranks": 5, "name": "Deep pockets", "image": "bank",
       "line": "A bigger step bank.", "effect": "bankCap", "value": 600 },
+    { "id": "bigger_bag", "tree": "utility", "row": 1, "column": 2, "ranks": 5, "name": "Bigger bag", "image": "bag",
+      "line": "More bag spaces.", "effect": "bagSpaces", "value": 2 },
     { "id": "nimble_hands", "tree": "utility", "row": 1, "column": 3, "ranks": 5, "name": "Nimble hands", "image": "profession",
       "line": "Gathering and crafting cost fewer steps.", "effect": "professionSteps", "value": 0.01 },
     { "id": "practised_hands", "tree": "utility", "row": 2, "column": 1, "ranks": 3, "name": "Practised hands", "image": "profession",

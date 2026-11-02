@@ -107,8 +107,9 @@ extension GameTalents on Game {
       data.combat.critDamage + talentSum(s, TalentEffect.critDamage);
 
   /// Steps a road of [steps] costs, rounded up (spec 0015 §2.4).
-  int travelCost(GameState s, int steps) =>
-      (steps * _stepShare(s, TalentEffect.travelSteps) - 1e-9).ceil();
+  /// [load] is the overloaded bag's factor (spec 0021 rule 6).
+  int travelCost(GameState s, int steps, {double load = 1}) =>
+      (steps * _stepShare(s, TalentEffect.travelSteps) * load - 1e-9).ceil();
 
   /// The share of gathering and crafting steps Nimble hands leaves.
   double professionStepShare(GameState s) =>
