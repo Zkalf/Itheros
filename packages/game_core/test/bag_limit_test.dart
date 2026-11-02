@@ -253,6 +253,40 @@ void main() {
     });
   });
 
+  // Review of PR 182: every step estimate takes the overload (rule 10).
+  group('the estimates', () {
+    test('stepsFor a gather and a fight takes the overload', () {
+      final light = at('copper_hills');
+      final heavy = at('copper_hills', kinds: 43);
+      const a = Activity.gather('copper_vein');
+      expect(game.stepsFor(heavy, a), cost(heavy, a));
+      expect(game.stepsFor(heavy, a), greaterThan(game.stepsFor(light, a)));
+      expect(
+        game.stepsFor(
+          at('goblin_woods', kinds: 43),
+          const Activity.fight('goblin'),
+        ),
+        times(data.combatRoundSteps, 1.15),
+      );
+    });
+
+    test('stepsFor a craft at Camp costs no more', () {
+      const a = Activity.craft('copper_sword');
+      final bag = {'copper_ore': 5};
+      expect(
+        game.stepsFor(at('camp', kinds: 42, bag: bag), a),
+        game.stepsFor(at('camp', bag: bag), a),
+      );
+    });
+
+    test('walkSteps takes the overload on each leg', () {
+      final light = at('camp');
+      final heavy = at('camp', kinds: 43);
+      expect(game.walkSteps(light, 'camp', 'goblin_woods'), 200);
+      expect(game.walkSteps(heavy, 'camp', 'goblin_woods'), times(200, 1.15));
+    });
+  });
+
   group('the talent', () {
     test('criterion 27: Bigger bag is in Utility row 1, column 2', () {
       final t = data.talents['bigger_bag']!;
