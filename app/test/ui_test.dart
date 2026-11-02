@@ -1215,6 +1215,7 @@ void moreScreens() {
       expect(find.byKey(const ValueKey('area-goblin_woods')), findsOneWidget);
     });
 
+    // Spec 0019 overrides criterion 3: the rounds show in the fight sheet.
     testWidgets('criteria 3 and 4: the fight log and the tally', (t) async {
       final (c, source) = await pumpGame(t, level: 3, location: 'goblin_woods');
       await c.startActivity(
@@ -1225,15 +1226,17 @@ void moreScreens() {
       now = DateTime(2026, 10, 18, 9, 30);
       await c.syncNow();
       await t.pump();
-      final log = find.byKey(const ValueKey('fight-log'));
-      expect(
-        find.descendant(of: log, matching: find.textContaining('Round ')),
-        findsNWidgets(game.data.fightLogRounds),
-      );
       final run = c.state.activity!;
       expect(run.won, greaterThan(0));
       expect(find.text('${run.won} won · ${run.lost} lost'), findsOneWidget);
       expect(find.byKey(const ValueKey('tally-items')), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('fight-details')));
+      await t.pumpAndSettle();
+      final sheet = find.byKey(const ValueKey('fight-sheet'));
+      expect(
+        find.descendant(of: sheet, matching: find.textContaining('Round ')),
+        findsNWidgets(run.log.length),
+      );
     });
 
     testWidgets('criterion 8: craft until a quality from the sheet', (t) async {
