@@ -128,6 +128,17 @@ void main() {
       expect(find.text('Fight details'), findsOneWidget);
     });
 
+    testWidgets('criterion 12: Fight details shows with only a summary', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        prepare: fight(fights: [won(1, 4)], won: 1),
+      );
+      expect(find.byKey(const ValueKey('fight-details')), findsOneWidget);
+    });
+
     testWidgets('criterion 13: a tap on Fight details opens the sheet', (
       t,
     ) async {
@@ -311,6 +322,13 @@ void main() {
       }
       await t.pumpAndSettle();
       expect(find.textContaining('Fight 1 ·'), findsOneWidget);
+      // The next round starts a new round log in the open sheet (rule 25).
+      await c.testWalk(c.game.data.combatRoundSteps);
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(find.text('Fight 2, round by round'), findsOneWidget);
+      expect(find.text('Round 1'), findsOneWidget);
+      expect(find.text('Round 2'), findsNothing);
     });
   });
 
@@ -389,6 +407,39 @@ void main() {
       expect(styleOf(t, 'You hit for 6')?.fontWeight, FontWeight.bold);
       expect(styleOf(t, 'You hit for 4')?.fontWeight, isNot(FontWeight.bold));
       expect(styleOf(t, 'You hit for 4')?.color, Quiet.text);
+    });
+
+    testWidgets('criterion 34: a big hit on the player is bold too', (t) async {
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        prepare: fight(
+          log: const [
+            RoundLog(
+              round: 1,
+              dealt: 4,
+              taken: 999,
+              mine: Swing.hit,
+              theirs: Swing.hit,
+            ),
+            RoundLog(
+              round: 2,
+              dealt: 4,
+              taken: 1,
+              mine: Swing.hit,
+              theirs: Swing.hit,
+            ),
+          ],
+        ),
+      );
+      await openSheet(t);
+      final big = styleOf(t, 'Goblin hits you for 999')!;
+      expect(big.fontWeight, FontWeight.bold);
+      expect(big.color, Quiet.short);
+      expect(
+        styleOf(t, 'Goblin hits you for 1')?.fontWeight,
+        isNot(FontWeight.bold),
+      );
     });
   });
 }
