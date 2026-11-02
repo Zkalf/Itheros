@@ -416,7 +416,7 @@ extension GameQueue on Game {
     if (a.kind == ActivityKind.craft) return missingFor(s, a.target);
     if (a.kind == ActivityKind.reroll) {
       final dust = _rerollDust(a);
-      final short = data.rerollDust - (s.inventory[dust] ?? 0);
+      final short = data.rerollDust - _dustFor(s, a);
       return short > 0 ? {dust: short} : const {};
     }
     return const {};
@@ -430,7 +430,7 @@ extension GameQueue on Game {
   /// kind of reroll doesn't fit the item; null if it can.
   SkipReason? _rerollRefused(GameState s, Activity a) {
     if (_rerollLock(s, a).isNotEmpty) return SkipReason.locked;
-    if ((s.inventory[_rerollDust(a)] ?? 0) < data.rerollDust) {
+    if (_dustFor(s, a) < data.rerollDust) {
       return SkipReason.noMaterials;
     }
     return null;

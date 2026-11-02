@@ -77,6 +77,17 @@ extension GameBank on Game {
     return place != null && hasBank(place);
   }
 
+  /// The dust that reroll [a] can use: the bag, and the bank when the
+  /// reroll happens at a place with a bank (spec 0020 amendment 1).
+  int _dustFor(GameState s, Activity a) {
+    final dust = _rerollDust(a);
+    final bag = s.inventory[dust] ?? 0;
+    if ((s.itemBank[dust] ?? 0) == 0) return bag;
+    final place = _happensAt(s.location, a) ? s.location : _placeFor(s, a);
+    if (place == null || !hasBank(place)) return bag;
+    return bag + s.itemBank[dust]!;
+  }
+
   /// The items that a craft of [recipe] can use: the bag, and the bank when
   /// the craft happens at a place with a bank.
   Map<String, int> materialsFor(GameState s, String recipe) {
@@ -87,8 +98,9 @@ extension GameBank on Game {
     return all;
   }
 
-  /// Takes [count] of [key] for a craft: from the bag first, then from the
-  /// bank at a place with a bank (spec 0020 rule 7).
+  /// Takes [count] of [key] for a craft or a reroll: from the bag first,
+  /// then from the bank at a place with a bank (spec 0020 rule 7,
+  /// amendment 1).
   void _useInput(GameState s, String key, int count) {
     final fromBag = math.min(count, s.inventory[key] ?? 0);
     s.addItem(key, -fromBag);

@@ -238,7 +238,7 @@ class _Run {
     final key = a.rerollKey;
     final item = data.itemOf(key)!;
     final itemLevel = data.itemLevel(item.id);
-    s.addItem(game._rerollDust(a), -data.rerollDust);
+    game._useInput(s, game._rerollDust(a), data.rerollDust);
     final String after;
     if (a.rerollStatIndex case final index?) {
       final roll = game.rollBonusStats(stream, item.id, 1, itemLevel).single;
