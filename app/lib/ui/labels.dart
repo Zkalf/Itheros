@@ -23,7 +23,6 @@ String genderName(Gender g) => switch (g) {
   Gender.neither => 'Neither',
 };
 
-/// The line between two fights in the fight log.
 /// Display names from the game data.
 class Labels {
   Labels(this.data, [this.who]);
