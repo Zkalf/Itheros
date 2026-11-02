@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
+import 'bag_spaces.dart';
 import 'bank_screen.dart';
 import 'bag_grid.dart';
 import 'controller_scope.dart';
@@ -171,6 +172,9 @@ class _CharacterTabState extends State<CharacterTab> {
                 CharacterPane.bag => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // The bag's spaces (spec 0021 points 13, 14).
+                    BagSpacesLine(game: c.game, state: c.state),
+                    const SizedBox(height: 8),
                     BagGrid(controller: c),
                     const SizedBox(height: 10),
                     // The item bank, open everywhere (spec 0020 §3.1).

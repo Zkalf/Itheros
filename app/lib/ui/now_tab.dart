@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
+import 'bag_spaces.dart';
 import 'bank_screen.dart';
 import 'controller_scope.dart';
 import 'fight_sheet.dart';
@@ -261,6 +262,8 @@ class _StatusCard extends StatelessWidget {
               'Walked today: ${fmt(controller.stepsToday)}',
               key: const ValueKey('walked-today'),
             ),
+            // An overloaded bag (spec 0021 points 15-17).
+            ?overloadedLine(context, game, s),
             // The meal running (spec 0011 §8.2); tap for its card. It
             // starts with the meal (spec 0014 §4.2). The socket is 32 dp,
             // the banner size of §2.3, as the design phones 11 and 25 show
