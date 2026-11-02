@@ -2,12 +2,21 @@ import 'activity.dart';
 
 /// HP of both sides in the fight currently being resolved.
 class FightState {
-  FightState({required this.playerHp, required this.enemyHp, this.round = 0});
+  FightState({
+    required this.playerHp,
+    required this.enemyHp,
+    this.round = 0,
+    this.taken = 0,
+    this.crits = 0,
+  });
 
   factory FightState.fromJson(Map<String, Object?> json) => FightState(
     playerHp: json['playerHp'] as int,
     enemyHp: json['enemyHp'] as int,
     round: json['round'] as int? ?? 0,
+    // Saves before version 15 start the sums at 0 (plan 0039).
+    taken: json['taken'] as int? ?? 0,
+    crits: json['crits'] as int? ?? 0,
   );
 
   int playerHp;
@@ -16,10 +25,52 @@ class FightState {
   /// Rounds already fought.
   int round;
 
+  /// The damage that the player took and the crits of the player in this
+  /// fight so far, for its summary (spec 0019 §2.1).
+  int taken;
+  int crits;
+
   Map<String, Object?> toJson() => {
     'playerHp': playerHp,
     'enemyHp': enemyHp,
     'round': round,
+    'taken': taken,
+    'crits': crits,
+  };
+}
+
+/// One finished fight of the running action (spec 0019 §2.1): its number in
+/// the action, how it ended, its rounds, the damage that the player took and
+/// the crits of the player.
+class FightSummary {
+  const FightSummary({
+    required this.number,
+    required this.outcome,
+    required this.rounds,
+    required this.taken,
+    required this.crits,
+  });
+
+  factory FightSummary.fromJson(Map<String, Object?> json) => FightSummary(
+    number: json['number'] as int,
+    outcome: FightOutcome.values.byName(json['outcome'] as String),
+    rounds: json['rounds'] as int,
+    taken: json['taken'] as int,
+    crits: json['crits'] as int,
+  );
+
+  final int number;
+  final FightOutcome outcome;
+  final int rounds;
+  final int taken;
+  final int crits;
+
+  Map<String, Object?> toJson() => {
+    'number': number,
+    'outcome': outcome.name,
+    'rounds': rounds,
+    'taken': taken,
+    'crits': crits,
   };
 }
 
@@ -103,9 +154,11 @@ class RunningActivity {
     this.records = 0,
     Map<String, int>? gained,
     List<RoundLog>? log,
+    List<FightSummary>? fights,
   }) : stop = stop ?? StopCondition.defaultFor(activity),
        gained = gained ?? {},
-       log = log ?? [];
+       log = log ?? [],
+       fights = fights ?? [];
 
   factory RunningActivity.fromJson(Map<String, Object?> json) =>
       RunningActivity(
@@ -129,6 +182,11 @@ class RunningActivity {
         log: [
           for (final r in json['log'] as List<Object?>? ?? const [])
             RoundLog.fromJson(r! as Map<String, Object?>),
+        ],
+        // Saves before version 15 have no summaries (spec 0019 §4).
+        fights: [
+          for (final f in json['fights'] as List<Object?>? ?? const [])
+            FightSummary.fromJson(f! as Map<String, Object?>),
         ],
       );
 
@@ -163,8 +221,13 @@ class RunningActivity {
   /// Fish records beaten while this action ran (spec 0011 §8.2).
   int records;
 
-  /// The last few fight rounds, oldest first (spec 0006 decision 8).
+  /// The rounds of the latest fight, oldest first, at most `fightLogRounds`
+  /// (spec 0019 §2.3).
   final List<RoundLog> log;
+
+  /// The last `fightLogFights` finished fights, oldest first (spec 0019
+  /// §2.2).
+  final List<FightSummary> fights;
 
   Map<String, Object?> toJson() => {
     ...activity.toJson(),
@@ -179,6 +242,7 @@ class RunningActivity {
     'records': records,
     'gained': Map.of(gained),
     'log': [for (final r in log) r.toJson()],
+    'fights': [for (final f in fights) f.toJson()],
   };
 }
 
@@ -406,7 +470,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 14;
+  static const schemaVersion = 15;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;

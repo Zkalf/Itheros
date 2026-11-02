@@ -2052,10 +2052,15 @@ void fightsWithDepth() {
       matching: f,
     );
 
+    // Spec 0019 §3.2 puts each swing in its own place: no "Round 3:" before
+    // the first one.
     test('criterion 13: the fight log names each swing (§8.1)', () {
       final labels = Labels(game.data);
+      List<String> words(RoundLog r, String enemy) => [
+        for (final s in labels.swings(r, enemy, playerHp: 100)) s.text,
+      ];
       List<String> lines(Swing? mine, Swing? theirs, {int d = 9, int t = 7}) =>
-          labels.roundLines(
+          words(
             RoundLog(
               round: 3,
               mine: mine,
@@ -2066,24 +2071,24 @@ void fightsWithDepth() {
             'skeleton',
           );
       expect(lines(Swing.hit, Swing.hit), [
-        'Round 3: You hit for 9',
+        'You hit for 9',
         'Skeleton hits you for 7',
       ]);
       expect(lines(Swing.crit, Swing.miss, d: 18), [
-        'Round 3: Critical hit for 18',
+        'Critical hit for 18',
         'Skeleton misses',
       ]);
       expect(lines(Swing.miss, Swing.dodge, d: 0, t: 0), [
-        'Round 3: You miss',
+        'You miss',
         'You dodge',
       ]);
       expect(lines(Swing.dodge, Swing.block, d: 0, t: 2), [
-        'Round 3: Skeleton dodges',
+        'Skeleton dodges',
         'You block: 2 damage',
       ]);
       // Quick monsters swing first; a slow one may not swing at all.
       expect(
-        labels.roundLines(
+        words(
           const RoundLog(
             round: 1,
             mine: Swing.hit,
@@ -2093,10 +2098,10 @@ void fightsWithDepth() {
           ),
           'wolf',
         ),
-        ['Round 1: Wolf hits you for 4', 'You hit for 5'],
+        ['Wolf hits you for 4', 'You hit for 5'],
       );
       expect(
-        labels.roundLines(
+        words(
           const RoundLog(
             round: 2,
             mine: Swing.hit,
@@ -2105,7 +2110,7 @@ void fightsWithDepth() {
           ),
           'zombie',
         ),
-        ['Round 2: You hit for 5', 'Zombie is beaten'],
+        ['You hit for 5', 'Zombie is beaten'],
       );
     });
 

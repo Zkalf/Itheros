@@ -57,6 +57,8 @@ void main() {
   ];
 
   Future<void> openSheet(WidgetTester t) async {
+    await t.ensureVisible(find.byKey(const ValueKey('fight-details')));
+    await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('fight-details')));
     await t.pumpAndSettle();
   }

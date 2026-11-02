@@ -15,7 +15,8 @@
   "qualityPerLevel": 0.02,
   "qualityMaxLevels": 10,
   "combatRoundSteps": 10,
-  "fightLogRounds": 4,
+  "fightLogRounds": 50,
+  "fightLogFights": 10,
   "bonusStats": [
     { "upToLevel": 9, "crit": [1, 2], "hp": [4, 8] },
     { "upToLevel": 19, "crit": [1, 3], "hp": [10, 18], "hit": [2, 4], "dodge": [2, 4], "block": [3, 5] },

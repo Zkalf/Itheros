@@ -103,7 +103,8 @@ void main() {
 
     test('criterion 7: the round log keeps 50 rounds at most', () {
       expect(data.fightLogRounds, 50);
-      // A dummy that never dies and never hurts: one long fight.
+      // A dummy that never dies; each of its hits does 1 damage, so a
+      // level 30 player outlasts 60 rounds: one long fight.
       final g = arenaGame([
         {
           'id': 'dummy',
@@ -117,13 +118,14 @@ void main() {
         },
       ]);
       var s = g.startActivity(
-        stateAt(g, location: 'arena'),
+        stateAt(g, location: 'arena', level: 30),
         const Activity.fight('dummy'),
       );
       for (var i = 0; i < 60; i++) {
         s = g.applySteps(s, g.data.combatRoundSteps).state;
       }
       final log = s.activity!.log;
+      expect(s.activity!.lost, 0);
       expect(log, hasLength(50));
       expect(log.first.round, 11);
       expect(log.last.round, 60);
