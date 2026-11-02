@@ -31,7 +31,8 @@ void main() {
       final raw = json['game'] as Map<String, Object?>;
       final save = SaveData.fromJson(json);
       expect(save.game.xp, raw['xp']);
-      expect(save.game.stepBank, raw['bank']);
+      // Version 16 names it stepBank (spec 0020); older saves, bank.
+      expect(save.game.stepBank, raw['stepBank'] ?? raw['bank']);
       expect(save.game.location, raw['location']);
       expect(save.game.inventory, raw['inventory']);
       expect(save.journal, hasLength((json['journal'] as List).length));
@@ -142,7 +143,7 @@ void main() {
       expect(GameState.fromJson(s.toJson()).loadedVersion, 16);
       expect(s.character, isNull);
       expect(s.xp, raw['xp']);
-      expect(s.stepBank, raw['bank']);
+      expect(s.stepBank, raw['stepBank'] ?? raw['bank']);
     });
 
     // Spec 0018 criteria 32-33: a save from before version 4 has no last
