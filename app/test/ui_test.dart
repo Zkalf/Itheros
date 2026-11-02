@@ -2647,6 +2647,25 @@ void professionScreens() {
       expect(find.textContaining('Bone sword reroll: '), findsOneWidget);
     });
 
+    // Spec 0020 amendment 1 criterion 5: at Camp the bank's dust counts.
+    testWidgets('at Camp, Reroll runs with the dust only in the bank', (
+      t,
+    ) async {
+      const key = 'bone_sword@uncommon+crit2';
+      final (c, _) = await pumpGame(
+        t,
+        level: 5,
+        inventory: {key: 1},
+        prepare: (s) => s.itemBank['uncommon_dust'] = 3,
+      );
+      await openItem(t, key);
+      await t.tap(card(find.byKey(const ValueKey('card-reroll'))));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(c.state.activity!.activity, const Activity.reroll(key));
+      expect(find.textContaining('Not enough'), findsNothing);
+    });
+
     testWidgets('§7.3: a Legendary rerolls one chosen stat', (t) async {
       const key = 'iron_sword@legendary+crit2+crit1+hp11+hp10';
       final (c, _) = await pumpGame(
