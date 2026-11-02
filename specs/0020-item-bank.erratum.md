@@ -1,6 +1,6 @@
 # Spec 0020, erratum 1: the names of the two banks
 
-Status: draft
+Status: accepted
 Corrects: [spec 0020](0020-item-bank.md) §4 point 23; [plan 0040](../plans/0040-item-bank.md) "What changes in the
 code" (the field `GameState.bank` and the controller's `store` and `take`)
 Issue: #66
