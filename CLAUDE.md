@@ -76,9 +76,13 @@ auto-approved by permission rules (headless and eval runs deny it).
 - Content and tuning that fit existing systems (enemies, locations, items, gear slots, achievements, numbers) are
   data-only changes in `data/*.json`: no new spec needed, but `check.ps1` (pacing tests) stays green. Spec 0001's
   scope list (decision 11) bounded the first build, not later content. New rules or systems go intent → spec → plan.
-- Sim work by hand (`tool/seeds.dart` tables, tuning loops, sim targets in specs) only for changes that move the
-  pace: monster stats, XP tables or fade, drop/quality/find chances, gear power or buffs, the walker's choices, a
-  system that changes where steps go. Otherwise the pacing test in `check.ps1` is enough; if it trips, ask first.
+- Sim work by hand (`tool/seeds.dart` tables, tuning loops, sim targets in specs) only for changes meant to move
+  the pace: monster stats, XP tables or fade, drop/quality/find chances, gear power or buffs. A new system that is
+  not meant to move the pace (the bag limit, a new screen, a convenience) gets no sim targets in its spec: the
+  pacing test in `check.ps1` is the guard. Teach the sim walker only the simplest habit that keeps it playing. If the
+  pacing test trips, report the numbers once and let the owner decide (accept and widen the range, or tune). No
+  digging for causes unless the owner asks.
+- Small features stay small: a short spec (a handful of criteria), and rules and screens in one PR.
 - Health data stays on the device: no INTERNET permission, no network code, `allowBackup="false"`.
 - The release key (`%USERPROFILE%\.itheros\`, `app/android/key.properties`): never read, print, copy or commit it.
   Friends' phones only accept updates signed with it.
