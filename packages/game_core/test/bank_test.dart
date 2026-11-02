@@ -321,7 +321,11 @@ void main() {
     test('dust for one reroll pays the first, not a second', () {
       var s = at('grey_moor', bag: {vest: 1, 'rare_dust': dust});
       expect(game.rerollPaid(s, reroll), isTrue);
-      s = game.startActivity(s, const Activity.fight('goblin'));
+      s = game.startActivity(
+        s,
+        const Activity.fight('goblin'),
+        stop: const StopCondition.untilHave('goblin_hide', 1),
+      );
       s = game.addAction(s, reroll);
       expect(game.rerollPaid(s, reroll), isFalse);
     });
