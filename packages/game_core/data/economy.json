@@ -50,6 +50,7 @@
   "rareFind": { "base": 0.005, "perToolQualityStep": 0.05, "perLevelAbove": 0.01, "maxLevelBonus": 0.10 },
   "salvage": { "shardBase": 0.02, "shardPerQualityStep": 0.005, "shards": ["kings_shard", "chieftains_shard", "dragons_shard"] },
   "reroll": { "steps": 50, "dust": 3 },
+  "bag": { "spaces": 40, "overloadStep": 0.05, "overloadMax": 0.5 },
   "meals": { "steps": 3000, "percent": [6, 10, 14], "crit": [2, 3, 4] },
   "perfectDish": { "base": 0.10, "perToolQualityStep": 0.05, "perLevelAbove": 0.01, "maxLevelBonus": 0.10 },
   "bottle": { "chance": 0.0005, "reveals": "smugglers_cove", "later": "rare_dust" },

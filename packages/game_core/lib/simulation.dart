@@ -567,8 +567,10 @@ class SensiblePlayer {
     s = _equipTools(s);
     if (walker != Walker.fighter && game.atForge(s)) s = _salvageSpares(s);
     if (meals && walker != Walker.fighter) s = _keepFed(s);
+    s = _bank(s);
     _arms.clear();
-    final goal = _goal(s);
+    // Overloaded, it walks to Camp to bank (spec 0021 point 22).
+    final goal = _goBank(s) ? const Activity.travel('camp') : _goal(s);
     if (goal.kind == ActivityKind.fight) {
       final (main, off, _) = _armed(s, data.enemies[goal.target]!);
       s = armWith(game, s, main, off);
@@ -765,11 +767,39 @@ class SensiblePlayer {
     return s;
   }
 
-  /// At a forge: salvages every bag tool but a starter, and gear that is
-  /// neither worn nor the best of its weapon group or off hand (spec 0010
-  /// §9.2).
-  GameState _salvageSpares(GameState s) {
-    final keep = <String>{};
+  /// The bag's items it would store at Camp: materials, and gear that it
+  /// neither wears nor keeps (spec 0021 point 22).
+  bool _storable(GameState s, String key, Set<String> keep) {
+    final item = data.itemOf(key);
+    if (item == null || item.tool != null || item.meal != null) return false;
+    return item.slot == null || !keep.contains(key);
+  }
+
+  /// Whether it heads to Camp: overloaded, away from Camp, and the stores
+  /// there would end the overload.
+  bool _goBank(GameState s) {
+    if (!game.overloaded(s) || game.hasBank(s.location)) return false;
+    final keep = _keep(s);
+    final left = s.inventory.keys.where((k) => !_storable(s, k, keep)).length;
+    return left <= game.bagSpaces(s);
+  }
+
+  /// At a place with a bank, when overloaded or within 10 spaces of it:
+  /// stores what [_storable] says, so it banks now and then, not on each
+  /// visit.
+  GameState _bank(GameState s) {
+    if (!game.hasBank(s.location)) return s;
+    if (game.spacesUsed(s) <= game.bagSpaces(s) - 10) return s;
+    final keep = _keep(s);
+    for (final key in s.inventory.keys.toList()) {
+      if (_storable(s, key, keep)) s = game.store(s, key, s.inventory[key]!);
+    }
+    return s;
+  }
+
+  /// The best gear of each weapon group and of the off hand, worn or in the
+  /// bag: what it keeps (spec 0010 §9.2).
+  Set<String> _keep(GameState s) {
     final best = <Object, String>{};
     for (final key in {...s.inventory.keys, ...s.equipment.values}) {
       final item = data.itemOf(key);
@@ -782,7 +812,14 @@ class SensiblePlayer {
         best[group] = key;
       }
     }
-    keep.addAll(best.values);
+    return {...best.values, ...s.equipment.values};
+  }
+
+  /// At a forge: salvages every bag tool but a starter, and gear that is
+  /// neither worn nor the best of its weapon group or off hand (spec 0010
+  /// §9.2).
+  GameState _salvageSpares(GameState s) {
+    final keep = _keep(s);
     for (final key in s.inventory.keys.toList()) {
       final item = data.itemOf(key);
       if (item == null || keep.contains(key)) continue;
@@ -794,6 +831,17 @@ class SensiblePlayer {
       }
     }
     return s;
+  }
+
+  /// Whether the bag alone lacks an input of [recipe] that the bank holds.
+  bool _needsBank(GameState s, String recipe) {
+    if (s.itemBank.isEmpty) return false;
+    for (final MapEntry(:key, :value) in data.recipes[recipe]!.inputs.entries) {
+      if ((s.inventory[key] ?? 0) < value && (s.itemBank[key] ?? 0) > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// The buffs it cooks for: Attack or HP to fight, fewer steps to gather
@@ -1122,6 +1170,8 @@ class SensiblePlayer {
   }
 
   String _locationFor(GameState s, Activity a) {
+    // Inputs in the bank: it crafts at Camp (spec 0021 point 22).
+    if (a.kind == ActivityKind.craft && _needsBank(s, a.target)) return 'camp';
     if (a.kind == ActivityKind.craft || a.kind == ActivityKind.reroll) {
       final dist = _distances(s);
       final cooking =

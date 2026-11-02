@@ -131,11 +131,18 @@ extension GameProgress on Game {
   /// share, rounded up (spec 0010 §3.2).
   /// A fewer-steps meal multiplies in (spec 0011 §5.3), and so does Nimble
   /// hands (spec 0015 §2.4).
-  int professionSteps(GameState s, String profession, int base) =>
+  /// [load] is the overloaded bag's factor (spec 0021 rule 6).
+  int professionSteps(
+    GameState s,
+    String profession,
+    int base, {
+    double load = 1,
+  }) =>
       (base *
                   toolFactor(s.tools[profession]) *
                   (1 - mealStepShare(s)) *
-                  professionStepShare(s) -
+                  professionStepShare(s) *
+                  load -
               1e-9)
           .ceil();
 

@@ -10,7 +10,15 @@ void main() {
   final game = newTestGame();
   final data = game.data;
   const vest = 'hide_vest@rare+hp10';
-  const used = {'copper_ore', 'perch', 'rare_dust', 'hide_vest', 'goblin_hide'};
+  const used = {
+    'copper_ore',
+    'perch',
+    'rare_dust',
+    'hide_vest',
+    'goblin_hide',
+    'copper_sword',
+    'grilled_perch',
+  };
 
   /// [n] kinds of item that the tests do not use, one of each.
   Map<String, int> filler(int n) {
@@ -34,8 +42,7 @@ void main() {
     inventory: {...filler(kinds), ...bag},
   );
 
-  int cost(GameState s, Activity a) =>
-      game.unitCost(game.startActivity(s, a))!;
+  int cost(GameState s, Activity a) => game.unitCost(game.startActivity(s, a))!;
 
   int times(int steps, double f) => (steps * f - 1e-9).ceil();
 
@@ -212,10 +219,13 @@ void main() {
       expect(cost(at('goblin_woods', kinds: 60), a), top);
     });
 
-    test('criterion 23: a bag not over its spaces costs the steps of today', () {
-      const a = Activity.fight('goblin');
-      expect(cost(at('goblin_woods', kinds: 40), a), data.combatRoundSteps);
-    });
+    test(
+      'criterion 23: a bag not over its spaces costs the steps of today',
+      () {
+        const a = Activity.fight('goblin');
+        expect(cost(at('goblin_woods', kinds: 40), a), data.combatRoundSteps);
+      },
+    );
 
     test('criterion 24: a store that ends the overload lowers the cost', () {
       var s = game.startActivity(
@@ -229,8 +239,7 @@ void main() {
 
     test('criterion 25: Swift strikes gives back the same steps', () {
       final light = at('goblin_woods')..talents['swift_strikes'] = 5;
-      final heavy = at('goblin_woods', kinds: 50)
-        ..talents['swift_strikes'] = 5;
+      final heavy = at('goblin_woods', kinds: 50)..talents['swift_strikes'] = 5;
       expect(game.fightStepsBack(light, 10), greaterThan(0));
       expect(game.fightStepsBack(heavy, 10), game.fightStepsBack(light, 10));
     });
@@ -265,8 +274,7 @@ void main() {
     });
 
     test('criterion 29: a reset removes the spaces and keeps the items', () {
-      final s = at(data.trainer.location, kinds: 48)
-        ..talents['bigger_bag'] = 5;
+      final s = at(data.trainer.location, kinds: 48)..talents['bigger_bag'] = 5;
       expect(game.overloaded(s), isFalse);
       final r = game.resetTalents(s);
       expect(game.bagSpaces(r), 40);
