@@ -246,6 +246,71 @@ void main() {
     });
   });
 
+  // Spec 0020 amendment 1 (plan 0042): a reroll at Camp takes its dust
+  // from the bank too.
+  group('rerolls', () {
+    const vest = 'hide_vest@rare+hp10';
+    const reroll = Activity.reroll(vest);
+    final dust = data.rerollDust;
+
+    test('amendment 1 criterion 1: at Camp, dust only in the bank', () {
+      var s = game.startActivity(
+        at('camp', bag: {vest: 1}, itemBank: {'rare_dust': dust}),
+        reroll,
+      );
+      s = walk(s, 5000);
+      expect(s.itemBank['rare_dust'], isNull);
+    });
+
+    test('amendment 1 criterion 2: the bag first, then the bank', () {
+      var s = game.startActivity(
+        at(
+          'camp',
+          bag: {vest: 1, 'rare_dust': 1},
+          itemBank: {'rare_dust': dust},
+        ),
+        reroll,
+        stop: const StopCondition.untilCrafted(1),
+      );
+      s = walk(s, 5000);
+      expect(s.inventory['rare_dust'], isNull);
+      expect(s.itemBank['rare_dust'], 1);
+    });
+
+    test('amendment 1 criterion 3: at Grey Moor, the bank does not count', () {
+      expect(
+        () => game.startActivity(
+          at('grey_moor', bag: {vest: 1}, itemBank: {'rare_dust': dust}),
+          reroll,
+        ),
+        throwsA(isA<ActivityError>()),
+      );
+    });
+
+    test(
+      'amendment 1 criterion 4: a queued reroll at Camp counts the bank',
+      () {
+        var s = game.startActivity(
+          at(
+            'camp',
+            bag: {vest: 1, 'copper_ore': 5},
+            itemBank: {'rare_dust': dust},
+          ),
+          const Activity.craft(sword),
+          stop: const StopCondition.untilCrafted(1),
+        );
+        s = game.addAction(
+          s,
+          reroll,
+          stop: const StopCondition.untilCrafted(1),
+        );
+        s = walk(s, 10000);
+        expect(game.owned(s, sword), 1);
+        expect(s.itemBank['rare_dust'], isNull);
+      },
+    );
+  });
+
   group('save', () {
     test('criterion 26: the save version is 16', () {
       expect(GameState.schemaVersion, 16);
