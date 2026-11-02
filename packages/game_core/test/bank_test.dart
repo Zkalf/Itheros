@@ -205,16 +205,20 @@ void main() {
 
   group('review of PR #172', () {
     test('the next goal counts the bank in what is left to collect', () {
+      // At level 3 the next goal is a Hide vest: 4 Goblin hides.
+      final none = at('camp', level: 3);
+      final first = game.nextGoal(none)! as CollectGoal;
+      expect((first.item, first.count), ('goblin_hide', 4));
       final s = at(
         'camp',
         level: 3,
-        bag: {'copper_ore': 1},
-        bank: {'copper_ore': 3},
+        bag: {'goblin_hide': 1},
+        bank: {'goblin_hide': 2},
       );
       expect(game.nextGoal(s), isA<CollectGoal>());
       final goal = game.nextGoal(s)! as CollectGoal;
-      expect(goal.item, 'copper_ore');
-      expect(goal.count, 1, reason: '5 needed, 4 in the bag and the bank');
+      expect(goal.item, 'goblin_hide');
+      expect(goal.count, 1, reason: '4 needed, 3 in the bag and the bank');
     });
 
     test('the bag after the queue takes a waiting craft out of the bank', () {
