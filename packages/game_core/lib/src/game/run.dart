@@ -32,16 +32,16 @@ class _Run {
     s.walkedSinceReset++;
     final act = s.activity;
     if (act != null) {
-      final boost = s.bank > 0 ? 1 : 0;
-      s.bank -= boost;
+      final boost = s.stepBank > 0 ? 1 : 0;
+      s.stepBank -= boost;
       boostUsed += boost;
       activitySteps += 1 + boost;
       act.progress += 1 + boost;
       _countMeal(1 + boost);
       _countSupply(1 + boost);
       _advance(act);
-    } else if (s.bank < game.bankCap(s)) {
-      s.bank++;
+    } else if (s.stepBank < game.bankCap(s)) {
+      s.stepBank++;
       banked++;
     } else {
       lost++;

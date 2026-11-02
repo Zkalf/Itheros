@@ -696,7 +696,7 @@ void main() {
           s = work(s, const Activity.gather('lake_shore'), 100 * 300).state;
           s = game.stopActivity(s)
             ..xp = xp
-            ..bank = 0;
+            ..stepBank = 0;
         }
         s = game.startActivity(
           s..location = 'goblin_woods',

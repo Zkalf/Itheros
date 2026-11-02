@@ -16,30 +16,30 @@ void main() {
 
       expect(r.activitySteps, 100);
       expect(r.boostUsed, 0);
-      expect(r.state.bank, 0);
+      expect(r.state.stepBank, 0);
       expect(r.state.activity, isNotNull, reason: 'still fighting');
     });
 
     test('fighting, bank 50, 100 steps: 150 activity steps, bank 0', () {
-      var s = stateAt(game, location: 'goblin_woods', bank: 50);
+      var s = stateAt(game, location: 'goblin_woods', stepBank: 50);
       s = game.startActivity(s, const Activity.fight('goblin'));
 
       final r = game.applySteps(s, 100);
 
       expect(r.activitySteps, 150);
       expect(r.boostUsed, 50);
-      expect(r.state.bank, 0);
+      expect(r.state.stepBank, 0);
     });
 
     test('idle, bank 9,900, cap 10,000, 300 steps: bank 10,000, 200 lost', () {
-      final s = stateAt(game, bank: 9900);
+      final s = stateAt(game, stepBank: 9900);
       expect(game.bankCap(s), 10000);
 
       final r = game.applySteps(s, 300);
 
       expect(r.banked, 100);
       expect(r.lost, 200);
-      expect(r.state.bank, 10000);
+      expect(r.state.stepBank, 10000);
     });
 
     test('crafting the last sword: done after 150 steps, ends, bank +250', () {
@@ -53,7 +53,7 @@ void main() {
       expect(r.state.activity, isNull);
       expect(r.activitySteps, 150);
       expect(r.banked, 250);
-      expect(r.state.bank, 250);
+      expect(r.state.stepBank, 250);
       expect(
         r.events.whereType<ActivityEnded>().single.reason,
         EndReason.noMaterials,
@@ -62,9 +62,9 @@ void main() {
   });
 
   test('banked steps are not spent while idle', () {
-    final r = game.applySteps(stateAt(game, bank: 500), 100);
+    final r = game.applySteps(stateAt(game, stepBank: 500), 100);
     expect(r.boostUsed, 0);
-    expect(r.state.bank, 600);
+    expect(r.state.stepBank, 600);
   });
 
   test('steps walked are counted whether idle or active', () {
@@ -76,7 +76,7 @@ void main() {
   });
 
   test('applying steps in chunks equals applying them at once', () {
-    var start = stateAt(game, bank: 300, seed: 7);
+    var start = stateAt(game, stepBank: 300, seed: 7);
     start = game.startActivity(start, const Activity.travel('goblin_woods'));
 
     GameState run(List<int> chunks) {
@@ -98,7 +98,7 @@ void main() {
   });
 
   test('applySteps does not modify its input state', () {
-    final s = stateAt(game, bank: 10);
+    final s = stateAt(game, stepBank: 10);
     final before = s.toJson();
     game.applySteps(s, 50);
     expect(s.toJson(), before);

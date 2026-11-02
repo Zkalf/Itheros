@@ -142,7 +142,7 @@ GameState stateAt(
   String location = 'camp',
   int level = 1,
   int? professionLevel,
-  int bank = 0,
+  int stepBank = 0,
   int seed = 1,
   Map<String, int> inventory = const {},
 }) {
@@ -158,6 +158,6 @@ GameState stateAt(
   return s
     ..location = location
     ..xp = game.data.xpForLevel(level)
-    ..bank = bank
+    ..stepBank = stepBank
     ..inventory.addAll(inventory);
 }

@@ -346,7 +346,7 @@ void main() {
       final r = g.applySteps(fightingOgre(), 100);
       expect(all<FightLost>(r), hasLength(3));
       expect(all<ActivityEnded>(r).single.reason, EndReason.defeated);
-      expect(r.state.bank, 70, reason: '3 rounds fought, then resting');
+      expect(r.state.stepBank, 70, reason: '3 rounds fought, then resting');
     });
 
     test('criterion 7: a win resets the count', () {

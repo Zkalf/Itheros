@@ -73,7 +73,7 @@ void main() {
 
     await c.startActivity(const Activity.travel('goblin_woods'));
 
-    expect(c.state.bank, 1000, reason: 'walked while idle');
+    expect(c.state.stepBank, 1000, reason: 'walked while idle');
     expect(c.state.activity!.progress, 0);
   });
 
@@ -257,7 +257,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      expect(c.state.bank, 500);
+      expect(c.state.stepBank, 500);
       await stop(c);
     });
 
@@ -272,7 +272,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
       expect(
-        c.state.bank,
+        c.state.stepBank,
         0,
         reason: 'Health Connect refuses background reads',
       );
@@ -290,11 +290,11 @@ void main() {
 
     await c.syncNow();
     expect(c.syncError, isNotNull);
-    expect(c.state.bank, 0);
+    expect(c.state.stepBank, 0);
 
     await c.syncNow();
     expect(c.syncError, isNull);
-    expect(c.state.bank, 500);
+    expect(c.state.stepBank, 500);
   });
 
   group('the journal (spec 0004 §2)', () {

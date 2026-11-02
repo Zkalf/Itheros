@@ -251,8 +251,8 @@ class _StatusCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               onTap: () => _showStepBank(context),
               child: _Bar(
-                label: 'Step bank ${fmt(s.bank)} / ${fmt(cap)}',
-                value: s.bank / cap,
+                label: 'Step bank ${fmt(s.stepBank)} / ${fmt(cap)}',
+                value: s.stepBank / cap,
                 colour: Quiet.mist,
               ),
             ),
@@ -688,7 +688,7 @@ class _Here extends StatelessWidget {
           onTap: () => onOpenProfessions!('crafting'),
         ),
       // The item bank (spec 0020 §3.1).
-      if (place.bank)
+      if (place.itemBank)
         ListTile(
           key: const ValueKey('bank-card'),
           leading: const Icon(Icons.account_balance),

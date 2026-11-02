@@ -4,20 +4,20 @@ part of '../game.dart';
 /// place with a bank, and crafts there use both.
 extension GameBank on Game {
   /// Whether [location] has an item bank (spec 0020 decision 1).
-  bool hasBank(String location) => data.locations[location]?.bank ?? false;
+  bool hasBank(String location) => data.locations[location]?.itemBank ?? false;
 
   /// Moves [count] of [key] from the bag to the bank (spec 0020 rule 2). No
   /// steps, no roll. Worn items are not in the bag, so they cannot move.
   GameState store(GameState s, String key, int count) {
     _checkMove(s, s.inventory[key] ?? 0, count, 'in the bag');
     final n = s.copy()..addItem(key, -count);
-    n.bankItems[key] = (n.bankItems[key] ?? 0) + count;
+    n.itemBank[key] = (n.itemBank[key] ?? 0) + count;
     return n;
   }
 
   /// Moves [count] of [key] from the bank to the bag (spec 0020 rule 3).
   GameState take(GameState s, String key, int count) {
-    _checkMove(s, s.bankItems[key] ?? 0, count, 'in the bank');
+    _checkMove(s, s.itemBank[key] ?? 0, count, 'in the bank');
     final n = s.copy()..addItem(key, count);
     _takeFromBank(n, key, count);
     return n;
@@ -33,11 +33,11 @@ extension GameBank on Game {
   }
 
   void _takeFromBank(GameState s, String key, int count) {
-    final left = (s.bankItems[key] ?? 0) - count;
+    final left = (s.itemBank[key] ?? 0) - count;
     if (left > 0) {
-      s.bankItems[key] = left;
+      s.itemBank[key] = left;
     } else {
-      s.bankItems.remove(key);
+      s.itemBank.remove(key);
     }
   }
 
@@ -53,9 +53,9 @@ extension GameBank on Game {
   /// the craft happens at a place with a bank.
   Map<String, int> materialsFor(GameState s, String recipe) {
     // An empty bank needs no path search (the sims call this often).
-    if (s.bankItems.isEmpty || !craftUsesBank(s, recipe)) return s.inventory;
+    if (s.itemBank.isEmpty || !craftUsesBank(s, recipe)) return s.inventory;
     final all = Map.of(s.inventory);
-    s.bankItems.forEach((k, v) => all[k] = (all[k] ?? 0) + v);
+    s.itemBank.forEach((k, v) => all[k] = (all[k] ?? 0) + v);
     return all;
   }
 

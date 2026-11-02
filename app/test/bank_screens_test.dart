@@ -14,7 +14,7 @@ void main() {
   const gear = 'bone_sword@rare+crit2';
 
   void Function(GameState) banked(Map<String, int> items) =>
-      (s) => s.bankItems.addAll(items);
+      (s) => s.itemBank.addAll(items);
 
   Future<void> openFromNow(WidgetTester t) async {
     await t.ensureVisible(find.byKey(const ValueKey('open-bank')));
@@ -112,14 +112,14 @@ void main() {
       await t.pumpAndSettle();
       await tapAndSettle(t, c, find.text('Set'));
       expect(c.state.inventory['iron_ore'], 7);
-      expect(c.state.bankItems['iron_ore'], 3);
+      expect(c.state.itemBank['iron_ore'], 3);
 
       await t.tap(find.byKey(const ValueKey('bank-bag-iron_ore')));
       await t.pumpAndSettle();
       expect(find.text('Store all'), findsOneWidget);
       await tapAndSettle(t, c, find.byKey(const ValueKey('bank-move-all')));
       expect(c.state.inventory['iron_ore'], isNull);
-      expect(c.state.bankItems['iron_ore'], 10);
+      expect(c.state.itemBank['iron_ore'], 10);
     });
 
     testWidgets('criterion 21: Take all and Take some… move to the bag', (
@@ -136,14 +136,14 @@ void main() {
       await t.enterText(find.byKey(const ValueKey('count-field')), '4');
       await t.pumpAndSettle();
       await tapAndSettle(t, c, find.text('Set'));
-      expect(c.state.bankItems['iron_ore'], 6);
+      expect(c.state.itemBank['iron_ore'], 6);
       expect(c.state.inventory['iron_ore'], 4);
 
       await t.tap(find.byKey(const ValueKey('bank-item-iron_ore')));
       await t.pumpAndSettle();
       expect(find.text('Take all'), findsOneWidget);
       await tapAndSettle(t, c, find.byKey(const ValueKey('bank-move-all')));
-      expect(c.state.bankItems['iron_ore'], isNull);
+      expect(c.state.itemBank['iron_ore'], isNull);
       expect(c.state.inventory['iron_ore'], 10);
     });
 
@@ -207,7 +207,7 @@ void main() {
       expect(c.stepsToday, 0);
       await c.storeInBank('iron_ore', 1);
       expect(c.stepsToday, 300);
-      expect(c.state.bankItems['iron_ore'], 1);
+      expect(c.state.itemBank['iron_ore'], 1);
       await c.takeFromBank('iron_ore', 1);
       expect(c.state.inventory['iron_ore'], 2);
     });

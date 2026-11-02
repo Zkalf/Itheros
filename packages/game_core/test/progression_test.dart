@@ -44,7 +44,7 @@ void main() {
   });
 
   test('levelling up during catch-up raises the cap immediately', () {
-    var s = stateAt(game, location: 'goblin_woods', level: 1, bank: 0);
+    var s = stateAt(game, location: 'goblin_woods', level: 1, stepBank: 0);
     s.xp = game.data.xpForLevel(2) - 10; // one goblin from level 2
     s = game.startActivity(s, const Activity.fight('goblin'));
     final r = game.applySteps(s, 100);
@@ -119,7 +119,7 @@ void main() {
       r.events.whereType<ActivityEnded>().single.reason,
       EndReason.arrived,
     );
-    expect(r.state.bank, 50);
+    expect(r.state.stepBank, 50);
   });
 
   // Mining pays Mining XP; the character gets a quarter of a fight's XP per

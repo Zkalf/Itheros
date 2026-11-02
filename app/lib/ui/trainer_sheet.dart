@@ -79,7 +79,7 @@ class _TrainerSheetState extends State<TrainerSheet> {
       final price = game.resetPriceNow(s);
       final ranks = s.talents.values.any((r) => r > 0);
       // Too few steps: the price shows up front, not after Reset.
-      final short = s.bank < price;
+      final short = s.stepBank < price;
       return SafeArea(
         child: SingleChildScrollView(
           key: const ValueKey('trainer-sheet'),

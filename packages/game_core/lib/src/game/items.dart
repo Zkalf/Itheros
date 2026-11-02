@@ -154,7 +154,7 @@ extension GameItems on Game {
     }
 
     s.inventory.forEach(add);
-    if (withBank) s.bankItems.forEach(add);
+    if (withBank) s.itemBank.forEach(add);
     if (s.activity case final now?) {
       _afterAction(bag, now.activity, now.stop, done: now.crafted);
     }
@@ -216,7 +216,7 @@ extension GameItems on Game {
       if (isIt(key)) n += count;
     });
     // Owning an item in the bank counts as owning it (spec 0020 rule 10).
-    s.bankItems.forEach((key, count) {
+    s.itemBank.forEach((key, count) {
       if (isIt(key)) n += count;
     });
     return n;

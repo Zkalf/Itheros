@@ -74,7 +74,7 @@ void main() {
   });
 
   test('an older save counts the area it is in, and nothing is lost', () {
-    final s = stateAt(game, level: 6, location: 'old_graveyard', bank: 77);
+    final s = stateAt(game, level: 6, location: 'old_graveyard', stepBank: 77);
     final json = s.toJson()
       ..['version'] = 3
       ..['counters'] = {'steps.walked': 5000};
@@ -83,7 +83,7 @@ void main() {
     expect(visited(migrated), 1);
     expect(migrated.counters['steps.walked'], 5000);
     expect(migrated.xp, s.xp);
-    expect(migrated.bank, 77);
+    expect(migrated.stepBank, 77);
   });
 
   test('the journal keeps 20 entries (data)', () {

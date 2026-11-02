@@ -419,7 +419,7 @@ class _MaterialsTable extends StatelessWidget {
     // A craft at a place with a bank counts the bank too (spec 0020 §2.7).
     final bag = game.bagAfterQueue(
       state,
-      withBank: state.bankItems.isNotEmpty && game.craftUsesBank(state, recipe),
+      withBank: state.itemBank.isNotEmpty && game.craftUsesBank(state, recipe),
     );
     final crafts = game.craftsFor(Activity.craft(recipe), stop, bag);
     final allowed = game.craftsAllowed(bag, recipe)!;

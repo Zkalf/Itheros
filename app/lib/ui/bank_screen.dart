@@ -84,7 +84,7 @@ class _ItemList extends StatelessWidget {
     final data = controller.game.data;
     final labels = Labels(data);
     final items = inBank
-        ? controller.state.bankItems
+        ? controller.state.itemBank
         : controller.state.inventory;
     if (items.isEmpty) {
       return Padding(
@@ -127,7 +127,7 @@ Future<void> _showMove(
   String key,
   bool inBank,
 ) async {
-  final have = (inBank ? c.state.bankItems : c.state.inventory)[key] ?? 0;
+  final have = (inBank ? c.state.itemBank : c.state.inventory)[key] ?? 0;
   final verb = inBank ? 'Take' : 'Store';
   Future<void> move(int n) =>
       inBank ? c.takeFromBank(key, n) : c.storeInBank(key, n);

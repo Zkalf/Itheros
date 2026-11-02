@@ -248,7 +248,7 @@ void main() {
           s
             ..achievements.addAll(['smith', 'goblin_slayer_1', 'champion'])
             ..inventory[ring] = 1;
-          s.bank = game.bankCap(s);
+          s.stepBank = game.bankCap(s);
           over = game
               .load(s)
               .events

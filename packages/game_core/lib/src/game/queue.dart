@@ -580,7 +580,10 @@ extension GameQueue on Game {
     final progress = s.activity?.progress ?? 0;
     // Never below the bank it had: a talent reset can leave it above the
     // cap (spec 0015 §2.6).
-    s.bank = math.max(s.bank, math.min(bankCap(s), s.bank + progress));
+    s.stepBank = math.max(
+      s.stepBank,
+      math.min(bankCap(s), s.stepBank + progress),
+    );
     s.activity?.progress = 0;
     return s;
   }

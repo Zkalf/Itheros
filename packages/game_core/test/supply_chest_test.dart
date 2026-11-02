@@ -17,7 +17,7 @@ void main() {
 
   /// Mining copper at Copper Hills: a running action that never stops.
   GameState mining({int level = 1, int bank = 0}) => game.startActivity(
-    stateAt(game, location: 'copper_hills', level: level, bank: bank),
+    stateAt(game, location: 'copper_hills', level: level, stepBank: bank),
     const Activity.gather('copper_vein'),
   );
 
@@ -79,13 +79,13 @@ void main() {
 
     test('criterion 5: a step into the bank counts nothing', () {
       final s = walk(stateAt(game), 100);
-      expect(s.bank, 100);
+      expect(s.stepBank, 100);
       expect(s.supplySteps[day] ?? 0, 0);
     });
 
     test('criterion 6: a step lost to a full bank counts nothing', () {
       final full = stateAt(game);
-      full.bank = game.bankCap(full);
+      full.stepBank = game.bankCap(full);
       expect(walk(full, 100).supplySteps[day] ?? 0, 0);
     });
 
@@ -510,7 +510,7 @@ void main() {
     test('criterion 35: opening uses no steps', () {
       final s = twoChests();
       final opened = game.openAllSupplyChests(s).state;
-      expect(opened.bank, s.bank);
+      expect(opened.stepBank, s.stepBank);
       expect(opened.activity!.progress, s.activity!.progress);
       expect(opened.supplySteps, s.supplySteps);
       expect(opened.supplyRng, s.supplyRng);

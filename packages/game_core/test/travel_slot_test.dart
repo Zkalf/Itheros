@@ -321,7 +321,7 @@ void main() {
       final s0 = fightThenMine();
       s0.activity!.progress = 40;
       final s = game.startActivity(s0, skeletons);
-      expect(s.bank, s0.bank + 40);
+      expect(s.stepBank, s0.stepBank + 40);
     });
   });
 

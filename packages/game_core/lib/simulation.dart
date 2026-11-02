@@ -12,7 +12,7 @@ class DayResult {
     this.day,
     this.level,
     this.xp,
-    this.bank,
+    this.stepBank,
     this.equipment, [
     this.professions = const {},
     this.achievements = const {},
@@ -21,7 +21,7 @@ class DayResult {
   final int day;
   final int level;
   final int xp;
-  final int bank;
+  final int stepBank;
   final Map<String, String> equipment;
 
   /// Profession levels at the end of the day (spec 0010 §9.3).
@@ -1250,7 +1250,7 @@ SimulationResult simulate(
       left -= n;
     }
     results.add(
-      DayResult(day, game.level(s), s.xp, s.bank, Map.of(s.equipment), {
+      DayResult(day, game.level(s), s.xp, s.stepBank, Map.of(s.equipment), {
         for (final p in game.data.professions.keys)
           p: game.professionLevel(s, p),
       }, Set.of(s.achievements)),

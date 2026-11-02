@@ -434,14 +434,15 @@ void main() {
 
   group('reset', () {
     /// A level 20 player in camp with [bank] steps and one rank of Might.
-    GameState ready({int bank = 50000}) => at(20, {'might': 1})..bank = bank;
+    GameState ready({int bank = 50000}) =>
+        at(20, {'might': 1})..stepBank = bank;
 
     GameState reset(GameState s) => game.resetTalents(s);
 
     test('criterion 39: the first reset is free and returns every point', () {
       final s = reset(ready());
       expect(s.talents, isEmpty);
-      expect(s.bank, 50000);
+      expect(s.stepBank, 50000);
       expect(game.talentPointsLeft(s), game.talentPoints(20));
       expect(s.talentResets, 1);
     });
@@ -449,9 +450,9 @@ void main() {
     test('criterion 40: the second costs 2,000, the third 4,000', () {
       var s = reset(ready());
       s = reset(s..talents['might'] = 1);
-      expect(s.bank, 48000);
+      expect(s.stepBank, 48000);
       s = reset(s..talents['might'] = 1);
-      expect(s.bank, 44000);
+      expect(s.stepBank, 44000);
     });
 
     test('criterion 41: the price stops at 10,000', () {
@@ -480,9 +481,9 @@ void main() {
       s = reset(s..talents['might'] = 1);
       s = reset(s..talents['might'] = 1);
       s = game.applySteps(s, 35000 * 3).state;
-      final bank = s.bank;
+      final bank = s.stepBank;
       s = reset(s..talents['might'] = 1);
-      expect(s.bank, bank - 2000);
+      expect(s.stepBank, bank - 2000);
       expect(s.walkedSinceReset, 0);
       expect(game.resetPriceNow(s), 4000);
     });
@@ -501,7 +502,7 @@ void main() {
         ),
       );
       expect(s.talents, {'might': 1});
-      expect(s.bank, 1999);
+      expect(s.stepBank, 1999);
     });
 
     test('criterion 46: only in Camp', () {
@@ -517,11 +518,11 @@ void main() {
   group('review of PR 151', () {
     test('a reset never takes banked steps that Deep pockets held', () {
       // A cap of 14,500 + 3,000 with 17,000 banked; a reset drops the cap.
-      var s = at(10, {'deep_pockets': 5})..bank = 17000;
+      var s = at(10, {'deep_pockets': 5})..stepBank = 17000;
       expect(game.bankCap(s), 17500);
       s = game.resetTalents(s);
       expect(game.bankCap(s), 14500);
-      expect(s.bank, 17000);
+      expect(s.stepBank, 17000);
       // The next action that ends with progress left keeps the bank.
       s = game.startActivity(
         s..location = 'copper_hills',
@@ -529,10 +530,10 @@ void main() {
       );
       s = game.applySteps(s, 3).state;
       // The 3 steps drew 3 from the bank as a boost; the stop takes no more.
-      final before = s.bank;
+      final before = s.stepBank;
       expect(before, 16997);
       s = game.stopActivity(s);
-      expect(s.bank, greaterThanOrEqualTo(before));
+      expect(s.stepBank, greaterThanOrEqualTo(before));
     });
 
     test('planned walks show the steps the travel talents leave', () {
@@ -571,7 +572,7 @@ void main() {
       final cheap = Game(loadGameData(overrides: {'talents': json}));
       var s = stateAt(cheap, level: 20)
         ..talents['might'] = 1
-        ..bank = 50000;
+        ..stepBank = 50000;
       s = cheap.resetTalents(s);
       expect(cheap.resetPriceNow(s), 1000);
     });

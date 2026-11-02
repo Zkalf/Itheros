@@ -28,7 +28,7 @@ void main() {
     final r = await sync.sync(save);
 
     expect(r.summary.walked, 0);
-    expect(r.save.game.bank, 0);
+    expect(r.save.game.stepBank, 0);
   });
 
   test('steps after install are credited; idle steps go to the bank', () async {
@@ -39,7 +39,7 @@ void main() {
     final r = await sync.sync(save);
 
     expect(r.summary.walked, 500);
-    expect(r.save.game.bank, 500);
+    expect(r.save.game.stepBank, 500);
   });
 
   test(
@@ -70,7 +70,7 @@ void main() {
       final r = await sync.sync(save);
 
       expect(r.summary.walked, 400);
-      expect(r.save.game.bank, 900);
+      expect(r.save.game.stepBank, 900);
     },
   );
 
@@ -110,14 +110,14 @@ void main() {
       source.walk(DateTime(2026, 10, 18, 9, 30), 1000);
       now = DateTime(2026, 10, 18, 10);
       save = (await sync.sync(save)).save;
-      expect(save.game.bank, 1000);
+      expect(save.game.stepBank, 1000);
 
       source
         ..clear()
         ..walk(DateTime(2026, 10, 18, 9, 30), 800); // de-dup priority changed
       final dropped = await sync.sync(save);
       expect(dropped.summary.walked, 0);
-      expect(dropped.save.game.bank, 1000);
+      expect(dropped.save.game.stepBank, 1000);
 
       source.walk(DateTime(2026, 10, 18, 9, 45), 400); // total now 1,200
       final risen = await sync.sync(dropped.save);
@@ -151,7 +151,7 @@ void main() {
       final r = await sync.sync(save);
 
       expect(r.summary.walked, 0);
-      expect(r.save.game.bank, 500);
+      expect(r.save.game.stepBank, 500);
     },
   );
 
@@ -163,7 +163,7 @@ void main() {
       source.walk(DateTime(2026, 10, 18, 9, 30), 500);
       now = DateTime(2026, 10, 18, 10);
       save = (await sync.sync(save)).save;
-      expect(save.game.bank, 500);
+      expect(save.game.stepBank, 500);
 
       now = DateTime(
         2026,
@@ -176,14 +176,14 @@ void main() {
       final r = await sync.sync(save);
 
       expect(r.summary.walked, 0);
-      expect(r.save.game.bank, 500);
+      expect(r.save.game.stepBank, 500);
     },
   );
 
   test('steps reach the running activity, with the bank boost', () async {
     var save = await sync.newSave(seed: 1);
     final state = game.startActivity(
-      save.game..bank = 100,
+      save.game..stepBank = 100,
       const Activity.travel('goblin_woods'),
     );
     save = save.withGame(state);
@@ -194,7 +194,11 @@ void main() {
 
     expect(r.save.game.location, 'goblin_woods');
     expect(r.summary.boostUsed, 100);
-    expect(r.save.game.bank, 50, reason: '200 steps of travel, rest banked');
+    expect(
+      r.save.game.stepBank,
+      50,
+      reason: '200 steps of travel, rest banked',
+    );
   });
 
   test('the save survives a JSON round trip', () async {

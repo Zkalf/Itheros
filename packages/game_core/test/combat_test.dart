@@ -89,7 +89,11 @@ void main() {
       EndReason.defeated,
     );
     expect(r.state.activity, isNull);
-    expect(r.state.bank, 70, reason: '3 lost 10-step rounds, then 70 banked');
+    expect(
+      r.state.stepBank,
+      70,
+      reason: '3 lost 10-step rounds, then 70 banked',
+    );
     expect(r.state.inventory, isEmpty, reason: 'nothing is lost on defeat');
   });
 

@@ -341,7 +341,7 @@ void main() {
 
     expect(stop, findsNothing);
     expect(find.text('Resting'), findsOneWidget);
-    expect(c.state.bank, 120, reason: '120 travel steps refunded');
+    expect(c.state.stepBank, 120, reason: '120 travel steps refunded');
   });
 
   testWidgets('without permission the permission screen is shown', (t) async {
@@ -906,7 +906,7 @@ void main() {
         await settle(t, c);
         await t.pump();
         await t.pump(const Duration(milliseconds: 500));
-        expect(c.state.bank, 1150, reason: 'resting: 150 + 1,000 banked');
+        expect(c.state.stepBank, 1150, reason: 'resting: 150 + 1,000 banked');
         expect(
           find.textContaining('You walked 1,000 steps.'),
           findsOneWidget,

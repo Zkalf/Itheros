@@ -14,11 +14,11 @@ void main() {
   GameState at(
     String location, {
     Map<String, int> bag = const {},
-    Map<String, int> bank = const {},
+    Map<String, int> itemBank = const {},
     int level = 3,
   }) =>
       stateAt(game, location: location, level: level, inventory: bag)
-        ..bankItems.addAll(bank);
+        ..itemBank.addAll(itemBank);
 
   GameState walk(GameState s, int steps) => game.applySteps(s, steps).state;
 
@@ -33,27 +33,31 @@ void main() {
     test('criterion 1: Store moves the count from the bag to the bank', () {
       final s = game.store(at('camp', bag: {'copper_ore': 7}), 'copper_ore', 5);
       expect(s.inventory['copper_ore'], 2);
-      expect(s.bankItems['copper_ore'], 5);
+      expect(s.itemBank['copper_ore'], 5);
       final all = game.store(s, 'copper_ore', 2);
       expect(all.inventory['copper_ore'], isNull);
-      expect(all.bankItems['copper_ore'], 7);
+      expect(all.itemBank['copper_ore'], 7);
     });
 
     test('criterion 2: Take moves the count from the bank to the bag', () {
-      final s = game.take(at('camp', bank: {'copper_ore': 7}), 'copper_ore', 3);
-      expect(s.bankItems['copper_ore'], 4);
+      final s = game.take(
+        at('camp', itemBank: {'copper_ore': 7}),
+        'copper_ore',
+        3,
+      );
+      expect(s.itemBank['copper_ore'], 4);
       expect(s.inventory['copper_ore'], 3);
       final all = game.take(s, 'copper_ore', 4);
-      expect(all.bankItems['copper_ore'], isNull);
+      expect(all.itemBank['copper_ore'], isNull);
       expect(all.inventory['copper_ore'], 7);
     });
 
     test('criterion 3: a move uses no steps and no roll', () {
       final s = at('camp', bag: {'copper_ore': 7});
       final moved = game.store(s, 'copper_ore', 7);
-      expect(moved.bankItems, {'copper_ore': 7});
+      expect(moved.itemBank, {'copper_ore': 7});
       // `bank` is the step bank.
-      expect(moved.bank, s.bank);
+      expect(moved.stepBank, s.stepBank);
       expect(moved.rngState, s.rngState);
       expect(moved.xp, s.xp);
     });
@@ -62,7 +66,7 @@ void main() {
       final s = at(
         'goblin_woods',
         bag: {'copper_ore': 7},
-        bank: {'oak_log': 2},
+        itemBank: {'oak_log': 2},
       );
       expect(
         () => game.store(s, 'copper_ore', 1),
@@ -72,7 +76,7 @@ void main() {
     });
 
     test('criterion 5: a move of more than there is is refused', () {
-      final s = at('camp', bag: {'copper_ore': 2}, bank: {'oak_log': 2});
+      final s = at('camp', bag: {'copper_ore': 2}, itemBank: {'oak_log': 2});
       expect(
         () => game.store(s, 'copper_ore', 3),
         throwsA(isA<ActivityError>()),
@@ -95,39 +99,39 @@ void main() {
     test('criterion 7: at Camp, a craft with its inputs only in the bank '
         'starts and runs', () {
       final s = game.startActivity(
-        at('camp', bank: {'copper_ore': 5}),
+        at('camp', itemBank: {'copper_ore': 5}),
         const Activity.craft(sword),
       );
       final done = walk(s, 2000);
       expect(game.owned(done, sword), greaterThanOrEqualTo(1));
-      expect(done.bankItems['copper_ore'], isNull);
+      expect(done.itemBank['copper_ore'], isNull);
     });
 
     test('criterion 8: at Camp, a craft takes from the bag first, then the '
         'bank', () {
       final s = game.startActivity(
-        at('camp', bag: {'copper_ore': 3}, bank: {'copper_ore': 4}),
+        at('camp', bag: {'copper_ore': 3}, itemBank: {'copper_ore': 4}),
         const Activity.craft(sword),
         stop: const StopCondition.untilCrafted(1),
       );
       final done = walk(s, 2000);
       expect(done.inventory['copper_ore'], isNull);
-      expect(done.bankItems['copper_ore'], 2);
+      expect(done.itemBank['copper_ore'], 2);
     });
 
     test('criterion 9: at Camp, a cook uses inputs from the bank', () {
       final s = game.startActivity(
-        at('camp', bank: {'perch': 2}),
+        at('camp', itemBank: {'perch': 2}),
         const Activity.craft('grilled_perch'),
       );
       final done = walk(s, 500);
       expect(game.owned(done, 'grilled_perch'), 1);
-      expect(done.bankItems['perch'], isNull);
+      expect(done.itemBank['perch'], isNull);
     });
 
     test('criterion 10: what a craft at Camp makes goes into the bag', () {
       final s = game.startActivity(
-        at('camp', bank: {'copper_ore': 5}),
+        at('camp', itemBank: {'copper_ore': 5}),
         const Activity.craft(sword),
       );
       final done = walk(s, 2000);
@@ -136,13 +140,13 @@ void main() {
       );
       expect(made, hasLength(1));
       expect(
-        done.bankItems.keys.where((k) => data.itemOf(k)?.id == sword),
+        done.itemBank.keys.where((k) => data.itemOf(k)?.id == sword),
         isEmpty,
       );
     });
 
     test('criterion 11: away from Camp, a craft does not count the bank', () {
-      final s = at('mountain_pass', bank: {'copper_ore': 5});
+      final s = at('mountain_pass', itemBank: {'copper_ore': 5});
       expect(game.hasMaterials(s, sword), isFalse);
       expect(
         () => game.startActivity(s, const Activity.craft(sword)),
@@ -153,21 +157,21 @@ void main() {
     test('criterion 12: a craft queued for Camp counts the bank', () {
       // No fire on the Grey Moor: the cook walks to Camp first.
       final s = game.startActivity(
-        at('grey_moor', bank: {'perch': 2}),
+        at('grey_moor', itemBank: {'perch': 2}),
         const Activity.craft('grilled_perch'),
       );
       expect(s.activity!.leg, isNotNull);
       final done = walk(s, 5000);
       expect(done.location, 'camp');
       expect(game.owned(done, 'grilled_perch'), 1);
-      expect(done.bankItems['perch'], isNull);
+      expect(done.itemBank['perch'], isNull);
     });
   });
 
   group('owning', () {
     test('criterion 13: "Until I have N" counts the bank', () {
       final s = game.startActivity(
-        at('copper_hills', bank: {'copper_ore': 2}),
+        at('copper_hills', itemBank: {'copper_ore': 2}),
         const Activity.gather('copper_vein'),
         stop: const StopCondition.untilHave('copper_ore', 3),
       );
@@ -186,7 +190,7 @@ void main() {
           'camp',
           level: 3,
           bag: {'copper_ore': 5},
-          bank: {sword: 1},
+          itemBank: {sword: 1},
         );
         expect(game.owned(banked, sword), 1);
         final goal = game.nextGoal(banked);
@@ -196,7 +200,7 @@ void main() {
 
     test('criterion 15: eat, wear and salvage refuse an item only in the '
         'bank', () {
-      final s = at('camp', bank: {sword: 1, 'grilled_perch': 1});
+      final s = at('camp', itemBank: {sword: 1, 'grilled_perch': 1});
       expect(() => game.equip(s, sword), throwsA(isA<ActivityError>()));
       expect(() => game.eat(s, 'grilled_perch'), throwsA(isA<ActivityError>()));
       expect(() => game.salvage(s, sword), throwsA(isA<ActivityError>()));
@@ -213,7 +217,7 @@ void main() {
         'camp',
         level: 3,
         bag: {'goblin_hide': 1},
-        bank: {'goblin_hide': 2},
+        itemBank: {'goblin_hide': 2},
       );
       expect(game.nextGoal(s), isA<CollectGoal>());
       final goal = game.nextGoal(s)! as CollectGoal;
@@ -222,7 +226,7 @@ void main() {
     });
 
     test('the bag after the queue takes a waiting craft out of the bank', () {
-      final s = at('camp', bank: {'copper_ore': 10})
+      final s = at('camp', itemBank: {'copper_ore': 10})
         ..activity = RunningActivity(
           const Activity.craft(sword),
           stop: const StopCondition.untilCrafted(1),
@@ -235,7 +239,7 @@ void main() {
       final s = at(
         'camp',
         bag: {'grilled_perch': 1},
-        bank: {'grilled_perch': 4},
+        itemBank: {'grilled_perch': 4},
       );
       expect(game.inBag(s, 'grilled_perch'), 1);
       expect(game.owned(s, 'grilled_perch'), 5);
@@ -245,17 +249,30 @@ void main() {
   group('save', () {
     test('criterion 26: the save version is 16', () {
       expect(GameState.schemaVersion, 16);
-      final s = at('camp', bank: {'copper_ore': 3});
+      final s = at('camp', itemBank: {'copper_ore': 3});
       expect(s.toJson()['version'], 16);
-      expect(GameState.fromJson(s.toJson()).bankItems, {'copper_ore': 3});
+      expect(GameState.fromJson(s.toJson()).itemBank, {'copper_ore': 3});
+    });
+
+    test('erratum 1: the step bank saves as stepBank; an old "bank" '
+        'loads into it', () {
+      final s = stateAt(game, stepBank: 42);
+      final json = s.toJson();
+      expect(json['stepBank'], 42);
+      expect(json.containsKey('bank'), isFalse);
+      expect(GameState.fromJson(json).stepBank, 42);
+      final old = Map.of(json)
+        ..remove('stepBank')
+        ..['bank'] = 17;
+      expect(GameState.fromJson(old).stepBank, 17);
     });
 
     test('criterion 27: a schema 15 save loads with an empty bank', () {
       final json = at('camp').toJson()
-        ..remove('bankItems')
+        ..remove('itemBank')
         ..['version'] = 15;
       final back = game.migrate(GameState.fromJson(json));
-      expect(back.bankItems, isEmpty);
+      expect(back.itemBank, isEmpty);
     });
   });
 }
