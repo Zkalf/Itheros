@@ -3,7 +3,6 @@ import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'action_sheet.dart' show CountDialog;
-import 'bag_grid.dart';
 import 'bag_spaces.dart';
 import 'controller_scope.dart';
 import 'item_card.dart';
