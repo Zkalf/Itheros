@@ -84,6 +84,8 @@ try {
   Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" }
   # The copy of the notes: next.md and the small files of releases\next\ (spec 0018 amendment 2).
   Step 'copy notes: test cases' $root { & "$PSScriptRoot\test-copy-notes.ps1" }
+  # The owner's sync of Claude's memory by hand, in temporary folders (docs/new-pc.md).
+  Step 'sync memory: test cases' $root { & "$PSScriptRoot\test-sync-memory.ps1" }
 
   # Pure-Dart packages.
   Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
