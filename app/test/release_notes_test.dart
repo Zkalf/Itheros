@@ -20,6 +20,25 @@ Map<String, String> _mdFiles(String path) => {
       if (f.path.endsWith('.md')) f.uri.pathSegments.last: f.readAsStringSync(),
 };
 
+/// The copy that scripts/copy-notes.ps1 makes of [releases] (spec 0018
+/// amendment 2): each file but next.md as it is, and one next.md of
+/// releases/next.md, then each small file of releases/next/ by name.
+Map<String, String> _copyOf(Map<String, String> releases) {
+  final small = _mdFiles('../releases/next');
+  final parts = [
+    ?releases['next.md'],
+    for (final name
+        in small.keys.toList()
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())))
+      small[name]!,
+  ].map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+  return {
+    for (final MapEntry(:key, :value) in releases.entries)
+      if (key != 'next.md') key: value,
+    if (parts.isNotEmpty) 'next.md': '${parts.join('\n')}\n',
+  };
+}
+
 void main() {
   group('versions (spec 0018 §2.1)', () {
     test('0.10.0 comes after 0.9.0 (criterion 4)', () {
@@ -196,7 +215,10 @@ void main() {
       expect(releases.keys, contains('$appVersion.md'));
     });
 
-    for (final MapEntry(:key, :value) in releases.entries) {
+    for (final MapEntry(:key, :value) in {
+      ...releases,
+      ..._mdFiles('../releases/next').map((k, v) => MapEntry('next/$k', v)),
+    }.entries) {
       test('$key uses only the format of §3.3 (criterion 3, amendment '
           'criterion 2)', () {
         expect(usesOnlyKnownMarks(value), isTrue);
@@ -204,10 +226,12 @@ void main() {
     }
 
     test(
-      'the copy in assets/releases equals releases/ (plan 0029)',
+      'the copy in assets/releases equals releases/, with the small files '
+      'of releases/next/ joined into next.md (plan 0029, spec 0018 '
+      'amendment 2)',
       () {
         final copy = _mdFiles('assets/releases');
-        expect(copy, releases);
+        expect(copy, _copyOf(releases));
       },
       skip: _mdFiles('assets/releases').isEmpty
           ? 'no copy: scripts/copy-notes.ps1 did not run'

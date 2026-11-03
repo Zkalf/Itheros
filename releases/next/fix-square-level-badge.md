@@ -1,0 +1,1 @@
+- Level badges are squares now, the skull too.
