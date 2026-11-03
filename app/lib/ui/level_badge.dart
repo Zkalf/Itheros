@@ -36,19 +36,33 @@ class LevelBadge extends StatelessWidget {
   static const _padding = 6.0;
   static const _skullPadding = 2.0;
 
+  /// The badge is a square (#195): its side is the line of the number and
+  /// the padding above and below it, so it grows with the text size of the
+  /// phone. The line comes from a layout of the number, so the skull band
+  /// has the same size as a band with a number.
   @override
   Widget build(BuildContext context) {
     final skull = colour == LevelColour.skull;
+    final number = TextPainter(
+      text: TextSpan(
+        text: '$level',
+        style: DefaultTextStyle.of(context).style.merge(_number),
+      ),
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final side = number.height + 2 * _padding;
+    number.dispose();
     return Container(
-      width: 44,
-      padding: EdgeInsets.symmetric(vertical: skull ? _skullPadding : _padding),
+      width: side,
+      height: side,
       decoration: BoxDecoration(
         color: colorOf(colour),
         borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
       child: skull
-          ? _skullOf(context)
+          ? _skullOf(side)
           : Text(
               '$level',
               semanticsLabel: 'Level $level',
@@ -61,22 +75,10 @@ class LevelBadge extends StatelessWidget {
     );
   }
 
-  /// The skull takes the line of the number and all but 2 dp of the
-  /// padding, so each band has the same height at each text size of the
-  /// phone. The line comes from a layout of the number, as a band with a
-  /// number lays it out. Screen readers still say the words; the image adds
-  /// nothing.
-  Widget _skullOf(BuildContext context) {
-    final number = TextPainter(
-      text: TextSpan(
-        text: '$level',
-        style: DefaultTextStyle.of(context).style.merge(_number),
-      ),
-      textScaler: MediaQuery.textScalerOf(context),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final size = number.height + 2 * (_padding - _skullPadding);
-    number.dispose();
+  /// The skull fills the square but for 2 dp on each side. Screen readers
+  /// still say the words; the image adds nothing.
+  Widget _skullOf(double side) {
+    final size = side - 2 * _skullPadding;
     return Semantics(
       label: 'Level: far too strong',
       child: Image(

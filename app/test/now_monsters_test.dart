@@ -968,6 +968,45 @@ void criterion20() {
       }
     });
 
+    // #195: each badge is a square, the skull band too.
+    testWidgets('a level badge is a square, with a number or the skull, at '
+        'the text sizes 1.0 and 1.3', (t) async {
+      for (final scale in const [1.0, 1.3]) {
+        await t.pumpWidget(
+          MaterialApp(
+            theme: quietTheme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(scale)),
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LevelBadge(level: 16, colour: LevelColour.skull),
+                        LevelBadge(level: 3, colour: LevelColour.green),
+                        LevelBadge(level: 105, colour: LevelColour.red),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        for (final badge in t.elementList(find.byType(LevelBadge))) {
+          final size = t.getSize(find.byElementPredicate((e) => e == badge));
+          expect(
+            size.width,
+            moreOrLessEquals(size.height, epsilon: .5),
+            reason: 'at the text size $scale',
+          );
+        }
+        expect(t.takeException(), isNull, reason: 'no overflow at $scale');
+      }
+    });
+
     testWidgets("on Now and on the area sheet, the Old Bear's row shows the "
         'skull image, and screen readers still say "Level: far too '
         'strong"', (t) async {
