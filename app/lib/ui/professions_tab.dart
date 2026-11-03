@@ -89,7 +89,7 @@ class _Summary extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(professionIcon(p.icon)),
+                ProfessionPicture(p),
                 const SizedBox(width: 8),
                 Flexible(child: Text(p.name, style: text.titleLarge)),
               ],

@@ -182,8 +182,16 @@ for tier in TIERS:
         with open(os.path.join(OUT, IDS[tier][shape] + '.svg'), 'w', encoding='utf-8', newline='\n') as f:
             f.write(svg(tier, shape))
 
+# Each profession shows its tool in the iron tier (spec 0014 amendment 7).
+PROFESSIONS = dict(mining='pick', woodcutting='hatchet', crafting='hammer', fishing='rod', hunting='bow', cooking='pot')
+PROF_OUT = os.path.join(HERE, 'professions')
+os.makedirs(PROF_OUT, exist_ok=True)
+for prof, shape in PROFESSIONS.items():
+    with open(os.path.join(PROF_OUT, prof + '.svg'), 'w', encoding='utf-8', newline='\n') as f:
+        f.write(svg('iron', shape))
+
 if '--preview' not in sys.argv:
-    print(f'{len(TIERS) * len(SHAPES)} SVG files in {OUT}')
+    print(f'{len(TIERS) * len(SHAPES)} SVG files in {OUT}, {len(PROFESSIONS)} in {PROF_OUT}')
     sys.exit(0)
 
 # Preview: rows by tier at bag size, nabriis's pictures for comparison, and one row large.

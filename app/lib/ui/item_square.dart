@@ -36,6 +36,34 @@ IconData professionIcon(String name) => switch (name) {
   _ => Icons.work,
 };
 
+/// A profession's picture at [size], or its glyph when it has no picture
+/// (spec 0014 amendment 7). A screen reader hears the profession's name.
+class ProfessionPicture extends StatelessWidget {
+  const ProfessionPicture(this.profession, {super.key, this.size = 32});
+
+  final ProfessionDef profession;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = ImageScope.of(context).professionAsset(profession.id);
+    if (asset == null) {
+      return Icon(
+        professionIcon(profession.icon),
+        key: ValueKey('profession-glyph-${profession.id}'),
+        semanticLabel: profession.name,
+      );
+    }
+    return Image.asset(
+      asset,
+      key: ValueKey('profession-picture-${profession.id}'),
+      width: size,
+      height: size,
+      semanticLabel: profession.name,
+    );
+  }
+}
+
 /// One square of the doll or the bag: the picture of its item in a socket
 /// (spec 0014 §2.3). Gear and tools have the ring of their quality, and
 /// [count] shows in the badge from 2 up. Empty ([item] null): the faint icon
