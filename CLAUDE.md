@@ -56,6 +56,8 @@ auto-approved by permission rules (headless and eval runs deny it).
 - One command per tool call: no `;` chains or pipes (`Push-Location app; flutter test …`). Chained commands are never
   auto-approved; use the scripts above.
 - `.\scripts\device-smoke.ps1 [-Install]` — on the Fairphone (USB): app starts, reads steps, no crash; screenshot.
+- `.\scripts\sync-memory.ps1 -Push|-Pull` — the owner copies Claude's memory to/from OneDrive by hand when changing
+  PC (`docs/new-pc.md`). Memory never syncs by itself.
 - Bug fixes follow the `bugfix` skill (failing test committed first; `.\scripts\lock-tests.ps1` freezes `test/` files).
 - The `verifier` subagent checks a change against its spec's acceptance criteria before committing.
 - Evals (`evals/README.md`): after changing `CLAUDE.md` or `.claude/`, commit and run `.\evals\run.ps1`; every
