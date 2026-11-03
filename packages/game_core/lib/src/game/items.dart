@@ -14,13 +14,7 @@ extension GameItems on Game {
 
   /// Whether a salvage takes the bag item [key]: gear or a tool in the bag,
   /// not a starter tool (spec 0010 §7.1). Worn items are never in the bag.
-  bool salvageable(GameState s, String key) {
-    final item = data.itemOf(key);
-    return item != null &&
-        (item.slot != null || item.tool != null) &&
-        !(item.tool?.starter ?? false) &&
-        (s.inventory[key] ?? 0) > 0;
-  }
+  bool salvageable(GameState s, String key) => _whyNoSalvage(s, key) == null;
 
   /// The bag items of [quality] that a batch salvages, in the bag's order
   /// (spec 0010 amendment 9, rule 2).
@@ -58,16 +52,22 @@ extension GameItems on Game {
 
   /// Throws [ActivityError] when a salvage can't take [key].
   void _checkSalvage(GameState s, String key) {
+    if (_whyNoSalvage(s, key) case final why?) throw ActivityError(why);
+  }
+
+  /// Why a salvage can't take [key], or null when it can.
+  String? _whyNoSalvage(GameState s, String key) {
     final item = data.itemOf(key);
     if (item == null || (item.slot == null && item.tool == null)) {
-      throw ActivityError('Only gear and tools can be salvaged');
+      return 'Only gear and tools can be salvaged';
     }
     if (item.tool?.starter ?? false) {
-      throw ActivityError('A teacher\'s gift can\'t be salvaged');
+      return "A teacher's gift can't be salvaged";
     }
     if ((s.inventory[key] ?? 0) < 1) {
-      throw ActivityError('Only items in the bag can be salvaged');
+      return 'Only items in the bag can be salvaged';
     }
+    return null;
   }
 
   /// Gives [n] the dust of one [key] that left its bag, and rolls for a
