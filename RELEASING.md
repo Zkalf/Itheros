@@ -14,17 +14,23 @@ A version is **x.y.z** (spec 0007 amendment 1). Each release raises one part; th
 No release follows a schedule. The owner decides each release; Claude may suggest one, with its number and why.
 
 ## The notes grow with each change
-`releases/next.md` holds the notes of the next release, in plain words for players (#119).
-- Each change that players notice adds a line to it, or changes a line: in its pull request, or in its fast-lane
+The notes of the next release are in plain words for players (#119). Each change keeps its lines in a file of its own
+(spec 0018 amendment 2).
+- Each change that players notice adds its own file in `releases/next/`, named after its branch:
+  `releases/next/feat-salvage-all.md`. The file holds "- " lines. It comes in the pull request or in the fast-lane
   commit.
-- A change that players do not notice (tests, scripts, specs, plans) adds no line.
-- A release renames the file, so the first change after a release creates it again, with a first line that sums up.
-- So you can read what changed since the last release at any time.
+- A change never edits `releases/next.md` or the file of another change. So two pull requests never clash in the
+  notes, whether you merge with the script, with the button on GitHub or in the GitHub app.
+- A change that players do not notice (tests, scripts, specs, plans) adds no file.
+- Your own build shows `releases/next.md` and the small files together, under "Next release (test build)" in
+  Settings. So you can read what changed since the last release at any time.
+- `release.ps1` refuses while a small file is left in `releases/next/`.
 
 ## A normal release
-1. Claude drafts the final notes in a pull request (spec 0007 §5): it checks `releases/next.md` against every change
-   since the last release (`git log v<last>..main`), adds what is missing, writes a first line that sums it up and
-   puts the biggest changes first. Read it, then merge it (`.\scripts\merge.ps1 <number>`, or
+1. Claude drafts the final notes in a pull request (spec 0007 §5): it joins the small files of `releases/next/` into
+   `releases/next.md` and deletes them, checks the notes against every change since the last release
+   (`git log v<last>..main`), adds what is missing, writes a first line that sums it up and puts the biggest changes
+   first. Read it, then merge it (`.\scripts\merge.ps1 <number>`, or
    `! scripts/merge.sh <number>` from the Claude Code prompt).
 2. In a PowerShell window in the project folder:
    ```

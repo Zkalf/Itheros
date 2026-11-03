@@ -25,9 +25,11 @@ auto-approved by permission rules (headless and eval runs deny it).
   test walk), signature check, commit + tag + push, GitHub release from `releases/next.md`. The owner runs it; Claude
   drafts the final `releases/next.md` before each release (plain words for players) and may run `-DryRun`. Runbook:
   `RELEASING.md`.
-- `releases/next.md` grows with each change: every PR or fast-lane commit with a change that players notice adds or
-  changes a plain line there (words for players, the light touch of `WRITING.md`); after a release it creates the
-  file again. Tests, scripts, specs and plans add no line.
+- Release notes, one file per change (spec 0018 am. 2): every PR or fast-lane commit with a change that players
+  notice adds its own `releases/next/<branch>.md` (`feat/x` -> `feat-x.md`) with "- " lines for players (the light
+  touch of `WRITING.md`). Never edit `releases/next.md` or another change's file there, so PRs never clash on the
+  notes. The final-notes PR before a release joins them into `releases/next.md` and deletes them. Tests, scripts,
+  specs and plans add no line.
 - The production gate (plan 0009, `.claude/hooks/production-gate.ps1`) blocks Claude from releasing, merging PRs,
   pushing to `main` (or from eval worktrees) and touching the release key. Work on a short branch per change, open a
   PR (`gh pr create`, proof in the description), review it per `REVIEW.md` and post the review on it
