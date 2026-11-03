@@ -207,7 +207,18 @@ void main() {
       'the copy in assets/releases equals releases/ (plan 0029)',
       () {
         final copy = _mdFiles('assets/releases');
-        expect(copy, releases);
+        // The copy's next.md joins releases/next.md and the small files of
+        // releases/next/, by name (spec 0018 amendment 2, rules 5-6).
+        final small = _mdFiles('../releases/next');
+        final parts = [
+          ?releases['next.md']?.trim(),
+          for (final name in small.keys.toList()..sort()) small[name]!.trim(),
+        ].where((p) => p.isNotEmpty).toList();
+        expect(copy, {
+          for (final MapEntry(:key, :value) in releases.entries)
+            if (key != 'next.md') key: value,
+          if (parts.isNotEmpty) 'next.md': '${parts.join('\n')}\n',
+        });
       },
       skip: _mdFiles('assets/releases').isEmpty
           ? 'no copy: scripts/copy-notes.ps1 did not run'

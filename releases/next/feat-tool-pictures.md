@@ -1,0 +1,1 @@
+- **Tools have pictures:** every pickaxe, hatchet, hammer, rod, bow and pot now has its own picture in your bag, from the old tools to mithril.

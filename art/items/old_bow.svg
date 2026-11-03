@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48"><defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#CDBDA6"/><stop offset="0.3" stop-color="#8F7C66"/>
+    <stop offset="0.7" stop-color="#5B4736"/><stop offset="1" stop-color="#2C2017"/></linearGradient>
+  <linearGradient id="metalSide" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#CDBDA6"/><stop offset="0.35" stop-color="#8F7C66"/>
+    <stop offset="0.75" stop-color="#5B4736"/><stop offset="1" stop-color="#2C2017"/></linearGradient>
+  <radialGradient id="metalBall" cx="0.35" cy="0.3" r="0.8">
+    <stop offset="0" stop-color="#CDBDA6"/><stop offset="0.3" stop-color="#8F7C66"/>
+    <stop offset="0.7" stop-color="#5B4736"/><stop offset="1" stop-color="#2C2017"/></radialGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#B9A07E"/><stop offset="0.4" stop-color="#7F6549"/><stop offset="1" stop-color="#3D2C1C"/></linearGradient>
+  <linearGradient id="bind" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#D8BE86"/><stop offset="1" stop-color="#8A6A36"/></linearGradient>
+  <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#000" stop-opacity="0.65"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+  <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.08 1.1" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.1 0 0 0 -0.42" result="d"/>
+    <feComposite in="d" in2="SourceAlpha" operator="in" result="d2"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="d2"/></feMerge></filter>
+  <filter id="grit" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="4" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.9 0 0 0 -0.3" result="d"/>
+    <feComposite in="d" in2="SourceAlpha" operator="in" result="d2"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="d2"/></feMerge></filter>
+</defs><ellipse cx="24" cy="42" rx="19" ry="4.6" fill="url(#shadow)"/><g transform="translate(24 24) scale(1.0) translate(-24 -24)"><path d="M15 4.5 L15 44.5" stroke="#E8E2D2" stroke-width="0.8"/><path d="M15 4.5 C11 8, 13.5 12, 19 15 C29 21, 29 28, 19 34 C13.5 37, 11 41, 15 44.5" fill="none" stroke="#24140A" stroke-width="5.6" stroke-linecap="round"/><path d="M15 4.5 C11 8, 13.5 12, 19 15 C29 21, 29 28, 19 34 C13.5 37, 11 41, 15 44.5" fill="none" stroke="url(#wood)" stroke-width="3.6" stroke-linecap="round" filter="url(#grain)"/><path d="M19.5 15.6 C27 20.5, 27.5 25, 25.6 28" fill="none" stroke="#FFE0B0" stroke-width="0.9" stroke-linecap="round" opacity="0.75"/><path d="M24 20.5 C26.6 23, 26.6 26, 24 28.5" fill="none" stroke="#24140A" stroke-width="6.6" stroke-linecap="round"/><path d="M24 20.5 C26.6 23, 26.6 26, 24 28.5" fill="none" stroke="url(#bind)" stroke-width="4.6" stroke-linecap="round"/><circle cx="15" cy="4.8" r="1.9" fill="url(#metalBall)" stroke="#24140A" stroke-width="1"/><circle cx="15" cy="44.2" r="1.9" fill="url(#metalBall)" stroke="#24140A" stroke-width="1"/><path d="M6 30 L40 18" stroke="#24140A" stroke-width="2.6" stroke-linecap="round"/><path d="M6 30 L40 18" stroke="#D8B985" stroke-width="1.2" stroke-linecap="round"/><path d="M40.5 17.8 L36 16.2 L37.6 20.6 Z" fill="url(#metal)" stroke="#24140A" stroke-width="1" stroke-linejoin="round"/><path d="M6 30 L3.5 27.4 M8 29.3 L5.5 26.7 M6 30 L4.4 33 M8 29.3 L6.4 32.3" stroke="#B8382A" stroke-width="1.4" stroke-linecap="round"/></g></svg>

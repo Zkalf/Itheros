@@ -39,7 +39,8 @@ Claude does most of the work. You do only what needs you: two installs, the sign
 ### What Claude does
 Claude runs each step, checks it, and says what it did. Versions are the ones of the main PC (2026-11-03).
 1. **JDK 17 and the GitHub CLI:** `winget install Microsoft.OpenJDK.17 GitHub.cli`. Set the user variable
-   `JAVA_HOME` to the JDK folder if the installer did not.
+   `JAVA_HOME` to the JDK folder if the installer did not. Optional, only to change the art (`art/README.md`):
+   Python 3 (`winget install Python.Python.3.14`).
 2. **Git's name and no-reply email,** for all repos:
    ```
    git config --global user.name Zkalf
