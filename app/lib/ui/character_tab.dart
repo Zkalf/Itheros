@@ -9,6 +9,7 @@ import 'bag_grid.dart';
 import 'controller_scope.dart';
 import 'images.dart';
 import 'paper_doll.dart';
+import 'salvage_all.dart';
 import 'socket.dart';
 import 'talents_tab.dart';
 import 'text_size.dart';
@@ -177,6 +178,9 @@ class _CharacterTabState extends State<CharacterTab> {
                     BagSpacesLine(game: c.game, state: c.state),
                     const SizedBox(height: 8),
                     BagGrid(controller: c),
+                    // At a forge, salvage all of a quality (spec 0010
+                    // amendment 9).
+                    SalvageAllButtons(controller: c),
                     const SizedBox(height: 10),
                     // The item bank, open everywhere (spec 0020 §3.1).
                     Align(

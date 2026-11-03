@@ -75,6 +75,17 @@ class SalvageResult {
   final String? shard;
 }
 
+/// What a batch salvage did (spec 0010 amendment 9): the new state, how
+/// many items it took, and the dust and shards it gave, by item.
+class SalvageAllResult {
+  const SalvageAllResult(this.state, this.count, this.dust, this.shards);
+
+  final GameState state;
+  final int count;
+  final Map<String, int> dust;
+  final Map<String, int> shards;
+}
+
 /// What an open of supply chests did (spec 0013 §2.6): the new state, how
 /// many chests it opened and what they held together.
 class SupplyOpenResult {

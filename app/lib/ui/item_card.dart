@@ -8,6 +8,7 @@ import 'actions.dart';
 import 'away_summary_card.dart';
 import 'images.dart';
 import 'labels.dart';
+import 'salvage_all.dart';
 import 'slot_sheet.dart';
 import 'socket.dart';
 import 'theme.dart';
@@ -376,6 +377,7 @@ class ItemCard extends StatelessWidget {
     final def = data.itemOf(item)!;
     final inBag = wornIn == null && !toolWorn;
     final salvage = inBag && !(def.tool?.starter ?? false);
+    final count = c.state.inventory[item] ?? 0;
     final reroll =
         def.slot != null &&
         data.qualityOf(item) != data.qualities.last &&
@@ -418,6 +420,18 @@ class ItemCard extends StatelessWidget {
               key: const ValueKey('card-salvage'),
               onPressed: () => _close(context, () => _salvage(labels)),
               child: const Text('Salvage'),
+            ),
+          // The whole stack of this square (spec 0010 amendment 9, rule 3).
+          if (salvage && count >= 2)
+            OutlinedButton(
+              key: const ValueKey('card-salvage-all'),
+              onPressed: () => _close(
+                context,
+                () => salvageAll(host, c, [
+                  item,
+                ], plural(count, labels.plain(item))),
+              ),
+              child: Text('Salvage all ($count)'),
             ),
         ],
       ),

@@ -370,6 +370,14 @@ class GameController extends ChangeNotifier {
     return result;
   }
 
+  /// Salvages every one of the bag items [keys] at a forge (spec 0010
+  /// amendment 9).
+  Future<SalvageAllResult> salvageAll(List<String> keys) async {
+    late SalvageAllResult result;
+    await _act((s) => (result = game.salvageAll(s, keys)).state);
+    return result;
+  }
+
   /// Settles a Legendary's waiting stat roll (spec 0010 §7.3).
   Future<void> keepRoll(String key, {required bool keepNew}) =>
       _act((s) => game.keepRoll(s, key, keepNew: keepNew));

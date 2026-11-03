@@ -6,18 +6,73 @@ extension GameItems on Game {
   /// with a roll for a boss shard on the profession stream (spec 0010
   /// §7.1). Throws [ActivityError] if it can't.
   SalvageResult salvage(GameState s, String key) {
-    final item = data.itemOf(key);
     if (!atForge(s)) throw ActivityError('Salvage at a forge');
+    _checkSalvage(s, key);
+    final n = s.copy()..addItem(key, -1);
+    return _salvageOne(n, key);
+  }
+
+  /// Whether a salvage takes the bag item [key]: gear or a tool in the bag,
+  /// not a starter tool (spec 0010 §7.1). Worn items are never in the bag.
+  bool salvageable(GameState s, String key) => _whyNoSalvage(s, key) == null;
+
+  /// The bag items of [quality] that a batch salvages, in the bag's order
+  /// (spec 0010 amendment 9, rule 2).
+  List<String> salvageAllOf(GameState s, String quality) => [
+    for (final k in bagOrder(data, s.inventory.keys))
+      if (salvageable(s, k) && data.qualityOf(k).id == quality) k,
+  ];
+
+  /// Salvages every one of each bag item in [keys] at a forge, in the bag's
+  /// order: the same as single salvages in that order (spec 0010
+  /// amendment 9, rule 5). Throws [ActivityError] if it can't.
+  SalvageAllResult salvageAll(GameState s, Iterable<String> keys) {
+    if (!atForge(s)) throw ActivityError('Salvage at a forge');
+    final order = bagOrder(data, keys.toSet());
+    if (order.isEmpty) throw ActivityError('Nothing to salvage');
+    for (final k in order) {
+      _checkSalvage(s, k);
+    }
+    var n = s.copy();
+    var count = 0;
+    final dust = <String, int>{};
+    final shards = <String, int>{};
+    for (final k in order) {
+      for (var i = s.inventory[k]!; i > 0; i--) {
+        n.addItem(k, -1);
+        final r = _salvageOne(n, k);
+        n = r.state;
+        count++;
+        dust[r.dust] = (dust[r.dust] ?? 0) + 1;
+        if (r.shard case final shard?) shards[shard] = (shards[shard] ?? 0) + 1;
+      }
+    }
+    return SalvageAllResult(n, count, dust, shards);
+  }
+
+  /// Throws [ActivityError] when a salvage can't take [key].
+  void _checkSalvage(GameState s, String key) {
+    if (_whyNoSalvage(s, key) case final why?) throw ActivityError(why);
+  }
+
+  /// Why a salvage can't take [key], or null when it can.
+  String? _whyNoSalvage(GameState s, String key) {
+    final item = data.itemOf(key);
     if (item == null || (item.slot == null && item.tool == null)) {
-      throw ActivityError('Only gear and tools can be salvaged');
+      return 'Only gear and tools can be salvaged';
     }
     if (item.tool?.starter ?? false) {
-      throw ActivityError('A teacher\'s gift can\'t be salvaged');
+      return "A teacher's gift can't be salvaged";
     }
     if ((s.inventory[key] ?? 0) < 1) {
-      throw ActivityError('Only items in the bag can be salvaged');
+      return 'Only items in the bag can be salvaged';
     }
-    final n = s.copy()..addItem(key, -1);
+    return null;
+  }
+
+  /// Gives [n] the dust of one [key] that left its bag, and rolls for a
+  /// shard. Mutates [n].
+  SalvageResult _salvageOne(GameState n, String key) {
     final dust = GameData.dustOf(data.qualityOf(key).id);
     n.addItem(dust);
     final rng = Rng.fromState(n.professionRng);
@@ -271,4 +326,46 @@ extension GameItems on Game {
     }
     return run.report(walked);
   }
+}
+
+/// The bag's order (spec 0008 §3.5): gear first, by slot order then best
+/// first, then materials in data order. The bank screen (spec 0020 §3.2) and
+/// salvage all (spec 0010 amendment 9) use it too.
+List<String> bagOrder(GameData data, Iterable<String> keys) {
+  // Ties fall back to data order, then quality order, so squares never
+  // move when something is equipped (spec 0005 §5).
+  final slotRank = <String, int>{};
+  for (final g in data.gearSlots) {
+    slotRank.putIfAbsent(g.kind, () => slotRank.length);
+  }
+  final itemRank = {for (final (i, id) in data.items.keys.indexed) id: i};
+  final qualityRank = {for (final (i, q) in data.qualities.indexed) q.id: i};
+  int stable(String a, String b) {
+    final byItem = (itemRank[data.itemOf(a)?.id] ?? 1 << 20).compareTo(
+      itemRank[data.itemOf(b)?.id] ?? 1 << 20,
+    );
+    if (byItem != 0) return byItem;
+    return qualityRank[data.qualityOf(a).id]!.compareTo(
+      qualityRank[data.qualityOf(b).id]!,
+    );
+  }
+
+  final gear =
+      [
+        for (final k in keys)
+          if (data.itemOf(k)?.slot != null) k,
+      ]..sort((a, b) {
+        final bySlot = slotRank[data.itemOf(a)!.slot]!.compareTo(
+          slotRank[data.itemOf(b)!.slot]!,
+        );
+        if (bySlot != 0) return bySlot;
+        final byScore = data.scoreOf(b).compareTo(data.scoreOf(a));
+        return byScore != 0 ? byScore : stable(a, b);
+      });
+  final materials = [
+    for (final k in keys)
+      if (data.itemOf(k)?.slot == null) k,
+  ]..sort(stable);
+
+  return [...gear, ...materials];
 }

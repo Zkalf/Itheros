@@ -335,14 +335,37 @@ class Labels {
     final line = 'Salvaged the ${plain(item)}: ${plain(r.dust)}.';
     final shard = r.shard;
     if (shard == null) return line;
+    return '$line ${_found(shard, 1, r.state)}';
+  }
+
+  /// The message after a batch salvage (spec 0010 amendment 9, rule 6):
+  /// "Salvaged 14 items: 14 Common dust." and each shard found.
+  String salvagedAll(SalvageAllResult r) {
+    final dust = [
+      for (final MapEntry(:key, :value) in r.dust.entries)
+        '${fmt(value)} ${plain(key)}',
+    ].join(', ');
+    return [
+      'Salvaged ${plural(r.count, 'item')}: $dust.',
+      for (final MapEntry(:key, :value) in r.shards.entries)
+        _found(key, value, r.state),
+    ].join(' ');
+  }
+
+  /// "Found a Shard of the Graveyard King (4 of 10)!", or "Found 2 Shards
+  /// of …" for [n] of them, with the count that its recipe needs.
+  String _found(String shard, int n, GameState s) {
     final need = data.recipes.values
         .where((x) => x.inputs.containsKey(shard))
         .firstOrNull
         ?.inputs[shard];
-    final count = need == null
-        ? ''
-        : ' (${r.state.inventory[shard] ?? 0} of $need)';
-    return '$line Found a ${plain(shard)}$count!';
+    final count = need == null ? '' : ' (${s.inventory[shard] ?? 0} of $need)';
+    final name = plain(shard);
+    if (n == 1) return 'Found a $name$count!';
+    final many = name.contains(' of ')
+        ? name.replaceFirst(' of ', 's of ')
+        : '${name}s';
+    return 'Found $n $many$count!';
   }
 
   /// A tool's profession and step saving: "Mining tool · −14% steps" (spec
