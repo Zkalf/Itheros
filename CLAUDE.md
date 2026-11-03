@@ -9,8 +9,9 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - No code before an accepted plan. Each plan milestone ends with its proof, then a commit.
 - Project texts (intents, specs, plans, PRs, reviews, commits, code comments, incidents, release notes) follow
   `WRITING.md`: read it before drafting one. Accepted files keep their wording (see WRITING.md for clean editions).
-- Ideas, parked topics, small fixes and bugs live in GitHub Issues (labels `idea`, `parked`, `nit`, `bug`), not in
-  local notes. A new issue follows its template in `.github/ISSUE_TEMPLATE/` and `WRITING.md`.
+- Ideas, parked topics, small fixes and bugs live in GitHub Issues (labels `idea`, `parked`, `nit`, `bug`; each idea
+  also `soon` or `later`), not in local notes. A new issue follows its template in `.github/ISSUE_TEMPLATE/` and
+  `WRITING.md`.
   `docs/game-direction.md` holds the owner's direction for the game: read it before proposing a design.
 
 ## Commands (Windows, PowerShell 5.1)
@@ -42,16 +43,11 @@ auto-approved by permission rules (headless and eval runs deny it).
   `.github/`, the gate hook, saves, health data or the release flow) skips the PR. Claude commits it on a short branch,
   shows the diff, and the owner pushes it to `main` (`! git push origin <branch>:main`). Everything else takes the PR
   path. When unsure, PR.
-- **Parallel sessions, only when the owner says so.** By default one session runs, and it works on a short branch in
-  the main folder. When the owner says that sessions run in parallel, each change gets its own worktree:
-  `.\scripts\new-worktree.ps1 <branch>` makes `..\Itheros-<branch>` from the latest `origin/main`. Then never
-  switch branches or leave edits in the main folder: it stays on `main` for reading and for the owner's release
-  builds and installs (only it has the release key). Start sessions in the main folder; work in the worktree: run its
-  scripts with the shell there (`.\scripts\check.ps1`), or by full path from elsewhere; push with the shell there and
-  the branch named (`git push -u origin <branch>`). `merge.ps1` removes the worktree and its branch when the owner
-  merges the PR. A session told mid-change that another one now runs finishes its change on its branch in the main
-  folder (no switch to `main` or another branch) and makes its next change in a worktree; the owner's builds wait
-  until the main folder is back on `main`. An eval run already works in a throwaway worktree: it stays there.
+- **Parallel sessions, only when the owner says so.** By default one session works on a short branch in the main
+  folder. In parallel, each change gets a worktree (`.\scripts\new-worktree.ps1 <branch>` -> `..\Itheros-<branch>`
+  from `origin/main`); the main folder stays on `main`, unedited (only it has the release key for the owner's builds).
+  Run scripts and `git push -u origin <branch>` with the shell in the worktree; `merge.ps1` removes it on merge. A
+  session told mid-change finishes on its branch in the main folder, then uses a worktree. Eval runs stay in theirs.
 - At most two full checks run at a time on this PC: a third `check.ps1` (or `release.ps1`) waits for a turn
   (memory; `scripts\check-turn.ps1`). A wait adds the other check's time, so start a full check in the background.
 - `gh` is `C:\Program Files\GitHub CLI\gh.exe` (signed in as the owner); shells started before its install don't have
@@ -75,6 +71,13 @@ auto-approved by permission rules (headless and eval runs deny it).
   file I/O (it hangs in the fake-async test zone).
 
 ## Rules
+- Every row or square of an item, monster or spot shows its picture and opens its card (details, stats, bonus stats),
+  so the player can tell two alike things apart. A spec that wants less says why.
+- Before a PR that adds or changes a screen, render it at the Fairphone's size (408 dp wide) and look at it as a
+  player: Can I tell the things apart? Can I see what I choose? Does each thing have its picture? The PR says so.
+- No session links (`claude.ai/code/session_...`) in PRs, commits, issues or comments: the repo is public.
+- Art, icons, fonts and packages under a licence the project does not use yet: ask the owner first. Icons are flat
+  SVG that Claude draws.
 - Content and tuning that fit existing systems (enemies, locations, items, gear slots, achievements, numbers) are
   data-only changes in `data/*.json`: no new spec needed, but `check.ps1` (pacing tests) stays green. Spec 0001's
   scope list (decision 11) bounded the first build, not later content. New rules or systems go intent → spec → plan.

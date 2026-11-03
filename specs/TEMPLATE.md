@@ -25,7 +25,8 @@ Date: <YYYY-MM-DD>
 <!-- What the game does: the rules in game_core, with the numbers or where they live in data/*.json. -->
 
 ## 3. Screens
-<!-- What the player sees and taps, with the words on screen. -->
+<!-- What the player sees and taps, with the words on screen. Each item, monster or spot shows its picture and opens
+its card (CLAUDE.md); say why if a screen does not. -->
 
 ## 4. Save
 <!-- New or changed save fields, their defaults for old saves, and the save version. "No change" if none. -->
