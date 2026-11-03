@@ -1,0 +1,1 @@
+- **Wood has pictures:** oak, ash and pine logs, and the rare heartwoods, now have their own pictures in your bag.
