@@ -1,0 +1,1 @@
+- **More pictures:** the first meals (grilled perch, pike steak, venison skewer, boar stew, golden carp curry, the Mossback feast), all five dusts, the three gems and the three boss shards now have their own pictures.

@@ -25,5 +25,7 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
   mark. The rare fish carry the marks of Wen's tips (moss, a crown fin, a scar, a pale glow).
 - The meat, hides and scales come from `art/hunt.py`: a cut of its own for each meat, a rolled hide with a strap
   (like the wolf pelt), and one big fish scale for each water.
+- The dust, gems and boss shards come from `art/finds.py` (dust in its quality colour, each shard in the colour
+  of its boss). The meals come from `art/meals.py`: served on a plate, in a bowl or on a skewer, with steam.
 - `python art/tools.py --preview` (or `art/materials.py`, `art/fish.py` or `art/hunt.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
