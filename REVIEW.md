@@ -16,7 +16,8 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
 5. **Do the tests prove it?** A test that fails without the change; bug fixes follow the `bugfix` skill.
 6. **The project rules** in `CLAUDE.md` (tuning numbers in `data/*.json`, Health Connect aggregate reads, one queue
    in `GameController`, the production gate).
-7. **The release notes.** A change that players notice adds a plain line to `releases/next.md` (#119). A missing
+7. **The release notes.** A change that players notice adds its own file with plain lines in `releases/next/` (#119,
+   spec 0018 amendment 2). An edit of `releases/next.md` outside the final notes is a Nit. A missing
    line is Important; a line in words that are not for players is a Nit.
 
 ## Findings

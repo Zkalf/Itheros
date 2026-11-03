@@ -31,6 +31,27 @@ void main() {
     expect(copy, lessThan(check), reason: 'the copy comes before the check');
   });
 
+  // Spec 0018 amendment 2, criteria 1 and 2: the release refuses small
+  // notes files that are not joined into next.md, and still refuses a
+  // missing next.md. Both refusals come before the version changes.
+  test('release.ps1 refuses small notes files and a missing next.md', () {
+    final script = File('../scripts/release.ps1').readAsStringSync();
+    final small = script.indexOf(
+      "Get-ChildItem (Join-Path \$root 'releases\\next') -Filter '*.md'",
+    );
+    final missing = script.indexOf(r'if (-not (Test-Path $notes)');
+    final raise = script.indexOf(r'[IO.File]::WriteAllText($pubspec');
+    expect(small, isNot(-1), reason: 'the refusal of small files');
+    expect(missing, isNot(-1), reason: 'the refusal of a missing next.md');
+    expect(raise, isNot(-1), reason: 'the raise of the version');
+    expect(small, lessThan(raise));
+    expect(missing, lessThan(raise));
+    expect(
+      script.substring(small, script.indexOf('}', small)),
+      contains("Fail 'small notes files are left in releases\\next\\"),
+    );
+  });
+
   // check.ps1 leaves out the pacing sims when a change does not touch
   // packages/; a release always runs them.
   test('release.ps1 runs the full check with the pacing sims', () {

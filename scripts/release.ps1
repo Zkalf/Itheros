@@ -43,6 +43,10 @@ if (Repo status --porcelain) { Fail 'the working tree has uncommitted changes; c
 if (-not (Test-Path $notes) -or -not (Get-Content -Raw -Encoding UTF8 $notes).Trim()) {
   Fail 'no release notes: write releases\next.md (a few plain lines for players) and commit it'
 }
+# Each change adds a small file in releases\next\; the final notes join them into next.md (spec 0018 amendment 2).
+if (Get-ChildItem (Join-Path $root 'releases\next') -Filter '*.md' -File -ErrorAction SilentlyContinue) {
+  Fail 'small notes files are left in releases\next\: join them into releases\next.md, delete them and commit'
+}
 if (-not (Test-Path (Join-Path $app 'android\key.properties'))) {
   Fail 'no app\android\key.properties: the release key is missing (restore it from the backup)'
 }

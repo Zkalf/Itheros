@@ -82,6 +82,8 @@ try {
   # The production gate (plan 0009): what it blocks and what it lets through.
   Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
   Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" }
+  # The copy of the notes: next.md and the small files of releases\next\ (spec 0018 amendment 2).
+  Step 'copy notes: test cases' $root { & "$PSScriptRoot\test-copy-notes.ps1" }
 
   # Pure-Dart packages.
   Get-ChildItem "$root\packages" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
