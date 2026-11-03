@@ -167,7 +167,7 @@ class _ProfessionCard extends StatelessWidget {
       Row(
         key: ValueKey('profession-head-${p.id}'),
         children: [
-          Icon(professionIcon(p.icon), semanticLabel: p.name),
+          ProfessionPicture(p),
           const Spacer(),
           if (learned)
             Text.rich(numberSpan('Level $level'), style: text.titleMedium),

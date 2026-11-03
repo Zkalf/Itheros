@@ -1,0 +1,1 @@
+- **Meat, hides and scales have pictures:** venison, boar, elk and ibex meat, grouse, the three hides and the three fish scales now have their own pictures in your bag.

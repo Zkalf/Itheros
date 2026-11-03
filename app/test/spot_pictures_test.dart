@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/actions.dart' show professionColour;
 import 'package:walkingrpg/ui/images.dart';
+import 'package:walkingrpg/ui/item_square.dart' show ProfessionPicture;
 import 'package:walkingrpg/ui/level_badge.dart';
 import 'package:walkingrpg/ui/socket.dart';
 
@@ -139,7 +140,10 @@ void main() {
       expect(inside(walk, find.byType(PictureSocket)), findsNothing);
     });
 
-    testWidgets('the teacher rows on Now keep their icons', (t) async {
+    // Spec 0014 amendment 7 gives each teacher row the picture of its
+    // profession, still without a socket.
+    testWidgets('the teacher rows on Now show their profession picture, '
+        'with no socket', (t) async {
       await pumpGame(t, images: diskImages);
       final teachers = find.byWidgetPredicate(
         (w) => switch (w.key) {
@@ -152,7 +156,7 @@ void main() {
       for (final e in teachers.evaluate()) {
         final row = find.byWidget(e.widget);
         expect(inside(row, find.byType(PictureSocket)), findsNothing);
-        expect(inside(row, find.byType(Icon)), findsWidgets);
+        expect(inside(row, find.byType(ProfessionPicture)), findsOneWidget);
       }
     });
 
