@@ -1,7 +1,7 @@
 name: walkingrpg
 description: "Walking-powered combat RPG (Android first)."
 publish_to: 'none'
-version: 0.8.0+8
+version: 0.9.0+9
 
 environment:
   sdk: ^3.13.5
