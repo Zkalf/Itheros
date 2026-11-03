@@ -1,1 +1,0 @@
-- **Early gear has pictures:** the copper and bone spears, mace and club, the garnet ring, the oak charm, the deer-hide gloves, bracers and belt, and the lake-scale greaves now have their own pictures.

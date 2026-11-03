@@ -1,1 +1,0 @@
-- **Professions show their tools:** each profession now shows a picture of its tool on the Professions tab, on its own page and next to its teacher at Camp.

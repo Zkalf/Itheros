@@ -1,1 +1,0 @@
-- **Fish have pictures:** all 16 fish, from perch to the legends of the deep, now have their own pictures in your bag.
