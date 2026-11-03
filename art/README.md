@@ -21,5 +21,7 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
   by hand: the next run of the script writes them again.
 - The wood materials (logs and heartwood) come from `art/materials.py` in the same way: a log pile for each
   log, and one big log with a dark, glossy heart for each heartwood (a rare find).
-- `python art/tools.py --preview` (or `art/materials.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
+- The 16 fish come from `art/fish.py`: one fish shape, and each species sets its colours, pattern, fins and its
+  mark. The rare fish carry the marks of Wen's tips (moss, a crown fin, a scar, a pale glow).
+- `python art/tools.py --preview` (or `art/materials.py` or `art/fish.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
