@@ -1,13 +1,13 @@
 <#
 .SYNOPSIS
-  Turns the SVG pictures that Claude draws (art\items\*.svg) into the game's 256 x 256 webp files
-  (app\assets\images\items\<id>.webp), with Microsoft Edge. No other tool is needed (#198).
+  Turns the SVG pictures that Claude draws (art\items\*.svg, art\professions\*.svg) into the game's 256 x 256 webp
+  files (app\assets\images\<folder>\<id>.webp), with Microsoft Edge. No other tool is needed (#198).
 
 .DESCRIPTION
   Edge (headless) draws each SVG on a canvas and exports it as webp; the script writes the files.
-  The file name of the SVG is the item id, so the game finds the picture by itself (ImageIndex).
-  -Only <id>,<id>: only these items. -Check: export into a temporary folder and compare with the files in the app
-  (exit 1 when one differs or is missing), without changing the app.
+  The file name of the SVG is the id of the item or profession, so the game finds the picture by itself (ImageIndex).
+  -Only <id>,<id>: only these. -Check: export into a temporary folder and check that each file is in the app (exit 1
+  when one is missing), without changing the app.
 #>
 param(
   [string[]]$Only,
@@ -16,8 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$from = Join-Path $root 'art\items'
-$to = Join-Path $root 'app\assets\images\items'
+$folders = 'items', 'professions'
 $size = 256
 
 $edge = @(
@@ -26,16 +25,22 @@ $edge = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $edge) { Write-Host 'Microsoft Edge is not installed.' -ForegroundColor Red; exit 1 }
 
-$files = Get-ChildItem $from -Filter '*.svg' -File | Sort-Object Name
-if ($Only) { $files = $files | Where-Object { $Only -contains $_.BaseName } }
-if (-not $files) { Write-Host "No SVG to export in $from" -ForegroundColor Red; exit 1 }
+$files = @(foreach ($folder in $folders) {
+  $dir = Join-Path $root "art\$folder"
+  if (Test-Path $dir) {
+    Get-ChildItem $dir -Filter '*.svg' -File | Sort-Object Name |
+      Add-Member -NotePropertyName Folder -NotePropertyValue $folder -PassThru
+  }
+})
+if ($Only) { $files = @($files | Where-Object { $Only -contains $_.BaseName }) }
+if (-not $files) { Write-Host 'No SVG to export in art\' -ForegroundColor Red; exit 1 }
 
 # One page: each SVG as a data URL (a file URL would taint the canvas), drawn and exported in turn.
 $work = Join-Path ([IO.Path]::GetTempPath()) "itheros-art-$PID"
 New-Item -ItemType Directory -Force $work | Out-Null
 $items = foreach ($f in $files) {
   $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($f.FullName))
-  "{id:'$($f.BaseName)',src:'data:image/svg+xml;base64,$b64'}"
+  "{id:'$($f.Folder)-$($f.BaseName)',src:'data:image/svg+xml;base64,$b64'}"
 }
 $page = @"
 <!DOCTYPE html><html><body><script>
@@ -79,23 +84,26 @@ while ($wait.Elapsed.TotalSeconds -lt 120) {
   if ($text -match '<title>done</title>' -and $text -match '</html>') { break }
   Start-Sleep -Milliseconds 300
 }
-$out = if ($Check) { Join-Path $work 'out' } else { $to }
-New-Item -ItemType Directory -Force $out | Out-Null
+
 $bad = 0
 foreach ($f in $files) {
-  $m = [regex]::Match($text, "<pre id=""out-$([regex]::Escape($f.BaseName))"">data:image/webp;base64,([^<]+)</pre>")
-  if (-not $m.Success) { Write-Host "  no webp for $($f.BaseName)" -ForegroundColor Red; $bad++; continue }
+  $id = "$($f.Folder)-$($f.BaseName)"
+  $m = [regex]::Match($text, "<pre id=""out-$([regex]::Escape($id))"">data:image/webp;base64,([^<]+)</pre>")
+  if (-not $m.Success) { Write-Host "  no webp for $($f.Folder)\$($f.BaseName)" -ForegroundColor Red; $bad++; continue }
   $bytes = [Convert]::FromBase64String($m.Groups[1].Value)
-  $target = Join-Path $out "$($f.BaseName).webp"
-  [IO.File]::WriteAllBytes($target, $bytes)
+  $app = Join-Path $root "app\assets\images\$($f.Folder)"
+  $out = if ($Check) { Join-Path $work "out\$($f.Folder)" } else { $app }
+  New-Item -ItemType Directory -Force $out | Out-Null
+  [IO.File]::WriteAllBytes((Join-Path $out "$($f.BaseName).webp"), $bytes)
   if ($Check) {
-    $app = Join-Path $to "$($f.BaseName).webp"
-    if (-not (Test-Path $app)) { Write-Host "  missing in the app: $($f.BaseName)" -ForegroundColor Red; $bad++ }
+    if (-not (Test-Path (Join-Path $app "$($f.BaseName).webp"))) {
+      Write-Host "  missing in the app: $($f.Folder)\$($f.BaseName)" -ForegroundColor Red; $bad++
+    }
   } else {
-    Write-Host "  $($f.BaseName).webp ($([math]::Round($bytes.Length / 1KB, 1)) KB)"
+    Write-Host "  $($f.Folder)\$($f.BaseName).webp ($([math]::Round($bytes.Length / 1KB, 1)) KB)"
   }
 }
 Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
 if ($bad) { exit 1 }
-Write-Host "$(@($files).Count) pictures $(if ($Check) { 'checked' } else { "written to $to" })" -ForegroundColor Green
+Write-Host "$($files.Count) pictures $(if ($Check) { 'checked' } else { 'written' })" -ForegroundColor Green
 exit 0

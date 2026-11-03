@@ -58,6 +58,11 @@ class ImageIndex {
     ),
   };
 
+  /// The asset of a profession's picture, or null when it has none: the
+  /// caller then shows its glyph (spec 0014 amendment 7).
+  String? professionAsset(String id) =>
+      has('professions/$id') ? 'assets/images/professions/$id.webp' : null;
+
   Picture _image(String key, String placeholder) =>
       has(key) ? Picture(key) : Picture.placeholderOf(placeholder);
 

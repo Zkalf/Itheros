@@ -653,9 +653,11 @@ class _Here extends StatelessWidget {
       // The teachers here (spec 0010 §6.1), a dot when a tip waits.
       for (final p in game.data.professions.values)
         if (p.teacher.location == s.location)
+          // The rows of Here share the 32 dp of the profession pictures, so
+          // their names line up (spec 0014 amendment 7).
           ListTile(
             key: ValueKey('teacher-${p.id}'),
-            leading: Icon(professionIcon(p.icon)),
+            leading: ProfessionPicture(p),
             title: Text(teacherName(p)),
             titleTextStyle: nameStyle(context),
             subtitle: Text(
@@ -673,7 +675,7 @@ class _Here extends StatelessWidget {
       if (game.data.trainer.location == s.location)
         ListTile(
           key: const ValueKey('trainer'),
-          leading: const Icon(Icons.auto_awesome),
+          leading: const SizedBox(width: 32, child: Icon(Icons.auto_awesome)),
           title: Text(trainerName(game.data.trainer)),
           titleTextStyle: nameStyle(context),
           subtitle: const Text('Talents'),
@@ -685,7 +687,10 @@ class _Here extends StatelessWidget {
       if (place.crafting && onOpenProfessions != null)
         ListTile(
           key: const ValueKey('here-forge'),
-          leading: const Icon(Icons.local_fire_department),
+          leading: const SizedBox(
+            width: 32,
+            child: Icon(Icons.local_fire_department),
+          ),
           title: const Text('Forge'),
           subtitle: const Text('Craft gear in Professions'),
           onTap: () => onOpenProfessions!('crafting'),
@@ -694,7 +699,10 @@ class _Here extends StatelessWidget {
       if (place.itemBank)
         ListTile(
           key: const ValueKey('bank-card'),
-          leading: const Icon(Icons.account_balance),
+          leading: const SizedBox(
+            width: 32,
+            child: Icon(Icons.account_balance),
+          ),
           title: const Text('Bank'),
           titleTextStyle: nameStyle(context),
           subtitle: const Text('Store items and take them back'),
@@ -709,7 +717,7 @@ class _Here extends StatelessWidget {
       if (place.fire && onOpenProfessions != null)
         ListTile(
           key: const ValueKey('here-fire'),
-          leading: const Icon(Icons.outdoor_grill),
+          leading: const SizedBox(width: 32, child: Icon(Icons.outdoor_grill)),
           title: const Text('Camp fire'),
           subtitle: const Text('Cook meals in Professions'),
           onTap: () => onOpenProfessions!('cooking'),
