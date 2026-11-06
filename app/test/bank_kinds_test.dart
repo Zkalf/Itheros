@@ -162,12 +162,19 @@ void main() {
     testWidgets('criterion 13: a pick in the bag leaves both bank tabs on '
         'their own picks', (t) async {
       await pumpGame(t, inventory: mixed, prepare: banked(mixed));
+      // The Bank tab gets its own pick first, so a bag pick that wrote over
+      // it would show.
+      await openBank(t);
+      await bankTab(t);
+      await pickKind(t, 'bank-bank', 'gear');
+      await t.tap(find.byType(BackPlate));
+      await t.pumpAndSettle();
       await openBag(t);
       await pickKind(t, 'bag', 'meal');
       await openBank(t);
       expect(selected(t, 'bank-bag', 'all'), isTrue);
       await bankTab(t);
-      expect(selected(t, 'bank-bank', 'all'), isTrue);
+      expect(selected(t, 'bank-bank', 'gear'), isTrue);
     });
 
     testWidgets('criterion 14: a pick in the Bag tab leaves the Bank tab on '
@@ -436,6 +443,17 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('card-equip')), findsOneWidget);
       expect(find.byKey(const ValueKey('card-salvage')), findsOneWidget);
+      expect(find.byKey(const ValueKey('bank-move-all')), findsNothing);
+    });
+
+    testWidgets('the card of a meal that the bag opens keeps Eat and '
+        'Auto-eat', (t) async {
+      await pumpGame(t, inventory: {meal: 2});
+      await openBag(t);
+      await t.tap(find.byKey(const ValueKey('bag-$meal')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('card-eat')), findsOneWidget);
+      expect(find.text('Auto-eat'), findsOneWidget);
       expect(find.byKey(const ValueKey('bank-move-all')), findsNothing);
     });
   });
