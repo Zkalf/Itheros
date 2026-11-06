@@ -21,11 +21,43 @@ void main() {
     sync = SyncService(game: game, source: source, clock: () => now);
   });
 
-  test('steps walked before install are not credited (amendment 4)', () async {
-    source.walk(DateTime(2026, 10, 18, 7), 3000);
+  // Spec 0001 amendment 3 (#225): day one counts in full. Before it, the
+  // steps walked earlier on the first day were never credited.
+  test('amendment 3 criterion 1: steps walked earlier on the first day go to '
+      'the game at the first sync', () async {
+    source.walk(DateTime(2026, 10, 18, 7), 2000);
     final save = await sync.newSave(seed: 1);
 
     final r = await sync.sync(save);
+
+    expect(r.summary.walked, 2000);
+    expect(r.save.game.stepBank, 2000);
+    expect(r.save.credited['2026-10-18'], 2000);
+  });
+
+  test('amendment 3 criterion 2: steps of the day before the start do not '
+      'count', () async {
+    source
+      ..walk(DateTime(2026, 10, 17, 20), 900)
+      ..walk(DateTime(2026, 10, 18, 7), 300);
+    final save = await sync.newSave(seed: 1);
+
+    final r = await sync.sync(save);
+
+    expect(r.summary.walked, 300);
+    expect(r.save.credited.keys, ['2026-10-18']);
+  });
+
+  test('amendment 3 criterion 4: a save from before keeps its credit, so its '
+      'first day stays as it was', () async {
+    source.walk(DateTime(2026, 10, 18, 7), 2000);
+    // An old save: its first day credited the steps walked before the start.
+    final old = SaveData.fromJson({
+      ...(await sync.newSave(seed: 1)).toJson(),
+      'credited': {'2026-10-18': 2000},
+    });
+
+    final r = await sync.sync(old);
 
     expect(r.summary.walked, 0);
     expect(r.save.game.stepBank, 0);
