@@ -9,6 +9,7 @@ import 'item_card.dart';
 import 'kind_chips.dart';
 import 'labels.dart';
 import 'socket.dart';
+import 'tab_boxes.dart';
 import 'theme.dart';
 
 /// Opens the bank screen (spec 0020 §3.1). It slides in like the Journal.
@@ -16,7 +17,8 @@ Future<void> openBank(BuildContext context) =>
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const BankScreen()));
 
-/// The item bank (spec 0020 §3.2): the tabs Bag and Bank. A tap on an item
+/// The item bank (spec 0020 §3.2): the tabs Bank and Bag, Bank first and
+/// open (amendment 3). A tap on an item
 /// opens its card; at a place with a bank the card has Store or Take,
 /// elsewhere the player only looks (spec 0020 amendment 2).
 class BankScreen extends StatelessWidget {
@@ -33,15 +35,11 @@ class BankScreen extends StatelessWidget {
         appBar: AppBar(
           leading: const BackPlate(),
           title: const Text('Bank'),
-          // The tab shown is teal and underlined, the other muted.
-          bottom: const TabBar(
-            indicatorColor: Quiet.teal,
-            labelColor: Quiet.teal,
-            unselectedLabelColor: Quiet.muted,
-            tabs: [
-              Tab(key: ValueKey('bank-tab-bag'), text: 'Bag'),
-              Tab(key: ValueKey('bank-tab-bank'), text: 'Bank'),
-            ],
+          // Buttons in boxes, as the Journal's; Bank first, and the screen
+          // opens on it (spec 0020 amendment 3).
+          bottom: const TabBoxes(
+            labels: ['Bank', 'Bag'],
+            keys: [ValueKey('bank-tab-bank'), ValueKey('bank-tab-bag')],
           ),
         ),
         body: SafeArea(
@@ -56,8 +54,8 @@ class BankScreen extends StatelessWidget {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _ItemList(controller: c, inBank: false),
                     _ItemList(controller: c, inBank: true),
+                    _ItemList(controller: c, inBank: false),
                   ],
                 ),
               ),
