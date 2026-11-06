@@ -141,8 +141,225 @@ def mossback_feast():
     return svg(defs, body)
 
 
+# The meals from Cooking 10 up. Each one shows its fish or meat in the colours of art/fish.py and art/hunt.py.
+
+def glow_def(colour):
+    return (f'<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="{colour}" stop-opacity="0.45"/>'
+            f'<stop offset="1" stop-color="{colour}" stop-opacity="0"/></radialGradient>')
+
+
+GLOW = '<ellipse cx="24" cy="26" rx="23" ry="17" fill="url(#glow)"/>'
+
+
+def lemon(x, y):
+    return (f'<circle cx="{x}" cy="{y}" r="2.6" fill="#F2D45A" stroke="{INK}" stroke-width="0.8"/>'
+            f'<path d="M{x - 1.8} {y} L{x + 1.8} {y} M{x} {y - 1.8} L{x} {y + 1.8}" stroke="#E0B030" stroke-width="0.5"/>')
+
+
+def smoke(x, y):
+    # Grey smoke for the smoked fish, in place of white steam.
+    return ''.join(f'<path d="M{x + dx} {y} C{x + dx - 3} {y - 3}, {x + dx + 3} {y - 5}, {x + dx} {y - 8}" fill="none" stroke="#9AA0A4" '
+                   f'stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>' for dx in (0, 6))
+
+
+def smoked_trout():
+    # A whole brown trout, smoked golden brown, on a board, with grey smoke.
+    body = (f'<rect x="4" y="26" width="40" height="11" rx="2.4" fill="#5A3416" stroke="{INK}" stroke-width="1.2"/>'
+            '<path d="M6 35 L42 35" stroke="#8A5428" stroke-width="0.8" opacity="0.8"/>'
+            + fish_on(8, 29.4, 24, '#9A5418', '#F6D088', '#4A2008') +
+            ''.join(f'<circle cx="{x}" cy="{y}" r="0.7" fill="#3A2412"/>' for x, y in ((16, 27), (21, 26.4), (26, 27.2), (19, 31))) + smoke(18, 20))
+    return svg(fish_defs('#B0601A', '#FFE0A0'), body)
+
+
+def pie(dish, x0, x1, top):
+    # A pie in a dish, a golden crust seen from a little above.
+    defs = ('<radialGradient id="crust" cx="0.4" cy="0.35" r="0.75"><stop offset="0" stop-color="#FFE0A0"/>'
+            '<stop offset="0.6" stop-color="#E0A04A"/><stop offset="1" stop-color="#9A5A1A"/></radialGradient>')
+    w = (x1 - x0) / 2
+    cx = (x0 + x1) / 2
+    body = (f'<path d="M{x0} 27 L{x0 + 1.4} 33.6 C{x0 + 4} 40.4, {x1 - 4} 40.4, {x1 - 1.4} 33.6 L{x1} 27 Z" fill="{dish}" stroke="{INK}" stroke-width="1.2" stroke-linejoin="round"/>'
+            f'<path d="M{x0 + 2.6} 34.6 C{x0 + 6} 38.4, {cx - 4} 39.4, {cx} 39.4" fill="none" stroke="#C8946A" stroke-width="0.9" stroke-linecap="round" opacity="0.7"/>'
+            f'<ellipse cx="{cx}" cy="27" rx="{w}" ry="8" fill="url(#crust)" stroke="{INK}" stroke-width="1.3"/>'
+            f'<ellipse cx="{cx}" cy="27" rx="{w - 2.4}" ry="5.8" fill="none" stroke="#B87430" stroke-width="0.8" stroke-dasharray="2 1.4"/>'
+            + top + steam(cx - 3, 17))
+    return defs, body
+
+
+def eel_pie():
+    # An oval pie with the eel's head looking out of the crust at one end and its tail at the other.
+    top = (f'<path d="M9 25 C5 22, 3.6 16.6, 6 13 C8.6 11.4, 12 12.6, 13.4 15.6 C14.4 18, 14.4 21, 14 24 Z" fill="#4E5A2C" stroke="{INK}" stroke-width="1.2" stroke-linejoin="round"/>'
+           '<path d="M5 14.6 C6.4 13.6, 8 13.4, 9.6 14" fill="none" stroke="#8E9A5A" stroke-width="0.8" stroke-linecap="round"/>'
+           f'<circle cx="8.4" cy="16.4" r="1.5" fill="#FFF4C0" stroke="{INK}" stroke-width="0.5"/><circle cx="8.6" cy="16.4" r="0.7" fill="#1A1A0A"/>'
+           '<path d="M5.6 19.4 C7 20.4, 8.6 20.6, 10 20" fill="none" stroke="#1A1A0A" stroke-width="0.7" stroke-linecap="round"/>'
+           f'<path d="M37 24.6 C39 21.6, 41.4 20.6, 43.4 21.4 C42 23, 41 25, 40.6 27.4 Z" fill="#4E5A2C" stroke="{INK}" stroke-width="1.1" stroke-linejoin="round"/>'
+           '<path d="M17 25 L21 29 M22 23.6 L26 27.6 M27 23.6 L31 27.6" stroke="#9A5A1A" stroke-width="1" stroke-linecap="round"/>')
+    defs, body = pie('#8A5A3A', 5, 43, top)
+    return svg(defs, body)
+
+
+def grouse_pie():
+    # A round pie with a lattice crust, two drumsticks of grouse standing out of it.
+    lattice = ''.join(f'<path d="M{x} 21 L{x + 6} 33" stroke="#B87430" stroke-width="1.1" stroke-linecap="round"/>'
+                      f'<path d="M{x + 6} 21 L{x} 33" stroke="#B87430" stroke-width="1.1" stroke-linecap="round"/>' for x in (14, 21, 28))
+    legs = ''.join(f'<path d="M{x} 25 C{x - 1} 20, {x + dx} 15, {x + dx * 1.6} 11.6" fill="none" stroke="{INK}" stroke-width="4.4" stroke-linecap="round"/>'
+                   f'<path d="M{x} 25 C{x - 1} 20, {x + dx} 15, {x + dx * 1.6} 11.6" fill="none" stroke="#D89A5E" stroke-width="2.8" stroke-linecap="round"/>'
+                   f'<circle cx="{x + dx * 1.6}" cy="11" r="1.6" fill="#F4ECDA" stroke="{INK}" stroke-width="0.7"/>' for x, dx in ((20, -2.4), (28, 2.4)))
+    defs, body = pie('#8A5A3A', 8, 40, lattice + legs)
+    return svg(defs, body)
+
+
+def planked_salmon():
+    # A salmon fillet, pink-orange with pale lines, grilled on a cedar plank, a slice of lemon.
+    body = (f'<path d="M3 30 L41 18 L45 23 L7 36 Z" fill="url(#wood)" stroke="{INK}" stroke-width="1.2" stroke-linejoin="round"/>'
+            '<path d="M5 31.6 L42 20" stroke="#E0A060" stroke-width="0.8" opacity="0.6"/>'
+            f'<path d="M9 30 C11 25, 30 19, 37 20 C39.6 21.6, 39 24.6, 36 26 C28 29, 16 33, 11 33 C9 32.6, 8.6 31.4, 9 30 Z" '
+            f'fill="url(#salmon)" stroke="{INK}" stroke-width="1.2"/>'
+            + ''.join(f'<path d="M{x} {y} c1.4 -1.4, 1.8 -3, 1.4 -4.4" fill="none" stroke="#FFE0CC" stroke-width="0.8" stroke-linecap="round" opacity="0.85"/>'
+                      for x, y in ((14, 31), (19, 29.4), (24, 27.6), (29, 25.8), (33, 24.2)))
+            + '<path d="M12 28.6 C18 25, 28 21.6, 34 21" fill="none" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/>'
+            + lemon(39, 28) + herbs(16, 35) + steam(20, 16))
+    defs = ('<linearGradient id="salmon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB08A"/>'
+            '<stop offset="1" stop-color="#E0603A"/></linearGradient>')
+    return svg(defs, body)
+
+
+def roast(meat, bone=False):
+    # A roast on a plate, its cut end showing; tied with twine, or a haunch with the bone out.
+    m = meat
+    defs = (f'<radialGradient id="roast" cx="0.4" cy="0.3" r="0.75"><stop offset="0" stop-color="{m[0]}"/>'
+            f'<stop offset="0.6" stop-color="{m[1]}"/><stop offset="1" stop-color="{m[2]}"/></radialGradient>')
+    if bone:
+        body = (plate() +
+                f'<path d="M30 22 L38 13" stroke="{INK}" stroke-width="5" stroke-linecap="round"/>'
+                '<path d="M30 22 L38 13" stroke="#F4ECDA" stroke-width="3" stroke-linecap="round"/>'
+                f'<circle cx="38.6" cy="11.4" r="2.1" fill="#F4ECDA" stroke="{INK}" stroke-width="0.9"/>'
+                f'<circle cx="40.4" cy="13.6" r="2.1" fill="#F4ECDA" stroke="{INK}" stroke-width="0.9"/>'
+                f'<path d="M32 21 C35 25, 33 31, 26 34 C19 36.6, 10 35, 9 30 C8 25, 14 21, 20 19.6 C25 18.4, 29.6 18.6, 32 21 Z" '
+                f'fill="url(#roast)" stroke="{INK}" stroke-width="1.3"/>'
+                '<path d="M12 25 C15 21.6, 21 20, 27 20" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-linecap="round" opacity="0.6"/>'
+                + herbs(36, 33) + steam(17, 16))
+    else:
+        ties = ''.join(f'<path d="M{x} 18.6 C{x + 1.6} 24, {x + 1.6} 30, {x} 34.6" fill="none" stroke="#E8D2A0" stroke-width="1.4"/>' for x in (15, 21.6, 28.2))
+        body = (plate() +
+                f'<path d="M8 26 C8 20, 16 17.6, 24 17.6 C31 17.6, 36 20, 36 26 C36 32, 30 35.4, 22 35.4 C14 35.4, 8 32, 8 26 Z" fill="url(#roast)" stroke="{INK}" stroke-width="1.3"/>'
+                f'<ellipse cx="34.4" cy="26.4" rx="3.2" ry="8.2" fill="{m[3]}" stroke="{INK}" stroke-width="1"/>'
+                f'<ellipse cx="34.4" cy="26.4" rx="1.6" ry="4.2" fill="none" stroke="#F4E2CC" stroke-width="0.7" opacity="0.8"/>'
+                + ties + '<path d="M11 22 C14 19.4, 20 18.4, 26 18.6" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-linecap="round" opacity="0.6"/>'
+                + herbs(40, 33) + steam(17, 14))
+    return svg(defs, body)
+
+
+def black_boar_stew():
+    defs, body = bowl(['#7A4020', '#2E140A'],
+                      '<rect x="14.6" y="21" width="4.4" height="3.6" rx="1" fill="#4A2014" stroke="#24140A" stroke-width="0.6"/>'
+                      '<path d="M14.6 21.4 L19 21.4" stroke="#1A1410" stroke-width="1.2"/>'
+                      '<rect x="25" y="22.4" width="4.6" height="3.6" rx="1" fill="#4A2014" stroke="#24140A" stroke-width="0.6"/>'
+                      '<path d="M25 22.8 L29.6 22.8" stroke="#1A1410" stroke-width="1.2"/>'
+                      '<circle cx="21.6" cy="25.6" r="1.3" fill="#D8C068" stroke="#24140A" stroke-width="0.5"/>'
+                      '<circle cx="31.8" cy="24.2" r="1.2" fill="#E8862A" stroke="#24140A" stroke-width="0.5"/>'
+                      '<circle cx="18.4" cy="25.8" r="0.9" fill="#5A7E2A"/><circle cx="28.4" cy="21.4" r="0.9" fill="#5A7E2A"/>')
+    return svg(defs, body)
+
+
+def char_soup():
+    defs, body = bowl(['#F6A86A', '#C0582A'],
+                      '<path d="M15 22.6 C17 21, 21 21, 23 22.8 C21 24.6, 17 24.6, 15 22.6 Z" fill="#F8C8A0" stroke="#24140A" stroke-width="0.6"/>'
+                      '<path d="M25 24 C27 22.4, 31 22.4, 33 24.2 C31 26, 27 26, 25 24 Z" fill="#F8C8A0" stroke="#24140A" stroke-width="0.6"/>'
+                      '<circle cx="21" cy="26" r="0.9" fill="#7FA34A"/><circle cx="30" cy="21.6" r="0.9" fill="#7FA34A"/>'
+                      '<circle cx="13.4" cy="24.6" r="0.8" fill="#FFF4D0"/><circle cx="34.6" cy="22.6" r="0.8" fill="#FFF4D0"/>')
+    return svg(defs, body)
+
+
+def moonfish_broth():
+    # A pale broth with a moon of fish in it, a soft pale glow and a sparkle.
+    defs, body = bowl(['#F4ECF2', '#B8A4C0'],
+                      '<circle cx="24" cy="24.2" r="3.4" fill="#FFF8F0" stroke="#24140A" stroke-width="0.7"/>'
+                      '<circle cx="25.2" cy="23.4" r="2.8" fill="#D8C4D2"/>'
+                      '<circle cx="15" cy="24" r="0.9" fill="#D04A3A"/><circle cx="33" cy="24.4" r="0.9" fill="#D04A3A"/>'
+                      '<circle cx="19" cy="26" r="0.7" fill="#FFFFFF"/><circle cx="30" cy="22" r="0.7" fill="#FFFFFF"/>',
+                      spark(37, 13, 1))
+    return svg(defs + glow_def('#E8D8FF'), GLOW + body)
+
+
+def baked_fish(back, belly, marks, dish, extra=''):
+    # A whole fish baked in an oval dish, with lemon and herbs.
+    body = (f'<ellipse cx="24" cy="31" rx="21" ry="8.6" fill="{dish}" stroke="{INK}" stroke-width="1.3"/>'
+            f'<ellipse cx="24" cy="30" rx="18" ry="6.4" fill="#5A3A1E" stroke="{INK}" stroke-width="0.8"/>'
+            + fish_on(8, 29.6, 24, back, belly, marks) + extra + lemon(37, 34) + herbs(12, 35) + steam(19, 20))
+    return svg(fish_defs(back, belly), body)
+
+
+def baked_sea_bass():
+    return baked_fish('#5A6670', '#EEF0EC', '#3A2A1A', '#C8B89A')
+
+
+def glacier_pike_roast():
+    return baked_fish('#4A6A80', '#EEF4F4', '#2A3A44', '#A8C8D8',
+                      ''.join(f'<circle cx="{x}" cy="{y}" r="0.6" fill="#F2FAFF"/>' for x, y in ((14, 27), (20, 26.6), (26, 27))))
+
+
+def salted_mackerel():
+    # A mackerel on a plate, its wavy dark stripes on the back, salt crystals around it.
+    waves = ''.join(f'<path d="M{x} 25.6 c1 1.4, 2 -1.4, 3 0" fill="none" stroke="#10303A" stroke-width="0.9" stroke-linecap="round"/>'
+                    for x in (13, 17, 21, 25))
+    salt = ''.join(f'<rect x="{x}" y="{y}" width="1.3" height="1.3" fill="#FFFFFF" stroke="#A8B4BA" stroke-width="0.3" transform="rotate(20 {x} {y})"/>'
+                   for x, y in ((8, 34), (11, 36), (34, 35), (38, 33), (30, 37), (16, 37.4), (40, 30), (6, 30)))
+    body = plate() + fish_on(9, 29, 22, '#1E5A6A', '#F2F4EE', '#2A1A0A') + waves + salt
+    return svg(fish_defs('#2E7080', '#F2F4EE'), body)
+
+
+def frostfin_fillet():
+    # Two fillets with icy blue skin on a plate, a frosty sparkle.
+    body = plate()
+    for x, y in ((10, 28), (20, 31)):
+        body += (f'<path d="M{x} {y} C{x + 4} {y - 5}, {x + 14} {y - 5}, {x + 18} {y - 1} C{x + 14} {y + 3}, {x + 4} {y + 3}, {x} {y} Z" '
+                 f'fill="#FBEFE6" stroke="{INK}" stroke-width="1.1"/>'
+                 f'<path d="M{x + 1} {y - 0.6} C{x + 5} {y - 4.6}, {x + 13} {y - 4.6}, {x + 17} {y - 1.4}" fill="none" stroke="#7EB0D0" stroke-width="1.8" stroke-linecap="round"/>'
+                 + ''.join(f'<path d="M{x + dx} {y + 1.6} l1.2 -3" stroke="#E8C8B4" stroke-width="0.6"/>' for dx in (5, 9, 13)))
+    body += herbs(38, 34) + spark(37, 15, 1) + spark(11, 18, 0.7)
+    return svg('', body)
+
+
+def ibex_haunch():
+    return roast(['#C86A3E', '#8A3A1C', '#4A1A0A', '#E89A78'], bone=True)
+
+
+def elk_roast():
+    return roast(['#B85A34', '#7A2A16', '#3E1008', '#D8786A'])
+
+
+def feast(back, belly, glow, fin, extra=''):
+    # A feast for a rare catch: its big fish on a platter with roast meat and greens, a glow and a sparkle.
+    body = (GLOW + plate() + fish_on(6, 28.5, 26, back, belly, '#2A1A08') +
+            f'<path d="M14 23.8 L17 19.6 L20 23.2 L23 19 L26 23" fill="{fin}" stroke="{INK}" stroke-width="0.8" stroke-linejoin="round"/>'
+            '<rect x="31" y="32.6" width="5.4" height="4.2" rx="1.2" fill="#8A3A1C" stroke="#24140A" stroke-width="0.7"/>'
+            + herbs(9, 34.6) + herbs(40, 35) +
+            '<circle cx="14.4" cy="35" r="1.5" fill="#C0392B" stroke="#24140A" stroke-width="0.5"/>' + extra
+            + steam(18, 19) + spark(40, 12, 1.1))
+    return svg(fish_defs(back, belly) + glow_def(glow), body)
+
+
+def river_king_feast():
+    return feast('#3A4046', '#D8D6C4', '#FFD86A', '#C9A13A')
+
+
+def one_eye_feast():
+    # Old One-Eye: a pale scar across the eye.
+    return feast('#33393E', '#C8C4B4', '#E8C080', '#4E5458',
+                 '<path d="M7.4 25.6 L11.6 30.6 M11.6 25.6 L7.4 30.6" stroke="#E8DCC8" stroke-width="1.2" stroke-linecap="round"/>')
+
+
+def pale_one_feast():
+    return feast('#B8C4C4', '#FBFDFC', '#A8F0FF', '#C8D8DA')
+
+
 ITEMS = dict(grilled_perch=grilled_perch, pike_steak=pike_steak, venison_skewer=venison_skewer, boar_stew=boar_stew,
-             golden_carp_curry=golden_carp_curry, mossback_feast=mossback_feast)
+             golden_carp_curry=golden_carp_curry, mossback_feast=mossback_feast,
+             smoked_trout=smoked_trout, eel_pie=eel_pie, planked_salmon=planked_salmon, elk_roast=elk_roast,
+             black_boar_stew=black_boar_stew, river_king_feast=river_king_feast, baked_sea_bass=baked_sea_bass,
+             salted_mackerel=salted_mackerel, moonfish_broth=moonfish_broth, one_eye_feast=one_eye_feast,
+             char_soup=char_soup, frostfin_fillet=frostfin_fillet, glacier_pike_roast=glacier_pike_roast,
+             ibex_haunch=ibex_haunch, grouse_pie=grouse_pie, pale_one_feast=pale_one_feast)
 
 os.makedirs(OUT, exist_ok=True)
 for item, draw in ITEMS.items():

@@ -1,0 +1,1 @@
+- **All meals have pictures:** every meal from smoked trout to the Pale One feast now has its own picture.
