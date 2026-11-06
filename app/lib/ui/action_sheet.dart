@@ -5,7 +5,10 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'action_picture.dart';
 import 'bestiary_card.dart';
+import 'images.dart';
+import 'item_card.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Picks a stop condition for [activity] and whether to start it now or add
@@ -324,6 +327,7 @@ class _ActionSheetState extends State<ActionSheet> {
                 _game.data.recipes[a.target]!.inputs.isNotEmpty) ...[
               const SizedBox(height: 12),
               _MaterialsTable(
+                controller: c,
                 game: _game,
                 state: s,
                 recipe: a.target,
@@ -415,12 +419,15 @@ class _ActionSheetState extends State<ActionSheet> {
 /// amendment 5 §2.2-2.3).
 class _MaterialsTable extends StatelessWidget {
   const _MaterialsTable({
+    required this.controller,
     required this.game,
     required this.state,
     required this.recipe,
     required this.stop,
   });
 
+  /// Opens the card of a material (spec 0014 amendment 9, rule 7).
+  final GameController controller;
   final Game game;
   final GameState state;
   final String recipe;
@@ -470,14 +477,17 @@ class _MaterialsTable extends StatelessWidget {
         Table(
           // Shares, not the width of the numbers: at a large text size the
           // numbers would take the width and leave the names none.
+          // The name column holds the 32 dp picture too (amendment 9), so it
+          // takes three shares.
           columnWidths: const {
-            0: FlexColumnWidth(2),
+            0: FlexColumnWidth(3),
             1: FlexColumnWidth(),
             2: FlexColumnWidth(),
             3: FlexColumnWidth(),
           },
-          defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+          // Each line holds a 32 dp picture, so the cells sit in the middle
+          // of the line (spec 0014 amendment 9).
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: [
             TableRow(
               children: [
@@ -494,7 +504,16 @@ class _MaterialsTable extends StatelessWidget {
             ),
             for (final MapEntry(key: item, value: need)
                 in game.data.recipes[recipe]!.inputs.entries)
-              _row(item, need, bag[item] ?? 0, crafts, labels, number, cell),
+              _row(
+                context,
+                item,
+                need,
+                bag[item] ?? 0,
+                crafts,
+                labels,
+                number,
+                cell,
+              ),
           ],
         ),
         if (crafts == null || allowed < crafts)
@@ -511,6 +530,7 @@ class _MaterialsTable extends StatelessWidget {
   }
 
   TableRow _row(
+    BuildContext context,
     String item,
     int need,
     int have,
@@ -525,11 +545,31 @@ class _MaterialsTable extends StatelessWidget {
         short ? (s ?? const TextStyle()).copyWith(color: Quiet.short) : s;
     return TableRow(
       children: [
-        cell(
-          'material-$item-name',
-          labels.item(item),
-          style: colour(null),
-          end: false,
+        // The material's picture in a 32 dp socket before its name; a tap
+        // opens its card (spec 0014 amendment 9, rules 6-7).
+        InkWell(
+          key: ValueKey('material-$item-line'),
+          onTap: () => showItemCard(context, controller, item),
+          child: Row(
+            children: [
+              PictureSocket.item(
+                game.data,
+                item,
+                picture: ImageScope.of(context)
+                    .pictureOf(game.data, ItemThing(item)),
+                size: 32,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: cell(
+                  'material-$item-name',
+                  labels.item(item),
+                  style: colour(null),
+                  end: false,
+                ),
+              ),
+            ],
+          ),
         ),
         cell('material-$item-have', '$have', style: colour(number)),
         cell(

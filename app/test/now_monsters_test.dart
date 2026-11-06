@@ -703,8 +703,9 @@ void criterion11() {
     testWidgets('on each profession screen the tool line starts with the '
         'image of the tool in a 32 dp socket with the ring of its quality; '
         "Cooking's meal row starts with the meal in a 32 dp socket; recipe "
-        'rows stay as today', (t) async {
-      final (c, _) = await pumpGame(t, images: diskImages);
+        'rows start with their item (spec 0014 amendment 9)', (t) async {
+      // `ringless`: the pictures that `expectShows` expects.
+      final (c, _) = await pumpGame(t, images: ringless);
       await openProfession(t, 'cooking');
       expect(
         inside(
@@ -740,10 +741,16 @@ void criterion11() {
                 )
                 .evaluate()) {
           recipes++;
-          expect(
-            inside(byElement(e), find.byType(PictureSocket)),
-            findsNothing,
-            reason: 'the recipe row ${nameOf(e)} on $p',
+          // Since amendment 9 each recipe row starts with its item at 48 dp.
+          final id = (e.widget.key! as ValueKey<String>).value.substring(
+            'option-craft-'.length,
+          );
+          expectSocketFirst(
+            t,
+            byElement(e),
+            ItemThing(game.data.recipes[id]!.output),
+            48,
+            'the recipe row $id on $p',
           );
         }
       }

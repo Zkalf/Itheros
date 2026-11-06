@@ -501,19 +501,37 @@ class _RecipeTile extends StatelessWidget {
     return ListTile(
       key: ValueKey('option-craft-$recipe'),
       contentPadding: EdgeInsets.zero,
-      leading: LevelBadge(
-        level: r.craftingLevel,
-        // Its XP fades by the recipe's level (spec 0010 §2.3).
-        colour: professionColour(
-          game,
-          s,
-          r.profession,
-          r.level,
-          open: levelMet,
+      // The item that it makes in a 48 dp socket, with the ring of gear and
+      // tools (spec 0014 amendment 9, rules 1-2).
+      leading: Builder(
+        builder: (context) => PictureSocket.item(
+          game.data,
+          r.output,
+          picture: ImageScope.of(context)
+              .pictureOf(game.data, ItemThing(r.output)),
+          size: 48,
         ),
       ),
       enabled: levelMet,
-      title: Text(labels.recipe(recipe)),
+      // The level badge before the name, as in a monster row (rule 3).
+      title: Row(
+        children: [
+          LevelBadge(
+            key: ValueKey('recipe-level-$recipe'),
+            level: r.craftingLevel,
+            // Its XP fades by the recipe's level (spec 0010 §2.3).
+            colour: professionColour(
+              game,
+              s,
+              r.profession,
+              r.level,
+              open: levelMet,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Flexible(child: Text(labels.recipe(recipe))),
+        ],
+      ),
       titleTextStyle: nameStyle(context),
       subtitle: Text.rich(
         TextSpan(
