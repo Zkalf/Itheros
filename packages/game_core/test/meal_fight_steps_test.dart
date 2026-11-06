@@ -74,6 +74,20 @@ void main() {
     );
   });
 
+  test('rule 6: the summed share is rounded down once, not each share', () {
+    // 3 rounds of 10 steps: Swift strikes 5 ranks gives 0.75, a tier 1 meal
+    // 3.6. Rounded down once: 4 steps; each rounded down: 0 + 3.
+    const ranks = {'swift_strikes': 5};
+    final rounds3 = 3 * data.combatRoundSteps;
+    final talent = 5 * data.talents['swift_strikes']!.value;
+    final both = fed('venison_skewer', talents: ranks);
+    final once = (rounds3 * (talent + 0.12) + 1e-9).floor();
+    final each =
+        (rounds3 * talent + 1e-9).floor() + (rounds3 * 0.12 + 1e-9).floor();
+    expect(once, isNot(each), reason: 'the case tells the two apart');
+    expect(game.fightStepsBack(both, 3), once);
+  });
+
   test('criterion 7: the shares and the length come from economy.json', () {
     final meals = dataJson('economy')['meals']! as Map<String, Object?>;
     expect(meals['fightSteps'], [12, 20, 28]);

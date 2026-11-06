@@ -6,10 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'ui_test.dart';
 
 void main() {
-  Finder card(Finder f) => find.descendant(
-    of: find.byKey(const ValueKey('item-card')),
-    matching: f,
-  );
+  Finder card(Finder f) =>
+      find.descendant(of: find.byKey(const ValueKey('item-card')), matching: f);
 
   Future<void> openItem(WidgetTester t, String key) async {
     await pumpGame(t, inventory: {key: 2});
