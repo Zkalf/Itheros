@@ -1,0 +1,1 @@
+- **Destroy items:** a full bag? Open an item's card in the bag or the bank and tap Destroy to get rid of it for good, anywhere. The game asks first, and for a stack it asks how many.
