@@ -101,7 +101,7 @@ class _ItemList extends StatelessWidget {
         KindFilter(
           controller: controller,
           list: inBank ? 'bank-bank' : 'bank-bag',
-          items: items.keys,
+          items: items,
           builder: (shown) => Card(
             clipBehavior: Clip.antiAlias,
             child: Column(
