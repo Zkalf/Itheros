@@ -31,7 +31,7 @@ class BagGrid extends StatelessWidget {
     return KindFilter(
       controller: c,
       list: 'bag',
-      items: s.inventory.keys,
+      items: s.inventory,
       builder: (shown) => GridView.count(
         key: const ValueKey('bag'),
         crossAxisCount: columns,

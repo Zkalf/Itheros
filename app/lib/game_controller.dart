@@ -11,6 +11,7 @@ import 'steps/step_source.dart';
 import 'sync/away_summary.dart';
 import 'sync/day_key.dart';
 import 'sync/sync_service.dart';
+import 'ui/item_sort.dart';
 import 'version.dart';
 
 enum ControllerStatus { loading, unavailable, needsPermission, ready }
@@ -69,6 +70,11 @@ class GameController extends ChangeNotifier {
   /// memory only, so the app starts on All (spec 0020 amendment 2, rules
   /// 9-11).
   final kindPicks = <String, ItemKind>{};
+
+  /// The sort picked in each of the same lists. No entry is Bag order. Kept
+  /// in memory only, so the app starts on Bag order (spec 0020 amendment 4,
+  /// rules 12-15).
+  final sortPicks = <String, ItemSort>{};
 
   /// The "While you were away" screen's report, or null when it isn't shown
   /// (spec 0004 amendment 2).
