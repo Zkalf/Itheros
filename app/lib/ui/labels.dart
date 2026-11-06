@@ -492,6 +492,7 @@ class Labels {
     EndReason.enough => 'Stopped: goal reached',
     EndReason.noMaterials => 'Stopped: out of materials',
     EndReason.noRoute => 'Stopped: the way on is in the fog',
+    EndReason.bagFull => 'Stopped: the bag is full',
   };
 
   /// A stop condition, with progress toward it (spec 0003 §3).
@@ -513,6 +514,8 @@ class Labels {
       ActivityKind.craft => 'Until materials run out',
       _ => 'Keeps going',
     },
+    // Spec 0021 amendment 3, rule 5.
+    StopKind.untilFull => 'Until the bag is full',
   };
 
   /// Why a queued action never started. [missing]: what a craft lacked.

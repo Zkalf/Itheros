@@ -151,6 +151,7 @@ class _ActionSheetState extends State<ActionSheet> {
     StopKind.untilCrafted => StopCondition.untilCrafted(_count),
     StopKind.untilQuality => StopCondition.untilQuality(_quality),
     StopKind.never => const StopCondition.never(),
+    StopKind.untilFull => const StopCondition.untilFull(),
   };
 
   @override
@@ -185,6 +186,8 @@ class _ActionSheetState extends State<ActionSheet> {
       StopKind.untilCrafted => 'Until N crafted',
       StopKind.untilQuality => 'Until a quality',
       StopKind.never => 'Never stop',
+      // Spec 0021 amendment 3.
+      StopKind.untilFull => 'Until the bag is full',
     };
 
     return SafeArea(
