@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'action_picture.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
 import 'bag_spaces.dart';
@@ -349,15 +350,15 @@ class _QueueCard extends StatelessWidget {
       body = [
         Row(
           children: [
-            // Numbered like the queued rows below it (2, 3, ...), in
-            // Spectral: the number stands alone (spec 0014 §2.2).
-            if (slots > 1) ...[
-              const CircleAvatar(
-                radius: 14,
-                child: Text('1', style: numberStyle),
-              ),
-              const SizedBox(width: 16),
-            ],
+            // Its picture, numbered like the queued rows below it (2, 3,
+            // ...) when the queue has room for more (spec 0014 amendment 8).
+            ActionPicture(
+              key: const ValueKey('queue-picture-0'),
+              data: game.data,
+              activity: run.activity,
+              number: slots > 1 ? 1 : null,
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: _changeable(
                 context,
@@ -471,9 +472,13 @@ class _QueueCard extends StatelessWidget {
           ListTile(
             key: ValueKey('queued-$i'),
             contentPadding: EdgeInsets.zero,
-            leading: CircleAvatar(
-              radius: 14,
-              child: Text('${i + 2}', style: numberStyle),
+            // Its picture, with its number as a badge (spec 0014
+            // amendment 8).
+            leading: ActionPicture(
+              key: ValueKey('queue-picture-${i + 1}'),
+              data: game.data,
+              activity: s.queue[i].activity,
+              number: i + 2,
             ),
             // A walk: its place and its steps from where the queue stands
             // before it (spec 0016 §7.1).
