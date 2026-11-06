@@ -1,1 +1,0 @@
-- **More pictures:** the bone greataxe, the golden-antler mantle and the three rare hunting finds (the golden antler, Old Tusk's tusk and the snow lynx pelt) now have their own pictures.

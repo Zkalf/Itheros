@@ -1,1 +1,0 @@
-- **Gathering spots have pictures:** each vein, tree, water and trail now shows its own picture on Now and on the World map.
