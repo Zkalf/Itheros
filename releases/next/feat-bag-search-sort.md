@@ -1,1 +1,0 @@
-- **Search and sort the bag and the bank:** below the kind buttons, type part of a name (or a quality, like "rare") to find an item, and sort the list by bag order, name, count or quality. Each list remembers its sort until you close the game.

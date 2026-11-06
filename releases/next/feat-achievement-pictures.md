@@ -1,2 +1,0 @@
-- **Every achievement has its patch:** the 19 achievements that showed a stand-in now have their own sewn patch.
-- **Lakes on the map:** Mirror Lake and Smugglers' Cove now have a proper map marker, a fish over the waves.

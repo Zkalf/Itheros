@@ -1,2 +1,0 @@
-- **Recipes with pictures:** each recipe on the Crafting, Cooking and other profession screens shows a picture of what it makes. In a recipe's sheet each material has its picture too, and a tap on it tells you where to find it.
-- **Cleaner queue:** a reroll on the queue no longer shows "Until 1 crafted".

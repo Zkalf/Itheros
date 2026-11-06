@@ -1,1 +1,0 @@
-- **Until the bag is full:** fights and gathering have a new stop choice. The action stops when your bag has no free space left, before it gets heavy.
