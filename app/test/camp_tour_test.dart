@@ -1,9 +1,9 @@
 // The camp tour: spec 0022 criteria 1-22, with erratum 1 (plan 0053).
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walkingrpg/game_controller.dart';
+import 'package:walkingrpg/sync/away_summary.dart';
+import 'package:walkingrpg/ui/away_summary_card.dart';
 import 'package:walkingrpg/ui/camp_tour.dart';
 import 'package:walkingrpg/ui/character_tab.dart';
 import 'package:walkingrpg/ui/home_shell.dart';
@@ -155,13 +155,7 @@ void main() {
       await newGame(t);
       for (var i = 0; i < 6; i++) {
         expect(find.byType(BackdropFilter), findsNothing, reason: 'step $i');
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is ImageFiltered && w.imageFilter is ImageFilter,
-          ),
-          findsNothing,
-          reason: 'step $i',
-        );
+        expect(find.byType(ImageFiltered), findsNothing, reason: 'step $i');
         for (final b in t.widgetList<ModalBarrier>(find.byType(ModalBarrier))) {
           expect(
             b.color == null || b.color!.a == 0,
@@ -284,6 +278,48 @@ void main() {
       expect(find.byType(NowTab), findsOneWidget);
       expect(lit(t), 0);
       expect(step(t), '1 / 6');
+      // The step picks the tab while the tour runs, so check the tap itself:
+      // the bar does not receive it.
+      final bar = find.ancestor(
+        of: find.byType(NavigationBar),
+        matching: find.byType(IgnorePointer),
+      );
+      expect(
+        t.widgetList<IgnorePointer>(bar).any((w) => w.ignoring),
+        isTrue,
+        reason: 'the bar ignores taps',
+      );
+    });
+
+    testWidgets('criterion 19 (rule 13): a tap inside the tab during the tour '
+        'does nothing', (t) async {
+      final c = await newGame(t);
+      final hide = find.widgetWithText(TextButton, 'Hide');
+      expect(hide, findsOneWidget);
+      await t.tap(hide, warnIfMissed: false);
+      await t.pumpAndSettle();
+      expect(c.nextGoalHidden, isFalse, reason: 'Hide did not react');
+      await t.tap(key('tour-skip'));
+      await t.pumpAndSettle();
+      await t.tap(hide);
+      await t.pumpAndSettle();
+      expect(c.nextGoalHidden, isTrue, reason: 'after the tour it works');
+    });
+
+    testWidgets('rule 7: a screen that opens during the tour comes first, and '
+        'the tour goes on after it', (t) async {
+      final c = await newGame(t);
+      await goTo(t, 3);
+      c.awaySummary = const AwaySummary(walked: 500);
+      c.showTourStep(3);
+      await t.pumpAndSettle();
+      expect(find.byType(AwayScreen), findsOneWidget);
+      expect(card, findsNothing);
+      c.dismissAwaySummary();
+      await t.pumpAndSettle();
+      expect(card, findsOneWidget);
+      expect(step(t), '4 / 6');
+      expect(pane(t), CharacterPane.gear);
     });
 
     testWidgets('criterion 20: a top button during the tour opens nothing', (
