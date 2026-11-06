@@ -62,6 +62,17 @@ extension GameOdds on Game {
     return data.mealPercent[meal.tier - 1] / 100;
   }
 
+  /// The share of each fight round's steps that the running meal gives back:
+  /// Attack and HP meals only (spec 0011 amendment 2, rules 3-7).
+  double mealFightShare(GameState s) {
+    final meal = s.meal == null ? null : data.itemOf(s.meal!.key)?.meal;
+    if (meal == null ||
+        !(meal.buffs.contains('attack') || meal.buffs.contains('hp'))) {
+      return 0;
+    }
+    return data.mealFightSteps[meal.tier - 1] / 100;
+  }
+
   /// The chance salvaging [key] gives a boss shard (spec 0010 §7.1).
   double shardChance(String key) =>
       data.shardBase + data.shardPerQualityStep * _qualitySteps(key);

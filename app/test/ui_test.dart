@@ -2903,7 +2903,9 @@ void lakeAndHunt() {
       expect(
         within(
           'profession-cooking',
-          find.textContaining('Venison skewer · +6% Attack · 1,850 steps left'),
+          find.textContaining(
+            'Venison skewer · +6% Attack, −12% fight steps · 1,850 steps left',
+          ),
         ),
         findsOneWidget,
       );
@@ -2959,14 +2961,17 @@ void lakeAndHunt() {
       await redraw(t, 'now');
       expect(
         find.text(
-          'Venison skewer · +6% Attack · 1,850 steps left · '
+          'Venison skewer · +6% Attack, −12% fight steps · 1,850 steps left · '
           'auto-eat until out (4)',
         ),
         findsOneWidget,
       );
       await t.tap(find.byKey(const ValueKey('meal-line')));
       await t.pumpAndSettle();
-      expect(card(find.text('+6% Attack for 3,000 steps')), findsOneWidget);
+      expect(
+        card(find.text('+6% Attack, −12% fight steps for 6,000 steps')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('criterion 15: Camp has the three new teachers and the Camp '
@@ -3031,19 +3036,26 @@ void lakeAndHunt() {
     testWidgets('§8.3: a meal card: buff, length, Eat', (t) async {
       final (c, _) = await pumpGame(t, inventory: {'grilled_perch': 2});
       await openItem(t, 'grilled_perch');
-      expect(card(find.text('+6% HP for 3,000 steps')), findsOneWidget);
+      expect(
+        card(find.text('+6% HP, −12% fight steps for 6,000 steps')),
+        findsOneWidget,
+      );
       await t.tap(card(find.byKey(const ValueKey('card-eat'))));
       await settle(t, c);
       expect(c.state.meal!.key, 'grilled_perch');
-      expect(c.state.meal!.left, 3000);
+      expect(c.state.meal!.left, 6000);
       expect(c.state.inventory['grilled_perch'], 1);
     });
 
-    testWidgets('§8.3: a perfect dish lasts 6,000 steps', (t) async {
+    // 12,000 since spec 0011 amendment 2.
+    testWidgets('§8.3: a perfect dish lasts twice as long', (t) async {
       await pumpGame(t, inventory: {'grilled_perch@perfect': 1});
       await openItem(t, 'grilled_perch@perfect');
       expect(card(find.text('Grilled perch (Perfect)')), findsOneWidget);
-      expect(card(find.text('+6% HP for 6,000 steps')), findsOneWidget);
+      expect(
+        card(find.text('+6% HP, −12% fight steps for 12,000 steps')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('criterion 11: Eat with a meal running asks, then replaces', (
