@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'action_sheet.dart' show CountDialog;
 import 'actions.dart';
 import 'away_summary_card.dart';
 import 'images.dart';
@@ -13,15 +14,20 @@ import 'slot_sheet.dart';
 import 'socket.dart';
 import 'theme.dart';
 
+/// Which tab of the bank screen opened a card (spec 0020 amendment 2).
+enum BankSide { bag, bank }
+
 /// Opens the card for [item] (spec 0008 §3.5). [wornIn] is set when it was
 /// tapped on the doll, [toolWorn] when it is the tool in use (spec 0010
-/// §3). An item the data no longer has (an old save) has no card.
+/// §3), [bank] when it was tapped on the bank screen. An item the data no
+/// longer has (an old save) has no card.
 Future<void> showItemCard(
   BuildContext context,
   GameController c,
   String item, {
   String? wornIn,
   bool toolWorn = false,
+  BankSide? bank,
 }) async {
   if (c.game.data.itemOf(item) == null) return;
   await showModalBottomSheet<void>(
@@ -32,6 +38,7 @@ Future<void> showItemCard(
       item: item,
       wornIn: wornIn,
       toolWorn: toolWorn,
+      bank: bank,
       host: context,
     ),
   );
@@ -42,7 +49,8 @@ Future<void> showItemCard(
 /// and Equip / Swap, or Change / Unequip when it is worn. A tool says what it serves and costs; at a
 /// forge gear and tools salvage and gear rerolls (spec 0010 §8.3). A meal
 /// says its buff and length, with Eat and Auto-eat (spec 0011 §8.3). A
-/// material says where it comes from and what uses it.
+/// material says where it comes from and what uses it. Opened from the bank
+/// screen, it shows only Store or Take, at Camp (spec 0020 amendment 2).
 class ItemCard extends StatelessWidget {
   const ItemCard({
     super.key,
@@ -51,12 +59,16 @@ class ItemCard extends StatelessWidget {
     required this.host,
     this.wornIn,
     this.toolWorn = false,
+    this.bank,
   });
 
   final GameController controller;
   final String item;
   final String? wornIn;
   final bool toolWorn;
+
+  /// Set when the bank screen opened the card: the tab of the item.
+  final BankSide? bank;
 
   /// The screen behind the sheet, for messages after the sheet closes.
   final BuildContext host;
@@ -75,7 +87,8 @@ class ItemCard extends StatelessWidget {
     final legendary = data.qualityOf(item) == data.qualities.last;
     final pending = data.pendingRoll(item);
     // A Legendary's bonus stats reroll one at a time at a forge (§7.3).
-    final statRerolls = gear && legendary && pending == null && game.atForge(s);
+    final statRerolls =
+        bank == null && gear && legendary && pending == null && game.atForge(s);
 
     final picture = ImageScope.of(context).pictureOf(data, ItemThing(item));
 
@@ -148,47 +161,55 @@ class ItemCard extends StatelessWidget {
             '(was ${labels.bonusRoll(data.bonusRolls(item)[p.index])})',
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _button(
-                context,
-                const ValueKey('card-keep-new'),
-                'Keep new',
-                () => c.keepRoll(item, keepNew: true),
-              ),
-              const SizedBox(width: 8),
-              _button(
-                context,
-                const ValueKey('card-keep-old'),
-                'Keep old',
-                () => c.keepRoll(item, keepNew: false),
-              ),
-            ],
-          ),
+          if (bank == null)
+            Row(
+              children: [
+                _button(
+                  context,
+                  const ValueKey('card-keep-new'),
+                  'Keep new',
+                  () => c.keepRoll(item, keepNew: true),
+                ),
+                const SizedBox(width: 8),
+                _button(
+                  context,
+                  const ValueKey('card-keep-old'),
+                  'Keep old',
+                  () => c.keepRoll(item, keepNew: false),
+                ),
+              ],
+            ),
         ],
         if (def.twoHanded)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              wornIn == null && s.equipment['offHand'] != null
+              bank == null && wornIn == null && s.equipment['offHand'] != null
                   ? 'Uses both hands: your off-hand item goes to the bag.'
                   : 'Uses both hands.',
             ),
           ),
         const SizedBox(height: 12),
-        ..._gearActions(context, labels),
-        ..._forgeActions(context, labels),
+        if (bank == null) ...[
+          ..._gearActions(context, labels),
+          ..._forgeActions(context, labels),
+        ],
       ] else if (def.tool != null) ...[
         Text(labels.toolLine(item)),
         const SizedBox(height: 12),
-        ..._toolActions(context, labels),
-        ..._forgeActions(context, labels),
+        if (bank == null) ...[
+          ..._toolActions(context, labels),
+          ..._forgeActions(context, labels),
+        ],
       ] else if (def.meal != null) ...[
         Text(labels.mealLength(item), key: const ValueKey('card-buff')),
         const SizedBox(height: 12),
-        ..._mealActions(context, labels),
+        if (bank == null) ..._mealActions(context, labels),
       ] else
         ..._materialLines(labels),
+      // On the bank screen: Store or Take, and nothing else (spec 0020
+      // amendment 2, rules 16-20).
+      if (bank case final side?) ..._bankActions(context, side),
     ];
     return SafeArea(
       child: SingleChildScrollView(
@@ -495,6 +516,48 @@ class ItemCard extends StatelessWidget {
     } on ActivityError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
+  }
+
+  /// Store all and Store some… for an item of the bag, Take all and Take
+  /// some… for an item of the bank, at a place with a bank. Elsewhere no
+  /// button: the bank screen says "Items move only at Camp." (spec 0020
+  /// amendment 2, rules 16-19).
+  List<Widget> _bankActions(BuildContext context, BankSide side) {
+    final c = controller;
+    if (!c.game.hasBank(c.state.location)) return const [];
+    final fromBank = side == BankSide.bank;
+    final have = (fromBank ? c.state.itemBank : c.state.inventory)[item] ?? 0;
+    final verb = fromBank ? 'Take' : 'Store';
+    Future<void> move(int n) => fromBank
+        ? c.takeFromBank(item, n > have ? have : n)
+        : c.storeInBank(item, n > have ? have : n);
+    return [
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _button(
+            context,
+            const ValueKey('bank-move-all'),
+            '$verb all',
+            () => move(have),
+          ),
+          OutlinedButton(
+            key: const ValueKey('bank-move-some'),
+            onPressed: () => _close(context, () async {
+              // The "How many?" dialog of #115.
+              final n = await showDialog<int>(
+                context: host,
+                builder: (_) => CountDialog(have),
+              );
+              if (n != null && n > 0) await move(n);
+            }),
+            child: Text('$verb some…'),
+          ),
+        ],
+      ),
+    ];
   }
 
   List<Widget> _materialLines(Labels labels) {

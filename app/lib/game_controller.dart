@@ -64,6 +64,12 @@ class GameController extends ChangeNotifier {
   ControllerStatus status = ControllerStatus.loading;
   SaveData? _save;
 
+  /// The kind picked in each list of items: the bag (`bag`) and the two tabs
+  /// of the bank screen (`bank-bag`, `bank-bank`). No entry is All. Kept in
+  /// memory only, so the app starts on All (spec 0020 amendment 2, rules
+  /// 9-11).
+  final kindPicks = <String, ItemKind>{};
+
   /// The "While you were away" screen's report, or null when it isn't shown
   /// (spec 0004 amendment 2).
   AwaySummary? awaySummary;
