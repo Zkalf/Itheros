@@ -51,7 +51,8 @@ class _KindFilterState extends State<KindFilter> {
     super.didChangeDependencies();
     // A focused field keeps its tab page alive, so the bank screen's tabs
     // clear the search themselves when the player opens the other tab
-    // (amendment 4, rule 9).
+    // (amendment 4, rule 9). The controller tells its listeners only when
+    // the tab changes; a drag that springs back moves only its animation.
     final tabs = DefaultTabController.maybeOf(context);
     if (tabs == _tabs) return;
     _tabs?.removeListener(_onTab);

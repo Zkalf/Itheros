@@ -1,5 +1,7 @@
 // Search and sort in the bag and the bank: spec 0020 amendment 4 criteria
 // 1-29 (plan 0052).
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
@@ -280,6 +282,22 @@ void main() {
       expect(typed(t, 'bank-bag'), '');
     });
 
+    testWidgets('a swipe that springs back keeps the search; a swipe to the '
+        'other tab clears it', (t) async {
+      await pumpItems(t);
+      await openBank(t);
+      await search(t, 'bank-bag', 'hide');
+      // The Bag tab is the second: a small drag to the right springs back.
+      await t.drag(find.byType(TabBarView), const Offset(80, 0));
+      await t.pumpAndSettle();
+      expect(typed(t, 'bank-bag'), 'hide', reason: 'the tab did not change');
+      expect(shown(t, 'bank-bag'), hasLength(3));
+      await t.fling(find.byType(TabBarView), const Offset(600, 0), 2000);
+      await t.pumpAndSettle();
+      await bagTab(t);
+      expect(typed(t, 'bank-bag'), '', reason: 'the player left the tab');
+    });
+
     testWidgets('criterion 14: the search of the bag is empty after another '
         'pane and back', (t) async {
       await pumpItems(t);
@@ -378,6 +396,46 @@ void main() {
       });
     }
 
+    test('criterion 22: ties keep the bag order in a long list', () {
+      // Dart's sort keeps ties in order below 32 items, so this list is
+      // long: every item of the data once, and two Rare bone swords with the
+      // same name on the row.
+      final many = {
+        for (final id in data.items.keys) id: 1,
+        'bone_sword@rare+crit2': 1,
+        'bone_sword@rare+crit2+hp10': 1,
+      };
+      expect(many.length, greaterThan(64));
+      final order = bagOrder(data, many.keys);
+      expect(
+        itemsShown(data, many, sort: ItemSort.count),
+        order,
+        reason: 'Count: every stack is 1',
+      );
+      final commons = {
+        for (final k in many.keys)
+          if (data.qualityOf(k) == data.qualities.first) k: 1,
+      };
+      expect(
+        itemsShown(data, commons, sort: ItemSort.quality),
+        bagOrder(data, commons.keys),
+        reason: 'Quality: every item is Common',
+      );
+      final byName = itemsShown(data, many, sort: ItemSort.name);
+      final swords = [
+        for (final k in order)
+          if (k.startsWith('bone_sword@rare')) k,
+      ];
+      expect(
+        [
+          for (final k in byName)
+            if (k.startsWith('bone_sword@rare')) k,
+        ],
+        swords,
+        reason: 'Name: two rows that read the same keep the bag order',
+      );
+    });
+
     testWidgets('the sort works with the search and a kind', (t) async {
       await pumpItems(t);
       await openBag(t);
@@ -450,13 +508,22 @@ void main() {
     testWidgets('criterion 26: after a restart, each list shows Bag order', (
       t,
     ) async {
-      await pumpItems(t);
+      final (c, _) = await pumpGame(
+        t,
+        inventory: items,
+        prepare: banked(items),
+      );
+      final saved = jsonEncode(c.state.toJson());
       await openBag(t);
       await pickSort(t, 'bag', ItemSort.name);
       await openBank(t);
       await pickSort(t, 'bank-bag', ItemSort.count);
       await bankTab(t);
       await pickSort(t, 'bank-bank', ItemSort.quality);
+      // The save does not keep the sorts (rule 15): the restart below gets
+      // the same state either way, so check the save itself.
+      expect(jsonEncode(c.state.toJson()), saved);
+      expect(c.sortPicks, hasLength(3));
       // A new controller is a new start of the app.
       await t.pumpWidget(const SizedBox());
       await pumpItems(t);
