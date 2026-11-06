@@ -17,7 +17,8 @@ Future<void> openBank(BuildContext context) =>
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const BankScreen()));
 
-/// The item bank (spec 0020 §3.2): the tabs Bag and Bank. A tap on an item
+/// The item bank (spec 0020 §3.2): the tabs Bank and Bag, Bank first and
+/// open (amendment 3). A tap on an item
 /// opens its card; at a place with a bank the card has Store or Take,
 /// elsewhere the player only looks (spec 0020 amendment 2).
 class BankScreen extends StatelessWidget {

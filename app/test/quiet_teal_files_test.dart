@@ -338,6 +338,13 @@ void main() {
               '$path: the pixels in the 72 dp circle that are not opaque '
               '(${holes.length}), for example ${holes.take(4)}',
         );
+        // "About 74 dp": the emblem reaches at most 38 dp from the centre, so
+        // it grew by a few dp, not to the whole icon.
+        expect(
+          _reach(rgba, px) * 108 / px,
+          inInclusiveRange(36, 38),
+          reason: '$path: the radius of the emblem in dp',
+        );
       }
     });
 
@@ -362,6 +369,13 @@ void main() {
           }
           expect(past, greaterThan(0), reason: '$path: still inside 66 dp');
         }
+        // And no further than the emblem: the same 38 dp at most.
+        final mono = '$_res/mipmap-$density/ic_launcher_monochrome.png';
+        expect(
+          _reach(await _png(mono, px), px) * 108 / px,
+          lessThanOrEqualTo(38),
+          reason: '$mono: the radius of the one-colour emblem in dp',
+        );
       }
     });
 
@@ -619,6 +633,20 @@ Map<String, (String, Map<String, String>)> _darkStyles(
 
 /// The pixels of the PNG file at [path], as straight RGBA: the alpha is not
 /// multiplied into the colour. Expects a PNG file of [size] x [size] pixels.
+/// How far from the centre of a [px] square image its pixels reach: the
+/// largest distance of a pixel's centre with an alpha above 0.
+double _reach(Uint8List rgba, int px) {
+  var reach = 0.0;
+  for (var y = 0; y < px; y++) {
+    for (var x = 0; x < px; x++) {
+      if (rgba[(y * px + x) * 4 + 3] == 0) continue;
+      final d = ui.Offset(x + .5 - px / 2, y + .5 - px / 2).distance;
+      if (d > reach) reach = d;
+    }
+  }
+  return reach;
+}
+
 Future<Uint8List> _png(String path, int size) async {
   final file = File(path);
   expect(file.existsSync(), isTrue, reason: path);

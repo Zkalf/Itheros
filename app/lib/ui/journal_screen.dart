@@ -69,8 +69,6 @@ class JournalScreen extends StatelessWidget {
   );
 }
 
-/// A tab of the Journal: a box with the 2 dp black border, with the selected
-/// fill while its tab is open (spec 0014 amendment 4).
 class _Log extends StatelessWidget {
   const _Log();
 
