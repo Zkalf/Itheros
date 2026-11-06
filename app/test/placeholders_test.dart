@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/ui/images.dart';
 
-import 'images_test.dart' show diskImages;
+import 'images_test.dart' show diskImages, imageFiles;
 import 'support.dart';
 
 void main() {
@@ -70,7 +70,12 @@ void main() {
     test('amendment 1 criterion 9: the list holds each spot with the tool '
         'placeholder of its profession', () {
       final data = loadTestGame().data;
-      final list = placeholdersOf(data, diskImages);
+      // Since #198 each spot has a picture, so this leaves the spot files
+      // out: a spot without its file shows the placeholder.
+      final noSpots = ImageIndex.fromAssets(
+        imageFiles().where((f) => !f.startsWith('assets/images/spots/')),
+      );
+      final list = placeholdersOf(data, noSpots);
       for (final n in data.nodes.values) {
         expect(
           list,
