@@ -149,7 +149,9 @@ void main() {
         t,
         images: ringless,
         level: 5,
-        inventory: {'copper_ore': 2},
+        // Oak log in the bag too: its card from the table still shows no
+        // button, not even Destroy (spec 0021 amendment 2).
+        inventory: {'copper_ore': 2, 'oak_log': 1},
       );
       await openProfession(t, 'crafting');
       await t.ensureVisible(row('copper_spear'));

@@ -28,6 +28,7 @@ Future<void> showItemCard(
   String? wornIn,
   bool toolWorn = false,
   BankSide? bank,
+  bool readOnly = false,
 }) async {
   if (c.game.data.itemOf(item) == null) return;
   await showModalBottomSheet<void>(
@@ -39,6 +40,7 @@ Future<void> showItemCard(
       wornIn: wornIn,
       toolWorn: toolWorn,
       bank: bank,
+      readOnly: readOnly,
       host: context,
     ),
   );
@@ -60,7 +62,13 @@ class ItemCard extends StatelessWidget {
     this.wornIn,
     this.toolWorn = false,
     this.bank,
+    this.readOnly = false,
   });
+
+  /// Set when a list that only shows things opened the card, such as the
+  /// materials table of a recipe (spec 0014 amendment 9, rule 7): no
+  /// Destroy.
+  final bool readOnly;
 
   final GameController controller;
   final String item;
@@ -210,6 +218,9 @@ class ItemCard extends StatelessWidget {
       // On the bank screen: Store or Take, and nothing else (spec 0020
       // amendment 2, rules 16-20).
       if (bank case final side?) ..._bankActions(context, side),
+      // Destroy, last, on the cards of the bag and the bank (spec 0021
+      // amendment 2, rules 8-9).
+      ..._destroyAction(context, labels),
     ];
     return SafeArea(
       child: SingleChildScrollView(
@@ -558,6 +569,73 @@ class ItemCard extends StatelessWidget {
         ],
       ),
     ];
+  }
+
+  /// Destroy for an item in the bag, or in the bank on the bank screen's
+  /// Bank tab. Not for worn gear or the tool in use, which are not in the
+  /// bag (spec 0021 amendment 2, rules 5, 8-9).
+  List<Widget> _destroyAction(BuildContext context, Labels labels) {
+    if (wornIn != null || toolWorn || readOnly) return const [];
+    final fromBank = bank == BankSide.bank;
+    final c = controller;
+    final have = (fromBank ? c.state.itemBank : c.state.inventory)[item] ?? 0;
+    if (have < 1) return const [];
+    return [
+      const SizedBox(height: 12),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton(
+          key: const ValueKey('card-destroy'),
+          onPressed: () =>
+              _close(context, () => _destroy(labels, have, fromBank)),
+          child: const Text('Destroy'),
+        ),
+      ),
+    ];
+  }
+
+  /// Asks "How many?" for a stack, then always asks first, then destroys
+  /// and says so (spec 0021 amendment 2, rules 10-12).
+  Future<void> _destroy(Labels labels, int have, bool fromBank) async {
+    final messenger = ScaffoldMessenger.of(host);
+    var n = have;
+    if (have > 1) {
+      final picked = await showDialog<int>(
+        context: host,
+        builder: (_) => CountDialog(have),
+      );
+      if (picked == null || picked < 1) return;
+      n = picked > have ? have : picked;
+    }
+    if (!host.mounted) return;
+    final sure = await showDialog<bool>(
+      context: host,
+      builder: (context) => AlertDialog(
+        title: Text(labels.destroyQuestion(item, n)),
+        content: Text(
+          n == 1 ? 'It is gone for good.' : 'They are gone for good.',
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('destroy-keep'),
+            style: ghostButton,
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(n == 1 ? 'Keep it' : 'Keep them'),
+          ),
+          TextButton(
+            key: const ValueKey('destroy-confirm'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Destroy'),
+          ),
+        ],
+      ),
+    );
+    if (sure != true) return;
+    await controller.destroy(item, n, fromBank: fromBank);
+    // The new message replaces the one on screen (#176).
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(labels.destroyed(item, n))));
   }
 
   List<Widget> _materialLines(Labels labels) {

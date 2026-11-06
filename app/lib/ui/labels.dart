@@ -331,6 +331,17 @@ class Labels {
 
   /// What salvaging [item] gave (spec 0010 §7.1), with a shard's count
   /// toward its unique: "… Found a Shard of the Graveyard King (3 of 10)!".
+  /// The question before a destroy (spec 0021 amendment 2, rule 11):
+  /// "Destroy 12 Goblin hides?" or "Destroy the Bone sword?".
+  String destroyQuestion(String item, int n) => n == 1
+      ? 'Destroy the ${plain(item)}?'
+      : 'Destroy ${plural(n, plain(item))}?';
+
+  /// The message after a destroy (rule 12): "Destroyed 12 Goblin hides."
+  String destroyed(String item, int n) => n == 1
+      ? 'Destroyed the ${plain(item)}.'
+      : 'Destroyed ${plural(n, plain(item))}.';
+
   String salvaged(String item, SalvageResult r) {
     final line = 'Salvaged the ${plain(item)}: ${plain(r.dust)}.';
     final shard = r.shard;

@@ -51,6 +51,30 @@ extension GameBank on Game {
     return n;
   }
 
+  /// Destroys [count] of [key] for good, from the bag or, with [fromBank],
+  /// from the item bank (spec 0021 amendment 2, rules 1-5). Anywhere, no
+  /// steps, nothing back. Worn items are not in the bag, so they cannot go.
+  GameState destroy(
+    GameState s,
+    String key,
+    int count, {
+    bool fromBank = false,
+  }) {
+    final have = (fromBank ? s.itemBank : s.inventory)[key] ?? 0;
+    if (count < 1 || count > have) {
+      throw ActivityError(
+        'Not that many ${fromBank ? 'in the bank' : 'in the bag'}.',
+      );
+    }
+    final n = s.copy();
+    if (fromBank) {
+      _takeFromBank(n, key, count);
+    } else {
+      n.addItem(key, -count);
+    }
+    return n;
+  }
+
   void _checkMove(GameState s, int have, int count, String where) {
     if (!hasBank(s.location)) {
       throw ActivityError('Items move only at a bank.');

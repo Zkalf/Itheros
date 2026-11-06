@@ -549,7 +549,8 @@ class _MaterialsTable extends StatelessWidget {
         // opens its card (spec 0014 amendment 9, rules 6-7).
         InkWell(
           key: ValueKey('material-$item-line'),
-          onTap: () => showItemCard(context, controller, item),
+          // Only to look: the card shows no Destroy here.
+          onTap: () => showItemCard(context, controller, item, readOnly: true),
           child: Row(
             children: [
               PictureSocket.item(

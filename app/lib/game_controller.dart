@@ -352,6 +352,12 @@ class GameController extends ChangeNotifier {
   Future<void> takeFromBank(String key, int count) =>
       _act((s) => game.take(s, key, count));
 
+  /// Destroys [count] of [key] for good, from the bag or, with [fromBank],
+  /// from the item bank (spec 0021 amendment 2). Syncs first, like every
+  /// player action.
+  Future<void> destroy(String key, int count, {bool fromBank = false}) =>
+      _act((s) => game.destroy(s, key, count, fromBank: fromBank));
+
   /// Takes one rank of [talent] (spec 0015 §2.1): anywhere, no steps.
   Future<void> takeRank(String talent) => _act((s) => game.takeRank(s, talent));
 
