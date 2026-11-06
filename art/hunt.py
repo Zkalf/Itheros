@@ -24,6 +24,8 @@ HIDES = {
     'deer_hide': dict(f=['#D9A266', '#A8682E', '#5E3410'], spots='#F4E2C2'),
     'elk_hide':  dict(f=['#9E6E40', '#6A421E', '#36200C'], spots=None),
     'ibex_hide': dict(f=['#CDBFA6', '#8E7E66', '#4E4232'], spots=None),
+    # a rare find: pale winter fur with dark spots, a glow and a sparkle
+    'snow_lynx_pelt': dict(f=['#F4E8D2', '#BFA888', '#6E5A42'], spots='#3A2C20', glow='#CFEFFF'),
 }
 # scales: centre, middle, edge; the sheen
 SCALES = {
@@ -159,7 +161,15 @@ def hide(item):
              '<path d="M22 14.8 C20 20, 20 30, 22 35.8" fill="none" stroke="#7A4A26" stroke-width="2.6"/>'
              '<path d="M21.2 17 C20.4 21, 20.4 26, 20.8 30" fill="none" stroke="#C08A5A" stroke-width="0.7" opacity="0.8"/>')
     shine = lit('M11 17.4 C18 15.8, 28 15.6, 34 15.8')
-    return svg(defs, f'<g transform="translate(-1 0)">{roll}{tufts}{spots}{strap}{end}{shine}</g>')
+    if 'glow' not in p:
+        return svg(defs, f'<g transform="translate(-1 0)">{roll}{tufts}{spots}{strap}{end}{shine}</g>')
+    # The lynx: many small dark spots on its pale winter fur.
+    spots = ''.join(f'<ellipse cx="{x}" cy="{y}" rx="{r}" ry="{r * 0.75}" fill="{p["spots"]}" opacity="0.8"/>'
+                    for x, y, r in ((11, 21, 0.9), (15.5, 18.6, 0.8), (14, 24, 1), (18.6, 22.4, 0.9), (25, 19, 0.8), (27.6, 23.4, 1),
+                                    (11.4, 28, 0.9), (16, 29, 1), (25.4, 28.6, 0.9), (29.6, 31.4, 0.8), (13, 33.4, 0.8), (18.4, 33.6, 0.9),
+                                    (25.6, 33.2, 0.8), (30, 18.6, 0.7)))
+    return svg(defs + glow_def(p['glow']), glow(24, 25) + f'<g transform="translate(-1 0)">{roll}{tufts}{spots}{strap}{end}{shine}</g>'
+               + sparkle(41, 10))
 
 
 def scales(item):
@@ -182,8 +192,57 @@ def scales(item):
     return svg(defs, f'<g transform="translate(24 24) rotate(-14) scale(0.98) translate(-24 -24)">{body}</g>')
 
 
+def glow_def(colour):
+    return (f'<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="{colour}" stop-opacity="0.4"/>'
+            f'<stop offset="1" stop-color="{colour}" stop-opacity="0"/></radialGradient>')
+
+
+def glow(x, y, r=19):
+    return f'<circle cx="{x}" cy="{y}" r="{r}" fill="url(#glow)"/>'
+
+
+def sparkle(x, y):
+    return (f'<path d="M{x} {y - 2.6} l0.8 1.8 l1.8 0.8 l-1.8 0.8 l-0.8 1.8 l-0.8 -1.8 l-1.8 -0.8 l1.8 -0.8 Z" '
+            'fill="#FFFFFF" opacity="0.9"/>')
+
+
+def golden_antler():
+    # A rare find: a whole deer antler of gold, the burr at the bottom left, four tines, a glow and a sparkle.
+    defs = ('<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF0B8"/>'
+            '<stop offset="0.45" stop-color="#E8A83A"/><stop offset="1" stop-color="#7A4A0A"/></linearGradient>' + glow_def('#FFE08A'))
+    beam = 'M10 38 C12 30, 15 23, 22 17 C27 13, 33 10.5, 39 7'
+    tines = ['M12.6 31 C9 29, 6.6 26.4, 5.6 22.4', 'M15.6 24.4 C13.6 20.4, 13.2 16.4, 14.2 12',
+             'M22 17 C21.6 13, 22.4 9.4, 24.6 6', 'M30 12 C30.4 9.4, 31.6 7, 33.6 4.8']
+    out = ''
+    for w, col in ((7, INK), (5, 'url(#gold)')):
+        out += f'<path d="{beam}" fill="none" stroke="{col}" stroke-width="{w}" stroke-linecap="round"/>'
+        out += ''.join(f'<path d="{t}" fill="none" stroke="{col}" stroke-width="{w - 1}" stroke-linecap="round"/>' for t in tines)
+    out += (f'<ellipse cx="10.4" cy="38.6" rx="4.4" ry="2.6" transform="rotate(-20 10.4 38.6)" fill="url(#gold)" stroke="{INK}" stroke-width="1.1"/>'
+            '<path d="M9.4 34 C11.4 27, 15 21.6, 21 16.6 C25 13.4, 30 11, 34 9.4" fill="none" stroke="#FFF8DC" stroke-width="1" stroke-linecap="round" opacity="0.9"/>'
+            '<path d="M14 21 L13.8 17 M21.4 13 L22.2 10" stroke="#FFF8DC" stroke-width="0.7" stroke-linecap="round" opacity="0.8"/>'
+            '<path d="M14.4 30 C16 27, 18 24, 20 22" fill="none" stroke="#8A5410" stroke-width="0.7" opacity="0.6" stroke-linecap="round"/>')
+    return svg(defs, glow(24, 23) + out + sparkle(41, 15) + sparkle(8, 12))
+
+
+def old_tusk():
+    # A rare find: the great tusk of Old Tusk, the old boar. A long ivory crescent, yellowed at the root, with
+    # growth rings, cracks and a chipped tip; a glow and a sparkle.
+    defs = ('<linearGradient id="ivory" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#8E6A3A"/>'
+            '<stop offset="0.25" stop-color="#D8BE88"/><stop offset="0.6" stop-color="#F6EAD0"/><stop offset="1" stop-color="#FFFDF4"/></linearGradient>'
+            + glow_def('#FFE8B0'))
+    tusk = 'M6 33 C8 20, 20 9, 41 6 C38.6 7.6, 39.4 8.4, 37.6 9.6 C27 14, 19 23, 16.4 37.6 C13 39.6, 7.6 38.4, 6 33 Z'
+    rings = ''.join(f'<path d="{d}" fill="none" stroke="#6A4A22" stroke-width="0.8" opacity="0.7" stroke-linecap="round"/>'
+                    for d in ('M7.2 29.6 C10 31, 14 31.6, 17.2 31.4', 'M8.4 25.6 C11 27.2, 15 28, 18.4 27.8'))
+    body = (f'<path d="{tusk}" fill="url(#ivory)" stroke="{INK}" stroke-width="1.4" stroke-linejoin="round"/>' + rings +
+            '<path d="M9 22 C13 14.6, 21 9.6, 33 7.6" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity="0.9"/>'
+            '<path d="M22 19 L25.4 17.6 L26.6 19.4 M14.6 26 L17 23.6" fill="none" stroke="#7A5A30" stroke-width="0.7" stroke-linecap="round" opacity="0.8"/>'
+            f'<path d="M6.2 33.4 C8.4 37.6, 13 38.8, 16.4 37.6" fill="none" stroke="{INK}" stroke-width="0.9" opacity="0.6"/>')
+    return svg(defs, glow(24, 23) + f'<g transform="translate(0.5 1)">{body}</g>' + sparkle(40, 15) + sparkle(9, 13))
+
+
 ITEMS = {**{k: (lambda k=k: meat(k)) for k in MEAT}, 'grouse': grouse,
-         **{k: (lambda k=k: hide(k)) for k in HIDES}, **{k: (lambda k=k: scales(k)) for k in SCALES}}
+         **{k: (lambda k=k: hide(k)) for k in HIDES}, **{k: (lambda k=k: scales(k)) for k in SCALES},
+         'golden_antler': golden_antler, 'old_tusks_tusk': old_tusk}
 
 os.makedirs(OUT, exist_ok=True)
 for item, draw in ITEMS.items():

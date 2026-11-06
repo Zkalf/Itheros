@@ -171,9 +171,62 @@ def greaves():
     return svg(back + front)
 
 
+def antler(flip=False, s=1.0):
+    # A deer antler of gold: the beam curves up from the burr, three tines off its inner side. Thick strokes (ink
+    # under gold) keep it readable at bag size. It leans to the right; flip mirrors it.
+    beam = 'M0 0 C1 -6, 2 -11, 7 -16 C9 -18, 11 -19.5, 13 -21'
+    tines = ['M1.2 -6 C-1 -8, -2.6 -10, -3.4 -13', 'M3.4 -11.6 C2.6 -14, 2.4 -16.6, 3 -19.6', 'M8.2 -16.8 C8.8 -19, 9.8 -21, 11 -23']
+    out = ''
+    for w, col in ((5.4, INK), (3.4, 'url(#gold)')):
+        out += f'<path d="{beam}" fill="none" stroke="{col}" stroke-width="{w}" stroke-linecap="round"/>'
+        out += ''.join(f'<path d="{t}" fill="none" stroke="{col}" stroke-width="{w - 0.8}" stroke-linecap="round"/>' for t in tines)
+    out += ('<path d="M-0.4 -2 C0.2 -7, 1.6 -11, 5.6 -15" fill="none" stroke="#FFF6D0" stroke-width="0.8" stroke-linecap="round" opacity="0.9"/>'
+            f'<ellipse cx="0.2" cy="0.6" rx="3" ry="1.8" fill="url(#gold)" stroke="{INK}" stroke-width="1"/>')
+    return f'<g transform="scale({-s if flip else s} {s})">{out}</g>'
+
+
+def bone_greataxe():
+    # A long oak haft with a double crescent blade of bone, lashed on with rope, a copper cap and pommel. Bigger than
+    # the hatchets and two-bladed, so it reads as two-handed.
+    def bit(sign):
+        x = lambda v: 24 + sign * v
+        return (f'<path d="M{x(2)} 9 C{x(6)} 9, {x(9)} 7, {x(11.6)} 4 C{x(14.6)} 9.6, {x(14.6)} 18.4, {x(11.6)} 24 '
+                f'C{x(9)} 21, {x(6)} 19, {x(2)} 19 Z" fill="url(#bone)" stroke="{INK}" stroke-width="1.3" stroke-linejoin="round"/>'
+                f'<path d="M{x(11.4)} 6.6 C{x(13)} 10.6, {x(13)} 17, {x(11.4)} 21.4" fill="none" stroke="#FFFFFF" stroke-width="0.9" '
+                f'stroke-linecap="round" opacity="{0.9 if sign < 0 else 0.45}"/>'
+                f'<path d="M{x(7)} 10.6 C{x(8)} 13, {x(8)} 15, {x(7)} 17.4" fill="none" stroke="#A8987A" stroke-width="0.7" stroke-linecap="round"/>')
+    rope = ''.join(f'<path d="M21.6 {y} L26.4 {y + 1.6}" stroke="#D8BE86" stroke-width="1.6" stroke-linecap="round"/>'
+                   f'<path d="M21.6 {y} L26.4 {y + 1.6}" stroke="{INK}" stroke-width="0.4" opacity="0.6"/>' for y in (9.4, 11.8, 14.2, 16.6))
+    cap = f'<rect x="21.6" y="3.4" width="4.8" height="4" rx="1.4" fill="url(#copper)" stroke="{INK}" stroke-width="1"/>'
+    pommel = f'<rect x="21.4" y="43" width="5.2" height="3" rx="1.2" fill="url(#copper)" stroke="{INK}" stroke-width="1"/>'
+    inner = shaft(4.6, 45.6, 3.8) + bands([33, 36, 39], 'url(#leather)', 5) + bit(-1) + bit(1) + rope + cap + pommel
+    return svg(f'<g transform="translate(24 24) rotate(45) scale(1.02) translate(-24 -23)">{inner}</g>')
+
+
+def antler_mantle():
+    # A deer-hide mantle for the shoulders, seen from the front: a neck opening, two rounded flaps, a pale fur edge.
+    # A golden antler rises from each shoulder.
+    cape = 'M9 22 C9 16, 15 12.6, 19 12.4 C20.4 16.6, 27.6 16.6, 29 12.4 C33 12.6, 39 16, 39 22 L41 33 C36 37, 29 36.6, 24 33.4 C19 36.6, 12 37, 7 33 Z'
+    left = f'<g transform="translate(14 17.4)">{antler(True, 0.74)}</g>'
+    right = f'<g transform="translate(34 17.4)">{antler(False, 0.74)}</g>'
+    m = (left + right +
+         f'<path d="{cape}" fill="url(#leather)" stroke="{INK}" stroke-width="1.3" stroke-linejoin="round"/>'
+         f'<path d="M19 12.4 C20.4 16.6, 27.6 16.6, 29 12.4 C27 11.4, 21 11.4, 19 12.4 Z" fill="#5E3812" stroke="{INK}" stroke-width="1"/>'
+         f'<path d="M7.4 31.6 C12 35.4, 19 35, 24 31.8 C29 35, 36 35.4, 40.6 31.6" fill="none" stroke="{INK}" stroke-width="4.4" stroke-linecap="round"/>'
+         '<path d="M7.4 31.6 C12 35.4, 19 35, 24 31.8 C29 35, 36 35.4, 40.6 31.6" fill="none" stroke="#F0DCB8" stroke-width="2.6" stroke-linecap="round"/>'
+         '<path d="M24 16.6 L24 31" stroke="#5E3812" stroke-width="0.8" opacity="0.7"/>'
+         '<path d="M11 20 C15 17.6, 20 17.6, 23 18.6 M25 18.6 C28 17.6, 33 17.6, 37 20" fill="none" stroke="#E8C898" stroke-width="0.7" stroke-dasharray="1.4 1"/>'
+         f'<circle cx="24" cy="18.4" r="1.9" fill="url(#gold)" stroke="{INK}" stroke-width="0.8"/>'
+         '<path d="M10.6 21 C11.4 18, 14 15.6, 17.4 14.6" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.55"/>'
+         '<g fill="#F4E2C2" opacity="0.85"><ellipse cx="15" cy="25" rx="1.1" ry="0.8"/><ellipse cx="19.5" cy="29" rx="1" ry="0.7"/>'
+         '<ellipse cx="31" cy="25.6" rx="1.1" ry="0.8"/><ellipse cx="34" cy="29.4" rx="1" ry="0.7"/><ellipse cx="12" cy="29.6" rx="0.9" ry="0.6"/></g>')
+    return svg(m)
+
+
 ITEMS = dict(copper_spear=copper_spear, copper_mace=copper_mace, bone_spear=bone_spear, bone_club=bone_club,
              garnet_ring=garnet_ring, oak_charm=oak_charm, deer_hide_gloves=gloves, deer_hide_bracers=bracers,
-             deer_hide_belt=belt, lake_scale_greaves=greaves)
+             deer_hide_belt=belt, lake_scale_greaves=greaves,
+             bone_greataxe=bone_greataxe, golden_antler_mantle=antler_mantle)
 
 os.makedirs(OUT, exist_ok=True)
 for item, draw in ITEMS.items():
