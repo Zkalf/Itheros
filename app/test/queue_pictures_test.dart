@@ -63,6 +63,56 @@ void main() {
     return c;
   }
 
+  // The expected things are named here, not taken from `thingOf`, so a
+  // wrong mapping fails (rule 1).
+  group('rule 1: the thing of each action', () {
+    String keyOf(Thing t) => switch (t) {
+      MonsterThing(:final id) => 'monster $id',
+      SpotThing(:final id) => 'spot $id',
+      ItemThing(:final key) => 'item $key',
+      PlaceThing(:final id, :final fogged) => 'place $id fogged:$fogged',
+      _ => '$t',
+    };
+
+    test('a fight, a gather, a reroll and a walk', () {
+      for (final (a, expected) in [
+        (fight, 'monster goblin'),
+        (gather, 'spot oak_tree'),
+        (craft, 'item copper_sword'),
+        (Activity.reroll(reroll), 'item $reroll'),
+        (Activity.rerollStat(reroll, 1), 'item $reroll'),
+        (walk, 'place goblin_woods fogged:false'),
+      ]) {
+        expect(keyOf(thingOf(data, a)), expected, reason: '$a');
+      }
+    });
+
+    test('a craft shows the item that the recipe makes, not the recipe', () {
+      // Each recipe of the data has the id of its item, so a copy adds one
+      // that does not.
+      final files = {
+        for (final f in Directory(
+          '../packages/game_core/data',
+        ).listSync().whereType<File>())
+          if (f.path.endsWith('.json'))
+            f.uri.pathSegments.last.replaceAll('.json', ''): f
+                .readAsStringSync(),
+      };
+      final items = jsonDecode(files['items']!) as Map<String, Object?>;
+      final recipes = items['recipes']! as List<Object?>;
+      final sword = recipes.cast<Map<String, Object?>>().firstWhere(
+        (r) => r['id'] == 'copper_sword',
+      );
+      recipes.add({...sword, 'id': 'forge_a_blade'});
+      files['items'] = jsonEncode(items);
+      final copy = GameData.fromJsonStrings(files);
+      expect(
+        keyOf(thingOf(copy, const Activity.craft('forge_a_blade'))),
+        'item copper_sword',
+      );
+    });
+  });
+
   Finder queued(int i) => find.byKey(ValueKey('queued-$i'));
   Finder current() => find.byKey(const ValueKey('queue-picture-0'));
 
