@@ -585,6 +585,37 @@ void criterion10() {
         expect(inside(row, find.byType(Icon)), findsNothing, reason: id);
       }
     });
+
+    // Issue #196: a Bestiary row looks like a fight row.
+    testWidgets('each Bestiary row starts with the monster in a 48 dp socket, '
+        'and its level badge stands before the name on the title line', (
+      t,
+    ) async {
+      await pumpGame(t, images: diskImages);
+      await openJournal(t);
+      await t.tap(find.text('Bestiary'));
+      await t.pumpAndSettle();
+      for (final id in game.data.locations['goblin_woods']!.enemies) {
+        final row = find.byKey(ValueKey('bestiary-$id'));
+        expectSocketFirst(t, row, MonsterThing(id), 48, '$id in the Bestiary');
+        final badge = find.byKey(ValueKey('bestiary-level-$id'));
+        expect(inside(row, badge), findsOneWidget, reason: id);
+        final b = t.getRect(badge);
+        final name = t.getRect(
+          inside(row, find.text(Labels(game.data).enemy(id))),
+        );
+        expect(
+          b.top < name.center.dy && name.center.dy < b.bottom,
+          isTrue,
+          reason: '$id: the name $name on the line of the badge $b',
+        );
+        expect(
+          name.left - b.right,
+          inInclusiveRange(0, 24),
+          reason: '$id: the badge $b just before the name $name',
+        );
+      }
+    });
   });
 }
 

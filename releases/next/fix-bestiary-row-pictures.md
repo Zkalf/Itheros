@@ -1,0 +1,1 @@
+- **Bestiary rows show the monster:** each monster in the Journal's Bestiary now has its picture, with its level next to its name, as in the fight list.

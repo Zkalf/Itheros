@@ -5,9 +5,11 @@ import 'actions.dart';
 import 'away_summary_card.dart';
 import 'bestiary_card.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'labels.dart';
 import 'level_badge.dart';
 import 'route_map.dart';
+import 'socket.dart';
 import 'teacher_sheet.dart';
 import 'theme.dart';
 
@@ -162,8 +164,9 @@ class _Log extends StatelessWidget {
 }
 
 /// Every monster in an area out of the fog (decision 10), by area in map
-/// order: level badge, its armour once known, "?" while its weakness isn't,
-/// and the Slayer mark. Tapping one opens its card.
+/// order: its picture, then its level badge and name as in a fight row
+/// (`enemyTile`), its armour once known, "?" while its weakness isn't, and
+/// the Slayer mark. Tapping one opens its card.
 class _Bestiary extends StatelessWidget {
   const _Bestiary();
 
@@ -191,11 +194,24 @@ class _Bestiary extends StatelessWidget {
                         final k = game.knowledge(s, id);
                         return ListTile(
                           key: ValueKey('bestiary-$id'),
-                          leading: LevelBadge(
-                            level: e.level,
-                            colour: game.enemyBand(s, id).colour,
+                          // The monster in a 48 dp socket, as in a fight
+                          // row (spec 0014 §2.3, §4.2).
+                          leading: PictureSocket(
+                            picture: ImageScope.of(context)
+                                .pictureOf(game.data, MonsterThing(id)),
+                            size: 48,
                           ),
-                          title: Text(labels.enemy(id)),
+                          title: Row(
+                            children: [
+                              LevelBadge(
+                                key: ValueKey('bestiary-level-$id'),
+                                level: e.level,
+                                colour: game.enemyBand(s, id).colour,
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(child: Text(labels.enemy(id))),
+                            ],
+                          ),
                           titleTextStyle: nameStyle(context),
                           // The word "Slayer" is the mark, with no icon
                           // (spec 0014 §4.1).
