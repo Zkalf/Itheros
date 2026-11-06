@@ -41,6 +41,7 @@ import 'images_test.dart'
         markIn,
         qualityRgb,
         ringIn,
+        ringless,
         socketIn;
 import 'quiet_teal_files_test.dart' show alegreyaSc, rgb, tealRgb;
 import 'quiet_teal_test.dart'
@@ -1208,7 +1209,7 @@ void criterion22() {
         ),
         (const LevelNews(NewsKind.talentPoint, ''), null, Icons.auto_awesome),
       ]) {
-        await pumpAlone(t, c, NewsTile(news: news), images: diskImages);
+        await pumpAlone(t, c, NewsTile(news: news), images: ringless);
         final row = find.byType(NewsTile);
         final what = '"${labels.news(news)}"';
         expect(inside(row, find.text(labels.news(news))), findsOneWidget);

@@ -97,16 +97,15 @@ final placeholderKeys = {
     'placeholders/$kind',
 };
 
-/// A ring with no image file. It shows the ring placeholder.
-String get bareRing {
-  final ring = game.data.items.values
-      .where((i) => i.slot == 'ring' && !diskImages.has('items/${i.id}'))
-      .firstOrNull;
-  if (ring == null) {
-    fail('each ring has an image; these tests need one without');
-  }
-  return ring.id;
-}
+/// A ring that the tests keep without an image. Since #198 each ring has one,
+/// so [ringless] leaves its file out.
+const bareRing = 'garnet_ring';
+
+/// The image files on disk, without the image of [bareRing]: that ring shows
+/// the ring placeholder.
+final ringless = ImageIndex.fromAssets(
+  imageFiles().where((f) => f != 'assets/images/items/$bareRing.webp'),
+);
 
 /// The picture of each of the 25 placeholders, by key: the picture of a thing
 /// of its kind with no image.
@@ -219,11 +218,11 @@ Future<({Rect rank, Rect origin, String text})> headerAt360(
   );
 }
 
-/// Expects [where] to show the picture of [thing] with the files on disk: the
-/// Image of its asset, or its icon. Only a placeholder has the PH mark
-/// (criterion 13).
+/// Expects [where] to show the picture of [thing] with the files on disk
+/// ([ringless]: [bareRing] has no picture): the Image of its asset, or its
+/// icon. Only a placeholder has the PH mark (criterion 13).
 void expectShows(WidgetTester t, Finder where, Thing thing, String what) {
-  final picture = diskImages.pictureOf(game.data, thing);
+  final picture = ringless.pictureOf(game.data, thing);
   if (picture.icon case final icon?) {
     expect(
       find.descendant(of: where, matching: find.byIcon(icon)),
@@ -1034,7 +1033,7 @@ void criterion11() {
         'Hide vest',
       );
       expectPicture(
-        diskImages.pictureOf(data, ItemThing(bareRing)),
+        ringless.pictureOf(data, ItemThing(bareRing)),
         'placeholders/gear_ring',
         bareRing,
       );
@@ -1077,7 +1076,7 @@ final m2Screens = <(String, Future<void> Function(WidgetTester))>[
     (t) async {
       await pumpGame(
         t,
-        images: diskImages,
+        images: ringless,
         equipment: {'chest': 'hide_vest', 'ring1': bareRing},
       );
       await openGear(t);
@@ -1099,7 +1098,7 @@ final m2Screens = <(String, Future<void> Function(WidgetTester))>[
     (t) async {
       await pumpGame(
         t,
-        images: diskImages,
+        images: ringless,
         inventory: {'hide_vest': 1, bareRing: 1},
       );
       await openBag(t);
@@ -1113,7 +1112,7 @@ final m2Screens = <(String, Future<void> Function(WidgetTester))>[
     (t) async {
       await pumpGame(
         t,
-        images: diskImages,
+        images: ringless,
         inventory: {'hide_vest': 1, bareRing: 1},
       );
       for (final item in ['hide_vest', bareRing]) {
@@ -1334,7 +1333,7 @@ void criterion14() {
       final semantics = t.ensureSemantics();
       await pumpGame(
         t,
-        images: diskImages,
+        images: ringless,
         inventory: {'hide_vest': 1, bareRing: 1},
       );
       final card = find.byKey(const ValueKey('item-card'));

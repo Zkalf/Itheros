@@ -30,7 +30,14 @@ import 'package:walkingrpg/ui/world_tab.dart' show MapPainter;
 import 'package:walkingrpg/version.dart';
 
 import 'images_test.dart'
-    show bagSquare, bareRing, diskImages, fillColour, markTexts, openBag;
+    show
+        bagSquare,
+        bareRing,
+        diskImages,
+        fillColour,
+        markTexts,
+        openBag,
+        ringless;
 import 'quiet_teal_files_test.dart'
     show
         alegreya,
@@ -1535,7 +1542,7 @@ Future<void> openItem(WidgetTester t, String key) async {
 Future<void> openBagOfM2(WidgetTester t) async {
   await pumpGame(
     t,
-    images: diskImages,
+    images: ringless,
     inventory: {bareRing: 1, 'goblin_hide': 3},
   );
   await openBag(t);
