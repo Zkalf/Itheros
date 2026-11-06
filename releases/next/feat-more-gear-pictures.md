@@ -1,0 +1,1 @@
+- **All gear has pictures:** the iron, mithril and drake-fang weapons, the sapphire, star-diamond and Drowned Captain's rings, the ash totem, the pine idol, the elk and ibex hide sets, the river and tarn greaves, and the tusk and lynx mantles now have their own pictures.

@@ -28,6 +28,7 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
   lynx pelt) glow and sparkle like the heartwoods.
 - The dust, gems and boss shards come from `art/finds.py` (dust in its quality colour, each shard in the colour
   of its boss). The meals come from `art/meals.py`: served on a plate, in a bowl or on a skewer, with steam.
-- Gear comes from `art/gear.py`: weapons lie on the diagonal like the tools; rings, charms and armour stand up.
+- Gear comes from `art/gear.py`: weapons lie on the diagonal like the tools; rings, charms and armour stand up. One
+  drawing serves several tiers: the metal (copper, iron, mithril) or the hide (deer, elk, ibex) only changes its colours.
 - `python art/tools.py --preview` (or `art/materials.py`, `art/fish.py` or `art/hunt.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
