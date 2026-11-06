@@ -74,6 +74,12 @@ void main() {
         expect(data.items[data.recipes[id]!.output]!.meal, isNotNull);
         await t.ensureVisible(row(id));
         await t.pumpAndSettle();
+        // The socket is there, and it has no ring.
+        expect(
+          inside(row(id), find.byType(PictureSocket)),
+          findsOneWidget,
+          reason: id,
+        );
         expect(ringIn(t, row(id)), isNull, reason: id);
       }
     });
@@ -180,14 +186,16 @@ void main() {
         t.widget<Text>(find.byKey(const ValueKey('card-name'))).data,
         'Oak log',
       );
-      for (final type in [FilledButton, OutlinedButton, TextButton]) {
-        expect(
-          inside(card, find.byWidgetPredicate((w) => w.runtimeType == type)),
-          findsNothing,
-          reason: '$type',
-        );
-      }
-      expect(inside(card, find.byType(ElevatedButton)), findsNothing);
+      // Any kind of button, icon variants included.
+      expect(
+        inside(
+          card,
+          find.byWidgetPredicate(
+            (w) => w is ButtonStyleButton || w is IconButton,
+          ),
+        ),
+        findsNothing,
+      );
     });
   });
 
@@ -233,7 +241,8 @@ void main() {
       await openTab(t, 'now');
       await t.pumpAndSettle();
       expect(c.state.activity?.activity, Activity.reroll(reroll));
-      expect(queueCardText('Until 1 crafted'), findsNothing);
+      // No stop line of any wording: nothing on Now says "Until".
+      expect(queueCardText('Until'), findsNothing);
       expect(find.byKey(const ValueKey('stop-activity')), findsOneWidget);
     });
   });
