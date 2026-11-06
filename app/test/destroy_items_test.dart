@@ -103,6 +103,29 @@ void main() {
     expect(destroy, findsNothing);
   });
 
+  testWidgets('the card of the tool in use shows no Destroy, even with the '
+      'same tool in the bag', (t) async {
+    final (c, _) = await pumpGame(t);
+    final tool = c.state.tools['mining']!;
+    c.state.addItem(tool);
+    await openProfession(t, 'mining');
+    await tapKey(t, 'tool-mining');
+    expect(find.byKey(const ValueKey('item-card')), findsOneWidget);
+    expect(find.text('In use'), findsOneWidget);
+    expect(destroy, findsNothing);
+  });
+
+  testWidgets('one item: the message says "Destroyed the Bone sword."', (
+    t,
+  ) async {
+    final (c, _) = await pumpGame(t, inventory: {sword: 1});
+    await openBag(t);
+    await tapKey(t, 'bag-$sword');
+    await destroyOnCard(t, c);
+    expect(c.state.inventory[sword], isNull);
+    expect(find.text('Destroyed the Bone sword.'), findsOneWidget);
+  });
+
   testWidgets('criterion 10: a Bag tab card on the bank screen destroys from '
       'the bag', (t) async {
     final (c, _) = await pumpGame(

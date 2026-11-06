@@ -329,8 +329,6 @@ class Labels {
         : '$name reroll: ${from.name} → ${to.name}';
   }
 
-  /// What salvaging [item] gave (spec 0010 §7.1), with a shard's count
-  /// toward its unique: "… Found a Shard of the Graveyard King (3 of 10)!".
   /// The question before a destroy (spec 0021 amendment 2, rule 11):
   /// "Destroy 12 Goblin hides?" or "Destroy the Bone sword?".
   String destroyQuestion(String item, int n) => n == 1
@@ -342,6 +340,8 @@ class Labels {
       ? 'Destroyed the ${plain(item)}.'
       : 'Destroyed ${plural(n, plain(item))}.';
 
+  /// What salvaging [item] gave (spec 0010 §7.1), with a shard's count
+  /// toward its unique: "… Found a Shard of the Graveyard King (3 of 10)!".
   String salvaged(String item, SalvageResult r) {
     final line = 'Salvaged the ${plain(item)}: ${plain(r.dust)}.';
     final shard = r.shard;

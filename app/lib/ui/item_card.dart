@@ -215,8 +215,8 @@ class ItemCard extends StatelessWidget {
         if (bank == null) ..._mealActions(context, labels),
       ] else
         ..._materialLines(labels),
-      // On the bank screen: Store or Take, and nothing else (spec 0020
-      // amendment 2, rules 16-20).
+      // On the bank screen: Store or Take (spec 0020 amendment 2, rules
+      // 16-20), then only Destroy (spec 0021 amendment 2, rule 9).
       if (bank case final side?) ..._bankActions(context, side),
       // Destroy, last, on the cards of the bag and the bank (spec 0021
       // amendment 2, rules 8-9).
