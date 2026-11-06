@@ -32,4 +32,6 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
 - Gear comes from `art/gear.py`: weapons lie on the diagonal like the tools; rings, charms and armour stand up. One
   drawing serves several tiers: the metal (copper, iron, mithril) or the hide (deer, elk, ibex) only changes its colours.
 - `python art/tools.py --preview` (or `art/materials.py`, `art/fish.py` or `art/hunt.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
+- The gathering spots come from `art/spots.py` and go to `app/assets/images/spots/`: an ore vein in its rock, a tree, a
+  water, a trail with its tracks; the rare find of the spot glints where it fits.
 - Python is needed only to change the art. The game, its tests and the release do not use it.

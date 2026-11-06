@@ -1,6 +1,7 @@
 # Gathering spots
 
-This folder holds the pictures of the gathering spots (spec 0014 amendment 1). No picture exists yet.
+This folder holds the pictures of the gathering spots (spec 0014 amendment 1). Claude drew the 13 pictures of
+today's spots (`art/spots.py`, #198); nabriis can replace any of them.
 
 - The file name is `<spot id>.webp`, for example `copper_vein.webp`.
 - The spot id is an `id` under `nodes` in `packages/game_core/data/world.json`.

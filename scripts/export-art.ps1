@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-  Turns the SVG pictures that Claude draws (art\items\*.svg, art\professions\*.svg) into the game's 256 x 256 webp
-  files (app\assets\images\<folder>\<id>.webp), with Microsoft Edge. No other tool is needed (#198).
+  Turns the SVG pictures that Claude draws (art\items\*.svg, art\professions\*.svg, art\spots\*.svg) into the game's
+  256 x 256 webp files (app\assets\images\<folder>\<id>.webp), with Microsoft Edge. No other tool is needed (#198).
 
 .DESCRIPTION
   Edge (headless) draws each SVG on a canvas and exports it as webp; the script writes the files.
@@ -16,7 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$folders = 'items', 'professions'
+$folders = 'items', 'professions', 'spots'
 $size = 256
 
 $edge = @(
