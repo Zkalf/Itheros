@@ -6,9 +6,11 @@ extension GameQueue on Game {
   /// place in the queue.
   List<StopKind> stopKindsFor(GameState s, Activity a) => [
     if (a.kind == ActivityKind.fight) StopKind.untilGrey,
-    if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather)
-      StopKind.untilHave
-    else if (a.kind == ActivityKind.craft) ...[
+    if (a.kind == ActivityKind.fight || a.kind == ActivityKind.gather) ...[
+      StopKind.untilHave,
+      // Only the actions that fill the bag (spec 0021 amendment 3, rule 6).
+      StopKind.untilFull,
+    ] else if (a.kind == ActivityKind.craft) ...[
       // Meals: "until I have N" (spec 0011 §5.1).
       if (data.recipes[a.target]?.profession == 'cooking') StopKind.untilHave,
       StopKind.untilCrafted,
@@ -386,6 +388,7 @@ extension GameQueue on Game {
       SkipReason.alreadyDone => switch (stop.kind) {
         _ when a.kind == ActivityKind.travel => 'You are already at $name',
         StopKind.untilGrey => 'The $name is already grey',
+        StopKind.untilFull => 'Your bag is already full',
         _ => 'You already have ${stop.count} ${data.items[stop.item]?.name}',
       },
     };
@@ -493,6 +496,9 @@ extension GameQueue on Game {
           ? EndReason.enough
           : null,
     StopKind.never => null,
+    // No free space left: all spaces used (spec 0021 amendment 3, rule 2).
+    StopKind.untilFull =>
+      spacesUsed(s) >= bagSpaces(s) ? EndReason.bagFull : null,
   };
 
   /// The place of quality [id] in the quality order; -1 if unknown.

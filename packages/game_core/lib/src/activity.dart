@@ -53,7 +53,17 @@ class Activity {
   String toString() => 'Activity.${kind.name}($target)';
 }
 
-enum StopKind { untilGrey, untilHave, untilCrafted, untilQuality, never }
+enum StopKind {
+  untilGrey,
+  untilHave,
+  untilCrafted,
+  untilQuality,
+  never,
+
+  /// Fights and gathering: the bag has no free space left (spec 0021
+  /// amendment 3).
+  untilFull,
+}
 
 /// When a queued action ends by itself (spec 0003 §3).
 class StopCondition {
@@ -75,6 +85,10 @@ class StopCondition {
 
   /// Keeps going; only allowed for the last action.
   const StopCondition.never() : this._(StopKind.never);
+
+  /// Fights and gathering: all the bag's spaces are used (spec 0021
+  /// amendment 3).
+  const StopCondition.untilFull() : this._(StopKind.untilFull);
 
   const StopCondition._(this.kind, {this.item, this.count = 0});
 
