@@ -1,0 +1,1 @@
+- **Meals are worth cooking again:** every meal now lasts 6,000 steps (a perfect dish 12,000), and Attack and HP meals also make each fight cost fewer steps: 12%, 20% or 28% by tier.

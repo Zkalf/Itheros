@@ -116,9 +116,12 @@ extension GameTalents on Game {
       _stepShare(s, TalentEffect.professionSteps);
 
   /// Steps a fight of [rounds] gives back to its action (spec 0015 §2.3,
-  /// Swift strikes), rounded down.
+  /// Swift strikes), with an Attack or HP meal's share added (spec 0011
+  /// amendment 2, rule 6), rounded down.
   int fightStepsBack(GameState s, int rounds) =>
-      (rounds * data.combatRoundSteps * talentSum(s, TalentEffect.fightSteps) +
+      (rounds *
+                  data.combatRoundSteps *
+                  (talentSum(s, TalentEffect.fightSteps) + mealFightShare(s)) +
               1e-9)
           .floor();
 

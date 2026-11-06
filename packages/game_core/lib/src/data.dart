@@ -66,6 +66,9 @@ class GameData {
        mealCrit = List.unmodifiable(
          (_map(economy, 'meals')['crit'] as List<Object?>).cast<int>(),
        ),
+       mealFightSteps = List.unmodifiable(
+         (_map(economy, 'meals')['fightSteps'] as List<Object?>).cast<int>(),
+       ),
        perfectBase = _num(_map(economy, 'perfectDish'), 'base'),
        perfectPerToolQualityStep = _num(
          _map(economy, 'perfectDish'),
@@ -263,6 +266,10 @@ class GameData {
   /// A stat buff's percent and a Crit buff's points, by meal tier from 1.
   final List<int> mealPercent;
   final List<int> mealCrit;
+
+  /// The percent of each fight round's steps that an Attack or HP meal gives
+  /// back, by meal tier from 1 (spec 0011 amendment 2).
+  final List<int> mealFightSteps;
 
   /// A cook's perfect-dish chance and its nudges, as [rareBase] (§5.3).
   final double perfectBase;
@@ -935,7 +942,8 @@ class GameData {
         check(
           m.tier >= 1 &&
               m.tier <= mealPercent.length &&
-              m.tier <= mealCrit.length,
+              m.tier <= mealCrit.length &&
+              m.tier <= mealFightSteps.length,
           'item ${i.id}: meal tier out of range',
         );
       }

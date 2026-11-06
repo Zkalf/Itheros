@@ -160,12 +160,13 @@ void main() {
     expect(median(level30(walker)), inInclusiveRange(80, 100));
   });
 
-  // With supply chests meals neither help nor hurt the pace: 32 seeds give
-  // about 0 days, and 8 seeds swing by several (spec 0013 amendment 3).
-  test('spec 0011 target 5 (spec 0013 amendment 3): with meals the median '
-      'level 30 day is at most 5 days later and at most 5 days sooner', () {
+  // Meals help a little: longer meals, and Attack and HP meals give fight
+  // steps back. A hand-run sim on 16 seeds gave a mean gain of about 3 days;
+  // 8 seeds swing by several (spec 0011 amendment 2, rule 10).
+  test('spec 0011 target 5 (amendment 2): with meals the median level 30 '
+      'day is 0 to 10 days sooner', () {
     final gain = median(level30(noMeals)) - median(level30(withMeals));
-    expect(gain, inInclusiveRange(-5, 5));
+    expect(gain, inInclusiveRange(0, 10));
   });
 
   // The walkers start Mining at 5 as Miner's children (spec 0012 amendment

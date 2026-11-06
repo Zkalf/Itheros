@@ -20,6 +20,18 @@ void main() {
   });
 
   test('the other buffs keep their words', () {
-    expect(labels.mealBuff('venison_skewer'), '+6% Attack');
+    expect(labels.mealBuff('pike_steak'), '+6% Defense');
+    expect(labels.mealBuff('golden_carp_curry'), '+2% Crit');
+  });
+
+  // Spec 0011 amendment 2, rules 8-9.
+  test('an Attack or HP meal also names its fight steps, by tier', () {
+    expect(labels.mealBuff('venison_skewer'), '+6% Attack, −12% fight steps');
+    expect(labels.mealBuff('smoked_trout'), '+10% HP, −20% fight steps');
+    expect(labels.mealBuff('ibex_haunch'), '+14% Attack, −28% fight steps');
+    expect(
+      labels.mealBuff('mossback_feast'),
+      '+6% HP, +6% Attack, −12% fight steps',
+    );
   });
 }

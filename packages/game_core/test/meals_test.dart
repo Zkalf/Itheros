@@ -171,8 +171,9 @@ void main() {
       );
     });
 
-    test('a perfect dish lasts 6,000 steps, a plain one 3,000', () {
-      expect(data.mealSteps, 3000);
+    // Spec 0011 amendment 2, criterion 1 (was 3,000 and 6,000).
+    test('a perfect dish lasts 12,000 steps, a plain one 6,000', () {
+      expect(data.mealSteps, 6000);
       final s = stateAt(
         game,
         inventory: {
@@ -180,10 +181,10 @@ void main() {
           GameData.perfectKey('grilled_perch'): 1,
         },
       );
-      expect(game.eat(s, 'grilled_perch').meal!.left, 3000);
+      expect(game.eat(s, 'grilled_perch').meal!.left, 6000);
       expect(
         game.eat(s, GameData.perfectKey('grilled_perch')).meal!.left,
-        6000,
+        12000,
       );
     });
   });
@@ -291,17 +292,17 @@ void main() {
         'venison_skewer',
       );
       final rested = game.applySteps(s, 500).state;
-      expect(rested.meal!.left, 3000);
+      expect(rested.meal!.left, data.mealSteps);
       expect(rested.stepBank, 500);
       final walked = work(s, const Activity.travel('goblin_woods'), 200).state;
-      expect(walked.meal!.left, 2800);
+      expect(walked.meal!.left, data.mealSteps - 200);
       // With the bank boosting, both steps of each walked step count.
       final boosted = work(
         s..stepBank = 100,
         const Activity.travel('goblin_woods'),
         100,
       ).state;
-      expect(boosted.meal!.left, 2800);
+      expect(boosted.meal!.left, data.mealSteps - 200);
     });
 
     test('a meal that runs out leaves no buff', () {
@@ -310,7 +311,7 @@ void main() {
       final r = work(
         fed..location = 'goblin_woods',
         const Activity.fight('goblin'),
-        3000,
+        data.mealSteps,
       );
       expect(r.state.meal, isNull);
       expect(game.stats(r.state).attack, game.stats(s).attack);
@@ -333,7 +334,7 @@ void main() {
       final s = running({'venison_skewer': 3});
       final r = work(s, const Activity.gather('copper_vein'), 100);
       expect(r.state.meal!.key, 'venison_skewer');
-      expect(r.state.meal!.left, 3000 - 50);
+      expect(r.state.meal!.left, data.mealSteps - 50);
       expect(r.state.inventory['venison_skewer'], 1);
       final ate = r.events.whereType<MealEaten>().single;
       expect((ate.key, ate.auto, ate.left), ('venison_skewer', true, 1));
@@ -341,7 +342,12 @@ void main() {
 
     test('"until out" eats until the bag has none, then says so once', () {
       final s = running({'venison_skewer': 3}, left: 10);
-      final r = work(s, const Activity.gather('copper_vein'), 100 * 70);
+      // Two more meals run out, then a little more.
+      final r = work(
+        s,
+        const Activity.gather('copper_vein'),
+        2 * data.mealSteps + 1000,
+      );
       expect(r.events.whereType<MealEaten>(), hasLength(2));
       expect(r.state.inventory['venison_skewer'], isNull);
       expect(r.state.meal, isNull);
@@ -358,7 +364,12 @@ void main() {
     test('plain ones first, then perfect', () {
       final perfect = GameData.perfectKey('venison_skewer');
       final s = running({'venison_skewer': 2, perfect: 1}, left: 10);
-      final r = work(s, const Activity.gather('copper_vein'), 100 * 31);
+      // The plain one runs out, then the perfect one starts.
+      final r = work(
+        s,
+        const Activity.gather('copper_vein'),
+        data.mealSteps + 100,
+      );
       expect(r.events.whereType<MealEaten>().map((e) => e.key), [
         'venison_skewer',
         perfect,

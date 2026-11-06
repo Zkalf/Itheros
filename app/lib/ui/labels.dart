@@ -293,13 +293,15 @@ class Labels {
   /// "Out of Venison skewer: no meal running".
   String mealsOut(String meal) => 'Out of ${item(meal)}: no meal running';
 
-  /// A meal's buffs (spec 0011 §5.3): "+6% Attack", "+2% Crit", "−6% steps"
-  /// (the words of a tool, spec 0010 amendment 7); a feast's two joined,
-  /// "+6% HP, +6% Attack".
+  /// A meal's buffs (spec 0011 §5.3): "+6% Defense", "+2% Crit", "−6% steps"
+  /// (the words of a tool, spec 0010 amendment 7). An Attack or HP meal also
+  /// names its fight steps (amendment 2): "+6% Attack, −12% fight steps"; a
+  /// feast "+6% HP, +6% Attack, −12% fight steps".
   String mealBuff(String key) {
     final meal = data.itemOf(key)?.meal;
     if (meal == null) return '';
     final pct = data.mealPercent[meal.tier - 1];
+    final fights = meal.buffs.contains('attack') || meal.buffs.contains('hp');
     return [
       for (final b in meal.buffs)
         switch (b) {
@@ -309,10 +311,12 @@ class Labels {
           'crit' => '+${data.mealCrit[meal.tier - 1]}% Crit',
           _ => '−$pct% steps',
         },
+      if (fights) '−${data.mealFightSteps[meal.tier - 1]}% fight steps',
     ].join(', ');
   }
 
-  /// "+6% Attack for 3,000 steps"; a perfect dish lasts twice as long.
+  /// "+6% Attack, −12% fight steps for 6,000 steps"; a perfect dish lasts
+  /// twice as long.
   String mealLength(String key) =>
       '${mealBuff(key)} for ${fmt(data.mealStepsOf(key))} steps';
 
