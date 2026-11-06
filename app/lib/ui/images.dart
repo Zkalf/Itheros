@@ -50,6 +50,9 @@ class ImageIndex {
       'players/${origin}_${gender.name}',
       'player',
     ),
+    // A guide shows the player's placeholder until its portrait comes
+    // (spec 0022 rule 10).
+    GuideThing(:final id) => _image('portraits/$id', 'player'),
     // A spot shows the tool of its profession until it has an image (spec
     // 0014 amendment 1).
     SpotThing(:final id) => _image(
@@ -174,6 +177,12 @@ final class PlayerThing extends Thing {
   const PlayerThing(this.origin, this.gender);
   final String origin;
   final Gender gender;
+}
+
+/// A guide who speaks to the player, such as `odda` (spec 0022 erratum 1).
+final class GuideThing extends Thing {
+  const GuideThing(this.id);
+  final String id;
 }
 
 /// A gathering spot, such as `copper_vein` (spec 0014 amendment 1).

@@ -98,6 +98,16 @@ class SettingsScreen extends StatelessWidget {
                   MaterialPageRoute<void>(builder: (_) => const NotesScreen()),
                 ),
               ),
+              // The camp tour, again (spec 0022 §3.4).
+              ListTile(
+                key: const ValueKey('settings-tour'),
+                title: const Text('Camp tour'),
+                subtitle: const Text('Odda shows you around again'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  c.startTour();
+                },
+              ),
             ]),
             // Friends quote it when they report something (spec 0007 §7).
             ListTile(
