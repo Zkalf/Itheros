@@ -1515,7 +1515,11 @@ void layoutScreens() {
     testWidgets('a vein here shows the level it needs', (t) async {
       await pumpGame(t, level: 30, professionLevel: 9, location: 'iron_ridge');
       expect(here(option('gather', 'iron_vein')), findsOneWidget);
-      expect(here(find.text('Iron vein needs Mining 10')), findsOneWidget);
+      // With the player's own Mining level (spec 0010 amendment 10).
+      expect(
+        here(find.text('Iron vein needs Mining 10 (you have 9)')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('at a forge a Forge row opens Professions', (t) async {

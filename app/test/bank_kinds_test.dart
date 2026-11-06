@@ -39,6 +39,10 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('bag-bank')));
     await t.pumpAndSettle();
+    // The bank screen opens on Bank (spec 0020 amendment 3); these tests
+    // start on the Bag tab.
+    await t.tap(find.byKey(const ValueKey('bank-tab-bag')));
+    await t.pumpAndSettle();
   }
 
   Future<void> bankTab(WidgetTester t) async {

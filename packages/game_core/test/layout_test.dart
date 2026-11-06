@@ -140,7 +140,7 @@ void main() {
           isA<ActivityError>().having(
             (e) => e.message,
             'message',
-            'Mithril sword needs Crafting 22',
+            'Mithril sword needs Crafting 22 (you have 21)',
           ),
         ),
       );

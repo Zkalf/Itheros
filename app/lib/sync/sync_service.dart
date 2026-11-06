@@ -31,15 +31,15 @@ class SyncService {
   final DateTime Function() clock;
   final int daysBack;
 
-  /// A new game. Steps already walked today before install are marked as
-  /// credited, so they don't count.
+  /// A new game. Its first day counts in full: the steps walked earlier that
+  /// day go to the game at the first sync, like any other steps of the day.
+  /// Days before the first day do not count (spec 0001 amendment 3).
   Future<SaveData> newSave({required int seed}) async {
     final now = clock();
-    final already = await source.stepsBetween(startOfDay(now), now);
     return SaveData(
       game: game.newGame(seed: seed),
       firstDay: dayKey(now),
-      credited: {dayKey(now): already},
+      credited: {},
     );
   }
 

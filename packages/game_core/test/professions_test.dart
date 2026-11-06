@@ -97,7 +97,8 @@ void main() {
           isA<ActivityError>().having(
             (e) => e.message,
             'message',
-            'Iron vein needs Mining 10',
+            // Spec 0010 amendment 10: the player's own level too.
+            'Iron vein needs Mining 10 (you have 9)',
           ),
         ),
       );
@@ -107,6 +108,15 @@ void main() {
         work(ok, const Activity.gather('iron_vein'), 120).state.inventory,
         {'iron_ore': 1},
       );
+    });
+
+    test('spec 0010 amendment 10 criterion 3: a profession not learned says '
+        '"Learn …", with no "(you have …)"', () {
+      final s = worker(location: 'iron_ridge', prof: {'mining': 12})
+        ..learned.remove('mining');
+      final why = game.lockedReason(s, const Activity.gather('iron_vein'));
+      expect(why, startsWith('Learn Mining from '));
+      expect(why, isNot(contains('you have')));
     });
 
     test('the Copper vein opens at Mining 1 and character level 1', () {
@@ -130,7 +140,7 @@ void main() {
           isA<ActivityError>().having(
             (e) => e.message,
             'message',
-            'Iron sword needs Crafting 14',
+            'Iron sword needs Crafting 14 (you have 13)',
           ),
         ),
       );

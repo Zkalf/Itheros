@@ -10,6 +10,7 @@ import 'labels.dart';
 import 'level_badge.dart';
 import 'route_map.dart';
 import 'socket.dart';
+import 'tab_boxes.dart';
 import 'teacher_sheet.dart';
 import 'theme.dart';
 
@@ -59,27 +60,7 @@ class JournalScreen extends StatelessWidget {
           "${ControllerScope.of(context).state.character?.name ?? Game.defaultName}'s journal",
         ),
         // The tabs stand on a plate, each in its own box (spec 0014 §2.2).
-        // The TabBar stays.
-        bottom: PreferredSize(
-          // A tab of 40, the TabBar's 2 for its indicator, the plate's padding
-          // of 3 and border of 1 on each side, and the gutter below.
-          preferredSize: const Size.fromHeight(40 + 2 + 2 * (3 + 1) + gutter),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
-            padding: const EdgeInsets.all(3),
-            decoration: plateDecoration,
-            child: TabBar(
-              tabs: [
-                for (final (i, label) in const [
-                  'Log',
-                  'Bestiary',
-                  'Lore',
-                ].indexed)
-                  Tab(height: 40, child: _TabBox(i, label)),
-              ],
-            ),
-          ),
-        ),
+        bottom: const TabBoxes(labels: ['Log', 'Bestiary', 'Lore']),
       ),
       body: const SafeArea(
         child: TabBarView(children: [_Log(), _Bestiary(), _Lore()]),
@@ -90,27 +71,6 @@ class JournalScreen extends StatelessWidget {
 
 /// A tab of the Journal: a box with the 2 dp black border, with the selected
 /// fill while its tab is open (spec 0014 amendment 4).
-class _TabBox extends StatelessWidget {
-  const _TabBox(this.index, this.label);
-
-  final int index;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    // The animation, not the index: the index changes only once a swipe has
-    // settled, so the lit tab follows the finger from halfway on.
-    final tabs = DefaultTabController.of(context).animation!;
-    return ListenableBuilder(
-      listenable: tabs,
-      builder: (context, _) => ControlBox(
-        fill: tabs.value.round() == index ? Quiet.selected : Quiet.slate,
-        child: SizedBox.expand(child: Center(child: Text(label))),
-      ),
-    );
-  }
-}
-
 class _Log extends StatelessWidget {
   const _Log();
 

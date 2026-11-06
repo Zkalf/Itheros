@@ -284,7 +284,8 @@ void main() {
     });
   });
 
-  group('spec 0014 criterion 24: the launcher shows the emblem on #060708', () {
+  group('spec 0014 criterion 24 and amendment 10: the launcher shows the '
+      'emblem on #060708, filling its circle', () {
     test('the adaptive icon has the background #060708, the emblem as its '
         'foreground and the one-colour emblem as its monochrome layer', () {
       final manifest = File(_manifest).readAsStringSync();
@@ -311,12 +312,39 @@ void main() {
       );
     });
 
-    // The safe zone of an adaptive icon is the centred circle of 66 dp in its
-    // 108 dp. A pixel shows when its alpha is above 0. It lies in the zone
-    // when its centre is at most half its diagonal (0.71 px) outside the
-    // circle.
-    test('in each density, the emblem and the one-colour emblem are PNG files '
-        'of 108 dp, transparent outside the safe zone', () async {
+    // Spec 0014 amendment 10 (#222): the emblem grows to about 74 dp, so it
+    // covers the circle of 72 dp that a round launcher shows, and no
+    // background shows around it. A pixel lies in that circle when its centre
+    // is at least half its diagonal (0.71 px) inside it.
+    test('amendment 10 criterion 1: in each density, the emblem is a PNG file '
+        'of 108 dp that covers the 72 dp circle', () async {
+      for (final MapEntry(key: density, value: px) in _densities.entries) {
+        final path = '$_res/mipmap-$density/ic_launcher_foreground.png';
+        final rgba = await _png(path, px);
+        final shown = px * 36 / 108 - math.sqrt1_2;
+        final holes = <String>[];
+        for (var y = 0; y < px; y++) {
+          for (var x = 0; x < px; x++) {
+            final d = ui.Offset(x + .5 - px / 2, y + .5 - px / 2).distance;
+            if (d <= shown && rgba[(y * px + x) * 4 + 3] < 250) {
+              holes.add('($x, $y)');
+            }
+          }
+        }
+        expect(
+          holes,
+          isEmpty,
+          reason:
+              '$path: the pixels in the 72 dp circle that are not opaque '
+              '(${holes.length}), for example ${holes.take(4)}',
+        );
+      }
+    });
+
+    // The one-colour emblem grew with the emblem: before amendment 10 both
+    // stayed inside the 66 dp safe zone, now each reaches past it.
+    test('amendment 10 criterion 2: in each density, the one-colour emblem '
+        'grew with the emblem, past the old 66 dp safe zone', () async {
       for (final MapEntry(key: density, value: px) in _densities.entries) {
         for (final name in [
           'ic_launcher_foreground',
@@ -325,24 +353,14 @@ void main() {
           final path = '$_res/mipmap-$density/$name.png';
           final rgba = await _png(path, px);
           final zone = px * 33 / 108 + math.sqrt1_2;
-          final outside = <String>[];
-          var opaque = 0;
+          var past = 0;
           for (var y = 0; y < px; y++) {
             for (var x = 0; x < px; x++) {
-              final alpha = rgba[(y * px + x) * 4 + 3];
-              if (alpha == 255) opaque++;
               final d = ui.Offset(x + .5 - px / 2, y + .5 - px / 2).distance;
-              if (alpha > 0 && d > zone) outside.add('($x, $y)');
+              if (rgba[(y * px + x) * 4 + 3] > 0 && d > zone) past++;
             }
           }
-          expect(
-            outside,
-            isEmpty,
-            reason:
-                '$path: the pixels outside the safe zone '
-                '(${outside.length}), for example ${outside.take(4)}',
-          );
-          expect(opaque, greaterThan(0), reason: '$path shows no emblem');
+          expect(past, greaterThan(0), reason: '$path: still inside 66 dp');
         }
       }
     });

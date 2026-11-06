@@ -1,0 +1,4 @@
+- **Your first day counts:** a new game now gets the steps you walked earlier that day.
+- **Bank screen:** Bank and Bag are buttons, and the screen opens on Bank.
+- **Clearer locked spots:** a spot or recipe you can't do yet says your level too, for example "needs Woodcutting 8 (you have 5)".
+- **App icon:** the emblem now fills the round icon, with no black border.

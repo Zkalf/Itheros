@@ -466,7 +466,10 @@ extension GameQueue on Game {
     if (!s.tools.containsKey(profession)) {
       return 'You need a ${p.toolName.toLowerCase()}';
     }
-    return '$name needs ${p.name} $level';
+    // The player's own level too, so it reads as the profession's level, not
+    // the character's (spec 0010 amendment 10).
+    return '$name needs ${p.name} $level '
+        '(you have ${professionLevel(s, profession)})';
   }
 
   /// Why an action stops by its condition now, or null (spec 0003 §3).
