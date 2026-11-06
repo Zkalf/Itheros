@@ -34,4 +34,10 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
 - `python art/tools.py --preview` (or `art/materials.py`, `art/fish.py` or `art/hunt.py --preview`) also writes a sheet with the tools at bag size next to nabriis's pictures.
 - The gathering spots come from `art/spots.py` and go to `app/assets/images/spots/`: an ore vein in its rock, a tree, a
   water, a trail with its tracks; the rare find of the spot glints where it fits.
+- The achievements without a picture from nabriis come from `art/achievements.py` and go to
+  `app/assets/images/achievements/`. They follow nabriis's patches, not the HoMM3 style above: a sewn shield with a
+  dark rim and cream stitches, a sky of sun rays, mountains and pines, one flat emblem. The four finds show a gem in
+  the colour of their quality. `--preview <file.html>` shows them next to four of nabriis's patches.
+- The marker of the water places (Mirror Lake, Smugglers' Cove) comes from `art/places.py` and goes to
+  `app/assets/images/places/water.webp`: a gold-ringed medallion like nabriis's markers, with a fish over the waves.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
