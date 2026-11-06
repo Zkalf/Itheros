@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Turns the SVG pictures that Claude draws (art\items\*.svg, art\professions\*.svg, art\spots\*.svg) into the game's
+  Turns the SVG pictures that Claude draws (art\items, art\professions, art\spots, art\achievements, art\places) into the game's
   256 x 256 webp files (app\assets\images\<folder>\<id>.webp), with Microsoft Edge. No other tool is needed (#198).
 
 .DESCRIPTION
@@ -16,7 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$folders = 'items', 'professions', 'spots'
+$folders = 'items', 'professions', 'spots', 'achievements', 'places'
 $size = 256
 
 $edge = @(

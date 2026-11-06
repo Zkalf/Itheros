@@ -11,7 +11,9 @@ import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/ui/labels.dart';
 
-import 'images_test.dart' show assetOf, diskImages, imagesIn;
+import 'package:walkingrpg/ui/images.dart' show ImageIndex;
+
+import 'images_test.dart' show assetOf, diskImages, imageFiles, imagesIn;
 import 'ui_test.dart' show game, now, openAchievements, pumpGame;
 
 Finder card(String id) => find.byKey(ValueKey('achievement-$id'));
@@ -112,12 +114,20 @@ void main() {
 
     testWidgets('criterion 29: an earned achievement without a picture shows '
         'its placeholder; one with a picture shows the picture', (t) async {
-      final (c, _) = await pumpGame(t, images: diskImages);
+      // Every achievement has a picture since #198, so the test leaves Lucky
+      // Find's out.
+      final images = ImageIndex.fromAssets(
+        imageFiles().where(
+          (f) => f != 'assets/images/achievements/lucky_find.webp',
+        ),
+      );
+      expect(diskImages.has('achievements/lucky_find'), isTrue);
+      final (c, _) = await pumpGame(t, images: images);
       // Earned after the load, so the load does not check them.
       c.state.achievements.addAll(['lucky_find', 'first_steps']);
       await t.pump();
-      expect(diskImages.has('achievements/lucky_find'), isFalse);
-      expect(diskImages.has('achievements/first_steps'), isTrue);
+      expect(images.has('achievements/lucky_find'), isFalse);
+      expect(images.has('achievements/first_steps'), isTrue);
       await openAchievements(t);
       await tallView(t);
       expect(imagesIn(t, card('lucky_find')), [

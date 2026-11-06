@@ -40,6 +40,7 @@ import 'images_test.dart'
         boxIn,
         diskImages,
         expectShows,
+        imageFiles,
         imagesIn,
         keyIn,
         loadFonts,
@@ -87,10 +88,15 @@ Future<GameController> pumpWorld(
   String location, {
   bool everywhere = true,
   void Function(GameState)? change,
+  ImageIndex? images,
 }) async {
   // A new tree, so that nothing of the last pump stays.
   await t.pumpWidget(const SizedBox());
-  final (c, _) = await pumpGame(t, location: location, images: diskImages);
+  final (c, _) = await pumpGame(
+    t,
+    location: location,
+    images: images ?? diskImages,
+  );
   if (everywhere) {
     c.state.explored.addAll(game.data.locations.keys);
     c.state.revealed.add('smugglers_cove');
@@ -825,15 +831,16 @@ void criterion12() {
       'locked patch', () {
     testWidgets('on the World map, each place in the fog shows the fog marker '
         'and "???", and Mirror Lake and Smugglers\' Cove show the water '
-        'icon; none has the PH mark', (t) async {
-      expect(
-        diskImages.has('places/water'),
-        isFalse,
-        reason: 'the test needs water places with no marker',
+        'icon while there is no water marker; none has the PH mark', (t) async {
+      // The pictures on disk without the water marker (#198 added one).
+      final waterless = ImageIndex.fromAssets(
+        imageFiles().where((f) => f != 'assets/images/places/water.webp'),
       );
+      expect(waterless.has('places/water'), isFalse);
       final c = await pumpWorld(
         t,
         'camp',
+        images: waterless,
         everywhere: false,
         change: (s) {
           s.explored.add('mirror_lake');
@@ -859,6 +866,22 @@ void criterion12() {
           reason: '$p shows the water icon in its marker',
         );
         expect(imagesIn(t, socket), isEmpty, reason: '$p shows no image');
+        expect(markIn(area(p)), findsNothing, reason: '$p has no PH mark');
+      }
+    });
+
+    testWidgets('with the water marker on disk (#198), Mirror Lake and '
+        "Smugglers' Cove show it, not the icon", (t) async {
+      expect(diskImages.has('places/water'), isTrue);
+      await pumpWorld(t, 'camp');
+      for (final p in ['mirror_lake', 'smugglers_cove']) {
+        final socket = socketIn(area(p));
+        expect(imagesIn(t, socket), [assetOf('places/water')], reason: p);
+        expect(
+          find.descendant(of: socket, matching: find.byIcon(Icons.water)),
+          findsNothing,
+          reason: p,
+        );
         expect(markIn(area(p)), findsNothing, reason: '$p has no PH mark');
       }
     });
