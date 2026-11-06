@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'item_card.dart';
 import 'item_square.dart';
+import 'kind_chips.dart';
 
 /// One big bag as a grid (spec 0008 §3.5): gear first, by slot order then
-/// best first, then materials in data order. Identical items stack.
+/// best first, then materials in data order. Identical items stack. The
+/// chips above it show one kind at a time (spec 0020 amendment 2).
 class BagGrid extends StatelessWidget {
   const BagGrid({super.key, required this.controller});
 
@@ -26,25 +27,31 @@ class BagGrid extends StatelessWidget {
         child: Text('Nothing yet. Fight and gather to find things.'),
       );
     }
-    return GridView.count(
-      key: const ValueKey('bag'),
-      crossAxisCount: columns,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 6,
-      crossAxisSpacing: 6,
-      children: [
-        for (final key in bagOrder(data, s.inventory.keys))
-          ItemSquare(
-            key: ValueKey('bag-$key'),
-            data: data,
-            item: key,
-            count: s.inventory[key]!,
-            // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
-            socket: 48,
-            onTap: () => showItemCard(context, c, key),
-          ),
-      ],
+    // The chips of the four kinds above the grid (spec 0020 amendment 2).
+    return KindFilter(
+      controller: c,
+      list: 'bag',
+      items: s.inventory.keys,
+      builder: (shown) => GridView.count(
+        key: const ValueKey('bag'),
+        crossAxisCount: columns,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 6,
+        crossAxisSpacing: 6,
+        children: [
+          for (final key in shown)
+            ItemSquare(
+              key: ValueKey('bag-$key'),
+              data: data,
+              item: key,
+              count: s.inventory[key]!,
+              // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
+              socket: 48,
+              onTap: () => showItemCard(context, c, key),
+            ),
+        ],
+      ),
     );
   }
 }

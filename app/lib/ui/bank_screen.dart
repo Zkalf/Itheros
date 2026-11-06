@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
-import 'action_sheet.dart' show CountDialog;
 import 'bag_spaces.dart';
 import 'controller_scope.dart';
+import 'images.dart';
 import 'item_card.dart';
+import 'kind_chips.dart';
 import 'labels.dart';
+import 'socket.dart';
 import 'theme.dart';
 
 /// Opens the bank screen (spec 0020 §3.1). It slides in like the Journal.
@@ -14,9 +16,9 @@ Future<void> openBank(BuildContext context) =>
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const BankScreen()));
 
-/// The item bank (spec 0020 §3.2): the tabs Bag and Bank. At a place with a
-/// bank, a tap on an item opens Store or Take; elsewhere the player only
-/// looks.
+/// The item bank (spec 0020 §3.2): the tabs Bag and Bank. A tap on an item
+/// opens its card; at a place with a bank the card has Store or Take,
+/// elsewhere the player only looks (spec 0020 amendment 2).
 class BankScreen extends StatelessWidget {
   const BankScreen({super.key});
 
@@ -54,8 +56,8 @@ class BankScreen extends StatelessWidget {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _ItemList(controller: c, inBank: false, canMove: here),
-                    _ItemList(controller: c, inBank: true, canMove: here),
+                    _ItemList(controller: c, inBank: false),
+                    _ItemList(controller: c, inBank: true),
                   ],
                 ),
               ),
@@ -67,17 +69,13 @@ class BankScreen extends StatelessWidget {
   }
 }
 
-/// The items of the bag or the bank, in the bag's order, each with its count.
+/// The items of the bag or the bank, in the bag's order, each with its
+/// picture and count, under the chips of the four kinds.
 class _ItemList extends StatelessWidget {
-  const _ItemList({
-    required this.controller,
-    required this.inBank,
-    required this.canMove,
-  });
+  const _ItemList({required this.controller, required this.inBank});
 
   final GameController controller;
   final bool inBank;
-  final bool canMove;
 
   @override
   Widget build(BuildContext context) {
@@ -100,82 +98,46 @@ class _ItemList extends StatelessWidget {
           BagSpacesLine(game: controller.game, state: controller.state),
           const SizedBox(height: 8),
         ],
-        Card(
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              for (final key in bagOrder(data, items.keys))
-                ListTile(
-                  key: ValueKey('${inBank ? 'bank-item' : 'bank-bag'}-$key'),
-                  title: Text(
-                    '${labels.item(key)} ×${items[key]}',
-                    // As on the item card: Common in the normal text colour.
-                    style: TextStyle(color: itemColour(data, key)),
+        // The chips of the four kinds; each tab keeps its own pick (spec
+        // 0020 amendment 2).
+        KindFilter(
+          controller: controller,
+          list: inBank ? 'bank-bank' : 'bank-bag',
+          items: items.keys,
+          builder: (shown) => Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (final key in shown)
+                  ListTile(
+                    key: ValueKey('${inBank ? 'bank-item' : 'bank-bag'}-$key'),
+                    // The picture in a 48 dp socket, with the ring of its
+                    // quality for gear and tools (amendment 2, rules 12-13).
+                    leading: PictureSocket.item(
+                      data,
+                      key,
+                      picture: ImageScope.of(context)
+                          .pictureOf(data, ItemThing(key)),
+                      size: 48,
+                    ),
+                    title: Text(
+                      '${labels.item(key)} ×${items[key]}',
+                      // As on the item card: Common in the normal text colour.
+                      style: TextStyle(color: itemColour(data, key)),
+                    ),
+                    // The card, with Store or Take at Camp (rules 15-19).
+                    onTap: () => showItemCard(
+                      context,
+                      controller,
+                      key,
+                      bank: inBank ? BankSide.bank : BankSide.bag,
+                    ),
                   ),
-                  onTap: canMove
-                      ? () => _showMove(context, controller, key, inBank)
-                      : null,
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
     );
-  }
-}
-
-/// The sheet of one item: Store all and Store some…, or Take all and Take
-/// some… (spec 0020 §3.2).
-Future<void> _showMove(
-  BuildContext context,
-  GameController c,
-  String key,
-  bool inBank,
-) async {
-  final have = (inBank ? c.state.itemBank : c.state.inventory)[key] ?? 0;
-  final verb = inBank ? 'Take' : 'Store';
-  Future<void> move(int n) =>
-      inBank ? c.takeFromBank(key, n) : c.storeInBank(key, n);
-  final choice = await showModalBottomSheet<int>(
-    context: context,
-    builder: (sheet) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ListTile(
-            title: Text('${Labels(c.game.data).item(key)} ×$have'),
-            titleTextStyle: nameStyle(sheet),
-          ),
-          ListTile(
-            key: const ValueKey('bank-move-all'),
-            leading: Icon(inBank ? Icons.backpack : Icons.account_balance),
-            title: Text('$verb all'),
-            onTap: () => Navigator.pop(sheet, have),
-          ),
-          ListTile(
-            key: const ValueKey('bank-move-some'),
-            leading: const Icon(Icons.pin),
-            title: Text('$verb some…'),
-            onTap: () async {
-              final n = await showDialog<int>(
-                context: sheet,
-                builder: (_) => CountDialog(have),
-              );
-              if (sheet.mounted) Navigator.pop(sheet, n);
-            },
-          ),
-        ],
-      ),
-    ),
-  );
-  if (choice == null || choice < 1) return;
-  try {
-    await move(choice > have ? have : choice);
-  } on ActivityError catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
-    }
   }
 }

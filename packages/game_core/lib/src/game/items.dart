@@ -369,3 +369,19 @@ List<String> bagOrder(GameData data, Iterable<String> keys) {
 
   return [...gear, ...materials];
 }
+
+/// The four kinds of item that the bag and the bank screen filter by (spec
+/// 0020 amendment 2, rules 1-2).
+enum ItemKind { gear, tool, meal, material }
+
+extension ItemKinds on GameData {
+  /// The kind of [key], from the data of today: a gear slot, a tool, a meal,
+  /// or else a material. An item the data no longer has is a material.
+  ItemKind kindOf(String key) {
+    final item = itemOf(key);
+    if (item?.slot != null) return ItemKind.gear;
+    if (item?.tool != null) return ItemKind.tool;
+    if (item?.meal != null) return ItemKind.meal;
+    return ItemKind.material;
+  }
+}

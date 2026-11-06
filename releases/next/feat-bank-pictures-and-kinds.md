@@ -1,0 +1,2 @@
+- **Bag and bank sorted by kind:** buttons above the bag and both bank tabs show All, Gear, Tools, Meals or Materials. Each list remembers your pick until you close the game.
+- **The bank shows what you store:** each item in the bank has its picture, and a tap opens its card with its stats, so you can tell two alike items apart before you store or take them.
