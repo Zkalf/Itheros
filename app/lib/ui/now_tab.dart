@@ -375,7 +375,9 @@ class _QueueCard extends StatelessWidget {
             ),
           ],
         ),
-        if (run.activity.kind != ActivityKind.travel)
+        // A walk and a reroll have no stop condition to show (spec 0014
+        // amendment 9, rule 9).
+        if (!_noStopLine(run.activity))
           _changeable(
             context,
             run.activity,
@@ -488,7 +490,7 @@ class _QueueCard extends StatelessWidget {
                     '${fmt(game.walkSteps(s, places[i], target) ?? 0)} steps',
               final a => labels.short(a),
             }),
-            subtitle: s.queue[i].activity.kind == ActivityKind.travel
+            subtitle: _noStopLine(s.queue[i].activity)
                 ? null
                 : Text(
                     labels.stop(
@@ -530,6 +532,11 @@ class _QueueCard extends StatelessWidget {
       ),
     );
   }
+
+  /// A walk and a reroll show no stop line: a walk ends at its place, and a
+  /// reroll is one roll (spec 0014 amendment 9, rule 9).
+  static bool _noStopLine(Activity a) =>
+      a.kind == ActivityKind.travel || a.kind == ActivityKind.reroll;
 
   /// [child] on the queue card: a tap opens the change sheet of the action
   /// at [index] (spec 0016 amendment 2), unless it is a walk or a reroll.
