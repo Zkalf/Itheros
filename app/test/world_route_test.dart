@@ -1518,6 +1518,8 @@ void criterion26() {
           await t.pump();
         }
         await settle(t, c);
+        // The camp tour starts after Set out (spec 0022); this test skips it.
+        c.endTour();
         if (c.levelCards.isNotEmpty) c.dismissLevelCards();
         // The report names the achievements that the old save lost (spec 0017
         // §5).

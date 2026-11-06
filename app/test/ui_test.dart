@@ -364,6 +364,9 @@ void main() {
     await t.pump();
     await t.tap(find.byKey(const ValueKey('set-out')));
     await settle(t, c);
+    // The camp tour starts after Set out (spec 0022); this test skips it.
+    c.endTour();
+    await t.pumpAndSettle();
 
     expect(find.text('Camp'), findsOneWidget);
     await openArea(t, 'goblin_woods');
@@ -2547,6 +2550,8 @@ void professionScreens() {
       await t.ensureVisible(find.byKey(const ValueKey('set-out')));
       await t.tap(find.byKey(const ValueKey('set-out')));
       await settle(t, c);
+      // The camp tour starts after Set out (spec 0022); this test skips it.
+      c.endTour();
       // The report names the achievements that the old save lost (spec 0017
       // §5).
       if (c.awaySummary != null) c.dismissAwaySummary();

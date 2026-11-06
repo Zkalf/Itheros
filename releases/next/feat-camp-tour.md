@@ -1,0 +1,1 @@
+- **A tour of the camp:** after you make your character, Odda the quartermaster shows you around the game in six short cards: Now, the World map, the professions, your gear and talents, the bag and the bank, and the buttons at the top. Skip it at any card, or play it again from Settings.

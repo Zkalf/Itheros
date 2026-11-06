@@ -23,7 +23,10 @@ enum CharacterPane { gear, bag, talents }
 /// no steps.
 
 class CharacterTab extends StatefulWidget {
-  const CharacterTab({super.key});
+  const CharacterTab({super.key, this.pane});
+
+  /// The pane to open on; the camp tour picks one (spec 0022 rule 18).
+  final CharacterPane? pane;
 
   @override
   State<CharacterTab> createState() => _CharacterTabState();
@@ -31,7 +34,22 @@ class CharacterTab extends StatefulWidget {
 
 class _CharacterTabState extends State<CharacterTab> {
   // It opens on the bag (#179).
-  var _pane = CharacterPane.bag;
+  late var _pane = widget.pane ?? CharacterPane.bag;
+
+  /// The plate of the panes, which the camp tour scrolls to the top, so its
+  /// card does not hide the pane it talks about (intent 0021).
+  final _panes = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pane == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final panes = _panes.currentContext;
+      if (!mounted || panes == null) return;
+      unawaited(Scrollable.ensureVisible(panes));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +153,7 @@ class _CharacterTabState extends State<CharacterTab> {
         // The segments, the doll and the bag stand on plates (spec 0014
         // §2.2).
         Card(
+          key: _panes,
           child: Padding(
             padding: const EdgeInsets.all(gutter),
             child: SegmentedButton<CharacterPane>(

@@ -310,14 +310,36 @@ class GameController extends ChangeNotifier {
   Future<void> learn(String profession) =>
       _act((s) => game.talk(game.learn(s, profession), profession));
 
-  /// Makes the character on "Who are you?" (spec 0012 §2.2).
+  /// Makes the character on "Who are you?" (spec 0012 §2.2), then starts
+  /// the camp tour (spec 0022 rule 3).
   Future<void> setOut({
     required String name,
     required Gender gender,
     required String origin,
-  }) => _act(
-    (s) => game.makeCharacter(s, name: name, gender: gender, origin: origin),
-  );
+  }) async {
+    await _act(
+      (s) => game.makeCharacter(s, name: name, gender: gender, origin: origin),
+    );
+    if (state.character != null) startTour();
+  }
+
+  /// The step of the camp tour on screen, from 0, or null when no tour
+  /// runs. Kept in memory only, so a tour does not come back after the app
+  /// starts again (spec 0022 decision 6).
+  int? tourStep;
+
+  /// Starts the camp tour at its first step (spec 0022 rules 3 and 5).
+  void startTour() => showTourStep(0);
+
+  void showTourStep(int step) {
+    tourStep = step;
+    notifyListeners();
+  }
+
+  void endTour() {
+    tourStep = null;
+    notifyListeners();
+  }
 
   /// Settings' Name and Gender (spec 0012 §4.2).
   Future<void> renameCharacter(String name) =>
