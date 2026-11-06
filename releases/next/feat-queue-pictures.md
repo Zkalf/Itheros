@@ -1,0 +1,1 @@
+- **Your plan at a glance:** each action on the Now screen's queue shows a picture of its monster, spot, item or place, with its number on the corner. Tapping a spot or a recipe also shows its picture at the top.

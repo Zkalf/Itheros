@@ -182,6 +182,17 @@ final class SpotThing extends Thing {
   final String id;
 }
 
+/// The thing whose picture an action shows (spec 0014 amendment 8, rule 1):
+/// the monster, the spot, the item that a recipe makes, the item that a
+/// reroll takes, or the place of a walk.
+Thing thingOf(GameData data, Activity a) => switch (a.kind) {
+  ActivityKind.fight => MonsterThing(a.target),
+  ActivityKind.gather => SpotThing(a.target),
+  ActivityKind.craft => ItemThing(data.recipes[a.target]?.output ?? a.target),
+  ActivityKind.reroll => ItemThing(a.rerollKey),
+  ActivityKind.travel => PlaceThing(a.target, fogged: false),
+};
+
 /// Where the PH mark sits on a placeholder (spec 0014 §3.2). [x] and [y] are
 /// parts of the image from its top left. A negative [angle] (in degrees)
 /// turns the mark anticlockwise. The spec fixes the size of the mark, so a

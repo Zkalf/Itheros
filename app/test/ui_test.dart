@@ -696,10 +696,11 @@ void main() {
       await settle(t, c);
       await openTab(t, 'now');
       expect(find.text('4 of 5 actions planned'), findsOneWidget);
+      // The numbers stand as badges on the pictures (spec 0014 amendment 8).
       final numbers = t
           .widgetList<Text>(
             find.descendant(
-              of: find.byType(CircleAvatar),
+              of: find.byKey(const ValueKey('action-number')),
               matching: find.byType(Text),
             ),
           )

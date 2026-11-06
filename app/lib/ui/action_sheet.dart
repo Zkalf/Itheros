@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'action_picture.dart';
 import 'bestiary_card.dart';
 import 'labels.dart';
 import 'theme.dart';
@@ -199,7 +200,22 @@ class _ActionSheetState extends State<ActionSheet> {
               BestiaryCard(controller: c, enemy: a.target),
               const Divider(height: 24),
             ] else ...[
-              Text(labels.short(a), style: text.titleLarge),
+              // The picture of the spot or of the item that it makes, beside
+              // the title (spec 0014 amendment 8, rule 8).
+              Row(
+                children: [
+                  ActionPicture(
+                    key: const ValueKey('sheet-picture'),
+                    data: _game.data,
+                    activity: a,
+                    size: 72,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(labels.short(a), style: text.titleLarge),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
             ],
             Text('Stop when', style: headingStyle(context)),
