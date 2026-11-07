@@ -200,12 +200,13 @@ void main() {
     }
   });
 
-  // The 15% of target 3 is a hand-run sim on 16 seeds: on 8 the fighter's
-  // days spread too wide (spec 0021 amendment 1).
-  test('spec 0010 §9.3 target 3 (spec 0021 amendment 1): the fighter is '
-      'later to level 30 (medians of 8 seeds)', () {
+  // The fighter focuses on fighting and may be the fastest (spec 0010
+  // amendment 11, erratum 1): the range of each mixed walker seed in spec
+  // 0009 amendment 1.
+  test('spec 0010 amendment 11, target 3: the fighter reaches level 30 on '
+      'day 70-100 (median of 8 seeds)', () {
     final days = fighter.values.map((r) => r.dayReached(30) ?? 121);
-    expect(median(days), greaterThan(median(level30(walker))));
+    expect(median(days), inInclusiveRange(70, 100));
   });
 
   test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 6-10 '
