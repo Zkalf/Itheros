@@ -64,13 +64,22 @@ class WorldTab extends StatelessWidget {
                         (
                           r.from,
                           r.to,
-                          game.isFogged(s, r.from) || game.isFogged(s, r.to)
+                          // A closed road shows its lock, not its steps
+                          // (spec 0008 amendment 5, change 10).
+                          game.isFogged(s, r.from) ||
+                                  game.isFogged(s, r.to) ||
+                                  !game.roadOpen(s, r)
                               ? null
                               : fmt(r.steps),
                         ),
                   ],
                   here: s.location,
                   fog: true,
+                  locks: [
+                    for (final r in game.closedRoads(s))
+                      if (!game.isHidden(s, r.from) && !game.isHidden(s, r.to))
+                        (r.from, r.to),
+                  ],
                   // Room for each place and road, also hidden and in the
                   // fog, so that no name moves (spec 0014 amendment 2).
                   roomFor: (
@@ -201,12 +210,27 @@ class MapView extends StatefulWidget {
     this.marker = 40,
     this.fog = false,
     this.roomFor,
+    this.locks = const [],
   });
 
   final GameData data;
   final double width;
   final List<MapSpot> places;
   final List<(String, String, String?)> roads;
+
+  /// The roads that wait for their boss: a lock on the middle of each (spec
+  /// 0008 amendment 5, change 10).
+  final List<(String, String)> locks;
+
+  /// The size of a lock on a road.
+  static const lockSize = 28.0;
+
+  static final _lock = Image(
+    image: AssetImage(const Picture('places/road_lock').asset!),
+    width: lockSize,
+    height: lockSize,
+    excludeFromSemantics: true,
+  );
   final String here;
   final Rect? strip;
   final bool fog;
@@ -489,6 +513,17 @@ class _MapViewState extends State<MapView> {
               ),
             ),
           ),
+          // Not a button: Grey Moor's sheet says why (change 11).
+          for (final (a, b) in w.locks)
+            Positioned.fromRect(
+              key: ValueKey('road-lock-$a-$b'),
+              rect: Rect.fromCenter(
+                center: (_centres[a]! + _centres[b]!) / 2,
+                width: MapView.lockSize,
+                height: MapView.lockSize,
+              ),
+              child: IgnorePointer(child: MapView._lock),
+            ),
           for (final p in w.places)
             _spot(
               p,
@@ -1107,6 +1142,9 @@ class _AreaSheet extends StatelessWidget {
     // (spec 0016 §3.1, §3.2; #162).
     final end = game.queuePlaces(s).last;
     final walk = area == end ? null : game.walkSteps(s, end, area);
+    final closed = walk == null && area != end
+        ? game.closedBy(s, Activity.travel(area), from: end)
+        : null;
     final enemies = game.enemiesAt(s, area);
     final nodes = game.nodesAt(s, area);
     return SafeArea(
@@ -1120,11 +1158,39 @@ class _AreaSheet extends StatelessWidget {
           children: [
             ListTile(
               title: Text(labels.location(area), style: text.titleLarge),
-              subtitle: Text(switch (steps) {
-                0 => 'You are here',
-                final n? => '${fmt(n)} steps away',
-                null => 'No open road leads here',
-              }),
+              // A road that waits for its boss says so at the top, with its
+              // lock, in place of Walk here (spec 0008 amendment 5, change
+              // 11; owner, 2026-11-07: the top, so it shows at text size
+              // 2.0 too).
+              subtitle: switch (closed) {
+                final boss? => Text.rich(
+                  key: const ValueKey('road-closed'),
+                  TextSpan(
+                    children: [
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: SizedBox.square(
+                            dimension: MapView.lockSize,
+                            child: MapView._lock,
+                          ),
+                        ),
+                      ),
+                      TextSpan(
+                        text:
+                            'Beat the ${labels.enemy(boss)} '
+                            'to cross.',
+                      ),
+                    ],
+                  ),
+                ),
+                null => Text(switch (steps) {
+                  0 => 'You are here',
+                  final n? => '${fmt(n)} steps away',
+                  null => 'No open road leads here',
+                }),
+              },
             ),
             if (l.flavour case final f?)
               Padding(

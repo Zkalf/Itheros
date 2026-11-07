@@ -367,7 +367,14 @@ Future<void> changeAction(
     SnackBar(
       content: Text(
         skipped
-            .map((e) => labels.skipLine(e.activity, e.reason, e.missing))
+            .map(
+              (e) => labels.skipLine(
+                e.activity,
+                e.reason,
+                e.missing,
+                closedBy: e.closedBy,
+              ),
+            )
             .join('\n'),
       ),
     ),

@@ -22,6 +22,28 @@ void main() {
     expect(fixtures, isNotEmpty);
   });
 
+  // Spec 0008 amendment 5, criterion 24. No fixture crossed the river yet, so
+  // the newest one is moved there: Iron Ridge, the King never fought.
+  test('a 0.10.0 save beyond the river keeps the road back', () {
+    final json = jsonDecode(
+      File('test/fixtures/saves/0.10.0.json').readAsStringSync(),
+    ) as Map<String, Object?>;
+    final raw = json['game']! as Map<String, Object?>;
+    raw['location'] = 'iron_ridge';
+    raw['explored'] = [
+      ...(raw['explored'] as List? ?? const []),
+      'old_graveyard',
+      'grey_moor',
+      'iron_ridge',
+    ];
+    (raw['counters']! as Map).remove('kills.graveyard_king');
+    final game = loadTestGame();
+    final s = game.migrate(SaveData.fromJson(json).game);
+    expect(s.location, 'iron_ridge');
+    expect(game.closedRoads(s), isEmpty);
+    expect(game.openLocationsByDistance(s), contains('camp'));
+  });
+
   for (final f in fixtures) {
     final name = f.uri.pathSegments.last;
     final file = jsonDecode(f.readAsStringSync()) as Map<String, Object?>;

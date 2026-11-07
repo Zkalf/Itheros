@@ -13,6 +13,7 @@ class ActionLog {
     this.missing = const {},
     this.next,
     this.walkSteps = 0,
+    this.closedBy,
   });
 
   final Activity activity;
@@ -35,6 +36,10 @@ class ActionLog {
 
   /// The steps of the legs a walk finished (spec 0016 §7.3).
   final int walkSteps;
+
+  /// For a skip with no route: the boss whose closed road was in the way
+  /// (spec 0008 amendment 5, change 7).
+  final String? closedBy;
 
   bool get isOpen => ended == null && skipped == null;
 
@@ -67,6 +72,7 @@ class ActionLog {
     },
     // Journal entries before spec 0016 have none.
     walkSteps: j['walkSteps'] as int? ?? 0,
+    closedBy: j['closedBy'] as String?,
   );
 
   Map<String, Object?> toJson() => {
@@ -82,6 +88,7 @@ class ActionLog {
     'missing': missing,
     'next': next?.toJson(),
     if (walkSteps > 0) 'walkSteps': walkSteps,
+    if (closedBy != null) 'closedBy': closedBy,
   };
 
   ActionLog withNext(Activity a) => ActionLog(
@@ -95,6 +102,7 @@ class ActionLog {
     missing: missing,
     next: a,
     walkSteps: walkSteps,
+    closedBy: closedBy,
   );
 
   ActionLog operator +(ActionLog o) => ActionLog(
@@ -108,6 +116,7 @@ class ActionLog {
     missing: o.missing,
     next: o.next,
     walkSteps: walkSteps + o.walkSteps,
+    closedBy: o.closedBy,
   );
 }
 
@@ -127,6 +136,7 @@ class AwaySummary {
     this.lore = const [],
     this.learned = const [],
     this.slayers = const [],
+    this.roadsOpened = const [],
     this.professionLevels = const [],
     this.finds = const [],
     this.rerolls = const [],
@@ -152,6 +162,7 @@ class AwaySummary {
     final achievements = <String>[];
     final lostAchievements = <AchievementLost>[];
     final lore = <String>[], learned = <String>[], slayers = <String>[];
+    final roadsOpened = <(String, String)>[];
     final professionLevels = <(String, int)>[];
     final finds = <String>[];
     final trophyFish = <(String, int)>[];
@@ -236,9 +247,8 @@ class AwaySummary {
           learned.add(enemy);
         case SlayerEarned(:final enemy):
           slayers.add(enemy);
-        // Its line comes with the screens (plan 0055 M2).
-        case RoadOpened():
-          break;
+        case RoadOpened(:final boss, :final to):
+          roadsOpened.add((boss, to));
         case ActivityEnded(:final activity, :final reason):
           close(activity, reason);
           started = null;
@@ -250,7 +260,14 @@ class AwaySummary {
             logs[i] = logs[i].withNext(activity);
           }
         case ActionSkipped(:final activity, :final reason, :final missing):
-          logs.add(ActionLog(activity, skipped: reason, missing: missing));
+          logs.add(
+            ActionLog(
+              activity,
+              skipped: reason,
+              missing: missing,
+              closedBy: e.closedBy,
+            ),
+          );
         // Each leg of a walk ends with an arrival (spec 0014 §5).
         case Arrived(:final location, :final steps):
           route.add(location);
@@ -288,6 +305,7 @@ class AwaySummary {
       lore: lore,
       learned: learned,
       slayers: slayers,
+      roadsOpened: roadsOpened,
       professionLevels: professionLevels,
       finds: finds,
       rerolls: rerolls,
@@ -323,6 +341,10 @@ class AwaySummary {
   final List<String> lore;
   final List<String> learned;
   final List<String> slayers;
+
+  /// Roads a boss's first kill opened: the boss and the place the road leads
+  /// to (spec 0008 amendment 5, change 13).
+  final List<(String, String)> roadsOpened;
 
   /// Profession levels reached, rare finds, and rerolls as the item's key
   /// before and after (spec 0010 §2.2, §5.1, §7.2-7.3).
@@ -369,6 +391,7 @@ class AwaySummary {
       lore.isNotEmpty ||
       learned.isNotEmpty ||
       slayers.isNotEmpty ||
+      roadsOpened.isNotEmpty ||
       professionLevels.isNotEmpty ||
       finds.isNotEmpty ||
       rerolls.isNotEmpty ||
@@ -413,6 +436,11 @@ class AwaySummary {
     lore: _strings(j['lore']),
     learned: _strings(j['learned']),
     slayers: _strings(j['slayers']),
+    // Entries from before spec 0008 amendment 5 have none.
+    roadsOpened: [
+      for (final r in j['roadsOpened'] as List<Object?>? ?? const [])
+        if (r case [final String boss, final String to]) (boss, to),
+    ],
     // Entries from before spec 0010 have none.
     professionLevels: [
       for (final p in j['professionLevels'] as List<Object?>? ?? const [])
@@ -468,6 +496,9 @@ class AwaySummary {
     'lore': lore,
     'learned': learned,
     'slayers': slayers,
+    'roadsOpened': [
+      for (final (boss, to) in roadsOpened) [boss, to],
+    ],
     'professionLevels': [
       for (final (id, level) in professionLevels) [id, level],
     ],
@@ -516,6 +547,7 @@ class AwaySummary {
       lore: [...lore, ...o.lore],
       learned: [...learned, ...o.learned],
       slayers: [...slayers, ...o.slayers],
+      roadsOpened: [...roadsOpened, ...o.roadsOpened],
       professionLevels: [...professionLevels, ...o.professionLevels],
       finds: [...finds, ...o.finds],
       rerolls: [...rerolls, ...o.rerolls],

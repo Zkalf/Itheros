@@ -49,11 +49,48 @@ def water():
             '</svg>')
 
 
+def road_lock():
+    """The lock on a road that waits for its boss (spec 0008 amendment 5): an iron padlock with a brass shackle and a
+    bone-white crown on its face, for the Graveyard King. No frame, a soft ground shadow, lit from the top left."""
+    defs = (
+        '<linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6D77A"/>'
+        '<stop offset="0.5" stop-color="#C8902E"/><stop offset="1" stop-color="#7A4E10"/></linearGradient>'
+        '<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C8791"/>'
+        '<stop offset="0.45" stop-color="#4A535C"/><stop offset="1" stop-color="#22282E"/></linearGradient>'
+        '<linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4F0DC"/>'
+        '<stop offset="1" stop-color="#B8B08A"/></linearGradient>'
+    )
+    shadow = '<ellipse cx="52" cy="90" rx="30" ry="5" fill="#000000" opacity="0.28"/>'
+    # The shackle: a thick brass arc, its inside drawn as a second, narrower arc.
+    shackle = (
+        f'<path d="M28 48 V32 Q28 10 50 10 Q72 10 72 32 V48 H62 V32 Q62 20 50 20 Q38 20 38 32 V48 Z" '
+        f'fill="url(#brass)" stroke="{INK}" stroke-width="2" stroke-linejoin="round"/>'
+        '<path d="M32 44 V32 Q32 15 48 13.5" fill="none" stroke="#FFF1B8" stroke-width="1.6" stroke-linecap="round" '
+        'opacity="0.8"/>'
+    )
+    body = (
+        f'<rect x="18" y="44" width="64" height="44" rx="9" fill="url(#iron)" stroke="{INK}" stroke-width="2"/>'
+        '<path d="M24 50 H70" stroke="#A9B4BD" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>'
+    )
+    rivets = ''.join(f'<circle cx="{x}" cy="{y}" r="2.2" fill="#8A949D" stroke="{INK}" stroke-width="0.8"/>'
+                     for x, y in ((25, 53), (75, 53), (25, 80), (75, 80)))
+    crown = (
+        f'<path d="M36 70 L34 56 L42 62 L50 53 L58 62 L66 56 L64 70 Z" fill="url(#bone)" stroke="{INK}" '
+        'stroke-width="1.4" stroke-linejoin="round"/>'
+        f'<rect x="35" y="70" width="30" height="5" rx="1.5" fill="url(#bone)" stroke="{INK}" stroke-width="1.2"/>'
+    )
+    keyhole = (f'<circle cx="50" cy="80" r="2.6" fill="{INK}"/>'
+               f'<path d="M48.6 81 L47.8 86 H52.2 L51.4 81 Z" fill="{INK}"/>')
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">'
+            f'<defs>{defs}</defs>{shadow}{shackle}{body}{rivets}{crown}{keyhole}</svg>')
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    with open(os.path.join(OUT, 'water.svg'), 'w', encoding='utf-8', newline='\n') as f:
-        f.write(water())
-    print(f'water marker written to {OUT}')
+    for name, draw in (('water', water), ('road_lock', road_lock)):
+        with open(os.path.join(OUT, f'{name}.svg'), 'w', encoding='utf-8', newline='\n') as f:
+            f.write(draw())
+    print(f'water marker and road lock written to {OUT}')
 
 
 if __name__ == '__main__':

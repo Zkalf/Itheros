@@ -59,6 +59,8 @@ List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   for (final n in s.lore) (null, labels.loreFound(n)),
   for (final e in s.learned) (MonsterThing(e), labels.weaknessLearned(e)),
   for (final e in s.slayers) (MonsterThing(e), labels.slayerEarned(e)),
+  for (final (boss, to) in s.roadsOpened)
+    (MonsterThing(boss), labels.roadOpened(boss, to)),
   // Profession news (spec 0010 §2.2, §5.1, §7.2-7.3).
   for (final (p, l) in s.professionLevels) (null, labels.professionLevel(p, l)),
   for (final f in s.finds) (ItemThing(f), labels.rareFound(f)),

@@ -31,7 +31,7 @@ const List<TourStep> tourSteps = [
     pane: null,
     words:
         'This is the map. Tap a place to travel there, or to see what lives '
-        'there. Every road is open from the first day, but the far ones bite.',
+        'there. Beat the Graveyard King to cross the river.',
   ),
   (
     tab: TourTab.professions,
