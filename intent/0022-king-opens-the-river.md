@@ -1,8 +1,9 @@
 # Intent: The Graveyard King opens the river
 
-Status: draft
+Status: accepted
 Product owner: Zkalf (chose on 2026-11-07: only the King closes a road, the first kill opens it for good, the map
-shows the road with a lock, a save that has stood in Grey Moor keeps the road)
+shows the road with a lock, a save that has stood in Grey Moor keeps the road; accepted on 2026-11-07 by the push to
+main)
 Date: 2026-11-07
 Issue: #233
 
