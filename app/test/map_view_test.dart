@@ -68,8 +68,10 @@ void main() {
         'ones, and of the last ones when it goes', (t) async {
       final c = await pumpWorld(t, 'camp', everywhere: false);
       final (_, counts) = countsOf(t);
-      // Old Graveyard explored: the road to Grey Moor gets its count.
+      // Old Graveyard explored and the King beaten: the road to Grey Moor
+      // gets its count (a closed road shows none, spec 0008 amendment 5).
       c.state.explored.add('old_graveyard');
+      c.state.counters['kills.graveyard_king'] = 1;
       await c.syncNow();
       await t.pump();
       final (_, again) = countsOf(t);

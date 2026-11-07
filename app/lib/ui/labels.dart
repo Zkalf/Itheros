@@ -212,6 +212,13 @@ class Labels {
       '${enemy(id)}: weakness learned, see the Bestiary in the Journal';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
 
+  /// A boss's first kill opened a road (spec 0008 amendment 5, change 13):
+  /// "The King falls. The road to Grey Moor is open." The boss goes by the
+  /// last word of its name.
+  String roadOpened(String boss, String to) =>
+      'The ${enemy(boss).split(' ').last} falls. '
+      'The road to ${location(to)} is open.';
+
   /// How working [node] reads: "Mining" / "Mined" / "mine", and so on for
   /// chopping, fishing and hunting.
   (String, String, String) _verbs(String node) =>
@@ -527,8 +534,12 @@ class Labels {
     Activity a,
     SkipReason r, {
     Map<String, int> missing = const {},
+    String? closedBy,
   }) => switch (r) {
     SkipReason.locked => 'not unlocked yet',
+    // Spec 0008 amendment 5, change 7.
+    SkipReason.noRoute when closedBy != null =>
+      'beat the ${enemy(closedBy)} to cross',
     SkipReason.noRoute => 'no open route there',
     SkipReason.notThere => 'you were not there',
     SkipReason.noMaterials when missing.isNotEmpty =>
@@ -544,9 +555,15 @@ class Labels {
   /// "Skipped the Bone shield: not enough Bones (needs 2 more)." An action
   /// at the wrong place: "Copper vein: you are not at Copper Hills." (spec
   /// 0016 §3.5).
-  String skipLine(Activity a, SkipReason r, Map<String, int> missing) {
+  String skipLine(
+    Activity a,
+    SkipReason r,
+    Map<String, int> missing, {
+    String? closedBy,
+  }) {
     if (r != SkipReason.notThere) {
-      return 'Skipped the ${short(a)}: ${skipReason(a, r, missing: missing)}.';
+      return 'Skipped the ${short(a)}: '
+          '${skipReason(a, r, missing: missing, closedBy: closedBy)}.';
     }
     final name = short(a);
     final where = switch (a.kind) {
@@ -573,7 +590,7 @@ class Labels {
   List<String> actionLines(ActionLog log) {
     final a = log.activity;
     if (log.skipped case final why?) {
-      return [skipLine(a, why, log.missing)];
+      return [skipLine(a, why, log.missing, closedBy: log.closedBy)];
     }
     final gains = [
       if (log.wins > 0) plural(log.wins, 'win'),
