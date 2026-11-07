@@ -34,7 +34,7 @@
     { "from": "camp", "to": "copper_hills", "steps": 400 },
     { "from": "goblin_woods", "to": "old_graveyard", "steps": 400 },
     { "from": "camp", "to": "old_graveyard", "steps": 500 },
-    { "from": "old_graveyard", "to": "grey_moor", "steps": 800 },
+    { "from": "old_graveyard", "to": "grey_moor", "steps": 800, "opensOn": "graveyard_king" },
     { "from": "grey_moor", "to": "iron_ridge", "steps": 500 },
     { "from": "grey_moor", "to": "troll_bridge", "steps": 900 },
     { "from": "troll_bridge", "to": "mountain_pass", "steps": 1000 },

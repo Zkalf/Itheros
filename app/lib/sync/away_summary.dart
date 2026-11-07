@@ -236,6 +236,9 @@ class AwaySummary {
           learned.add(enemy);
         case SlayerEarned(:final enemy):
           slayers.add(enemy);
+        // Its line comes with the screens (plan 0055 M2).
+        case RoadOpened():
+          break;
         case ActivityEnded(:final activity, :final reason):
           close(activity, reason);
           started = null;

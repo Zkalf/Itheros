@@ -137,6 +137,11 @@ Game newTestGame({Map<String, Object> overrides = const {}}) {
 
 /// A fresh state at [location] with enough XP for [level], every profession
 /// learned (spec 0010 decision 9) at [professionLevel] (default: [level]).
+/// [s] has crossed the river: the road that waits for the Graveyard King is
+/// open, as both its ends are explored (spec 0008 amendment 5).
+GameState crossed(GameState s) =>
+    s..explored.addAll(['old_graveyard', 'grey_moor']);
+
 GameState stateAt(
   Game game, {
   String location = 'camp',

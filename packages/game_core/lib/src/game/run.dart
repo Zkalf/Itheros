@@ -537,8 +537,17 @@ class _Run {
       }
     }
     final xp = _faded(enemy.xp, enemy.level);
+    // Roads this kill opens: closed before it, open after (spec 0008
+    // amendment 5, changes 13-14).
+    final opens = [
+      for (final r in game.closedRoads(s))
+        if (r.opensOn == enemy.id) r,
+    ];
     s.count('kills.${enemy.id}');
     events.add(FightWon(enemy.id, xp, drops));
+    for (final r in opens) {
+      events.add(RoadOpened(r.from, r.to, enemy.id));
+    }
     _gainXp(xp);
     final kills = s.counters['kills.${enemy.id}']!;
     if (kills == data.combat.studyKills) {

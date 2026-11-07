@@ -308,7 +308,7 @@ class _ProfessionCard extends StatelessWidget {
     for (final n in game.data.nodes.values) {
       if (n.profession == profession.id &&
           n.level <= level &&
-          !game.nodeFogged(s, n.id) &&
+          !game.nodeOutOfReach(s, n.id) &&
           (best == null || n.level > best.level)) {
         best = n;
       }

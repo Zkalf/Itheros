@@ -56,12 +56,30 @@ class ActionStarted extends GameEvent {
 
 /// A queued action couldn't start and was dropped.
 class ActionSkipped extends GameEvent {
-  const ActionSkipped(this.activity, this.reason, {this.missing = const {}});
+  const ActionSkipped(
+    this.activity,
+    this.reason, {
+    this.missing = const {},
+    this.closedBy,
+  });
   final Activity activity;
   final SkipReason reason;
 
   /// For a craft without materials: how many more of each input it needed.
   final Map<String, int> missing;
+
+  /// For [SkipReason.noRoute]: the boss whose closed road is in the way
+  /// (spec 0008 amendment 5, change 7), or null for fog.
+  final String? closedBy;
+}
+
+/// The first kill of [boss] opened the road from [from] to [to] (spec 0008
+/// amendment 5, change 13).
+class RoadOpened extends GameEvent {
+  const RoadOpened(this.from, this.to, this.boss);
+  final String from;
+  final String to;
+  final String boss;
 }
 
 /// One item from a gathering action. A fish carries its [weight] in tenths

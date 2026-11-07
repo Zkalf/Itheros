@@ -1,6 +1,6 @@
 # Plan 0055: Build "the Graveyard King opens the river" (spec 0008 amendment 5)
 
-Status: draft
+Status: accepted
 Spec: `specs/0008-character-and-world-layout.amendment-5.md` · Intent: 0022 · Issue: #233 · Product owner: Zkalf ·
 Date: 2026-11-07
 

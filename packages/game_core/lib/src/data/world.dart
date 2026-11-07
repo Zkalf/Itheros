@@ -56,11 +56,16 @@ class RouteDef {
   RouteDef._(Map<String, Object?> j)
     : from = _str(j, 'from'),
       to = _str(j, 'to'),
-      steps = _int(j, 'steps');
+      steps = _int(j, 'steps'),
+      opensOn = j['opensOn'] as String?;
 
   final String from;
   final String to;
   final int steps;
+
+  /// The boss whose first kill opens this road; null for an open road
+  /// (spec 0008 amendment 5).
+  final String? opensOn;
 }
 
 class NodeDef {

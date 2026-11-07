@@ -2388,8 +2388,14 @@ void professionScreens() {
     testWidgets('criterion 14: a card per profession, Crafting holds the '
         'recipes', (t) async {
       final (c, _) = await pumpGame(t, level: 12, professionLevel: 11);
-      // The best spots lie beyond explored land.
-      c.state.explored.addAll(['copper_hills', 'iron_ridge', 'grey_moor']);
+      // The best spots lie beyond explored land, across the river (spec 0008
+      // amendment 5: both ends of the road explored keep it open).
+      c.state.explored.addAll([
+        'copper_hills',
+        'iron_ridge',
+        'grey_moor',
+        'old_graveyard',
+      ]);
       await openTab(t, 'professions');
       for (final p in ['mining', 'woodcutting', 'crafting']) {
         expect(find.byKey(ValueKey('profession-button-$p')), findsOneWidget);
