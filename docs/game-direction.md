@@ -18,8 +18,9 @@ or review an intent or a spec.
 - The 5,000-step rule covers the pace (levels each day). It does not cover the excitement of loot.
 
 ## Explore and fail
-- The whole world is open from level 1 (spec 0008). The danger there is a feature.
-- Do not propose level gates or other help that protects new players.
+- The whole world south of the river is open from level 1 (spec 0008). The Graveyard King closes the road across the
+  river until the first kill (intent 0022). The danger is a feature.
+- Do not propose level gates or other help that protects new players. A boss may close a road; a level never does.
 - Warnings and cheap losses are enough.
 
 ## Influences
