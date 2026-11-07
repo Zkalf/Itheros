@@ -84,7 +84,5 @@ and shows no Travel here button. A fight button there refuses with "Beat the Gra
 Branch `feat/king-road-screens`.
 
 ## Risks
-- **The pace.** The walker crosses later. The fighter walker of `pacing_test.dart` may need the same habit; M1 gives
-  it the same one.
-- **A walker that never wins.** If a seed never beats the King, criterion 25 fails. Then Claude reports the seed and
-  its gear at level 10 to 15, and the owner decides (a stronger habit or a weaker King, #234).
+- **Small.** The gate is one boss kill. The fighter walker of `pacing_test.dart` gets the same habit as the mixed
+  walker. If a seed has trouble with the King, M1 fixes it in the PR (owner, 2026-11-07: "we will deal with it").
