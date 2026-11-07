@@ -1,6 +1,6 @@
 # Spec 0008 amendment 5: the Graveyard King opens the river
 
-Status: draft
+Status: accepted
 Amends: [spec 0008](0008-character-and-world-layout.md) decision 1 (the open world) and criterion 4; also
 [spec 0002](0002-levels-that-matter.md) decision 8 (bosses never a gate) and
 [spec 0022](0022-camp-tour.md) card 2 (the words of the World step)
