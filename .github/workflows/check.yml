@@ -43,9 +43,17 @@ jobs:
           if [ "${{ github.event_name }}" = pull_request ]; then base=$(git rev-parse HEAD^1) || base=""; else base=${{ github.event.before }}; fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           code='^(app/|packages/|scripts/|releases/|\.github/|\.claude/hooks/production-gate\.ps1$|\.gitattributes$)'
-          if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qE "$code"; then
+          # No grep -q after echo: under pipefail, grep's early exit can fail the echo of a long list (#236).
+          if files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && [ -z "$(echo "$files" | grep -E "$code" || true)" ]; then
             echo "No code changed; skipping the build."
             echo "build=false" >> "$GITHUB_OUTPUT"
+          # A pull request whose only code is the release notes (the final notes before a release, #236) runs just
+          # the two checks of the notes: the copy into the app and their format (spec 0018). A push to main keeps
+          # the full check.
+          elif [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && [ -z "$(echo "$files" | grep -E "$code" | grep -vE '^releases/' || true)" ]; then
+            echo "Only the release notes changed; checking just them."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "notes=true" >> "$GITHUB_OUTPUT"
           else
             echo "build=true" >> "$GITHUB_OUTPUT"
           fi
@@ -54,7 +62,7 @@ jobs:
           # scripts that build and check it, or this workflow. A push to main always builds it, and so does a diff that
           # can't be read. A release builds and checks its own APK (release.ps1).
           apk='^(app/android/|app/pubspec\.(yaml|lock)$|packages/[^/]+/pubspec\.(yaml|lock)$|scripts/(check|apk-check)\.ps1$|\.github/)'
-          if [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && ! echo "$files" | grep -qE "$apk"; then
+          if [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only "$base" HEAD) && [ -n "$files" ] && [ -z "$(echo "$files" | grep -E "$apk" || true)" ]; then
             echo "No Android file, pubspec or build script changed; skipping the APK."
             echo "apk=false" >> "$GITHUB_OUTPUT"
           else
@@ -92,7 +100,7 @@ jobs:
             app/android/app/*.gradle.kts
             app/android/gradle/wrapper/gradle-wrapper.properties
       - uses: subosito/flutter-action@v2
-        if: steps.scope.outputs.build == 'true'
+        if: steps.scope.outputs.build == 'true' || steps.scope.outputs.notes == 'true'
         with:
           flutter-version: '3.47.7'
           channel: stable
@@ -106,3 +114,11 @@ jobs:
         if: steps.scope.outputs.build == 'true' && steps.scope.outputs.apk != 'true'
         shell: powershell
         run: .\scripts\check.ps1
+      - name: The release notes only
+        if: steps.scope.outputs.notes == 'true'
+        shell: powershell
+        run: |
+          .\scripts\test-copy-notes.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .\scripts\test.ps1 app/test/release_notes_test.dart
+          exit $LASTEXITCODE
