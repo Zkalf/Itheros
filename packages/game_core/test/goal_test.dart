@@ -57,8 +57,11 @@ void main() {
 
   test('materials from a monster of your level', () {
     // Wolf pelts come only from level 11 wolves.
+    // The King's blade comes from the King, whose kill opens the road to
+    // the wolves (spec 0008 amendment 5).
     final s = stateAt(game, level: 11)
       ..explored.add('old_graveyard')
+      ..counters['kills.graveyard_king'] = 1
       ..equipment.addAll({
         'mainHand': 'kings_blade',
         'chest': 'stitched_armour',
@@ -105,11 +108,13 @@ void main() {
   });
 
   test('a vein held back by Mining names the vein', () {
-    final s = stateAt(game, level: 25, professionLevel: 25)
-      ..professions['mining'] = game.data.professionXpForLevel(15)
-      // Next door to Mithril Deep; no monster drops mithril ore.
-      ..explored.add('mountain_pass')
-      ..inventory['star_diamond'] = 1;
+    // At Mountain Pass, next door to Mithril Deep: advice names only places
+    // an open road leads to. No monster drops mithril ore.
+    final s =
+        stateAt(game, level: 25, professionLevel: 25, location: 'mountain_pass')
+          ..professions['mining'] = game.data.professionXpForLevel(15)
+          ..explored.add('mountain_pass')
+          ..inventory['star_diamond'] = 1;
     // The best of everything worn but rings: the star-diamond ring is the
     // upgrade, and only its mithril ore is missing.
     for (final slot in game.data.gearSlots) {

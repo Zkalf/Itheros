@@ -84,7 +84,7 @@ extension GameQueue on Game {
     if (_happensAt(end, a)) return s.copy()..queue.add(PlannedAction(a, st));
     final place = _placeFor(s, a, from: end);
     if (place == null) {
-      throw ActivityError(_explain(s, a, st, SkipReason.noRoute));
+      throw ActivityError(_explain(s, a, st, SkipReason.noRoute, from: end));
     }
     if (free < 2) {
       throw ActivityError(
@@ -361,9 +361,33 @@ extension GameQueue on Game {
       } ??
       a.target;
 
-  String _explain(GameState s, Activity a, StopCondition stop, SkipReason r) {
+  /// The boss of the closed road that is all that keeps [a] out of reach
+  /// from [from] (default: here), or null (spec 0008 amendment 5, change 7).
+  String? closedBy(GameState s, Activity a, {String? from}) {
+    final start = from ?? s.location;
+    final place = _placeFor(s, a, from: start, throughClosed: true);
+    if (place == null) return null;
+    final previous = _paths(s, from: start, throughClosed: true).$2;
+    String? boss;
+    for (var at = place; at != start; at = previous[at]!) {
+      final r = data.route(previous[at]!, at)!;
+      if (!roadOpen(s, r)) boss = r.opensOn;
+    }
+    return boss;
+  }
+
+  String _explain(
+    GameState s,
+    Activity a,
+    StopCondition stop,
+    SkipReason r, {
+    String? from,
+  }) {
     final name = _nameOf(a);
+    final boss = r == SkipReason.noRoute ? closedBy(s, a, from: from) : null;
     return switch (r) {
+      SkipReason.noRoute when boss != null =>
+        'Beat the ${data.enemies[boss]!.name} to cross.',
       SkipReason.locked when a.kind == ActivityKind.reroll => _rerollLock(s, a),
       SkipReason.locked => switch (a.kind) {
         ActivityKind.gather when data.nodes[a.target] != null => _needs(
@@ -507,8 +531,13 @@ extension GameQueue on Game {
   /// Where [a] happens: its monster's or spot's location, the nearest
   /// crafting place, or the travel target, from [from] (default: here).
   /// Null if no open route leads there.
-  String? _placeFor(GameState s, Activity a, {String? from}) {
-    final dist = _paths(s, from: from).$1;
+  String? _placeFor(
+    GameState s,
+    Activity a, {
+    String? from,
+    bool throughClosed = false,
+  }) {
+    final dist = _paths(s, from: from, throughClosed: throughClosed).$1;
     final candidates = switch (a.kind) {
       ActivityKind.travel => [a.target],
       ActivityKind.fight => [
@@ -545,8 +574,14 @@ extension GameQueue on Game {
   }
 
   /// Shortest walking distances from here to every open location, and the
-  /// previous stop on each shortest route.
-  (Map<String, int>, Map<String, String>) _paths(GameState s, {String? from}) {
+  /// previous stop on each shortest route. A road that waits for its boss
+  /// is skipped like fog (spec 0008 amendment 5, change 6), unless
+  /// [throughClosed].
+  (Map<String, int>, Map<String, String>) _paths(
+    GameState s, {
+    String? from,
+    bool throughClosed = false,
+  }) {
     final start = from ?? s.location;
     final dist = {start: 0};
     final previous = <String, String>{};
@@ -556,6 +591,7 @@ extension GameQueue on Game {
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
         if (isFogged(s, to)) continue;
+        if (!throughClosed && !_canWalk(s, at, to)) continue;
         // What the road costs with the travel talents (spec 0015 §2.4) and
         // the overload (spec 0021 rule 10).
         final d =
@@ -588,6 +624,9 @@ extension GameQueue on Game {
             missing: why == SkipReason.noMaterials
                 ? _missingToStart(s, p.activity)
                 : const {},
+            closedBy: why == SkipReason.noRoute
+                ? closedBy(s, p.activity)
+                : null,
           ),
         );
         continue;

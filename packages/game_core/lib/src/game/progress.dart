@@ -358,7 +358,7 @@ extension GameProgress on Game {
     var bestRate = 0.0;
     final me = stats(s);
     for (final e in data.enemies.values) {
-      if (enemyFogged(s, e.id) ||
+      if (enemyOutOfReach(s, e.id) ||
           enemyBand(s, e.id).colour != LevelColour.yellow) {
         continue;
       }
@@ -405,7 +405,7 @@ extension GameProgress on Game {
         continue;
       }
       for (final n in data.nodes.values) {
-        if (n.item == input && !nodeFogged(s, n.id)) {
+        if (n.item == input && !nodeOutOfReach(s, n.id)) {
           return need(n.profession, n.level, Activity.gather(n.id));
         }
       }
@@ -442,21 +442,39 @@ extension GameProgress on Game {
       .where((l) => l.nodes.contains(node))
       .every((l) => isFogged(s, l.id));
 
+  /// Whether no open road leads to any area holding [enemy]: the fog, or a
+  /// road that waits for its boss (spec 0008 amendment 5). For advice that
+  /// sends the player there.
+  bool enemyOutOfReach(GameState s, String enemy) {
+    final reach = _paths(s).$1;
+    return data.locations.values
+        .where((l) => l.enemies.contains(enemy))
+        .every((l) => !reach.containsKey(l.id));
+  }
+
+  /// Whether no open road leads to any area holding gathering spot [node].
+  bool nodeOutOfReach(GameState s, String node) {
+    final reach = _paths(s).$1;
+    return data.locations.values
+        .where((l) => l.nodes.contains(node))
+        .every((l) => !reach.containsKey(l.id));
+  }
+
   /// A gathering spot for [item], or the most generous monster dropping it
-  /// that is at most yellow; never one in the fog.
+  /// that is at most yellow; never one out of reach.
   Activity? _safeSource(GameState s, String item) {
     final lvl = level(s);
     for (final n in data.nodes.values) {
       if (n.yieldOf(item) > 0 &&
           nodeLevelMet(s, n.id) &&
-          !nodeFogged(s, n.id)) {
+          !nodeOutOfReach(s, n.id)) {
         return Activity.gather(n.id);
       }
     }
     EnemyDef? best;
     var bestChance = 0.0;
     for (final e in data.enemies.values) {
-      if (enemyFogged(s, e.id) || e.level > lvl + 2) continue;
+      if (enemyOutOfReach(s, e.id) || e.level > lvl + 2) continue;
       for (final d in e.drops) {
         if (d.item == item && d.chance * d.count > bestChance) {
           (best, bestChance) = (e, d.chance * d.count);

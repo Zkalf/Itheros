@@ -157,7 +157,7 @@ void main() {
     test('criterion 12: a craft queued for Camp counts the bank', () {
       // No fire on the Grey Moor: the cook walks to Camp first.
       final s = game.startActivity(
-        at('grey_moor', itemBank: {'perch': 2}),
+        crossed(at('grey_moor', itemBank: {'perch': 2})),
         const Activity.craft('grilled_perch'),
       );
       expect(s.activity!.leg, isNotNull);
@@ -319,7 +319,7 @@ void main() {
     final dust = data.rerollDust;
 
     test('dust for one reroll pays the first, not a second', () {
-      var s = at('grey_moor', bag: {vest: 1, 'rare_dust': dust});
+      var s = crossed(at('grey_moor', bag: {vest: 1, 'rare_dust': dust}));
       expect(game.rerollPaid(s, reroll), isTrue);
       s = game.startActivity(
         s,

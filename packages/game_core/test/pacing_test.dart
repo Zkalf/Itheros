@@ -138,6 +138,17 @@ void main() {
         },
       );
 
+      // The road across the river opens only on a King kill, so a walker
+      // that stood in Grey Moor beat him first (spec 0008 amendment 5).
+      test('spec 0008 amendment 5 criterion 25: the walker and the fighter '
+          'beat the King and cross the river', () {
+        for (final r in [result(), fighter[seed]!]) {
+          final s = r.finalState;
+          expect(s.counters['kills.graveyard_king'], greaterThan(0));
+          expect(s.explored, contains('grey_moor'));
+        }
+      });
+
       // A lucky walker may be up to 10 days sooner (spec 0009 amendment 1),
       // an unlucky one 5 days later than the median's end (amendment 3).
       test('spec 0009 amendments 1, 3: level 30 on day 70-105', () {

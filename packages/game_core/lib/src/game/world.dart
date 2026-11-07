@@ -104,6 +104,24 @@ extension GameWorld on Game {
       !s.explored.contains(area) &&
           !data.destinationsFrom(area).any(s.explored.contains);
 
+  /// Whether road [r] can be walked: it waits for no boss, the player has
+  /// killed its boss once, or has explored both its ends, as old saves that
+  /// crossed it did (spec 0008 amendment 5, change 2).
+  bool roadOpen(GameState s, RouteDef r) =>
+      r.opensOn == null ||
+      (s.counters['kills.${r.opensOn}'] ?? 0) > 0 ||
+      s.explored.contains(r.from) && s.explored.contains(r.to);
+
+  /// The roads still waiting for their boss, for the map's lock.
+  List<RouteDef> closedRoads(GameState s) => [
+    for (final r in data.routes)
+      if (!roadOpen(s, r)) r,
+  ];
+
+  /// Whether the road from [from] to [to] exists and is open.
+  bool _canWalk(GameState s, String from, String to) =>
+      roadOpen(s, data.route(from, to)!);
+
   /// Whether [area] is hidden and not yet revealed: off the map and out of
   /// every list (spec 0011 §6.2).
   bool isHidden(GameState s, String area) =>

@@ -800,6 +800,12 @@ class GameData {
         'route ${r.from}-${r.to}: unknown location',
       );
       check(r.steps > 0, 'route ${r.from}-${r.to}: steps must be > 0');
+      if (r.opensOn case final boss?) {
+        check(
+          enemies.containsKey(boss),
+          'route ${r.from}-${r.to}: unknown boss $boss',
+        );
+      }
     }
     for (final n in nodes.values) {
       check(items.containsKey(n.item), 'node ${n.id}: unknown item ${n.item}');

@@ -562,6 +562,7 @@ class SensiblePlayer {
   }
 
   GameState decide(GameState s) {
+    _reached = null;
     if (talentOrder.isNotEmpty) s = _spendTalents(s);
     // The contents are fixed when earned, so opening at once changes
     // nothing (spec 0013 §2.3, plan 0037).
@@ -626,6 +627,7 @@ class SensiblePlayer {
   /// Next goal says, spec 0010 §8.4). It aims only at gear up to its own
   /// character level, "the gear of its stretch".
   Activity _goal(GameState s) {
+    if (_roadGoal(s) case final a?) return a;
     if (_featGoal(s) case final a?) return a;
     if (walker == Walker.fighter) return _bestFight(s);
     if (_rerollGoal(s) case final a?) return a;
@@ -1050,7 +1052,7 @@ class SensiblePlayer {
               (n) =>
                   n.item == item &&
                   game.nodeLevelMet(s, n.id) &&
-                  !game.nodeFogged(s, n.id),
+                  !_nodeOut(s, n.id),
             )
             .firstOrNull;
         if (spot != null) return Activity.gather(spot.id);
@@ -1085,7 +1087,7 @@ class SensiblePlayer {
       .where(
         (n) =>
             n.yieldOf(item) > 0 &&
-            !game.nodeFogged(s, n.id) &&
+            !_nodeOut(s, n.id) &&
             !game.nodeLevelMet(s, n.id),
       )
       .firstOrNull;
@@ -1100,7 +1102,7 @@ class SensiblePlayer {
         (n) =>
             n.profession == profession &&
             game.nodeLevelMet(s, n.id) &&
-            !game.nodeFogged(s, n.id),
+            !_nodeOut(s, n.id),
       );
       if (spots.isEmpty) return null;
       return Activity.gather(
@@ -1132,9 +1134,45 @@ class SensiblePlayer {
     return _sourceOf(s, missing.key);
   }
 
+  /// Whether every area holding [enemy] is fogged or out of reach: behind a
+  /// road that waits for its boss (spec 0008 amendment 5).
+  bool _enemyOut(GameState s, String enemy) => data.locations.values
+      .where((l) => l.enemies.contains(enemy))
+      .every((l) => !_reach(s).containsKey(l.id));
+
+  /// Whether every area holding gathering spot [node] is fogged or out of
+  /// reach.
+  bool _nodeOut(GameState s, String node) => data.locations.values
+      .where((l) => l.nodes.contains(node))
+      .every((l) => !_reach(s).containsKey(l.id));
+
+  /// This decision's walking distances (see [_distances]).
+  Map<String, int>? _reached;
+  Map<String, int> _reach(GameState s) => _reached ??= _distances(s);
+
+  /// The habit for a closed road (spec 0008 amendment 5, change 20): from
+  /// its boss's level, the walker fights the boss before all else, unless
+  /// it lost to the boss at this level. The gatherer focuses on gathering:
+  /// it fights the boss only once it expects to win (owner, 2026-11-07).
+  Activity? _roadGoal(GameState s) {
+    for (final r in game.closedRoads(s)) {
+      final boss = data.enemies[r.opensOn]!;
+      final ready = walker == Walker.gatherer
+          ? _armed(s, boss).$3.win
+          : game.level(s) >= boss.level;
+      if (!ready ||
+          _lostAtLevel[boss.id] == game.level(s) ||
+          _enemyOut(s, boss.id)) {
+        continue;
+      }
+      return Activity.fight(boss.id);
+    }
+    return null;
+  }
+
   bool _canFight(GameState s, EnemyDef e) =>
       walker != Walker.gatherer &&
-      !game.enemyFogged(s, e.id) &&
+      !_enemyOut(s, e.id) &&
       _lostAtLevel[e.id] != game.level(s) &&
       _armed(s, e).$3.safe;
 
@@ -1144,7 +1182,7 @@ class SensiblePlayer {
     for (final n in data.nodes.values) {
       if (n.yieldOf(item) > 0 &&
           game.nodeLevelMet(s, n.id) &&
-          !game.nodeFogged(s, n.id)) {
+          !_nodeOut(s, n.id)) {
         best = math.min(best, n.steps / n.yieldOf(item));
       }
     }
@@ -1165,7 +1203,7 @@ class SensiblePlayer {
     for (final n in data.nodes.values) {
       if (n.yieldOf(item) <= 0 ||
           !game.nodeLevelMet(s, n.id) ||
-          game.nodeFogged(s, n.id)) {
+          _nodeOut(s, n.id)) {
         continue;
       }
       final rate = n.yieldOf(item) / n.steps;
@@ -1241,6 +1279,7 @@ class SensiblePlayer {
       todo.remove(at);
       for (final to in data.destinationsFrom(at)) {
         if (game.isFogged(s, to)) continue;
+        if (!game.roadOpen(s, data.route(at, to)!)) continue;
         final d = dist[at]! + data.route(at, to)!.steps;
         if (d < (dist[to] ?? 1 << 30)) {
           dist[to] = d;

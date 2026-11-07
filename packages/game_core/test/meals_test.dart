@@ -107,10 +107,8 @@ void main() {
     test('cooking runs only where there is a fire', () {
       expect(data.locations['camp']!.fire, isTrue);
       expect(data.locations['grey_moor']!.fire, isFalse);
-      final moor = stateAt(
-        game,
-        location: 'grey_moor',
-        inventory: {'perch': 2},
+      final moor = crossed(
+        stateAt(game, location: 'grey_moor', inventory: {'perch': 2}),
       );
       // Started away from the fire, it walks to camp first.
       final s = game.startActivity(moor, const Activity.craft('grilled_perch'));
