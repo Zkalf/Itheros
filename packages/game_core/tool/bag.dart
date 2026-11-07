@@ -60,10 +60,10 @@ void main(List<String> args) {
       gender: Gender.neither,
       origin: 'miners_child',
     );
-    if (walker != Walker.fighter) {
-      for (final p in data.professions.keys) {
-        if (!s.learned.contains(p)) s = game.learn(s, p);
-      }
+    // Every walker learns the professions, the fighter too (spec 0010
+    // amendment 11).
+    for (final p in data.professions.keys) {
+      if (!s.learned.contains(p)) s = game.learn(s, p);
     }
     int? over;
     int? l30;

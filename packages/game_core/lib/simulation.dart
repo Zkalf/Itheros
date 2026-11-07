@@ -478,7 +478,8 @@ enum Walker {
   /// Fights, and gathers and crafts its own gear: the pacing walker.
   mixed,
 
-  /// Never learns a profession; wears only drops.
+  /// Focuses on fighting (#237): learns the professions, cooks and eats,
+  /// crafts an upgrade when it holds the materials, and else fights.
   fighter,
 
   /// Never fights; gathers and crafts.
@@ -570,8 +571,8 @@ class SensiblePlayer {
     s = _settleRolls(s);
     s = _equipBest(s);
     s = _equipTools(s);
-    if (walker != Walker.fighter && game.atForge(s)) s = _salvageSpares(s);
-    if (meals && walker != Walker.fighter) s = _keepFed(s);
+    if (game.atForge(s)) s = _salvageSpares(s);
+    if (meals) s = _keepFed(s);
     s = _bank(s);
     _arms.clear();
     // Overloaded, it walks to Camp to bank (spec 0021 point 22).
@@ -629,9 +630,9 @@ class SensiblePlayer {
   Activity _goal(GameState s) {
     if (_roadGoal(s) case final a?) return a;
     if (_featGoal(s) case final a?) return a;
-    if (walker == Walker.fighter) return _bestFight(s);
     if (_rerollGoal(s) case final a?) return a;
     if (_mealGoal(s) case final a?) return a;
+    if (walker == Walker.fighter) return _fightersGoal(s);
     if (_milestoneGoal(s) case final a?) return a;
     int gain(RecipeDef r) => _gain(s, r.output);
     final level = game.level(s);
@@ -673,6 +674,26 @@ class SensiblePlayer {
     if (_toolGoal(s) case final a?) return a;
     if (walker == Walker.gatherer) return _gatherersDay(s);
     return _bestFight(s);
+  }
+
+  /// The fighter focuses on fighting (owner, #237): it crafts the best gear
+  /// upgrade up to its level when it holds the materials, and else fights.
+  /// It never gathers or practises for gear.
+  Activity _fightersGoal(GameState s) {
+    final level = game.level(s);
+    RecipeDef? best;
+    for (final r in data.recipes.values) {
+      if (data.items[r.output]!.slot == null ||
+          r.level > level ||
+          _have(s, r.output) > 0 ||
+          _gain(s, r.output) <= 0 ||
+          !game.recipeLevelMet(s, r.id) ||
+          !game.hasMaterials(s, r.id)) {
+        continue;
+      }
+      if (best == null || _gain(s, r.output) > _gain(s, best.output)) best = r;
+    }
+    return best == null ? _bestFight(s) : Activity.craft(best.id);
   }
 
   /// The last level of each stage (spec 0017 §2): the grind of a feat starts
@@ -1338,10 +1359,8 @@ SimulationResult simulate(
     origin: 'miners_child',
   );
   // The teachers are in camp, where a new game starts (spec 0010 §9.2).
-  if (walker != Walker.fighter) {
-    for (final p in game.data.professions.keys) {
-      if (!s.learned.contains(p)) s = game.learn(s, p);
-    }
+  for (final p in game.data.professions.keys) {
+    if (!s.learned.contains(p)) s = game.learn(s, p);
   }
   final results = <DayResult>[];
   var walked = 0;
