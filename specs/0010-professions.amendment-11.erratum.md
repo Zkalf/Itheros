@@ -1,9 +1,9 @@
 # Spec 0010 amendment 11, erratum 1: what target 3 copies, and what the amendment amends
 
-Status: draft
+Status: accepted
 Corrects: [spec 0010 amendment 11](0010-professions.amendment-11.md) the Amends line, change 2 and criterion 2
 Issue: #237
-Product owner: Zkalf
+Product owner: Zkalf (accepted on 2026-11-07, on PR #240)
 Date: 2026-11-07
 
 ## What was wrong
