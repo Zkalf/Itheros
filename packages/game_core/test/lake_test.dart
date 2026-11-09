@@ -12,6 +12,7 @@ import 'support.dart';
 void main() {
   final game = newTestGame();
   final data = game.data;
+  final roomy = newTestGame(overrides: {'economy': roomyEconomy()});
 
   /// Runs [a] from [s] for [steps].
   StepReport work(GameState s, Activity a, int steps) =>
@@ -19,10 +20,14 @@ void main() {
 
   /// [casts] actions at [node] from [location] at [level] in its
   /// profession, every profession learned with its starter tool.
+  /// The catch piles up, so the bag never fills here (roomyEconomy).
   StepReport many(String node, String location, int level, int casts) {
-    final s = stateAt(game, location: location, professionLevel: level)
+    final s = stateAt(roomy, location: location, professionLevel: level)
       ..revealed.add('smugglers_cove');
-    return work(s, Activity.gather(node), data.nodes[node]!.steps * casts);
+    return roomy.applySteps(
+      roomy.startActivity(s, Activity.gather(node)),
+      data.nodes[node]!.steps * casts,
+    );
   }
 
   // The long runs, shared by the tests that read them.

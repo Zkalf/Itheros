@@ -62,10 +62,11 @@ void main() {
   bool selected(WidgetTester t, String list, String id) =>
       t.widget<ChoiceChip>(chip(list, id)).selected;
 
-  /// The item keys of the bag grid, in screen order.
+  /// The item keys of the bag grid, in screen order: the first square of
+  /// each item (an item has a square for each stack, spec 0021 amendment 4).
   List<String> bagSquares(WidgetTester t) => [
     for (final w in t.widgetList<ItemSquare>(find.byType(ItemSquare)))
-      (w.key! as ValueKey<String>).value.substring('bag-'.length),
+      if ((w.key! as ValueKey<String>).value == 'bag-${w.item}') w.item!,
   ];
 
   /// The item keys of the rows of a bank tab, in screen order.
@@ -465,12 +466,13 @@ void main() {
   group('what stays', () {
     testWidgets('criterion 28: the bag spaces line counts every item with '
         'another chip picked', (t) async {
-      await pumpGame(t, inventory: mixed);
+      final (c, _) = await pumpGame(t, inventory: mixed);
       await openBag(t);
       String spaces() =>
           t.widget<Text>(find.byKey(const ValueKey('bag-spaces'))).data!;
       final all = spaces();
-      expect(all, startsWith('Spaces 4 / '));
+      // Spaces count stacks (spec 0021 amendment 4).
+      expect(all, startsWith('Spaces ${c.game.spacesUsed(c.state)} / '));
       await pickKind(t, 'bag', 'meal');
       expect(spaces(), all);
     });

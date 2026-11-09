@@ -33,6 +33,18 @@ final Map<String, Object?> sureHits = combatJson({
   'critBase': 0,
 });
 
+/// The real economy with a bag that never fills: for tests that run
+/// thousands of units in a fixed number of steps to count rates. Since stacks
+/// (spec 0021 amendment 4) their piles would overload a real bag and slow
+/// every unit.
+Map<String, Object?> roomyEconomy() {
+  final economy = dataJson('economy');
+  return {
+    ...economy,
+    'bag': {...economy['bag']! as Map<String, Object?>, 'spaces': 1000000},
+  };
+}
+
 /// A game with one location, `arena`, holding [enemies], no damage variance
 /// and [sureHits], so fights are exact. [economy] values replace real ones.
 Game arenaGame(

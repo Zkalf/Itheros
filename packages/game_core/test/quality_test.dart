@@ -108,7 +108,7 @@ void main() {
     });
 
     test('dropped gear rolls a quality; materials never do', () {
-      final g = arenaGame([
+      final g = arenaGame(economy: roomyEconomy(), [
         monster(
           'rat',
           extra: {

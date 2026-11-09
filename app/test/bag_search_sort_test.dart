@@ -98,8 +98,10 @@ void main() {
   List<String> shown(WidgetTester t, String list) {
     if (list == 'bag') {
       return [
+        // The first square of each item: an item has a square for each
+        // stack (spec 0021 amendment 4).
         for (final w in t.widgetList<ItemSquare>(find.byType(ItemSquare)))
-          (w.key! as ValueKey<String>).value.substring('bag-'.length),
+          if ((w.key! as ValueKey<String>).value == 'bag-${w.item}') w.item!,
       ];
     }
     final prefix = rowPrefix(list);
@@ -545,7 +547,13 @@ void main() {
       String spaces() =>
           t.widget<Text>(find.byKey(const ValueKey('bag-spaces'))).data!;
       final all = spaces();
-      expect(all, startsWith('Spaces ${items.length} / '));
+      // Spaces count stacks (spec 0021 amendment 4): a piece of gear held
+      // twice uses two.
+      final spacesUsed = items.entries.fold(
+        0,
+        (n, e) => n + game.spacesOf(e.key, e.value),
+      );
+      expect(all, startsWith('Spaces $spacesUsed / '));
       await search(t, 'bag', 'hide');
       expect(shown(t, 'bag'), hasLength(3));
       expect(spaces(), all);

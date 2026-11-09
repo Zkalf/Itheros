@@ -874,12 +874,7 @@ class SensiblePlayer {
     for (final MapEntry(:key, :value) in data.recipes[id]!.inputs.entries) {
       final n = math.min(value - (s.inventory[key] ?? 0), s.itemBank[key] ?? 0);
       // A take that overloads the bag would send it back to store.
-      final had = s.inventory[key] ?? 0;
-      if (n > 0 &&
-          game.spacesUsed(s) +
-                  game.spacesOf(key, had + n) -
-                  game.spacesOf(key, had) >
-              game.bagSpaces(s)) {
+      if (n > 0 && game.spacesWith(s, key, n) > game.bagSpaces(s)) {
         continue;
       }
       if (n > 0) s = game.take(s, key, n);

@@ -132,6 +132,23 @@ void main() {
   });
 
   group('the sim walker', () {
+    test('criterion 15: before a take from the bank, it counts the spaces the '
+        'take would use (spacesWith)', () {
+      final s = stateAt(
+        game,
+        inventory: {
+          ...filler(38, except: vein),
+          'copper_ore': 50,
+        },
+      );
+      expect(game.spacesUsed(s), 39);
+      expect(game.spacesWith(s, 'copper_ore', 50), 39, reason: 'fits');
+      expect(game.spacesWith(s, 'copper_ore', 51), 40, reason: 'a new stack');
+      expect(game.spacesWith(s, 'copper_ore', 251), 42);
+      expect(game.spacesWith(s, 'garnet', 1), 40, reason: 'a new kind');
+      expect(game.spacesWith(s, 'copper_ore', 0), 39);
+    });
+
     test('criterion 15: it goes to the bank when only big stacks overload the '
         'bag', () {
       // One kind of material in 45 stacks: 45 spaces of 40.
