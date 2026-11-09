@@ -99,11 +99,13 @@ void main() {
 
   test('HP is full at the start of each fight', () {
     var s = game.applySteps(fighting(game, 'goblin'), 10).state;
-    final maxHp = game.stats(s).hp;
     // Run until the first fight ends and a new one starts.
     while ((s.counters['kills.goblin'] ?? 0) == 0) {
       s = game.applySteps(s, 10).state;
     }
+    // Read after the kill: one Goblin gives level 2 and its HP (spec 0002
+    // amendment 3, erratum 1).
+    final maxHp = game.stats(s).hp;
     s = game.applySteps(s, 10).state;
     expect(s.activity!.fight!.playerHp, lessThanOrEqualTo(maxHp));
     expect(s.activity!.fight!.playerHp, greaterThan(maxHp - 10));

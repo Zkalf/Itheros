@@ -2,8 +2,8 @@
 // spec 0001 acceptance criterion 5 and spec 0002 criterion 3 (which replaces
 // spec 0001 criterion 6), as spec 0009 criterion 16 sets them: seeds 1-8,
 // level 5 on day 1-2; level 30 as spec 0009 amendment 1 sets it. Spec 0010
-// Â§9.3: the walker's professions (target 2), the fighter (target 3) and the
-// gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart. Spec 0011
+// Â§9.3: the walker's professions (target 2) and the fighter (target 3);
+// target 4, the gatherer, is dropped (spec 0002 amendment 3, erratum 1). Spec 0011
 // Â§9.3 target 5: meals help, they aren't a must. Spec 0017 Â§8 (criteria 31
 // and 32): the pace of the walker without feats, and the milestones on the
 // way.
@@ -72,7 +72,6 @@ void main() {
   final withMeals = <int, SimulationResult>{};
   final noMeals = <int, SimulationResult>{};
   final fighter = <int, SimulationResult>{};
-  late SimulationResult gatherer;
 
   setUpAll(() async {
     final runs = await Future.wait([
@@ -82,7 +81,6 @@ void main() {
         _run(seed: seed, noBonuses: true, meals: false),
       for (final seed in _seeds)
         _run(seed: seed, days: 120, walker: Walker.fighter),
-      _run(days: 90, walker: Walker.gatherer),
     ]);
     for (final (i, seed) in _seeds.indexed) {
       walker[seed] = runs[i];
@@ -92,7 +90,6 @@ void main() {
     for (final (i, seed) in _seeds.indexed) {
       fighter[seed] = runs[3 * _seeds.length + i];
     }
-    gatherer = runs[4 * _seeds.length];
   });
 
   for (final seed in _seeds) {
@@ -205,17 +202,47 @@ void main() {
     }
   });
 
-  // The fighter focuses on fighting and may be the fastest (spec 0010
-  // amendment 11, erratum 1): the range of each mixed walker seed in spec
-  // 0009 amendment 1.
-  test('spec 0010 amendment 11, target 3: the fighter reaches level 30 on '
-      'day 70-100 (median of 8 seeds)', () {
+  // A pure fighter lives on monster drops, so with the tougher monsters it
+  // is slower than the mixed walker (spec 0002 amendment 3, target 2).
+  test('spec 0002 amendment 3, target 2: the fighter reaches level 30 on '
+      'day 80-120 (median of 8 seeds)', () {
     final days = fighter.values.map((r) => r.dayReached(30) ?? 121);
-    expect(median(days), inInclusiveRange(70, 100));
+    expect(median(days), inInclusiveRange(80, 120));
   });
 
-  test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 6-10 '
-      'on day 90 (seed 1)', () {
-    expect(gatherer.days.last.level, inInclusiveRange(6, 10));
+  group('spec 0002 amendment 3: the mixed walker fights (seeds 1-8)', () {
+    List<SimFight> all() => [for (final r in walker.values) ...r.fights];
+
+    double mid(List<num> xs) {
+      final s = [...xs]..sort();
+      final m = s.length ~/ 2;
+      return s.length.isOdd ? s[m].toDouble() : (s[m - 1] + s[m]) / 2;
+    }
+
+    test('target 3: a fight takes a median 6-12 rounds', () {
+      expect(mid([for (final f in all()) f.rounds]), inInclusiveRange(6, 12));
+    });
+
+    test('target 4: a fight takes a median 10-25% of its HP', () {
+      expect(
+        mid([for (final f in all()) f.taken]),
+        inInclusiveRange(0.10, 0.25),
+      );
+    });
+
+    test('target 5: 3-12% of fights take more than half its HP', () {
+      final fights = all();
+      final hard = fights.where((f) => f.taken > 0.5).length;
+      expect(hard / fights.length, inInclusiveRange(0.03, 0.12));
+    });
+
+    test('target 6: the Graveyard King takes a median 25-40 rounds', () {
+      final king = [
+        for (final f in all())
+          if (f.enemy == 'graveyard_king') f.rounds,
+      ];
+      expect(king, isNotEmpty);
+      expect(mid(king), inInclusiveRange(25, 40));
+    });
   });
 }

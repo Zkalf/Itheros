@@ -31,6 +31,18 @@ class DayResult {
   final Set<String> achievements;
 }
 
+/// One finished fight of a simulated walker.
+class SimFight {
+  const SimFight(this.enemy, this.won, this.rounds, this.taken);
+
+  final String enemy;
+  final bool won;
+  final int rounds;
+
+  /// The share of the walker's HP the fight took, 0-1.
+  final double taken;
+}
+
 class SimulationResult {
   SimulationResult(
     this.days,
@@ -38,9 +50,15 @@ class SimulationResult {
     this.finalState, {
     this.rareDrops = 0,
     this.chestDays = 0,
+    this.fights = const [],
   });
 
   final List<DayResult> days;
+
+  /// Each finished fight whose summary the fight log kept (spec 0002
+  /// amendment 3, targets 3-6). An action that ends inside a chunk of steps
+  /// takes its last summaries with it, so a few fights are missing.
+  final List<SimFight> fights;
 
   /// Days that paid a supply chest (spec 0013 §5).
   final int chestDays;
@@ -387,12 +405,12 @@ class HandsCheck {
 /// latest weapon recipe level up to the two-hander's. Its stretch is the
 /// monsters (no lurkers) from that tier's level (or the two-hander's own,
 /// when the tier's one-handers came before the previous two-hander) up to
-/// the next weapon recipe's level; each is fought by an even-level player
-/// with the stretch's gear. Rounds: the two-hander against the tier's
+/// the next weapon recipe's level; each is fought by a player [above] levels
+/// over the monster (0: even level) with the stretch's gear. Rounds: the two-hander against the tier's
 /// one-hander of the same damage type (so types don't tip it: decision 9),
 /// on the monsters that one-hander beats at least 90% of the time. Damage:
 /// the reference player (spec 0009 §9.1) with and without its shield.
-List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
+List<HandsCheck> handsChecks(Game game, {int fights = 200, int above = 0}) {
   final data = game.data;
   final weaponRecipes = [
     for (final r in data.recipes.values)
@@ -438,7 +456,7 @@ List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
     for (final e in monsters) {
       final base = referencePlayer(
         game,
-        e.level,
+        e.level + above,
         without: bossOnlyItems(game, e.id),
         vs: e.id,
       );
@@ -471,8 +489,9 @@ List<HandsCheck> handsChecks(Game game, {int fights = 200}) {
 
 /// Opens the app every so often and picks what to do: equips the best gear,
 /// crafts each upgrade it can (farming its materials, even from grey
-/// monsters), otherwise fights the monster with the most XP per step that it
-/// safely beats. Travels leg by leg along the shortest route.
+/// monsters), otherwise fights the monster with the most XP per step among
+/// those it takes (`_winsEnough`), or else among those it wins at all.
+/// Travels leg by leg along the shortest route.
 /// How a simulated walker spends its steps (spec 0010 §9.2).
 enum Walker {
   /// Fights, and gathers and crafts its own gear: the pacing walker.
@@ -1196,7 +1215,12 @@ class SensiblePlayer {
       walker != Walker.gatherer &&
       !_enemyOut(s, e.id) &&
       _lostAtLevel[e.id] != game.level(s) &&
-      _armed(s, e).$3.safe;
+      _winsEnough(_armed(s, e).$3);
+
+  /// A fight it takes: safe, but the fighter also takes a win with 10% of
+  /// its HP left (spec 0002 amendment 3, change 9).
+  bool _winsEnough(FightEstimate f) =>
+      walker == Walker.fighter ? f.win && f.hpLeft >= 0.1 : f.safe;
 
   /// Steps the fastest safe way to get one [item] takes; infinite if none.
   double _stepsPer(GameState s, String item) {
@@ -1246,12 +1270,27 @@ class SensiblePlayer {
   Activity _bestFight(GameState s) {
     EnemyDef? best;
     var bestRate = -1.0;
+    double rate(EnemyDef e) {
+      final xp = e.xp * game.enemyBand(s, e.id).xpPercent / 100;
+      return math.max(1, xp) / _fightSteps(s, _armed(s, e).$3.rounds);
+    }
+
     for (final e in data.enemies.values) {
       if (!_canFight(s, e)) continue;
-      final f = _armed(s, e).$3;
-      final xp = e.xp * game.enemyBand(s, e.id).xpPercent / 100;
-      final rate = math.max(1, xp) / _fightSteps(s, f.rounds);
-      if (rate > bestRate) (best, bestRate) = (e, rate);
+      if (rate(e) > bestRate) (best, bestRate) = (e, rate(e));
+    }
+    // No fight it takes: the best one it still wins on average swings, not
+    // the first monster (spec 0002 amendment 3, change 8).
+    if (best == null) {
+      for (final e in data.enemies.values) {
+        if (walker == Walker.gatherer ||
+            _enemyOut(s, e.id) ||
+            _lostAtLevel[e.id] == game.level(s) ||
+            !_armed(s, e).$3.win) {
+          continue;
+        }
+        if (rate(e) > bestRate) (best, bestRate) = (e, rate(e));
+      }
     }
     return Activity.fight((best ?? data.enemies.values.first).id);
   }
@@ -1367,6 +1406,8 @@ SimulationResult simulate(
   var walked = 0;
   var chestDays = 0;
   int? toLevel2;
+  final fights = <SimFight>[];
+  var lastFight = 0;
 
   for (var day = 1; day <= days; day++) {
     var left = stepsPerDay;
@@ -1375,7 +1416,33 @@ SimulationResult simulate(
     while (left > 0) {
       s = player.decide(s);
       final n = math.min(checkEvery, left);
+      final maxHp = game.stats(s).hp;
       final r = game.applySteps(s, n, day: key);
+      // The fight log is per action: a lower number means a new action.
+      final ends = [
+        for (final e in r.events)
+          if (e is FightWon)
+            (e.enemy, true)
+          else if (e is FightLost)
+            (e.enemy, false),
+      ];
+      final log = r.state.activity?.fights ?? const <FightSummary>[];
+      if (log.isNotEmpty && log.last.number < lastFight) lastFight = 0;
+      final fresh = [
+        for (final f in log)
+          if (f.number > lastFight) f,
+      ];
+      lastFight = log.isEmpty ? 0 : log.last.number;
+      // The newest summaries go with the newest fight events.
+      // Kept only when the outcomes match, so a fight never takes another
+      // monster's name when an action ends inside the chunk.
+      final k = math.min(ends.length, fresh.length);
+      for (var i = 0; i < k; i++) {
+        final (enemy, won) = ends[ends.length - k + i];
+        final f = fresh[fresh.length - k + i];
+        if (won != (f.outcome == FightOutcome.won)) continue;
+        fights.add(SimFight(enemy, won, f.rounds, f.taken / maxHp));
+      }
       if (toLevel2 == null && r.events.any((e) => e is LevelUp)) {
         toLevel2 = walked + _stepsUntilLevel(game, s, 2);
       }
@@ -1398,6 +1465,7 @@ SimulationResult simulate(
     s,
     rareDrops: player.rareDrops,
     chestDays: chestDays,
+    fights: fights,
   );
 }
 

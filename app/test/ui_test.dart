@@ -750,13 +750,13 @@ void main() {
       final (c, source) = await pumpGame(t, level: 5, location: 'goblin_woods');
       await c.addAction(
         const Activity.fight('goblin'),
-        // One hide: with misses (spec 0009 §2.1) this seed's 400 steps
-        // bring only one.
+        // One hide: since spec 0002 amendment 3 a Goblin drops one 90% of
+        // the time, so this seed's first kill brings it.
         stop: StopCondition.untilHave('goblin_hide', 1),
       );
       await c.addAction(const Activity.gather('copper_vein'));
-      // Enough for the hides, not enough to reach Copper Hills and mine.
-      source.walk(DateTime(2026, 10, 18, 10), 400);
+      // Enough for the hide, not enough to reach Copper Hills and mine.
+      source.walk(DateTime(2026, 10, 18, 10), 200);
       now = DateTime(2026, 10, 18, 11);
       await c.resume();
       await t.pump();
@@ -2260,7 +2260,8 @@ void fightsWithDepth() {
       await t.pumpAndSettle();
       expect(bestiary(find.textContaining('Heavy armour')), findsOneWidget);
       expect(bestiary(find.textContaining('Weak to crush')), findsOneWidget);
-      expect(bestiary(find.textContaining('HP 48')), findsOneWidget);
+      // 72 HP since spec 0002 amendment 3.
+      expect(bestiary(find.textContaining('HP 72')), findsOneWidget);
       expect(bestiary(find.textContaining('12 kills')), findsOneWidget);
       expect(bestiary(find.textContaining('38 more kills')), findsOneWidget);
       expect(bestiary(find.textContaining('chance')), findsNothing);

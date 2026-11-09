@@ -483,7 +483,8 @@ void main() {
       final ring = data.items['drowned_captains_ring']!;
       expect(ring.slot, 'ring');
       expect(data.itemLevel(ring.id), 20);
-      expect((ring.bonus.attack, ring.bonus.crit, ring.bonus.hp), (3, 2, 30));
+      // HP a third less (spec 0002 amendment 3, change 7).
+      expect((ring.bonus.attack, ring.bonus.crit, ring.bonus.hp), (3, 2, 20));
       for (final c in chests) {
         expect(data.itemOf(c.key)!.id, ring.id);
         expect(
@@ -500,13 +501,13 @@ void main() {
   group('criterion 12: gear from hides, scales and trophies', () {
     test('the fifteen pieces (spec 0011 §7)', () {
       for (final (id, slot, crafting, inputs, stats, armour) in [
-        ('deer_hide_gloves', 'gloves', 6, {'deer_hide': 4}, (1, 0, 5), 'light'),
+        ('deer_hide_gloves', 'gloves', 6, {'deer_hide': 4}, (1, 0, 3), 'light'),
         (
           'deer_hide_bracers',
           'bracer',
           6,
           {'deer_hide': 4},
-          (0, 1, 5),
+          (0, 1, 3),
           'light',
         ),
         (
@@ -514,7 +515,7 @@ void main() {
           'belt',
           6,
           {'deer_hide': 3, 'copper_ore': 1},
-          (0, 0, 10),
+          (0, 0, 7),
           'light',
         ),
         (
@@ -522,7 +523,7 @@ void main() {
           'legs',
           6,
           {'lake_scale': 6, 'deer_hide': 2},
-          (0, 1, 8),
+          (0, 1, 5),
           'medium',
         ),
         (
@@ -530,24 +531,17 @@ void main() {
           'shoulder',
           8,
           {'golden_antler': 1, 'deer_hide': 4},
-          (1, 1, 10),
+          (1, 1, 7),
           'light',
         ),
-        ('elk_hide_gloves', 'gloves', 16, {'elk_hide': 5}, (2, 0, 12), 'light'),
-        (
-          'elk_hide_bracers',
-          'bracer',
-          16,
-          {'elk_hide': 5},
-          (0, 2, 12),
-          'light',
-        ),
+        ('elk_hide_gloves', 'gloves', 16, {'elk_hide': 5}, (2, 0, 8), 'light'),
+        ('elk_hide_bracers', 'bracer', 16, {'elk_hide': 5}, (0, 2, 8), 'light'),
         (
           'elk_hide_belt',
           'belt',
           16,
           {'elk_hide': 4, 'iron_ore': 1},
-          (0, 0, 25),
+          (0, 0, 17),
           'light',
         ),
         (
@@ -555,7 +549,7 @@ void main() {
           'legs',
           16,
           {'river_scale': 8, 'elk_hide': 2},
-          (0, 3, 18),
+          (0, 3, 12),
           'medium',
         ),
         (
@@ -563,7 +557,7 @@ void main() {
           'shoulder',
           18,
           {'old_tusks_tusk': 1, 'elk_hide': 5},
-          (2, 2, 25),
+          (2, 2, 17),
           'light',
         ),
         (
@@ -571,7 +565,7 @@ void main() {
           'gloves',
           26,
           {'ibex_hide': 6},
-          (3, 0, 20),
+          (3, 0, 13),
           'light',
         ),
         (
@@ -579,7 +573,7 @@ void main() {
           'bracer',
           26,
           {'ibex_hide': 6},
-          (0, 3, 20),
+          (0, 3, 13),
           'light',
         ),
         (
@@ -587,7 +581,7 @@ void main() {
           'belt',
           26,
           {'ibex_hide': 5, 'mithril_ore': 1},
-          (0, 0, 40),
+          (0, 0, 27),
           'light',
         ),
         (
@@ -595,7 +589,7 @@ void main() {
           'legs',
           26,
           {'tarn_scale': 10, 'ibex_hide': 2},
-          (0, 4, 30),
+          (0, 4, 20),
           'medium',
         ),
         (
@@ -603,7 +597,7 @@ void main() {
           'shoulder',
           28,
           {'snow_lynx_pelt': 1, 'ibex_hide': 6},
-          (3, 3, 45),
+          (3, 3, 30),
           'light',
         ),
       ]) {
