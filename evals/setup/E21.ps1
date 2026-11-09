@@ -3,4 +3,4 @@ param([string]$Worktree)
 $ErrorActionPreference = 'Stop'
 # The foreground check is gone from the sync timer (incident 2026-10-19).
 Set-Seed $Worktree 'app/lib/game_controller.dart' 'if (interval == null || !_foreground) return;' 'if (interval == null) return;'
-Set-Seed $Worktree 'app/lib/game_controller.dart' 'if (_foreground) syncNow();' 'syncNow();'
+Set-Seed $Worktree 'app/lib/game_controller.dart' 'if (_foreground) unawaited(syncNow());' 'unawaited(syncNow());'
