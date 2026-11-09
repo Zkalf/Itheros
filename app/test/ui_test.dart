@@ -1620,8 +1620,15 @@ void characterScreen() {
         ))
           w.item,
       ];
-      // Gear in doll order (Chest before Main hand), then materials.
-      expect(keys, ['hide_vest@rare', 'copper_sword', 'goblin_hide']);
+      // Gear in doll order (Chest before Main hand), then materials. Each
+      // piece of gear has its own square (spec 0021 amendment 4, rule 3);
+      // materials stack.
+      expect(keys, [
+        'hide_vest@rare',
+        'hide_vest@rare',
+        'copper_sword',
+        'goblin_hide',
+      ]);
       // Spec 0014 line 7 overrides the icons and the corner count of spec
       // 0008 §3.5, and lines 79-81 (§2.3) give the quality ring.
       Finder inSquare(String key, Finder f) =>

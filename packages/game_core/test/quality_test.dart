@@ -108,17 +108,20 @@ void main() {
     });
 
     test('dropped gear rolls a quality; materials never do', () {
-      final g = arenaGame(economy: roomyEconomy(), [
-        monster(
-          'rat',
-          extra: {
-            'drops': [
-              {'item': 'hide_vest', 'chance': 1.0},
-              {'item': 'goblin_hide', 'chance': 1.0},
-            ],
-          },
-        ),
-      ]);
+      final g = arenaGame(
+        economy: {'bag': roomyBag()},
+        [
+          monster(
+            'rat',
+            extra: {
+              'drops': [
+                {'item': 'hide_vest', 'chance': 1.0},
+                {'item': 'goblin_hide', 'chance': 1.0},
+              ],
+            },
+          ),
+        ],
+      );
       var s = g.newGame(seed: 3);
       s = g.startActivity(s, const Activity.fight('rat'));
       final r = g.applySteps(s, 10 * 300);
