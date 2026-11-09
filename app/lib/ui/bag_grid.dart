@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'item_card.dart';
@@ -6,7 +7,8 @@ import 'item_square.dart';
 import 'kind_chips.dart';
 
 /// One big bag as a grid (spec 0008 §3.5): gear first, by slot order then
-/// best first, then materials in data order. Identical items stack. The
+/// best first, then materials in data order. Identical items stack, one
+/// square for each stack, full stacks first (spec 0021 amendment 4). The
 /// chips above it show one kind at a time (spec 0020 amendment 2).
 class BagGrid extends StatelessWidget {
   const BagGrid({super.key, required this.controller});
@@ -41,17 +43,30 @@ class BagGrid extends StatelessWidget {
         crossAxisSpacing: 6,
         children: [
           for (final key in shown)
-            ItemSquare(
-              key: ValueKey('bag-$key'),
-              data: data,
-              item: key,
-              count: s.inventory[key]!,
-              // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
-              socket: 48,
-              onTap: () => showItemCard(context, c, key),
-            ),
+            for (final (i, n) in stacks(
+              s.inventory[key]!,
+              data.stackOf(key),
+            ).indexed)
+              ItemSquare(
+                // The first square keeps the item's key; the next ones count
+                // on from 2.
+                key: ValueKey(i == 0 ? 'bag-$key' : 'bag-$key-${i + 1}'),
+                data: data,
+                item: key,
+                count: n,
+                // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
+                socket: 48,
+                // Each square opens the card of the whole item (rule 7).
+                onTap: () => showItemCard(context, c, key),
+              ),
         ],
       ),
     );
   }
 }
+
+/// [count] split into stacks of [size]: full stacks first, then the rest.
+/// 237 in stacks of 100 gives 100, 100, 37 (spec 0021 amendment 4, rule 6).
+List<int> stacks(int count, int size) => [
+  for (var left = count; left > 0; left -= size) left < size ? left : size,
+];

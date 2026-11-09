@@ -72,9 +72,11 @@ Future<void> _showOverloaded(BuildContext context, Game game, GameState s) {
           children: [
             Text('Overloaded', style: Theme.of(context).textTheme.titleLarge),
             for (final line in [
-              'Your bag holds ${game.spacesUsed(s)} kinds of item. It has '
-                  '${game.bagSpaces(s)} spaces.',
-              'Each kind over adds ${pct(data.bagOverloadStep)} to the steps '
+              // Spaces, not kinds, since stacks (spec 0021 amendment 4,
+              // rule 10).
+              'Your bag uses ${game.spacesUsed(s)} spaces. It has '
+                  '${game.bagSpaces(s)}.',
+              'Each space over adds ${pct(data.bagOverloadStep)} to the steps '
                   'of your actions, up to ${pct(data.bagOverloadMax)}.',
               'At Camp, crafts and rerolls cost no more.',
               'Store items in the bank at Camp, or salvage, eat or use them.',

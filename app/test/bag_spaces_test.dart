@@ -71,8 +71,9 @@ void main() {
     expect(sheet, findsOneWidget);
     for (final line in [
       'Overloaded',
-      'Your bag holds 43 kinds of item. It has 40 spaces.',
-      'Each kind over adds 5% to the steps of your actions, up to 50%.',
+      // The words of spec 0021 amendment 4, rule 10.
+      'Your bag uses 43 spaces. It has 40.',
+      'Each space over adds 5% to the steps of your actions, up to 50%.',
       'At Camp, crafts and rerolls cost no more.',
       'Store items in the bank at Camp, or salvage, eat or use them.',
     ]) {
