@@ -5,7 +5,8 @@ $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
 Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
-Expect-NoChange $changed '/lib/' 'code changed; locations belong in data/*.json'
+# The sim walker (lib/simulation.dart) may learn a habit to keep playing (CLAUDE.md); game code may not change.
+Expect-NoChange $changed '/lib/(?!simulation\.dart$)' 'code changed; locations belong in data/*.json'
 $world = Read-Json $Worktree 'packages/game_core/data/world.json'
 $mine = @($world.locations | Where-Object { $_.name -match 'old mine' })
 Expect ($mine.Count -eq 1) 'no Old Mine location'
