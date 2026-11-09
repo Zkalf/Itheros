@@ -23,7 +23,7 @@
     { "crit": [2, 4], "hp": [20, 34], "hit": [3, 5], "dodge": [3, 5], "block": [3, 6] }
   ],
   "combat": {
-    "hitBase": 85, "hitPerLevel": 5, "hitMin": 50, "hitMax": 95,
+    "hitBase": 75, "hitPerLevel": 5, "hitMin": 50, "hitMax": 90,
     "critBase": 5, "critDamage": 2, "blockShare": 0.3,
     "critCap": 50, "blockCap": 50, "dodgeCap": 30,
     "slayerKills": 50, "slayerHit": 5, "studyKills": 10, "loreChance": 0.01,

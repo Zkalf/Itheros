@@ -47,7 +47,8 @@ void main() {
     var s = stateAt(game, location: 'goblin_woods', level: 1, stepBank: 0);
     s.xp = game.data.xpForLevel(2) - 10; // one goblin from level 2
     s = game.startActivity(s, const Activity.fight('goblin'));
-    final r = game.applySteps(s, 100);
+    // Enough steps for one goblin (spec 0002 amendment 3: longer fights).
+    final r = game.applySteps(s, 300);
     expect(r.events.whereType<LevelUp>().map((e) => e.level), contains(2));
     expect(game.bankCap(r.state), 10500);
   });

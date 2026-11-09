@@ -205,17 +205,54 @@ void main() {
     }
   });
 
-  // The fighter focuses on fighting and may be the fastest (spec 0010
-  // amendment 11, erratum 1): the range of each mixed walker seed in spec
-  // 0009 amendment 1.
-  test('spec 0010 amendment 11, target 3: the fighter reaches level 30 on '
-      'day 70-100 (median of 8 seeds)', () {
+  // A pure fighter lives on monster drops, so with the tougher monsters it
+  // is slower than the mixed walker (spec 0002 amendment 3, target 2).
+  test('spec 0002 amendment 3, target 2: the fighter reaches level 30 on '
+      'day 80-120 (median of 8 seeds)', () {
     final days = fighter.values.map((r) => r.dayReached(30) ?? 121);
-    expect(median(days), inInclusiveRange(70, 100));
+    expect(median(days), inInclusiveRange(80, 120));
   });
 
-  test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 6-10 '
+  group('spec 0002 amendment 3: the mixed walker fights (seeds 1-8)', () {
+    List<SimFight> all() => [for (final r in walker.values) ...r.fights];
+
+    double mid(List<num> xs) {
+      final s = [...xs]..sort();
+      final m = s.length ~/ 2;
+      return s.length.isOdd ? s[m].toDouble() : (s[m - 1] + s[m]) / 2;
+    }
+
+    test('target 3: a fight takes a median 6-12 rounds', () {
+      expect(mid([for (final f in all()) f.rounds]), inInclusiveRange(6, 12));
+    });
+
+    test('target 4: a fight takes a median 10-25% of its HP', () {
+      expect(
+        mid([for (final f in all()) f.taken]),
+        inInclusiveRange(0.10, 0.25),
+      );
+    });
+
+    test('target 5: 3-12% of fights take more than half its HP', () {
+      final fights = all();
+      final hard = fights.where((f) => f.taken > 0.5).length;
+      expect(hard / fights.length, inInclusiveRange(0.03, 0.12));
+    });
+
+    test('target 6: the Graveyard King takes a median 25-40 rounds', () {
+      final king = [
+        for (final f in all())
+          if (f.enemy == 'graveyard_king') f.rounds,
+      ];
+      expect(king, isNotEmpty);
+      expect(mid(king), inInclusiveRange(25, 40));
+    });
+  });
+
+  // It no longer beats the Graveyard King, so it stays south of the river
+  // (spec 0002 amendment 3, erratum 1).
+  test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 4-10 '
       'on day 90 (seed 1)', () {
-    expect(gatherer.days.last.level, inInclusiveRange(6, 10));
+    expect(gatherer.days.last.level, inInclusiveRange(4, 10));
   });
 }

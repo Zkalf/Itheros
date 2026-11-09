@@ -83,13 +83,14 @@ void main() {
     ];
 
     for (final hit in [0, 10]) {
-      test('85% + per level + Hit, within 50-95% (Hit $hit)', () {
+      // 75% and a 90% top since spec 0002 amendment 3 (change 6).
+      test('75% + per level + Hit, within 50-90% (Hit $hit)', () {
         final g = _arena(enemies, combat: _realRolls, gear: _testGear(hit: 10));
         final c = g.data.combat;
-        expect((c.hitBase, c.hitMin, c.hitMax), (85, 50, 95));
+        expect((c.hitBase, c.hitMin, c.hitMax), (75, 50, 90));
         final s = _wearing(g, {if (hit > 0) 'ring1': 'hit_ring'}, level: 13);
         for (var diff = -10; diff <= 12; diff++) {
-          final expected = (85 + c.hitPerLevel * diff + hit).clamp(50, 95);
+          final expected = (75 + c.hitPerLevel * diff + hit).clamp(50, 90);
           expect(
             g.playerHitChance(s, 'm${13 - diff}'),
             expected,
@@ -98,19 +99,19 @@ void main() {
           // Monsters have no Hit.
           expect(
             g.monsterHitChance(s, 'm${13 + diff}'),
-            (85 + c.hitPerLevel * diff).clamp(50, 95),
+            (75 + c.hitPerLevel * diff).clamp(50, 90),
             reason: 'monster $diff levels above',
           );
         }
       });
     }
 
-    test('the bounds: far below is 50%, far above 95%', () {
+    test('the bounds: far below is 50%, far above 90%', () {
       final g = _arena(enemies, combat: _realRolls);
       final s = _wearing(g, {}, level: 13);
       expect(g.playerHitChance(s, 'm25'), 50);
-      expect(g.playerHitChance(s, 'm1'), 95);
-      expect(g.playerHitChance(s, 'm13'), 85);
+      expect(g.playerHitChance(s, 'm1'), 90);
+      expect(g.playerHitChance(s, 'm13'), 75);
     });
 
     test('Dodge never changes the hit chance', () {
@@ -150,13 +151,13 @@ void main() {
       return logs;
     }
 
-    test('85% ± 1 point hit at even level; misses deal nothing', () {
+    test('75% ± 1 point hit at even level; misses deal nothing', () {
       final g = _arena([monster('dummy')], combat: _realRolls);
       final logs = swings(g, 20000);
       final hits = logs.where(
         (l) => l.mine == Swing.hit || l.mine == Swing.crit,
       );
-      expect(hits.length / logs.length, closeTo(0.85, 0.01));
+      expect(hits.length / logs.length, closeTo(0.75, 0.01));
       final misses = logs.where((l) => l.mine == Swing.miss);
       expect(misses.length, logs.length - hits.length);
       expect(misses.every((l) => l.dealt == 0), isTrue);
@@ -172,7 +173,7 @@ void main() {
         (l) => l.mine == Swing.hit || l.mine == Swing.crit,
       );
       final hits = dodged.length + landed.length;
-      expect(hits / logs.length, closeTo(0.85, 0.01));
+      expect(hits / logs.length, closeTo(0.75, 0.01));
       expect(dodged.length / hits, closeTo(0.10, 0.01));
       expect(dodged.every((l) => l.dealt == 0), isTrue);
     });
@@ -287,11 +288,11 @@ void main() {
   test('Slayer: 50 kills give +5% Hit against that monster (§7.1)', () {
     final g = _arena([monster('goblin'), monster('other')], combat: _realRolls);
     final s = _wearing(g, {})..counters['kills.goblin'] = 49;
-    expect(g.playerHitChance(s, 'goblin'), 85);
+    expect(g.playerHitChance(s, 'goblin'), 75);
     s.counters['kills.goblin'] = 50;
     expect(g.slayer(s, 'goblin'), isTrue);
-    expect(g.playerHitChance(s, 'goblin'), 90);
-    expect(g.playerHitChance(s, 'other'), 85);
+    expect(g.playerHitChance(s, 'goblin'), 80);
+    expect(g.playerHitChance(s, 'other'), 75);
   });
 
   test('a save wearing the maul and a shield loads with the shield in the bag '
