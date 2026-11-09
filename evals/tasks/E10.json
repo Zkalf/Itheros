@@ -1,7 +1,7 @@
 {
     "id":  "E10",
     "title":  "Content: new location",
-    "prompt":  "Add a new location, Old Mine, 250 steps from Camp, with a copper vein to mine.",
+    "prompt":  "Add a new location, Old Mine, 250 steps from Camp, with a copper vein to mine. Travelling Salesman then needs all 12 areas.",
     "check":  "checks/E10.ps1",
     "timeoutMinutes":  20
 }
