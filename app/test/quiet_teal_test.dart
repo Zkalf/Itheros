@@ -1311,8 +1311,8 @@ void criterion5() {
         'OK',
         'Open the World map',
         '+100',
-        '+1,000',
-        '+5,000',
+        '+1k',
+        '+5k',
       ]) {
         expectSlate(t, buttonWith(words), words);
       }
