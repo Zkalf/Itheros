@@ -118,6 +118,12 @@ class ItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(labels.kind(item), key: const ValueKey('card-kind')),
+                // How much one bag space holds (spec 0021 amendment 4, rule 9).
+                if (data.stackOf(item) case final stack when stack > 1)
+                  Text(
+                    'Up to $stack in a bag space.',
+                    key: const ValueKey('card-stack'),
+                  ),
                 // The line for a placeholder (spec 0014 §3.2).
                 if (picture.placeholder)
                   Text('Picture coming later', style: text.bodySmall),

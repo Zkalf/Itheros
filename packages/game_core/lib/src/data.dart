@@ -59,6 +59,9 @@ class GameData {
        bagSpaces = _int(_map(economy, 'bag'), 'spaces'),
        bagOverloadStep = _num(_map(economy, 'bag'), 'overloadStep'),
        bagOverloadMax = _num(_map(economy, 'bag'), 'overloadMax'),
+       bagStacks = Map.unmodifiable(
+         _map(_map(economy, 'bag'), 'stacks').cast<String, int>(),
+       ),
        mealSteps = _int(_map(economy, 'meals'), 'steps'),
        mealPercent = List.unmodifiable(
          (_map(economy, 'meals')['percent'] as List<Object?>).cast<int>(),
@@ -258,6 +261,10 @@ class GameData {
   /// The overload for each space over, and its most (spec 0021 rule 5).
   final double bagOverloadStep;
   final double bagOverloadMax;
+
+  /// The most of an item that one bag space holds, by its kind: `material`,
+  /// `meal`, `gear`, `tool` (spec 0021 amendment 4, rule 1).
+  final Map<String, int> bagStacks;
 
   /// How long a meal lasts, in action and travel steps; a perfect dish
   /// twice as long (spec 0011 §5.3).
@@ -1007,6 +1014,11 @@ class GameData {
     check(
       bagSpaces > 0 && bagOverloadStep >= 0 && bagOverloadMax >= 0,
       'bag: spaces > 0, overload >= 0',
+    );
+    check(
+      {...bagStacks.keys}.containsAll(['material', 'meal', 'gear', 'tool']) &&
+          bagStacks.values.every((n) => n >= 1),
+      'bag.stacks: material, meal, gear and tool, each >= 1',
     );
     final sc = supplyChest;
     check(sc.goal >= 1, 'supplyChest: goal must be >= 1');

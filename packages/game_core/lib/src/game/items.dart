@@ -384,4 +384,8 @@ extension ItemKinds on GameData {
     if (item?.meal != null) return ItemKind.meal;
     return ItemKind.material;
   }
+
+  /// The most of [key] that one bag space holds: the stack size of its kind
+  /// (spec 0021 amendment 4, rule 1).
+  int stackOf(String key) => bagStacks[kindOf(key).name]!;
 }

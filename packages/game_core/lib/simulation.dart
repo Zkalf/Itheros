@@ -810,7 +810,10 @@ class SensiblePlayer {
   bool _goBank(GameState s) {
     if (!game.overloaded(s) || game.hasBank(s.location)) return false;
     final keep = _keep(s);
-    final left = s.inventory.keys.where((k) => !_storable(s, k, keep)).length;
+    // The spaces of what it keeps, by stack (spec 0021 amendment 4).
+    final left = s.inventory.entries
+        .where((e) => !_storable(s, e.key, keep))
+        .fold(0, (n, e) => n + game.spacesOf(e.key, e.value));
     return left <= game.bagSpaces(s);
   }
 
@@ -871,9 +874,7 @@ class SensiblePlayer {
     for (final MapEntry(:key, :value) in data.recipes[id]!.inputs.entries) {
       final n = math.min(value - (s.inventory[key] ?? 0), s.itemBank[key] ?? 0);
       // A take that overloads the bag would send it back to store.
-      if (n > 0 &&
-          game.spacesUsed(s) + (s.inventory.containsKey(key) ? 0 : 1) >
-              game.bagSpaces(s)) {
+      if (n > 0 && game.spacesWith(s, key, n) > game.bagSpaces(s)) {
         continue;
       }
       if (n > 0) s = game.take(s, key, n);

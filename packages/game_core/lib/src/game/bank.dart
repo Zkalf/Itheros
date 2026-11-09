@@ -7,9 +7,25 @@ extension GameBank on Game {
   int bagSpaces(GameState s) =>
       data.bagSpaces + talentSum(s, TalentEffect.bagSpaces).round();
 
-  /// One space for each kind of item in the bag (spec 0021 rule 2). Worn
+  /// The spaces that [count] of [key] use in the bag: one for each stack, or
+  /// part of one (spec 0021 amendment 4, rule 2).
+  int spacesOf(String key, int count) {
+    if (count <= 0) return 0;
+    final stack = data.stackOf(key);
+    return (count + stack - 1) ~/ stack;
+  }
+
+  /// The spaces of all the bag's items (spec 0021 amendment 4, rule 2). Worn
   /// items, the bank and unopened supply chests are not in the bag.
-  int spacesUsed(GameState s) => s.inventory.values.where((c) => c > 0).length;
+  int spacesUsed(GameState s) =>
+      s.inventory.entries.fold(0, (n, e) => n + spacesOf(e.key, e.value));
+
+  /// The spaces the bag would use with [n] more of [key]: a new stack may
+  /// need a new space (spec 0021 amendment 4, rule 2).
+  int spacesWith(GameState s, String key, int n) {
+    final had = s.inventory[key] ?? 0;
+    return spacesUsed(s) - spacesOf(key, had) + spacesOf(key, had + n);
+  }
 
   /// Whether the bag holds more kinds than its spaces (spec 0021 rule 3).
   bool overloaded(GameState s) => spacesUsed(s) > bagSpaces(s);

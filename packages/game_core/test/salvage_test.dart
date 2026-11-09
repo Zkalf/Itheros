@@ -106,6 +106,8 @@ void main() {
 
   group('criterion 7: rare finds, rings and trinkets', () {
     test('about 1 in 200 actions with a Common tool at the spot\'s level', () {
+      // 20,000 ore would overload a real bag (roomyEconomy).
+      final game = newTestGame(overrides: {'economy': roomyEconomy()});
       var s = stateAt(game, location: 'copper_hills', professionLevel: 1);
       s = game.startActivity(s, const Activity.gather('copper_vein'));
       final r = game.applySteps(s, 100 * 20000);

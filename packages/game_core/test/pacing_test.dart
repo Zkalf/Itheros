@@ -176,7 +176,12 @@ void main() {
   // 8 seeds swing by several (spec 0011 amendment 2, rule 10).
   test('spec 0011 target 5 (amendment 2): with meals the median level 30 '
       'day is 0 to 10 days sooner', () {
-    final gain = median(level30(noMeals)) - median(level30(withMeals));
+    // A seed that misses the 105 days counts as day 106, as the fighter's
+    // count as day 121 (owner, 2026-11-09, plan 0056: with stacks a
+    // no-meals seed lands on day 105).
+    Iterable<int> by106(Map<int, SimulationResult> runs) =>
+        level30(runs).map((d) => d ?? 106);
+    final gain = median(by106(noMeals)) - median(by106(withMeals));
     expect(gain, inInclusiveRange(0, 10));
   });
 
