@@ -901,34 +901,33 @@ void main() {
       expect(card, findsNothing, reason: 'an old save with it on');
     });
 
-    testWidgets(
-      'criterion 5: +1,000 walks 1,000 steps, marked in the journal',
-      (t) async {
-        // First Steps (an achievement) out of the way first: it asks for
-        // 10,000 steps (spec 0017 §2.1).
-        final (c, source) = await pumpGame(t, counters: {'steps.walked': 9900});
-        c.pause();
-        source.walk(DateTime(2026, 10, 18, 8, 50), 150);
-        await c.resume();
-        c.dismissAwaySummary();
-        await c.setTestWalk(true);
-        await t.pump();
-        await t.tap(find.descendant(of: card, matching: find.text('+1,000')));
-        await settle(t, c);
-        await t.pump();
-        await t.pump(const Duration(milliseconds: 500));
-        expect(c.state.stepBank, 1150, reason: 'resting: 150 + 1,000 banked');
-        expect(
-          find.textContaining('You walked 1,000 steps.'),
-          findsOneWidget,
-          reason: 'only banked: a note',
-        );
+    testWidgets('criterion 5: +1k walks 1,000 steps, marked in the journal', (
+      t,
+    ) async {
+      // First Steps (an achievement) out of the way first: it asks for
+      // 10,000 steps (spec 0017 §2.1).
+      final (c, source) = await pumpGame(t, counters: {'steps.walked': 9900});
+      c.pause();
+      source.walk(DateTime(2026, 10, 18, 8, 50), 150);
+      await c.resume();
+      c.dismissAwaySummary();
+      await c.setTestWalk(true);
+      await t.pump();
+      await t.tap(find.descendant(of: card, matching: find.text('+1k')));
+      await settle(t, c);
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(c.state.stepBank, 1150, reason: 'resting: 150 + 1,000 banked');
+      expect(
+        find.textContaining('You walked 1,000 steps.'),
+        findsOneWidget,
+        reason: 'only banked: a note',
+      );
 
-        await t.tap(find.byKey(const ValueKey('journal-button')));
-        await t.pumpAndSettle();
-        expect(find.text('Today 09:00 (test walk)'), findsOneWidget);
-      },
-    );
+      await t.tap(find.byKey(const ValueKey('journal-button')));
+      await t.pumpAndSettle();
+      expect(find.text('Today 09:00 (test walk)'), findsOneWidget);
+    });
   });
 
   testWidgets('Settings show the version from level 1 (spec 0007 §7)', (

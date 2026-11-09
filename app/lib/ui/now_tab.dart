@@ -159,37 +159,37 @@ class _Discoveries extends StatelessWidget {
   }
 }
 
-/// Pretend steps for testing at home (spec 0004 §3, amendment 4). Shown
-/// while the hidden switch on the Character tab is on.
+/// Pretend steps for testing at home (spec 0004 §3, amendments 4 and 5).
+/// Shown while the hidden switch on the Character tab is on. One row.
 class _TestWalkCard extends StatelessWidget {
   const _TestWalkCard({required this.controller});
 
   final GameController controller;
 
+  /// 100 -> "100", 1000 -> "1k", 100000 -> "100k" (amendment 5).
+  static String _short(int n) => n >= 1000 ? '${n ~/ 1000}k' : '$n';
+
   @override
   Widget build(BuildContext context) => Card(
     key: const ValueKey('test-walk'),
     child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
         children: [
-          Text('Test walk', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          const Text('Adds pretend steps, as if you walked them.'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final n in const [100, 1000, 5000, 25000, 100000])
-                FilledButton.tonal(
-                  style: slateButton,
-                  onPressed: () => controller.testWalk(n),
-                  child: Text('+${fmt(n)}'),
+          Text('Test walk', style: Theme.of(context).textTheme.titleSmall),
+          for (final n in const [100, 1000, 5000, 25000, 100000]) ...[
+            const SizedBox(width: 4),
+            Expanded(
+              child: FilledButton.tonal(
+                style: slateButton.copyWith(
+                  padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+                  minimumSize: const WidgetStatePropertyAll(Size(0, 36)),
                 ),
-            ],
-          ),
+                onPressed: () => controller.testWalk(n),
+                child: FittedBox(child: Text('+${_short(n)}')),
+              ),
+            ),
+          ],
         ],
       ),
     ),
