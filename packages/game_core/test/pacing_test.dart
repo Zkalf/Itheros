@@ -2,8 +2,8 @@
 // spec 0001 acceptance criterion 5 and spec 0002 criterion 3 (which replaces
 // spec 0001 criterion 6), as spec 0009 criterion 16 sets them: seeds 1-8,
 // level 5 on day 1-2; level 30 as spec 0009 amendment 1 sets it. Spec 0010
-// Â§9.3: the walker's professions (target 2), the fighter (target 3) and the
-// gatherer (target 4), seed 1 here; all seeds in tool/seeds.dart. Spec 0011
+// Â§9.3: the walker's professions (target 2) and the fighter (target 3);
+// target 4, the gatherer, is dropped (spec 0002 amendment 3, erratum 1). Spec 0011
 // Â§9.3 target 5: meals help, they aren't a must. Spec 0017 Â§8 (criteria 31
 // and 32): the pace of the walker without feats, and the milestones on the
 // way.
@@ -72,7 +72,6 @@ void main() {
   final withMeals = <int, SimulationResult>{};
   final noMeals = <int, SimulationResult>{};
   final fighter = <int, SimulationResult>{};
-  late SimulationResult gatherer;
 
   setUpAll(() async {
     final runs = await Future.wait([
@@ -82,7 +81,6 @@ void main() {
         _run(seed: seed, noBonuses: true, meals: false),
       for (final seed in _seeds)
         _run(seed: seed, days: 120, walker: Walker.fighter),
-      _run(days: 90, walker: Walker.gatherer),
     ]);
     for (final (i, seed) in _seeds.indexed) {
       walker[seed] = runs[i];
@@ -92,7 +90,6 @@ void main() {
     for (final (i, seed) in _seeds.indexed) {
       fighter[seed] = runs[3 * _seeds.length + i];
     }
-    gatherer = runs[4 * _seeds.length];
   });
 
   for (final seed in _seeds) {
@@ -247,12 +244,5 @@ void main() {
       expect(king, isNotEmpty);
       expect(mid(king), inInclusiveRange(25, 40));
     });
-  });
-
-  // It no longer beats the Graveyard King, so it stays south of the river
-  // (spec 0002 amendment 3, erratum 1).
-  test('spec 0010 amendment 1, target 4: the gatherer-crafter is level 4-10 '
-      'on day 90 (seed 1)', () {
-    expect(gatherer.days.last.level, inInclusiveRange(4, 10));
   });
 }
