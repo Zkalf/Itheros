@@ -356,7 +356,7 @@ void main() {
         mine: Swing.dodge,
         theirs: Swing.miss,
       ),
-      const RoundLog(round: 5, dealt: 6, mine: Swing.hit),
+      const RoundLog(round: 5, dealt: 8, mine: Swing.hit),
     ];
 
     Future<void> open(WidgetTester t) async {
@@ -403,8 +403,9 @@ void main() {
       t,
     ) async {
       await open(t);
-      // The Goblin has 19 HP: 6 is more than a quarter, 4 is less.
-      expect(styleOf(t, 'You hit for 6')?.fontWeight, FontWeight.bold);
+      // The Goblin has 29 HP (spec 0002 amendment 3): 8 is more than a
+      // quarter, 4 is less.
+      expect(styleOf(t, 'You hit for 8')?.fontWeight, FontWeight.bold);
       expect(styleOf(t, 'You hit for 4')?.fontWeight, isNot(FontWeight.bold));
       expect(styleOf(t, 'You hit for 4')?.color, Quiet.text);
     });

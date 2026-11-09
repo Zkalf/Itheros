@@ -184,13 +184,16 @@ void main() {
     await c.addAction(goblins, stop: hides);
     await c.addAction(brutes, stop: hides);
     await settle(t, c);
-    source.walk(DateTime(2026, 10, 18, 9, 30), 2000);
+    // 1,900 steps end between two fights for this seed: a met stop ends the
+    // action only between fights, and fights are longer since spec 0002
+    // amendment 3.
+    source.walk(DateTime(2026, 10, 18, 9, 30), 1900);
     now = DateTime(2026, 10, 18, 10);
 
     await c.changeStop(0, const StopCondition.untilHave('goblin_hide', 1));
     await settle(t, c);
 
-    // The 2,000 steps went to the goblins under the old stop condition.
+    // The 1,900 steps went to the goblins under the old stop condition.
     // Then the new goal was reached, so the brutes start with no fight yet.
     expect(c.state.counters['kills.goblin'], greaterThan(0));
     expect(c.state.inventory['goblin_hide'], greaterThan(1));
