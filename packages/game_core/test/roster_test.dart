@@ -21,7 +21,17 @@ void main() {
         expect(check.bare.winRate, lessThanOrEqualTo(0.1));
       });
 
-      if (!check.first) {
+      if (check.first) {
+        // Out-levelling the first boss takes 8 levels now, not 5 (spec 0002
+        // amendment 3, erratum 1).
+        test('8 levels above without gear wins at least 50%', () {
+          final bare = referencePlayer(game, b.level + 8, geared: false);
+          expect(
+            measureFights(game, bare, b.id).winRate,
+            greaterThanOrEqualTo(0.5),
+          );
+        });
+      } else {
         test('3 levels below with their own gear wins at most 10%', () {
           expect(check.other.winRate, lessThanOrEqualTo(0.1));
         });

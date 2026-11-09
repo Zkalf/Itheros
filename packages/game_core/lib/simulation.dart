@@ -405,8 +405,8 @@ class HandsCheck {
 /// latest weapon recipe level up to the two-hander's. Its stretch is the
 /// monsters (no lurkers) from that tier's level (or the two-hander's own,
 /// when the tier's one-handers came before the previous two-hander) up to
-/// the next weapon recipe's level; each is fought by an even-level player
-/// with the stretch's gear. Rounds: the two-hander against the tier's
+/// the next weapon recipe's level; each is fought by a player [above] levels
+/// over the monster (0: even level) with the stretch's gear. Rounds: the two-hander against the tier's
 /// one-hander of the same damage type (so types don't tip it: decision 9),
 /// on the monsters that one-hander beats at least 90% of the time. Damage:
 /// the reference player (spec 0009 §9.1) with and without its shield.
@@ -489,8 +489,9 @@ List<HandsCheck> handsChecks(Game game, {int fights = 200, int above = 0}) {
 
 /// Opens the app every so often and picks what to do: equips the best gear,
 /// crafts each upgrade it can (farming its materials, even from grey
-/// monsters), otherwise fights the monster with the most XP per step that it
-/// safely beats. Travels leg by leg along the shortest route.
+/// monsters), otherwise fights the monster with the most XP per step among
+/// those it takes (`_winsEnough`), or else among those it wins at all.
+/// Travels leg by leg along the shortest route.
 /// How a simulated walker spends its steps (spec 0010 §9.2).
 enum Walker {
   /// Fights, and gathers and crafts its own gear: the pacing walker.
@@ -1433,10 +1434,13 @@ SimulationResult simulate(
       ];
       lastFight = log.isEmpty ? 0 : log.last.number;
       // The newest summaries go with the newest fight events.
+      // Kept only when the outcomes match, so a fight never takes another
+      // monster's name when an action ends inside the chunk.
       final k = math.min(ends.length, fresh.length);
       for (var i = 0; i < k; i++) {
         final (enemy, won) = ends[ends.length - k + i];
         final f = fresh[fresh.length - k + i];
+        if (won != (f.outcome == FightOutcome.won)) continue;
         fights.add(SimFight(enemy, won, f.rounds, f.taken / maxHp));
       }
       if (toLevel2 == null && r.events.any((e) => e is LevelUp)) {

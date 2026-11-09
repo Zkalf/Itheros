@@ -293,6 +293,10 @@ void main() {
     expect(g.slayer(s, 'goblin'), isTrue);
     expect(g.playerHitChance(s, 'goblin'), 80);
     expect(g.playerHitChance(s, 'other'), 75);
+    // Slayer never takes the chance over the 90% top (spec 0002 amendment 3,
+    // criterion 9): 5 levels above, 75 + 25 + 5 is held at 90.
+    final high = _wearing(g, {}, level: 6)..counters['kills.goblin'] = 50;
+    expect(g.playerHitChance(high, 'goblin'), 90);
   });
 
   test('a save wearing the maul and a shield loads with the shield in the bag '
