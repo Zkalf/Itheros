@@ -260,16 +260,23 @@ class _ProfessionCard extends StatelessWidget {
     final game = c.game;
     final s = c.state;
     final labels = Labels(game.data);
-    final recipes =
-        game
-            .allRecipes()
-            .where((id) => game.data.recipes[id]!.profession == profession.id)
-            .toList()
-          ..sort(
-            (a, b) => game.data.recipes[a]!.craftingLevel.compareTo(
-              game.data.recipes[b]!.craftingLevel,
-            ),
-          );
+    final recipes = game
+        .allRecipes()
+        .where((id) => game.data.recipes[id]!.profession == profession.id)
+        .toList();
+    // Open recipes first, from the highest level; then the locked ones, from
+    // the lowest. Recipes of one level keep the order of the data (spec 0010
+    // amendment 12).
+    final own = game.professionLevel(s, profession.id);
+    final place = {for (final (i, id) in recipes.indexed) id: i};
+    int needs(String id) => game.data.recipes[id]!.craftingLevel;
+    recipes.sort((a, b) {
+      final la = needs(a), lb = needs(b);
+      final openA = la <= own, openB = lb <= own;
+      if (openA != openB) return openA ? -1 : 1;
+      if (la != lb) return openA ? lb.compareTo(la) : la.compareTo(lb);
+      return place[a]!.compareTo(place[b]!);
+    });
     final shown = recipes.where(shows).toList();
     final list = [
       for (final id in shown) _RecipeTile(controller: c, recipe: id),
