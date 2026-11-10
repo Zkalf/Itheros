@@ -6,7 +6,7 @@ Claude stop following the project's rules, an eval fails. Plan: `plans/0002-test
 
 ## Run
 - One eval: `.\evals\run.ps1 -Id E04` (a few minutes, about $0.30 of usage at API prices)
-- The suite: `.\evals\run.ps1` (19 evals, one after another). Writes `results/<run>-<commit>.md` and
+- The suite: `.\evals\run.ps1` (15 evals, one after another). Writes `results/<run>-<commit>.md` and
   `results/latest.json`.
 - Check the checks, no Claude, no cost: `.\evals\run.ps1 -NoAgent` (every check must give its expected verdict on an
   untouched worktree; most must fail).
@@ -20,7 +20,10 @@ matches the last full run. Worktrees are made from HEAD, so commit first.
   nothing is the right answer).
 - `checks/<id>.ps1`: dot-source `..\lib.ps1`, use the `Expect*` helpers, end with `Finish`. Check files and git
   state, never transcript wording. Checks run from this repo, so an agent can't weaken them.
-- Every incident from real use gets a regression eval (E14, E17–E19, E21, E22 so far).
+- Every incident from real use gets a regression eval (E14 and E19 today), unless an eval checks the same rule in
+  the same way already.
 - One eval for each rule and each kind of case. E05, E08 and E09 were removed on 2026-10-29 (#136): they checked the
   data-only rule again in the same way as E04 (a number) and E07 (new content). Their numbers stay free.
+  E17, E18, E21 and E22 were removed on 2026-11-10: each planted a bug and checked the fix in the same way as E15
+  (rules) and E16 (app). Their numbers stay free too.
 - Confirm with `-NoAgent` that the check fails without the change, then run the eval once.

@@ -91,7 +91,8 @@ function Invoke-Agent($task, [string]$wt, [string]$transcript) {
     timedOut = $timedOut
     cost     = if ($r) { $r.total_cost_usd } else { $null }
     turns    = if ($r) { $r.num_turns } else { $null }
-    denied   = if ($r) { @($r.permission_denials | ForEach-Object { $_.tool_input.command } | Where-Object { $_ }) } else { @() }
+    # @() around the whole if: an if gives a list of one command back as the bare string, and its [0] is one letter.
+    denied   = @(if ($r) { $r.permission_denials | ForEach-Object { $_.tool_input.command } | Where-Object { $_ } })
     error    = if (-not $r) { "no JSON output: $($stderr.Result.Trim())" } else { $null }
   }
 }
