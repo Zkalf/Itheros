@@ -1,0 +1,1 @@
+- The top of the Character screen is shorter: your level stands beside your name, and your seven stats stand in one row. Gear, Bag and Talents start higher on the screen.

@@ -19,7 +19,8 @@ import 'theme.dart';
 /// The three tabs of Character.
 enum CharacterPane { gear, bag, talents }
 
-/// Who am I (spec 0008 §3.5): level, stats and rank above three small tabs,
+/// Who am I (spec 0008 §3.5, amendment 7): the name with the level, the rank
+/// and one row of stats above three small tabs,
 /// Gear (the paper doll), Bag and Talents (spec 0015 §3.1). Equipping costs
 /// no steps.
 
@@ -91,26 +92,42 @@ class _CharacterTabState extends State<CharacterTab> {
                           game.data,
                           PlayerThing(who.origin, who.gender),
                         ),
-                        size: 72,
+                        size: 48,
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                     ],
-                    // Name, then rank · origin (spec 0012 §4.4).
+                    // Name with the level beside it, then rank · origin
+                    // (spec 0012 §4.4, spec 0008 amendment 7). At a large
+                    // text size the level wraps under the name.
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (who != null) ...[
-                            Text(
-                              who.name,
-                              key: const ValueKey('character-name'),
-                              style: text.headlineSmall,
+                          SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              children: [
+                                if (who != null)
+                                  Text(
+                                    who.name,
+                                    key: const ValueKey('character-name'),
+                                    style: text.headlineSmall,
+                                  )
+                                else
+                                  _RankTitle(rank),
+                                Text.rich(
+                                  numberSpan('Level $level'),
+                                  key: const ValueKey('stat-Level'),
+                                  style: text.titleLarge,
+                                ),
+                              ],
                             ),
+                          ),
+                          if (who != null) ...[
                             const SizedBox(height: 4),
-                          ],
-                          if (who == null)
-                            _RankTitle(rank)
-                          else
                             _RankAndOrigin(
                               rank,
                               game.fill(
@@ -118,32 +135,32 @@ class _CharacterTabState extends State<CharacterTab> {
                                 who,
                               ),
                             ),
+                          ],
                         ],
                       ),
                     ),
                   ],
                 ),
-                const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _Stat('Level', '$level'),
-                    stat(StatKind.hp, meal: meal.hp),
-                    stat(StatKind.attack, meal: meal.attack),
-                    stat(StatKind.defense, meal: meal.defense),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                const Divider(height: 20),
+                // One row at the usual text size; it wraps at a large one.
                 // Spec 0009 §2.2: with base Crit, each within its cap.
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    stat(StatKind.crit, meal: meal.crit),
-                    // The chance at the player's level (amendment 4).
-                    stat(StatKind.hit),
-                    stat(StatKind.dodge),
-                    stat(StatKind.block),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    key: const ValueKey('stats-row'),
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 8,
+                    children: [
+                      stat(StatKind.hp, meal: meal.hp),
+                      stat(StatKind.attack, meal: meal.attack),
+                      stat(StatKind.defense, meal: meal.defense),
+                      stat(StatKind.crit, meal: meal.crit),
+                      // The chance at the player's level (amendment 4).
+                      stat(StatKind.hit),
+                      stat(StatKind.dodge),
+                      stat(StatKind.block),
+                    ],
+                  ),
                 ),
                 if (points > 0) ...[
                   const SizedBox(height: 12),
@@ -328,10 +345,10 @@ class _Stat extends StatelessWidget {
   final String label;
   final String value;
 
-  /// What the running meal adds, shown as "(+2 meal)".
+  /// What the running meal adds, shown as "+2 meal".
   final int meal;
 
-  /// Opens the stat's sheet (spec 0009 amendment 4); null for Level.
+  /// Opens the stat's sheet (spec 0009 amendment 4).
   final VoidCallback? onTap;
 
   @override
@@ -341,19 +358,20 @@ class _Stat extends StatelessWidget {
       key: ValueKey('stat-$label'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        // No padding at the sides: at text size 2.0 the four stats fill the
-        // row of a 408 dp phone.
+      child: Container(
+        // Wide enough for a thumb, and no padding at the sides: the seven
+        // stats fill the row of a 408 dp phone (spec 0008 amendment 7).
+        constraints: const BoxConstraints(minWidth: 44),
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           children: [
             // A stat value is a number that stands alone (spec 0014 §2.2).
             Text(
               value,
-              style: text.headlineSmall?.copyWith(fontFamily: Fonts.number),
+              style: text.titleMedium?.copyWith(fontFamily: Fonts.number),
             ),
             Text(label, style: text.labelSmall?.copyWith(color: Quiet.muted)),
-            if (meal > 0) Text('(+$meal meal)', style: text.bodySmall),
+            if (meal > 0) Text('+$meal meal', style: text.labelSmall),
           ],
         ),
       ),

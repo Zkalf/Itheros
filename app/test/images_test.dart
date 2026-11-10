@@ -203,11 +203,12 @@ Future<void> openBag(WidgetTester t) async {
 /// header shows the portrait beside them.
 Future<({Rect rank, Rect origin, String text})> headerAt360(
   WidgetTester t,
-  Character who,
-) async {
+  Character who, {
+  double width = 360,
+}) async {
   final adventurer = game.data.ranks.firstWhere((r) => r.name == 'Adventurer');
   await pumpGame(t, level: adventurer.level, character: who);
-  t.view.physicalSize = const Size(360, 4000);
+  t.view.physicalSize = Size(width, 4000);
   await t.pumpAndSettle();
   await openGear(t);
   final origin = find.byKey(const ValueKey('character-origin'));
@@ -482,8 +483,11 @@ int qualityRgb(String id) => int.parse(
 
 void criterion8() {
   group('spec 0014 criterion 8: the Character header', () {
-    testWidgets('the header shows the name, the rank and the origin, the eight '
-        'stats, the talent line, and the portrait next to the name', (t) async {
+    // Spec 0008 amendment 7: the level stands beside the name, the other
+    // seven stats in their row, and the portrait is 48 dp.
+    testWidgets('the header shows the name, the rank and the origin, the level '
+        'and the seven stats, the talent line, and the portrait next to the '
+        'name', (t) async {
       const level = 12;
       await pumpGame(t, level: level);
       await openGear(t);
@@ -495,9 +499,15 @@ void criterion8() {
         text('character-origin'),
         '· ${game.fill(game.data.origins[ada.origin]!.title, ada)}',
       );
-      for (final stat in 'Level HP Attack Defense Crit Hit Dodge Block'.split(
-        ' ',
-      )) {
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('stat-Level')),
+          matching: find.text('Level $level', findRichText: true),
+        ),
+        findsOneWidget,
+        reason: 'the level',
+      );
+      for (final stat in 'HP Attack Defense Crit Hit Dodge Block'.split(' ')) {
         expect(
           find.descendant(
             of: find.byKey(ValueKey('stat-$stat')),
@@ -518,7 +528,7 @@ void criterion8() {
       final portrait = find.byKey(const ValueKey('character-portrait'));
       expect(portrait, findsOneWidget, reason: 'the portrait');
       expect(t.widget(portrait), isA<PictureSocket>());
-      expect(t.getSize(portrait), const Size(72, 72));
+      expect(t.getSize(portrait), const Size(48, 48));
       // Next to the name: on its line, beside it, and at most 24 dp away.
       final p = t.getRect(portrait);
       final name = t.getRect(find.byKey(const ValueKey('character-name')));
@@ -571,9 +581,10 @@ void criterion8() {
       );
     });
 
-    // With the portrait beside them, the rank and the origin share about
-    // 230 dp. "Adventurer" and "· Woodcutter's daughter" need more.
-    testWidgets('on a phone 360 dp wide, an origin that does not fit after '
+    // With the 48 dp portrait (spec 0008 amendment 7), "Adventurer" and
+    // "· Woodcutter's daughter" fit at 360 dp. They need more than a phone
+    // 320 dp wide has.
+    testWidgets('on a phone 320 dp wide, an origin that does not fit after '
         'the rank shows on a line of its own below the rank, without the '
         'dot', (t) async {
       final h = await headerAt360(
@@ -583,6 +594,7 @@ void criterion8() {
           gender: Gender.female,
           origin: 'woodcutters_child',
         ),
+        width: 320,
       );
       expect(h.text, "Woodcutter's daughter");
       expect(
