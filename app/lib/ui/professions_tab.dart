@@ -108,7 +108,7 @@ class _Summary extends StatelessWidget {
             children: [
               Text(p.tierAt(level).name, style: text.titleSmall),
               Text.rich(
-                numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
+                numberSpan('${fmt(xp - floor)} / ${fmt(next - floor)} XP'),
                 style: text.bodySmall,
               ),
             ],

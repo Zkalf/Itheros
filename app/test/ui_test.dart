@@ -220,8 +220,15 @@ void main() {
       expect(sword.enabled, isTrue);
       final iron = t.widget<ListTile>(option('craft', 'iron_sword'));
       expect(iron.enabled, isFalse, reason: 'needs Crafting 14');
+      // The row has the name as its title (spec 0010 amendment 13).
       expect(
-        find.textContaining('Iron sword needs Crafting 14', findRichText: true),
+        find.descendant(
+          of: option('craft', 'iron_sword'),
+          matching: find.textContaining(
+            'Needs Crafting 14',
+            findRichText: true,
+          ),
+        ),
         findsOneWidget,
       );
     });
@@ -1518,10 +1525,7 @@ void layoutScreens() {
       await pumpGame(t, level: 30, professionLevel: 9, location: 'iron_ridge');
       expect(here(option('gather', 'iron_vein')), findsOneWidget);
       // With the player's own Mining level (spec 0010 amendment 10).
-      expect(
-        here(find.text('Iron vein needs Mining 10 (you have 9)')),
-        findsOneWidget,
-      );
+      expect(here(find.text('Needs Mining 10 (you have 9)')), findsOneWidget);
     });
 
     testWidgets('at a forge a Forge row opens Professions', (t) async {
@@ -2937,7 +2941,7 @@ void lakeAndHunt() {
       expect(
         within(
           'option-craft-smoked_trout',
-          find.textContaining('needs Cooking 10', findRichText: true),
+          find.textContaining('Needs Cooking 10', findRichText: true),
         ),
         findsOneWidget,
       );

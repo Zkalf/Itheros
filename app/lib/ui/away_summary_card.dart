@@ -140,18 +140,27 @@ List<String> reportLines(AwaySummary s, Labels labels) => [
   // A load can bring news without a step (spec 0017 §5).
   if (s.walked > 0 || (s.achievements.isEmpty && s.lostAchievements.isEmpty))
     'You walked ${plural(s.walked, 'step')}.',
-  if (s.boostUsed > 0)
+  // A report with both shows their sum once, below (spec 0004 amendment 6).
+  if (s.boostUsed > 0 && s.banked == 0)
     'Used ${plural(s.boostUsed, 'step')} from your step bank.',
   for (final a in s.actions) ...labels.actionLines(a),
   // Spec 0011 §3.4, §5.4.
   for (final (item, weight, was) in s.records) labels.record(item, weight, was),
   for (final (key, left) in s.mealsEaten) labels.mealEaten(key, left),
   for (final meal in s.mealsOut) labels.mealsOut(meal),
-  if (s.banked > 0) 'Saved ${plural(s.banked, 'step')} in your step bank.',
+  if (s.banked > 0)
+    s.boostUsed > 0
+        ? _bankChange(s.banked - s.boostUsed)
+        : 'Saved ${plural(s.banked, 'step')} in your step bank.',
   if (s.lost > 0)
     'Your step bank was full, so ${plural(s.lost, 'step')} '
         'could not be saved.',
 ];
+
+/// "Step bank: +2,630 steps.", with a minus when more was used than saved.
+String _bankChange(int change) => change == 0
+    ? 'Step bank: no change.'
+    : 'Step bank: ${change > 0 ? '+' : '−'}${plural(change.abs(), 'step')}.';
 
 /// "While you were away": opens by itself when something happened, after
 /// any level-up cards, and looks like a journal entry (spec 0004 amendment 2).

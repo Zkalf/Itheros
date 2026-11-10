@@ -382,6 +382,7 @@ extension GameQueue on Game {
     StopCondition stop,
     SkipReason r, {
     String? from,
+    bool named = true,
   }) {
     final name = _nameOf(a);
     final boss = r == SkipReason.noRoute ? closedBy(s, a, from: from) : null;
@@ -392,13 +393,13 @@ extension GameQueue on Game {
       SkipReason.locked => switch (a.kind) {
         ActivityKind.gather when data.nodes[a.target] != null => _needs(
           s,
-          name,
+          named ? name : null,
           data.nodes[a.target]!.profession,
           data.nodes[a.target]!.level,
         ),
         ActivityKind.craft when data.recipes[a.target] != null => _needs(
           s,
-          name,
+          named ? name : null,
           data.recipes[a.target]!.profession,
           data.recipes[a.target]!.craftingLevel,
         ),
@@ -419,8 +420,10 @@ extension GameQueue on Game {
   }
 
   /// Why a gathering spot or recipe [a] is closed to the player ("Iron vein
-  /// needs Mining 10", "Learn Mining from Hilde in Camp"), or null.
-  String? lockedReason(GameState s, Activity a) {
+  /// needs Mining 10", "Learn Mining from Hilde in Camp"), or null. A row that
+  /// has the name as its title asks for the line without it: "Needs Mining
+  /// 10" (spec 0010 amendment 13).
+  String? lockedReason(GameState s, Activity a, {bool named = true}) {
     final open = switch (a.kind) {
       ActivityKind.gather => nodeLevelMet(s, a.target),
       ActivityKind.craft => recipeLevelMet(s, a.target),
@@ -428,7 +431,13 @@ extension GameQueue on Game {
     };
     return open
         ? null
-        : _explain(s, a, const StopCondition.never(), SkipReason.locked);
+        : _explain(
+            s,
+            a,
+            const StopCondition.never(),
+            SkipReason.locked,
+            named: named,
+          );
   }
 
   /// The profession XP one action of [profession] at [level] paying [xp]
@@ -483,8 +492,9 @@ extension GameQueue on Game {
     return '';
   }
 
-  /// What [name] lacks: its profession learned, or its level.
-  String _needs(GameState s, String name, String profession, int level) {
+  /// What [name] lacks: its profession learned, or its level. With no name
+  /// the line starts with "Needs".
+  String _needs(GameState s, String? name, String profession, int level) {
     final p = data.professions[profession]!;
     if (!s.learned.contains(profession)) {
       return 'Learn ${p.name} from ${p.teacher.name} in '
@@ -495,7 +505,7 @@ extension GameQueue on Game {
     }
     // The player's own level too, so it reads as the profession's level, not
     // the character's (spec 0010 amendment 10).
-    return '$name needs ${p.name} $level '
+    return '${name == null ? 'Needs' : '$name needs'} ${p.name} $level '
         '(you have ${professionLevel(s, profession)})';
   }
 

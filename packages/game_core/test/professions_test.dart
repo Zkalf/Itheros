@@ -91,6 +91,17 @@ void main() {
         prof: {'mining': 9},
       );
       expect(game.nodeLevelMet(low, 'iron_vein'), isFalse);
+      // Spec 0010 amendment 13: a row with the name as its title asks for the
+      // line without it.
+      const vein = Activity.gather('iron_vein');
+      expect(
+        game.lockedReason(low, vein),
+        'Iron vein needs Mining 10 (you have 9)',
+      );
+      expect(
+        game.lockedReason(low, vein, named: false),
+        'Needs Mining 10 (you have 9)',
+      );
       expect(
         () => game.startActivity(low, const Activity.gather('iron_vein')),
         throwsA(
