@@ -25,6 +25,13 @@ class _Run {
   var banked = 0;
   var lost = 0;
 
+  /// Whether a unit was paid since the last check of the achievements. True
+  /// at the start, so the first step checks each criterion.
+  var _unitPaid = true;
+
+  /// The number of [events] at the last check of the achievements.
+  var _eventsChecked = 0;
+
   GameData get data => game.data;
 
   void step() {
@@ -90,6 +97,7 @@ class _Run {
       final cost = game._costOf(s, act);
       if (act.progress < cost) return;
       act.progress -= cost;
+      _unitPaid = true;
       if (act.leg case final leg?) {
         _arrive(leg);
         act.leg = game._nextLeg(s, act.activity);
@@ -656,8 +664,19 @@ class _Run {
 
   /// Counters, levels and the quality found never go down in play, so only
   /// a load loses an achievement (spec 0017 §4).
+  ///
+  /// Runs after each step. A counter can rise on any step, so each step
+  /// checks the counter criteria. A level or the quality found changes only
+  /// when a unit completes, and each such change (and each achievement
+  /// earned) adds an event or pays a unit. So a step that did neither skips
+  /// the other criteria: the result is the same, and the long runs of the
+  /// tests and the sims are faster.
   void _checkAchievements() {
+    final all = _unitPaid || events.length != _eventsChecked;
+    _unitPaid = false;
+    _eventsChecked = events.length;
     for (final a in data.achievements.values) {
+      if (!all && a.criterion is! CounterCriterion) continue;
       if (!s.achievements.contains(a.id) && game.achievementMet(s, a)) {
         game._earn(s, a, events);
       }
