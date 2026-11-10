@@ -51,8 +51,9 @@ class NowTab extends StatelessWidget {
           _StatusCard(controller: c, labels: labels),
           if (c.testWalkOn) _TestWalkCard(controller: c),
           _NextGoal(controller: c, labels: labels),
-          _Discoveries(controller: c, labels: labels),
           _QueueCard(controller: c, labels: labels, onOpenWorld: onOpenWorld),
+          // Under the current action (spec 0008 amendment 6).
+          _Discoveries(controller: c, labels: labels),
           _Here(
             controller: c,
             labels: labels,
@@ -523,6 +524,7 @@ class _QueueCard extends StatelessWidget {
       ];
     }
     return Card(
+      key: const ValueKey('queue-card'),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
