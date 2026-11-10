@@ -120,9 +120,11 @@ Enter-CheckTurn -Folder $root
 if ($LASTEXITCODE -ne 0) { Abort 'the check failed' }
 
 # 4. The friend build: no --dart-define=TEST_WALK (spec 0007 §4). Then check that exact file.
+# arm64 only (owner, 2026-11-10): the APK carries no 32-bit and no emulator (x86_64) code, so it is 27 MB, not
+# 63 MB. A phone with a 32-bit processor only cannot install it.
 Write-Host '==> Building the friend APK' -ForegroundColor Cyan
 Push-Location $app
-flutter build apk --release
+flutter build apk --release --target-platform android-arm64
 $built = $LASTEXITCODE
 Pop-Location
 if ($built -ne 0) { Abort 'the build failed' }

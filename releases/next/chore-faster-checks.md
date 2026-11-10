@@ -1,0 +1,1 @@
+- The download is less than half as big: about 27 MB. A phone with only a 32-bit processor can no longer install the game.
