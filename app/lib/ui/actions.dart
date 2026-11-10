@@ -211,7 +211,7 @@ Widget nodeTile(GameController c, String node, {BuildContext? startFrom}) {
     // Spots pay profession XP (spec 0010 §2.2).
     // A water or trail rolls its catch (spec 0011 §3.2, §4).
     subtitle: Text(
-      game.lockedReason(c.state, Activity.gather(node)) ??
+      game.lockedReason(c.state, Activity.gather(node), named: false) ??
           '${game.stepsFor(c.state, Activity.gather(node))} steps per '
               '${n.catches.isEmpty
                   ? labels.item(n.item)

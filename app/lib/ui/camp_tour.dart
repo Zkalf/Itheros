@@ -60,9 +60,9 @@ const List<TourStep> tourSteps = [
     tab: TourTab.now,
     pane: null,
     words:
-        'Up top: your supply chest, your achievements, the Journal and '
-        'Settings. Settings can show you this tour again. Off you go, {name}. '
-        'Walk.',
+        'Up top: the bank, your supply chest, your achievements, the Journal '
+        'and Settings. Settings can show you this tour again. Off you go, '
+        '{name}. Walk.',
   ),
 ];
 

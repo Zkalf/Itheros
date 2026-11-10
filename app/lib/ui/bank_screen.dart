@@ -159,6 +159,14 @@ class _ItemList extends StatelessWidget {
                       // As on the item card: Common in the normal text colour.
                       style: TextStyle(color: itemColour(data, key)),
                     ),
+                    // Its stats, so that alike rows differ (amendment 7).
+                    subtitle: switch (labels.rowLine(key)) {
+                      final line? => Text(
+                        line,
+                        key: ValueKey('bank-row-line-$key'),
+                      ),
+                      null => null,
+                    },
                     // The card, with Store or Take at Camp (rules 15-19).
                     onTap: () => showItemCard(
                       context,

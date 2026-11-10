@@ -231,9 +231,10 @@ void main() {
       );
       expect(
         shown[5],
-        'Up top: your supply chest, your achievements, the Journal and '
-        'Settings. Settings can show you this tour again. Off you go, Ada. '
-        'Walk.',
+        // Spec 0022 amendment 1: the Bank button too.
+        'Up top: the bank, your supply chest, your achievements, the Journal '
+        'and Settings. Settings can show you this tour again. Off you go, '
+        'Ada. Walk.',
       );
     });
   });

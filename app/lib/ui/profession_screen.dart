@@ -185,7 +185,7 @@ class _ProfessionCard extends StatelessWidget {
           children: [
             Text(p.tierAt(level).name, style: text.titleSmall),
             Text.rich(
-              numberSpan('${fmt(xp)} / ${fmt(next)} XP'),
+              numberSpan('${fmt(xp - floor)} / ${fmt(next - floor)} XP'),
               style: text.bodySmall,
             ),
           ],
@@ -565,7 +565,7 @@ class _RecipeTile extends StatelessWidget {
                         'steps · '
                         '${game.professionXpFor(s, r.profession, r.level, r.xp)} '
                         '${labels.profession(r.profession)} XP'
-                  : ' · ${game.lockedReason(s, Activity.craft(recipe))}',
+                  : ' · ${game.lockedReason(s, Activity.craft(recipe), named: false)}',
             ),
           ],
         ),

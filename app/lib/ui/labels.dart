@@ -182,6 +182,20 @@ class Labels {
     return null;
   }
 
+  /// The second line of a gear or tool row, so that two alike rows differ:
+  /// "+2 Defense · +20 HP · Chest · +4% Hit", "Mining tool · −20% steps";
+  /// null for a material or a meal (spec 0020 amendment 7).
+  String? rowLine(String key) {
+    if (data.toolProfession(key) != null) return toolLine(key);
+    final slotOf = data.itemOf(key)?.slot;
+    if (slotOf == null) return null;
+    return [
+      ...bonus(data.baseStatsOf(key)),
+      weaponLine(key) ?? slot(slotOf),
+      for (final r in data.bonusRolls(key)) bonusRoll(r),
+    ].join(' · ');
+  }
+
   /// A weapon's damage type and hands, "Pierce · One hand"; null for
   /// anything else (spec 0009 §8.2).
   String? weaponLine(String key) {

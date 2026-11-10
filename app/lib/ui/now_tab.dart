@@ -242,7 +242,7 @@ class _StatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _Bar(
-              label: 'XP ${fmt(s.xp)} / ${fmt(next)}',
+              label: 'XP ${fmt(s.xp - floor)} / ${fmt(next - floor)}',
               value: (s.xp - floor) / (next - floor),
             ),
             const SizedBox(height: 12),
