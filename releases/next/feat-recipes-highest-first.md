@@ -1,0 +1,1 @@
+- The recipe lists of Crafting and Cooking now start with the highest level you can make. The recipes you cannot make yet come last, the next one to open first.
