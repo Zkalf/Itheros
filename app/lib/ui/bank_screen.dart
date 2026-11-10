@@ -75,6 +75,27 @@ class _ItemList extends StatelessWidget {
   final GameController controller;
   final bool inBank;
 
+  /// Stores every material, then says how many kinds moved. A refusal shows
+  /// as a note: the sync before the move can end a walk away from Camp.
+  Future<void> _storeAllMaterials(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final int kinds;
+    try {
+      kinds = await controller.storeAllMaterials();
+    } on ActivityError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (kinds == 0) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Stored $kinds ${kinds == 1 ? 'kind' : 'kinds'} of material.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = controller.game.data;
@@ -95,6 +116,21 @@ class _ItemList extends StatelessWidget {
         if (!inBank) ...[
           BagSpacesLine(game: controller.game, state: controller.state),
           const SizedBox(height: 8),
+          // Every material in one tap, at a place with a bank (spec 0020
+          // amendment 5, rules 5-11).
+          if (controller.game.hasBank(controller.state.location) &&
+              controller.game.materialsInBag(controller.state).isNotEmpty) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const ValueKey('store-all-materials'),
+                onPressed: () => _storeAllMaterials(context),
+                icon: const Icon(Icons.account_balance),
+                label: const Text('Store all materials'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
         ],
         // The chips of the four kinds; each tab keeps its own pick (spec
         // 0020 amendment 2).

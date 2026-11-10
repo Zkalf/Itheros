@@ -6,6 +6,7 @@ import '../game_controller.dart';
 import 'achievements_screen.dart';
 import 'actions.dart';
 import 'away_summary_card.dart';
+import 'bank_screen.dart';
 import 'camp_tour.dart';
 import 'character_tab.dart';
 import 'controller_scope.dart';
@@ -112,6 +113,13 @@ class _HomeShellState extends State<HomeShell> {
             ignoring: touring,
             child: BarPlate(
               children: [
+                // The bank in one tap, from any tab (spec 0020 amendment 5).
+                IconButton(
+                  key: const ValueKey('bank-button'),
+                  icon: const Icon(Icons.account_balance),
+                  tooltip: 'Bank',
+                  onPressed: () => openBank(context),
+                ),
                 // Spec 0013 §3.1: left of Achievements, a dot while a chest
                 // waits.
                 IconButton(
