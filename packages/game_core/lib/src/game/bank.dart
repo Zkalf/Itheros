@@ -59,6 +59,29 @@ extension GameBank on Game {
     return n;
   }
 
+  /// Moves the whole stack of every material from the bag to the bank (spec
+  /// 0020 amendment 5, rules 6-8). Gear, tools and meals stay. No steps, no
+  /// roll. With no material in the bag, nothing moves.
+  GameState storeAllMaterials(GameState s) {
+    if (!hasBank(s.location)) {
+      throw ActivityError('Items move only at a bank.');
+    }
+    final n = s.copy();
+    for (final key in materialsInBag(s)) {
+      final count = s.inventory[key]!;
+      n.addItem(key, -count);
+      n.itemBank[key] = (n.itemBank[key] ?? 0) + count;
+    }
+    return n;
+  }
+
+  /// The materials in the bag, in the bag's order: what
+  /// [storeAllMaterials] moves.
+  List<String> materialsInBag(GameState s) => [
+    for (final key in s.inventory.keys)
+      if (data.kindOf(key) == ItemKind.material) key,
+  ];
+
   /// Moves [count] of [key] from the bank to the bag (spec 0020 rule 3).
   GameState take(GameState s, String key, int count) {
     _checkMove(s, s.itemBank[key] ?? 0, count, 'in the bank');

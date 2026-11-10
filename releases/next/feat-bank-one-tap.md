@@ -1,0 +1,2 @@
+- The bank is one tap away: a new Bank button stands in the top bar, on every tab.
+- At Camp, "Store all materials" in the bank moves every material from your bag to the bank in one tap.

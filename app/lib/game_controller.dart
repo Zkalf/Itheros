@@ -376,6 +376,18 @@ class GameController extends ChangeNotifier {
   Future<void> storeInBank(String key, int count) =>
       _act((s) => game.store(s, key, count));
 
+  /// Moves every material from the bag to the item bank (spec 0020
+  /// amendment 5). Gives the number of kinds that moved, counted after the
+  /// sync.
+  Future<int> storeAllMaterials() async {
+    var kinds = 0;
+    await _act((s) {
+      kinds = game.materialsInBag(s).length;
+      return game.storeAllMaterials(s);
+    });
+    return kinds;
+  }
+
   /// Moves [count] of [key] from the item bank to the bag.
   Future<void> takeFromBank(String key, int count) =>
       _act((s) => game.take(s, key, count));
