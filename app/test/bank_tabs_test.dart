@@ -14,9 +14,9 @@ void main() {
       (s) => s.itemBank.addAll(items);
 
   Future<void> openBank(WidgetTester t) async {
-    await t.ensureVisible(find.byKey(const ValueKey('open-bank')));
+    await t.ensureVisible(find.byKey(const ValueKey('bank-card')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('open-bank')));
+    await t.tap(find.byKey(const ValueKey('bank-card')));
     await t.pumpAndSettle();
   }
 

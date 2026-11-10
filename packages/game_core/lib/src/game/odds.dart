@@ -127,6 +127,11 @@ extension GameOdds on Game {
     return data.combat.hitChance(level(s) - e.level, stats(s).hit + slayerHit);
   }
 
+  /// The player's chance to hit a monster of the player's own level, in
+  /// percent: what the stats block shows as Hit (spec 0009 amendment 4,
+  /// rules 1-2). Slayer is for one monster, so it does not count.
+  int hitChanceAtLevel(GameState s) => data.combat.hitChance(0, stats(s).hit);
+
   /// [enemy]'s chance to hit the player, in percent. Monsters have no Hit.
   int monsterHitChance(GameState s, String enemy) =>
       data.combat.hitChance(data.enemies[enemy]!.level - level(s), 0);

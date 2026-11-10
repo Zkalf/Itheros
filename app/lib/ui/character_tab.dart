@@ -11,6 +11,7 @@ import 'images.dart';
 import 'paper_doll.dart';
 import 'salvage_all.dart';
 import 'socket.dart';
+import 'stat_sheet.dart';
 import 'talents_tab.dart';
 import 'text_size.dart';
 import 'theme.dart';
@@ -56,9 +57,16 @@ class _CharacterTabState extends State<CharacterTab> {
     final c = ControllerScope.of(context);
     final game = c.game;
     final s = c.state;
-    final stats = game.stats(s);
     // The meal's share, marked on its stats (spec 0011 §8.3).
     final meal = game.mealBonus(s);
+    // A stat of the block: its number, and a tap opens its sheet (spec 0009
+    // amendment 4).
+    Widget stat(StatKind kind, {int meal = 0}) => _Stat(
+      kind.label,
+      StatInfo.value(game, s, kind),
+      meal: meal,
+      onTap: () => showStatSheet(context, game, s, kind),
+    );
     final level = game.level(s);
     final rank = game.rank(level).name;
     final points = game.talentPointsLeft(s);
@@ -120,9 +128,9 @@ class _CharacterTabState extends State<CharacterTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _Stat('Level', '$level'),
-                    _Stat('HP', '${stats.hp}', meal: meal.hp),
-                    _Stat('Attack', '${stats.attack}', meal: meal.attack),
-                    _Stat('Defense', '${stats.defense}', meal: meal.defense),
+                    stat(StatKind.hp, meal: meal.hp),
+                    stat(StatKind.attack, meal: meal.attack),
+                    stat(StatKind.defense, meal: meal.defense),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -130,10 +138,11 @@ class _CharacterTabState extends State<CharacterTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _Stat('Crit', '${game.critChance(s)}%', meal: meal.crit),
-                    _Stat('Hit', '${stats.hit}%'),
-                    _Stat('Dodge', '${game.dodgeChance(s)}%'),
-                    _Stat('Block', '${game.blockChance(s)}%'),
+                    stat(StatKind.crit, meal: meal.crit),
+                    // The chance at the player's level (amendment 4).
+                    stat(StatKind.hit),
+                    stat(StatKind.dodge),
+                    stat(StatKind.block),
                   ],
                 ),
                 if (points > 0) ...[
@@ -314,7 +323,7 @@ class _RankTitleState extends State<_RankTitle> {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat(this.label, this.value, {this.meal = 0});
+  const _Stat(this.label, this.value, {this.meal = 0, this.onTap});
 
   final String label;
   final String value;
@@ -322,20 +331,32 @@ class _Stat extends StatelessWidget {
   /// What the running meal adds, shown as "(+2 meal)".
   final int meal;
 
+  /// Opens the stat's sheet (spec 0009 amendment 4); null for Level.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Column(
+    return InkWell(
       key: ValueKey('stat-$label'),
-      children: [
-        // A stat value is a number that stands alone (spec 0014 §2.2).
-        Text(
-          value,
-          style: text.headlineSmall?.copyWith(fontFamily: Fonts.number),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        // No padding at the sides: at text size 2.0 the four stats fill the
+        // row of a 408 dp phone.
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          children: [
+            // A stat value is a number that stands alone (spec 0014 §2.2).
+            Text(
+              value,
+              style: text.headlineSmall?.copyWith(fontFamily: Fonts.number),
+            ),
+            Text(label, style: text.labelSmall?.copyWith(color: Quiet.muted)),
+            if (meal > 0) Text('(+$meal meal)', style: text.bodySmall),
+          ],
         ),
-        Text(label, style: text.labelSmall?.copyWith(color: Quiet.muted)),
-        if (meal > 0) Text('(+$meal meal)', style: text.bodySmall),
-      ],
+      ),
     );
   }
 }

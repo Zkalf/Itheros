@@ -213,7 +213,8 @@ void main() {
         'the bag stay', (t) async {
       await pumpGame(t);
       expect(key('bank-card'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Open bank'), findsOneWidget);
+      // A plain row since amendment 6: no button.
+      expect(find.text('Open bank'), findsNothing);
       await openTab(t, 'character');
       await t.tap(key('tab-bag'));
       await t.pumpAndSettle();

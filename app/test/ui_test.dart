@@ -2355,7 +2355,8 @@ void fightsWithDepth() {
       await openGear(t);
       for (final (label, value) in [
         ('Crit', '5%'),
-        ('Hit', '0%'),
+        // The chance at the player's level (spec 0009 amendment 4).
+        ('Hit', '75%'),
         ('Dodge', '2%'),
         ('Block', '25%'),
       ]) {
