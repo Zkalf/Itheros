@@ -3154,10 +3154,7 @@ void lakeAndHunt() {
       await openGear(t);
       final bonus = c.game.mealBonus(c.state).attack;
       expect(bonus, greaterThan(0));
-      expect(
-        within('stat-Attack', find.text('(+$bonus meal)')),
-        findsOneWidget,
-      );
+      expect(within('stat-Attack', find.text('+$bonus meal')), findsOneWidget);
       expect(within('stat-HP', find.textContaining('meal')), findsNothing);
     });
 
