@@ -669,6 +669,42 @@ class _Here extends StatelessWidget {
     final nodes = game.availableNodes(s);
     return [
       for (final id in nodes) nodeTile(c, id),
+      // The services first: Bank, Forge, Camp fire, then the teachers and
+      // the trainer (spec 0020 amendment 6). The Bank row is a plain row:
+      // a tap opens the bank.
+      if (place.itemBank)
+        ListTile(
+          key: const ValueKey('bank-card'),
+          leading: const SizedBox(
+            width: 32,
+            child: Icon(Icons.account_balance),
+          ),
+          // The plain title of the Forge and the Camp fire: the three
+          // services read as one group, the people below in their own face.
+          title: const Text('Bank'),
+          subtitle: const Text('Store items and take them back'),
+          onTap: () => openBank(context),
+        ),
+      if (place.crafting && onOpenProfessions != null)
+        ListTile(
+          key: const ValueKey('here-forge'),
+          leading: const SizedBox(
+            width: 32,
+            child: Icon(Icons.local_fire_department),
+          ),
+          title: const Text('Forge'),
+          subtitle: const Text('Craft gear in Professions'),
+          onTap: () => onOpenProfessions!('crafting'),
+        ),
+      // The camp fire opens Cooking (spec 0011 §5.1).
+      if (place.fire && onOpenProfessions != null)
+        ListTile(
+          key: const ValueKey('here-fire'),
+          leading: const SizedBox(width: 32, child: Icon(Icons.outdoor_grill)),
+          title: const Text('Camp fire'),
+          subtitle: const Text('Cook meals in Professions'),
+          onTap: () => onOpenProfessions!('cooking'),
+        ),
       // The teachers here (spec 0010 §6.1), a dot when a tip waits.
       for (final p in game.data.professions.values)
         if (p.teacher.location == s.location)
@@ -702,44 +738,6 @@ class _Here extends StatelessWidget {
               ? const Badge(key: ValueKey('trainer-dot'))
               : null,
           onTap: () => showTrainer(context, c),
-        ),
-      if (place.crafting && onOpenProfessions != null)
-        ListTile(
-          key: const ValueKey('here-forge'),
-          leading: const SizedBox(
-            width: 32,
-            child: Icon(Icons.local_fire_department),
-          ),
-          title: const Text('Forge'),
-          subtitle: const Text('Craft gear in Professions'),
-          onTap: () => onOpenProfessions!('crafting'),
-        ),
-      // The item bank (spec 0020 §3.1).
-      if (place.itemBank)
-        ListTile(
-          key: const ValueKey('bank-card'),
-          leading: const SizedBox(
-            width: 32,
-            child: Icon(Icons.account_balance),
-          ),
-          title: const Text('Bank'),
-          titleTextStyle: nameStyle(context),
-          subtitle: const Text('Store items and take them back'),
-          trailing: FilledButton(
-            key: const ValueKey('open-bank'),
-            onPressed: () => openBank(context),
-            child: const Text('Open bank'),
-          ),
-          onTap: () => openBank(context),
-        ),
-      // The camp fire opens Cooking (spec 0011 §5.1).
-      if (place.fire && onOpenProfessions != null)
-        ListTile(
-          key: const ValueKey('here-fire'),
-          leading: const SizedBox(width: 32, child: Icon(Icons.outdoor_grill)),
-          title: const Text('Camp fire'),
-          subtitle: const Text('Cook meals in Professions'),
-          onTap: () => onOpenProfessions!('cooking'),
         ),
       if (enemies.isEmpty &&
           nodes.isEmpty &&

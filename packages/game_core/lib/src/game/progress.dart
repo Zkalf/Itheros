@@ -1,5 +1,15 @@
 part of '../game.dart';
 
+/// The sources of the player's stats (spec 0009 amendment 4, rule 6): the
+/// level, worn gear, talents, the running meal and earned achievements.
+typedef StatParts = ({
+  Stats level,
+  Stats gear,
+  Stats talents,
+  Stats meal,
+  Stats achievements,
+});
+
 /// Levels, XP, professions, the character, teachers, stats and the next goal.
 extension GameProgress on Game {
   /// Counts [area] as visited, once (spec 0004 §4), and explored (spec
@@ -256,13 +266,29 @@ extension GameProgress on Game {
     return total;
   }
 
-  Stats _gearStats(GameState s) {
-    var total = data.baseStats + data.statsPerLevel * (level(s) - 1);
+  Stats _gearStats(GameState s) => _levelStats(s) + _wornStats(s);
+
+  Stats _levelStats(GameState s) =>
+      data.baseStats + data.statsPerLevel * (level(s) - 1);
+
+  Stats _wornStats(GameState s) {
+    var total = const Stats();
     for (final item in s.equipment.values) {
       total += data.bonusOf(item);
     }
     return total;
   }
+
+  /// The sources of the player's stats, one by one; [stats] is their sum
+  /// (spec 0009 amendment 4, rule 6). The base chances of Crit and Hit are
+  /// not stats: [critChance] and [hitChanceAtLevel] add them.
+  StatParts statParts(GameState s) => (
+    level: _levelStats(s),
+    gear: _wornStats(s),
+    talents: talentBonus(s, _gearStats(s)),
+    meal: mealBonus(s),
+    achievements: achievementBonus(s),
+  );
 
   /// The main-hand weapon's damage type; null bare-handed (spec 0009 §3).
   String? damageType(GameState s) => switch (s.equipment['mainHand']) {

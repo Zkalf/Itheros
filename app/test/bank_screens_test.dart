@@ -17,9 +17,9 @@ void main() {
       (s) => s.itemBank.addAll(items);
 
   Future<void> openFromNow(WidgetTester t) async {
-    await t.ensureVisible(find.byKey(const ValueKey('open-bank')));
+    await t.ensureVisible(find.byKey(const ValueKey('bank-card')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('open-bank')));
+    await t.tap(find.byKey(const ValueKey('bank-card')));
     await t.pumpAndSettle();
     // The bank screen opens on Bank (spec 0020 amendment 3); these tests
     // start on the Bag tab.
@@ -56,7 +56,8 @@ void main() {
     testWidgets('criterion 16: at Camp, Now shows the Bank card', (t) async {
       await pumpGame(t);
       expect(find.byKey(const ValueKey('bank-card')), findsOneWidget);
-      expect(find.text('Open bank'), findsOneWidget);
+      // A plain row since amendment 6: no button.
+      expect(find.text('Open bank'), findsNothing);
       await openFromNow(t);
       expect(find.byKey(const ValueKey('bank-screen')), findsOneWidget);
     });
