@@ -1,6 +1,6 @@
 # Spec 0014: Quiet Teal (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0014](0014-quiet-teal.md) with its amendments 1-10, and the parts of other specs that change
 spec 0014 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main f5f5c5b)
