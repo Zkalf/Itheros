@@ -109,5 +109,10 @@ void main() {
       expect(file, startsWith(_intro));
       expect(file, contains('## new'));
     });
+
+    test('goes first in a file without an intro', () {
+      final file = withReport('## old\n\n| b |\n', '## new\n\n| a |\n');
+      expect(file.indexOf('## new'), lessThan(file.indexOf('## old')));
+    });
   });
 }

@@ -99,6 +99,7 @@ String reportTable(
 
 /// [file] with [report] above its older reports, under its intro.
 String withReport(String file, String report) {
+  if (file.startsWith('## ')) return '$report\n$file';
   final at = file.indexOf('\n## ');
   if (at < 0) return '${file.trimRight()}\n\n$report';
   return '${file.substring(0, at).trimRight()}\n\n$report\n${file.substring(at + 1)}';
