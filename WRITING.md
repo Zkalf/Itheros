@@ -32,7 +32,7 @@ them. A light touch is fine:
 
 ### Words
 1. Give each word one meaning and each thing one name. Use the same name every time: "placeholder", not also
-   "fallback" or "stand-in".
+   "fallback" or "stand-in". [GLOSSARY.md](GLOSSARY.md) lists the names. A text that brings a new word adds it there.
 2. Keep the articles ("the", "a", "an"). Write "The tab shows six buttons", not "Tab shows six buttons".
 3. Do not use -ing forms of verbs, phrasal verbs or contractions where a plain form exists. For example, write:
    - "when the player taps", not "when tapping"

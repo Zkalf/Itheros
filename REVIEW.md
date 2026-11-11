@@ -19,6 +19,8 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
 7. **The release notes.** A change that players notice adds its own file with plain lines in `releases/next/` (#119,
    spec 0018 amendment 2). An edit of `releases/next.md` outside the final notes is a Nit. A missing
    line is Important; a line in words that are not for players is a Nit.
+8. **The glossary.** A spec, amendment, plan or design that brings a new word adds it to `GLOSSARY.md`. A word with
+   a second meaning there is Important. A missing word is a Nit.
 
 ## Findings
 - **Important**: must be fixed before the merge. A wrong result, a broken acceptance criterion, a privacy or
