@@ -1,6 +1,6 @@
 # Spec 0004: Journal and test walks (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0004](0004-journal-and-test-walks.md) with its amendments 1-6, and the parts of other specs
 that change spec 0004 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main c2eded8)
