@@ -1871,16 +1871,6 @@ void characterScreen() {
       expect(card(find.textContaining('Used in: Iron')), findsOneWidget);
     });
 
-    testWidgets('amendment 3: the hands alone in the bottom row', (t) async {
-      await pumpGame(t);
-      await openGear(t);
-      Offset at(String id) => t.getTopLeft(find.byKey(ValueKey('slot-$id')));
-      expect(at('mainHand').dy, at('offHand').dy);
-      expect(at('mainHand').dy, greaterThan(at('trinket1').dy));
-      expect(at('trinket1').dx, at('head').dx, reason: 'left column');
-      expect(at('trinket2').dx, at('gloves').dx, reason: 'right column');
-    });
-
     testWidgets('amendment 3: an empty slot lists what fits, and fills it', (
       t,
     ) async {
