@@ -1,6 +1,6 @@
 # Spec 0008: Character and world layout (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0008](0008-character-and-world-layout.md) with its amendments 1-8 and amendment 7 erratum 1,
 and the parts of other specs that change spec 0008 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main 51b7d8b)
