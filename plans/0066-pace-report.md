@@ -1,6 +1,6 @@
 # Plan 0066: Build "a pace report now and then"
 
-Status: draft
+Status: accepted
 Spec: none: a tool, not a game rule (issue #185) · Product owner: Zkalf · Date: 2026-11-11
 
 Names of files, widgets and tests refer to `main` at `7103056`.
