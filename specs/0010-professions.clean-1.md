@@ -1,6 +1,6 @@
 # Spec 0010: Professions (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0010](0010-professions.md) with its amendments 1-13, amendment 4 erratum 1 and amendment 11
 erratum 1, and the parts of other specs that change spec 0010 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main 981b518)
