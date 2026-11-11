@@ -679,7 +679,7 @@ class _Here extends StatelessWidget {
           key: const ValueKey('bank-card'),
           leading: const SizedBox(
             width: 32,
-            child: Icon(Icons.account_balance),
+            child: DrawnIcon('bank', fallback: Icons.account_balance),
           ),
           // The plain title of the Forge and the Camp fire: the three
           // services read as one group, the people below in their own face.
@@ -692,7 +692,7 @@ class _Here extends StatelessWidget {
           key: const ValueKey('here-forge'),
           leading: const SizedBox(
             width: 32,
-            child: Icon(Icons.local_fire_department),
+            child: DrawnIcon('forge', fallback: Icons.local_fire_department),
           ),
           title: const Text('Forge'),
           subtitle: const Text('Craft gear in Professions'),
@@ -702,7 +702,10 @@ class _Here extends StatelessWidget {
       if (place.fire && onOpenProfessions != null)
         ListTile(
           key: const ValueKey('here-fire'),
-          leading: const SizedBox(width: 32, child: Icon(Icons.outdoor_grill)),
+          leading: const SizedBox(
+            width: 32,
+            child: DrawnIcon('fire', fallback: Icons.outdoor_grill),
+          ),
           title: const Text('Camp fire'),
           subtitle: const Text('Cook meals in Professions'),
           onTap: () => onOpenProfessions!('cooking'),
@@ -732,7 +735,10 @@ class _Here extends StatelessWidget {
       if (game.data.trainer.location == s.location)
         ListTile(
           key: const ValueKey('trainer'),
-          leading: const SizedBox(width: 32, child: Icon(Icons.auto_awesome)),
+          leading: const SizedBox(
+            width: 32,
+            child: DrawnIcon('trainer', fallback: Icons.auto_awesome),
+          ),
           title: Text(trainerName(game.data.trainer)),
           titleTextStyle: nameStyle(context),
           subtitle: const Text('Talents'),

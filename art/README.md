@@ -45,3 +45,7 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
   the slot holds (a helm, a boot, a ring), not the painted style above. The game tints it faint on the dark socket, so
   an empty slot reads as empty and still tells its slot. Ring 1 and Ring 2 share `ring`, the trinkets `trinket`.
   `--preview <file.html>` shows them at 72 and 48 dp.
+- The talent icons come from `art/talents.py` (one for each `image` of `talents.json`, to
+  `app/assets/images/talents/`), and the small icons of Camp and of the level-up card from `art/icons.py` (to
+  `app/assets/images/icons/`): flat white silhouettes like the slots. The game tints them like the stock icons they
+  replace (teal for talents). Without its file, a thing keeps its stock icon.

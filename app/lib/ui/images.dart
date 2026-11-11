@@ -38,6 +38,19 @@ class ImageIndex {
     return has(key) ? '$_folder$key$_type' : null;
   }
 
+  /// A small drawn icon (`icons/bank`), or null when it has no file (#198).
+  String? iconAsset(String name) {
+    final key = 'icons/$name';
+    return has(key) ? '$_folder$key$_type' : null;
+  }
+
+  /// The drawn icon of a talent's `image` (`talents/hp`), or null when it
+  /// has no file: the talent then keeps its stock icon (#198).
+  String? talentAsset(String image) {
+    final key = 'talents/$image';
+    return has(key) ? '$_folder$key$_type' : null;
+  }
+
   /// The image of [thing] by its key (spec 0014 §3.1), or else its
   /// placeholder (§3.2). A placeholder comes from [phSpots], not from the
   /// index, so the placeholders show without an index.
@@ -263,4 +276,40 @@ class ImageScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(ImageScope oldWidget) => images != oldWidget.images;
+}
+
+/// A small icon that Claude drew (`art/icons.py`), tinted like the stock icon
+/// it replaces; the stock [fallback] shows while the drawing has no file
+/// (#198).
+class DrawnIcon extends StatelessWidget {
+  const DrawnIcon(
+    this.name, {
+    super.key,
+    required this.fallback,
+    this.size,
+    this.color,
+  });
+
+  final String name;
+  final IconData fallback;
+  final double? size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = IconTheme.of(context);
+    final size = this.size ?? theme.size ?? 24;
+    final color = this.color ?? theme.color;
+    return switch (ImageScope.of(context).iconAsset(name)) {
+      final asset? => Image.asset(
+        asset,
+        key: ValueKey('drawn-icon-$name'),
+        width: size,
+        height: size,
+        color: color,
+        colorBlendMode: BlendMode.srcIn,
+      ),
+      null => Icon(fallback, size: size, color: color),
+    };
+  }
 }

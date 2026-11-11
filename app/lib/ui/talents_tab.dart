@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
+import 'images.dart';
 import 'labels.dart' show fmt;
 import 'theme.dart';
 
@@ -325,11 +326,7 @@ class TalentNode extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: ring,
                   ),
-                  child: Icon(
-                    talentIcon(t.image),
-                    size: socket * .57,
-                    color: Quiet.teal,
-                  ),
+                  child: TalentIcon(t.image, size: socket * .57),
                 ),
                 Positioned(
                   right: -4,
@@ -415,7 +412,31 @@ class TalentSocket extends StatelessWidget {
       color: Quiet.socket,
       borderRadius: BorderRadius.circular(10),
     ),
-    child: Icon(talentIcon(image), size: 28, color: Quiet.teal),
+    child: TalentIcon(image, size: 28),
+  );
+}
+
+/// A talent's drawn icon in teal, or its stock icon when the drawing has no
+/// file (#198).
+class TalentIcon extends StatelessWidget {
+  const TalentIcon(this.image, {super.key, required this.size});
+
+  final String image;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: switch (ImageScope.of(context).talentAsset(image)) {
+      final asset? => Image.asset(
+        asset,
+        key: ValueKey('talent-icon-$image'),
+        width: size,
+        height: size,
+        color: Quiet.teal,
+        colorBlendMode: BlendMode.srcIn,
+      ),
+      null => Icon(talentIcon(image), size: size, color: Quiet.teal),
+    },
   );
 }
 

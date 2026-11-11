@@ -1,1 +1,2 @@
 - An empty gear slot now shows a faint outline of what goes there (a helm, a boot, a ring), so you can tell the slots apart at a glance.
+- Talents have their own drawn icons, and so do the Bank, the Forge, the Camp fire and the trainer on the Now screen, and the news on a level-up.
