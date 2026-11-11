@@ -1,1 +1,0 @@
-- One bag space now holds up to 100 of a material or 20 of a meal. A bigger pile takes more spaces, and the bag shows each stack as its own square. If your bag holds big piles, it may be overloaded after the update: store them in the bank at Camp, and nothing is lost.

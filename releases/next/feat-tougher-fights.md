@@ -1,1 +1,0 @@
-- Monsters are tougher: fights last longer and can hurt, and each kill gives more XP and loot. Hits miss more often, so luck matters again, even with the best gear. The first monsters stay gentle.

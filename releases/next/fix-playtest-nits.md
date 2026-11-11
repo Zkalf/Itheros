@@ -1,5 +1,0 @@
-- XP numbers now count inside the level, like their bars: a new level starts at "0 / 48 XP". This goes for your professions and for your character.
-- In the bank, a row of gear or a tool shows its stats and bonus stats under its name, so you can tell two alike pieces apart.
-- A walk that both used and saved step bank steps now reports one line, for example "Step bank: +2,630 steps."
-- A locked recipe or spot no longer repeats its name: it reads "Needs Crafting 16 (you have 11)".
-- The Camp tour's last card now names the Bank button.
