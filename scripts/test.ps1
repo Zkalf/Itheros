@@ -15,7 +15,8 @@
 param([Parameter(Mandatory)][string]$Path, [string]$Name)
 
 $ErrorActionPreference = 'Stop'
-$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+# Keep the PATH of the caller too: on CI, flutter-action puts Flutter only there (#262).
+$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
 
 $file = (Resolve-Path $Path).Path
 $pkg = Split-Path -Parent $file
