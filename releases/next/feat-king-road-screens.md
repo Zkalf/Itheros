@@ -1,1 +1,0 @@
-- The Graveyard King now guards the road across the river. Beat him once to reach Grey Moor and the lands beyond. If you have already been to Grey Moor, the road stays open for you.

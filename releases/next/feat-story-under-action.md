@@ -1,1 +1,0 @@
-- On a first visit, the story of a place now stands under your current action, so you see your progress first.

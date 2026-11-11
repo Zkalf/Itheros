@@ -1,3 +1,0 @@
-- At Camp, the Bank, the Forge and the Camp fire now stand first on the Now screen, before the teachers.
-- Hit on the Character screen now shows your chance to hit a monster of your level, for example 77%.
-- Tap a stat on the Character screen (HP, Attack, Defense, Crit, Hit, Dodge or Block) to see what it does and where its number comes from.
