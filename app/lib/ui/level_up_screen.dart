@@ -127,8 +127,9 @@ class _LevelCard extends StatelessWidget {
             ),
           )
         else
-          Icon(
-            Icons.arrow_circle_up,
+          DrawnIcon(
+            'level',
+            fallback: Icons.arrow_circle_up,
             size: 72,
             color: Theme.of(context).colorScheme.primary,
           ),
@@ -164,7 +165,7 @@ class _LevelCard extends StatelessWidget {
           if (points > 0)
             ListTile(
               dense: true,
-              leading: _newsIcon(Icons.auto_awesome),
+              leading: _newsIcon('talent', Icons.auto_awesome),
               title: Text(talentPointLine(points)),
             ),
         ],
@@ -199,8 +200,8 @@ class NewsTile extends StatelessWidget {
         // made, so the socket has no ring.
         NewsKind.recipe => socket(ItemThing(data.recipes[news.id]!.output)),
         NewsKind.rank => socket(RankThing(news.id)),
-        NewsKind.gatheringSpot => _newsIcon(Icons.landscape),
-        NewsKind.talentPoint => _newsIcon(Icons.auto_awesome),
+        NewsKind.gatheringSpot => _newsIcon('spot', Icons.landscape),
+        NewsKind.talentPoint => _newsIcon('talent', Icons.auto_awesome),
       },
       title: Text(Labels(data, c.state.character).news(news)),
     );
@@ -209,7 +210,10 @@ class NewsTile extends StatelessWidget {
 
 /// The icon of a "What's new" row, in the middle of the place of a socket,
 /// so that the text of each row starts at the same place.
-Widget _newsIcon(IconData icon) => SizedBox(width: 48, child: Icon(icon));
+Widget _newsIcon(String name, IconData fallback) => SizedBox(
+  width: 48,
+  child: Center(child: DrawnIcon(name, fallback: fallback)),
+);
 
 /// The level-up line of [n] new talent points (spec 0015 §3.2).
 String talentPointLine(int n) => n == 1

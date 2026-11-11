@@ -116,11 +116,27 @@ class ItemSquare extends StatelessWidget {
                           decoration: socketDecoration(size),
                           child: SizedBox.square(
                             dimension: size,
-                            child: Icon(
-                              dimmed ? Icons.link : slotIcon(emptySlot ?? ''),
-                              color: Quiet.steel.withValues(alpha: .3),
-                              size: 28,
-                            ),
+                            child: switch (dimmed
+                                ? null
+                                : ImageScope.of(context)
+                                      .slotAsset(emptySlot ?? '')) {
+                              // The faint silhouette of the slot, drawn in
+                              // white and tinted here (#198).
+                              final asset? => Padding(
+                                padding: EdgeInsets.all(size * .14),
+                                child: Image.asset(
+                                  asset,
+                                  key: ValueKey('slot-silhouette-$emptySlot'),
+                                  color: Quiet.steel.withValues(alpha: .45),
+                                  colorBlendMode: BlendMode.srcIn,
+                                ),
+                              ),
+                              null => Icon(
+                                dimmed ? Icons.link : slotIcon(emptySlot ?? ''),
+                                color: Quiet.steel.withValues(alpha: .3),
+                                size: 28,
+                              ),
+                            },
                           ),
                         )
                       : PictureSocket.item(

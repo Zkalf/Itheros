@@ -70,6 +70,9 @@ import 'ui_test.dart'
         option,
         pumpGame;
 
+/// A small icon that Claude drew (#198), by its name.
+Finder drawn(String name) => find.byKey(ValueKey('drawn-icon-$name'));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadFonts);
@@ -1192,7 +1195,8 @@ void criterion22() {
             matching: find.byType(ListTile),
           )
           .first;
-      expect(inside(point, find.byIcon(Icons.auto_awesome)), findsOneWidget);
+      // Its icon is the drawn one of #198.
+      expect(inside(point, drawn('talent')), findsOneWidget);
       expect(inside(point, find.byType(PictureSocket)), findsNothing);
     });
 
@@ -1202,10 +1206,7 @@ void criterion22() {
       final screen = find.byType(LevelUpScreen);
       expect(find.text('Level 2!'), findsOneWidget);
       expect(sockets72(screen), findsNothing);
-      expect(
-        inside(screen, find.byIcon(Icons.arrow_circle_up)),
-        findsOneWidget,
-      );
+      expect(inside(screen, drawn('level')), findsOneWidget);
     });
 
     testWidgets('a "What\'s new" row of a monster or a recipe starts with its '
@@ -1214,7 +1215,7 @@ void criterion22() {
       final (c, _) = await pumpGame(t);
       final labels = Labels(game.data, ada);
       final recipes = game.data.recipes;
-      for (final (news, thing, icon) in <(LevelNews, Thing?, IconData?)>[
+      for (final (news, thing, icon) in <(LevelNews, Thing?, String?)>[
         (
           const LevelNews(NewsKind.recipe, 'copper_sword'),
           ItemThing(recipes['copper_sword']!.output),
@@ -1240,12 +1241,8 @@ void criterion22() {
           const MonsterThing('goblin_brute'),
           null,
         ),
-        (
-          const LevelNews(NewsKind.gatheringSpot, 'iron_vein'),
-          null,
-          Icons.landscape,
-        ),
-        (const LevelNews(NewsKind.talentPoint, ''), null, Icons.auto_awesome),
+        (const LevelNews(NewsKind.gatheringSpot, 'iron_vein'), null, 'spot'),
+        (const LevelNews(NewsKind.talentPoint, ''), null, 'talent'),
       ]) {
         await pumpAlone(t, c, NewsTile(news: news), images: ringless);
         final row = find.byType(NewsTile);
@@ -1254,7 +1251,7 @@ void criterion22() {
         if (thing != null) {
           expectSocketFirst(t, row, thing, 48, what);
         } else {
-          expect(inside(row, find.byIcon(icon!)), findsOneWidget, reason: what);
+          expect(inside(row, drawn(icon!)), findsOneWidget, reason: what);
           expect(inside(row, find.byType(PictureSocket)), findsNothing);
         }
       }

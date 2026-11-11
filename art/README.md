@@ -41,3 +41,11 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
 - The marker of the water places (Mirror Lake, Smugglers' Cove) comes from `art/places.py` and goes to
   `app/assets/images/places/water.webp`: a gold-ringed medallion like nabriis's markers, with a fish over the waves.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
+- The empty gear slots come from `art/slots.py` and go to `app/assets/images/slots/`: a flat white silhouette of what
+  the slot holds (a helm, a boot, a ring), not the painted style above. The game tints it faint on the dark socket, so
+  an empty slot reads as empty and still tells its slot. Ring 1 and Ring 2 share `ring`, the trinkets `trinket`.
+  `--preview <file.html>` shows them at 72 and 48 dp.
+- The talent icons come from `art/talents.py` (one for each `image` of `talents.json`, to
+  `app/assets/images/talents/`), and the small icons of Camp and of the level-up card from `art/icons.py` (to
+  `app/assets/images/icons/`): flat white silhouettes like the slots. The game tints them like the stock icons they
+  replace (teal for talents). Without its file, a thing keeps its stock icon.
