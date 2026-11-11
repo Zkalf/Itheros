@@ -1201,8 +1201,10 @@ void criterion13() {
       expect(find.byIcon(Icons.water), findsOneWidget, reason: 'water icon');
     });
 
-    testWidgets('an empty doll slot shows its faint slot icon and no mark; the '
-        'off hand under a two-hander shows the link icon', (t) async {
+    // #198: the faint slot icon is a drawn silhouette of the slot, tinted on
+    // the socket. A slot without its file keeps the stock icon.
+    testWidgets('an empty doll slot shows its faint silhouette and no mark; '
+        'the off hand under a two-hander shows the link icon', (t) async {
       await pumpGame(
         t,
         images: diskImages,
@@ -1213,13 +1215,58 @@ void criterion13() {
         if (g.id == 'mainHand') continue;
         final square = find.byKey(ValueKey('slot-${g.id}'));
         expect(markIn(square), findsNothing, reason: g.id);
-        expect(imagesIn(t, square), isEmpty, reason: g.id);
-        final icon = g.id == 'offHand' ? Icons.link : slotIcon(g.id);
-        expect(
-          find.descendant(of: square, matching: find.byIcon(icon)),
-          findsOneWidget,
-          reason: 'the icon of ${g.id}',
+        if (g.id == 'offHand') {
+          expect(imagesIn(t, square), isEmpty, reason: g.id);
+          expect(
+            find.descendant(of: square, matching: find.byIcon(Icons.link)),
+            findsOneWidget,
+            reason: 'the link icon',
+          );
+          continue;
+        }
+        final base = g.id.replaceAll(RegExp(r'\d+$'), '');
+        expect(imagesIn(t, square), [
+          'assets/images/slots/$base.webp',
+        ], reason: 'the silhouette of ${g.id}');
+        final image = t.widget<Image>(
+          find.descendant(of: square, matching: find.byType(Image)),
         );
+        expect(image.colorBlendMode, BlendMode.srcIn, reason: 'tinted');
+        expect(image.color!.a, lessThan(.5), reason: 'faint');
+        expect(
+          find.descendant(of: square, matching: find.byType(Icon)),
+          findsNothing,
+          reason: g.id,
+        );
+      }
+    });
+
+    testWidgets('a slot without its silhouette file keeps its stock icon', (
+      t,
+    ) async {
+      await pumpGame(
+        t,
+        images: ImageIndex.fromAssets(
+          imageFiles().where((f) => !f.contains('/slots/')),
+        ),
+      );
+      await openGear(t);
+      final square = find.byKey(const ValueKey('slot-head'));
+      expect(imagesIn(t, square), isEmpty);
+      expect(
+        find.descendant(of: square, matching: find.byIcon(slotIcon('head'))),
+        findsOneWidget,
+      );
+    });
+
+    test('each kind of gear slot has its silhouette file', () {
+      final kinds = {
+        for (final g in game.data.gearSlots)
+          g.id.replaceAll(RegExp(r'\d+$'), ''),
+      };
+      expect(kinds, hasLength(14));
+      for (final k in kinds) {
+        expect(diskImages.has('slots/$k'), isTrue, reason: k);
       }
     });
 

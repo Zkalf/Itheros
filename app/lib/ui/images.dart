@@ -31,6 +31,13 @@ class ImageIndex {
 
   bool has(String key) => keys.contains(key);
 
+  /// The silhouette of an empty gear slot (`ring1` -> `slots/ring`), or null
+  /// when it has no file: the slot then keeps its icon (#198).
+  String? slotAsset(String slot) {
+    final key = 'slots/${slot.replaceAll(RegExp(r'\d+$'), '')}';
+    return has(key) ? '$_folder$key$_type' : null;
+  }
+
   /// The image of [thing] by its key (spec 0014 §3.1), or else its
   /// placeholder (§3.2). A placeholder comes from [phSpots], not from the
   /// index, so the placeholders show without an index.

@@ -1,0 +1,1 @@
+- An empty gear slot now shows a faint outline of what goes there (a helm, a boot, a ring), so you can tell the slots apart at a glance.

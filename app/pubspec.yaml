@@ -39,6 +39,7 @@ flutter:
     - assets/images/placeholders/
     - assets/images/pictures/
     - assets/images/spots/
+    - assets/images/slots/
     # A copy of releases/*.md, made by scripts/copy-notes.ps1 (plan 0029).
     - assets/releases/
 
