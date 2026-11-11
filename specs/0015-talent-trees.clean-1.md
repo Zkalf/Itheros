@@ -1,6 +1,6 @@
 # Spec 0015: Talent trees (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0015](0015-talent-trees.md) with its amendments 1-7 and amendment 5 erratum 1, and the parts
 of other specs that change spec 0015 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main b9154d8)
