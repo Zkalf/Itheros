@@ -1,8 +1,8 @@
 # Spec 0009: Fights with depth (clean edition 1)
 
 Status: draft
-Clean edition of: [spec 0009](0009-fights-with-depth.md) with its amendments 1-4 and amendment 4 erratum 1, and the
-parts of other specs that change spec 0009 (see [Changes from other specs](#changes-from-other-specs))
+Clean edition of: [spec 0009](0009-fights-with-depth.md) with its erratum 1, its amendments 1-4 and amendment 4
+erratum 1, and the parts of other specs that change spec 0009 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main 16bb9b9)
 Issue: #59
 Product owner: Zkalf
@@ -15,9 +15,6 @@ Product owner: Zkalf
   Code and tests that cite them stay right.
 - A tag such as **(am. 4 rule 6)** marks a text that came from an amendment.
 - §13 keeps the criteria of each amendment under its own heading, with their own numbers.
-- **One known gap:** §2.1 says 3% per level for the hit chance. The data (`hitPerLevel`) has been 5 since plan 0011
-  milestone 1, and the Hit sheet of amendment 4 reads that number. No accepted text moved 3% to 5%. This edition
-  keeps 3% and marks the gap. A later amendment or erratum closes it.
 - [Where each change went](#where-each-change-went) lists every amendment and erratum and its place here.
 - A new change to spec 0009 is a new amendment of spec 0009, as before. A later clean edition folds it in.
 
@@ -79,10 +76,9 @@ Spec 0009 overrides:
 Each swing (the player's or the monster's) goes through two rolls:
 
 1. **Hit or miss**, the attacker's roll:
-   `hit chance = 75% + 3% × (attacker level − defender level) + attacker Hit`, kept between 50% and 90%.
+   `hit chance = 75% + 5% × (attacker level − defender level) + attacker Hit`, kept between 50% and 90%.
    - The base 75% and the top 90% come from spec 0002 amendment 3 change 6. Spec 0009 had 85% and 95%.
-   - **The gap:** the data has 5% per level (`hitPerLevel` 5), and the Hit sheet says 5% (§8.5). Spec 0009 says 3%.
-     See [How to read this edition](#how-to-read-this-edition).
+   - 5% per level comes from erratum 1. Spec 0009 said 3%, but the data (`hitPerLevel` 5) and the game always used 5%.
    - A miss deals nothing: "You miss", "<Monster> misses".
 2. **Dodge**, the defender's own roll, only on a hit: with chance Dodge the defender slips the blow and takes
    nothing: "<Monster> dodges", "You dodge". Dodge is 0% unless gear, a talent, an achievement or the monster's data
@@ -546,6 +542,7 @@ of `WRITING.md`). A note says where a later change moved a check.
 
 | File | Its changes | Place in this edition |
 |---|---|---|
+| [Erratum 1](0009-fights-with-depth.erratum.md) | the hit chance moves 5% per level, not 3% | §2.1 |
 | [Amendment 1](0009-fights-with-depth.amendment-1.md) | criterion 16: each seed on day 70-100, the median on day 80-100 | §9.5; §12 concern 2; criterion 16 |
 | [Amendment 2](0009-fights-with-depth.amendment-2.md) | 1-3 the worn row shows its bonus stats; 4 the other rows stay | §8.2; §13 |
 | [Amendment 3](0009-fights-with-depth.amendment-3.md) | 1 each seed on day 70-105; 2 the walker runs 105 days; 3 the median stays | §9.5; §13 |
