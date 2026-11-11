@@ -1,6 +1,6 @@
 # Spec 0009, erratum 1: the hit chance moves 5% per level
 
-Status: draft
+Status: accepted
 Corrects: [spec 0009](0009-fights-with-depth.md) §2.1 (the formula of the hit chance: "3% × (attacker level −
 defender level)")
 Issue: #59

@@ -1,6 +1,6 @@
 # Spec 0009: Fights with depth (clean edition 1)
 
-Status: draft
+Status: accepted
 Clean edition of: [spec 0009](0009-fights-with-depth.md) with its erratum 1, its amendments 1-4 and amendment 4
 erratum 1, and the parts of other specs that change spec 0009 (see [Changes from other specs](#changes-from-other-specs))
 Up to: 2026-11-11 (main 16bb9b9)
