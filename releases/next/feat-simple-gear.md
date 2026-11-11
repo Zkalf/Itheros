@@ -1,0 +1,1 @@
+- The Gear page is simpler: no figure, and your 16 gear slots stand in a grid of four columns, all on one screen.
