@@ -388,6 +388,19 @@ class GameController extends ChangeNotifier {
     return kinds;
   }
 
+  /// Moves the whole count of each of [keys] from the bag to the item bank,
+  /// or with [take] from the item bank to the bag (spec 0020 amendment 8).
+  /// Gives the number of items that moved, counted after the sync.
+  Future<int> moveItems(Iterable<String> keys, {required bool take}) async {
+    var moved = 0;
+    await _act((s) {
+      final from = take ? s.itemBank : s.inventory;
+      moved = keys.toSet().fold(0, (n, k) => n + (from[k] ?? 0));
+      return take ? game.takeItems(s, keys) : game.storeItems(s, keys);
+    });
+    return moved;
+  }
+
   /// Moves [count] of [key] from the item bank to the bag.
   Future<void> takeFromBank(String key, int count) =>
       _act((s) => game.take(s, key, count));

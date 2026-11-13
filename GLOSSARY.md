@@ -99,6 +99,8 @@ The owner and Claude chose these words on 2026-10-24, after the playtest of the 
 | **stack size** | The most items of one kind that one space holds (`bag.stacks` in `economy.json`). |
 | **overloaded** | The state of a bag that uses more spaces than it has. Actions out in the world then cost more steps. |
 | **item bank** | The store of items at Camp. Code name: `itemBank`. Not the step bank. |
+| **selection** | The items that the player picked in the bag or the bank for one action. A hold on an item starts it (spec 0020 amendment 8). |
+| **selection bar** | The bar at the bottom of the screen while a selection runs: ×, the number of selected items and the actions. |
 | **salvage** | To break spare gear into dust at a forge. |
 | **dust** | The result of a salvage, in the quality of the item: Uncommon dust, for example. |
 | **reroll** | To spend 3 dust at a forge for a new quality roll on an item. |

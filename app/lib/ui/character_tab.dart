@@ -8,6 +8,7 @@ import 'bank_screen.dart';
 import 'bag_grid.dart';
 import 'controller_scope.dart';
 import 'images.dart';
+import 'item_selection.dart';
 import 'paper_doll.dart';
 import 'salvage_all.dart';
 import 'socket.dart';
@@ -42,9 +43,20 @@ class _CharacterTabState extends State<CharacterTab> {
   /// card does not hide the pane it talks about (intent 0021).
   final _panes = GlobalKey();
 
+  /// The selected items of the bag (spec 0020 amendment 8). It ends with
+  /// this tab, so another tab of the game ends it (rule 19).
+  final _selection = ItemSelection();
+
+  @override
+  void dispose() {
+    _selection.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    _selection.addListener(() => setState(() {}));
     if (widget.pane == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final panes = _panes.currentContext;
@@ -74,7 +86,19 @@ class _CharacterTabState extends State<CharacterTab> {
     final text = Theme.of(context).textTheme;
     final who = s.character;
 
-    return ListView(
+    // A selection of the bag (spec 0020 amendment 8): Store at a place with
+    // a bank, Salvage at a forge (rule 1). It drops the items that left the
+    // bag, and it ends when no action is left (rule 19).
+    final store = game.hasBank(s.location);
+    final forge = game.atForge(s);
+    final canSelect = _pane == CharacterPane.bag && (store || forge);
+    _selection.keepOnly(canSelect ? s.inventory.keys : const []);
+    final selecting = _selection.running;
+    final salvage = forge
+        ? salvageOf(game, s, _selection.keys)
+        : const <String>[];
+
+    final page = ListView(
       padding: const EdgeInsets.all(gutter),
       children: [
         Card(
@@ -203,7 +227,12 @@ class _CharacterTabState extends State<CharacterTab> {
               ],
               selected: {_pane},
               showSelectedIcon: false,
-              onSelectionChanged: (v) => setState(() => _pane = v.single),
+              // Another pane ends the selection of the bag (spec 0020
+              // amendment 8, rule 19).
+              onSelectionChanged: (v) {
+                _selection.clear();
+                setState(() => _pane = v.single);
+              },
             ),
           ),
         ),
@@ -222,7 +251,10 @@ class _CharacterTabState extends State<CharacterTab> {
                     // The bag's spaces (spec 0021 points 13, 14).
                     BagSpacesLine(game: c.game, state: c.state),
                     const SizedBox(height: 8),
-                    BagGrid(controller: c),
+                    BagGrid(
+                      controller: c,
+                      selection: canSelect ? _selection : null,
+                    ),
                     // At a forge, salvage all of a quality (spec 0010
                     // amendment 9).
                     SalvageAllButtons(controller: c),
@@ -244,6 +276,38 @@ class _CharacterTabState extends State<CharacterTab> {
             ),
           ),
       ],
+    );
+    return PopScope(
+      // Back ends the selection and stays on the screen (rule 19).
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _selection.clear();
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: page),
+          // The bar stays under the list (rule 8).
+          if (selecting)
+            SelectionBar(
+              selection: _selection,
+              actions: [
+                if (store)
+                  MoveSelectedButton(
+                    controller: c,
+                    selection: _selection,
+                    take: false,
+                  ),
+                if (salvage.isNotEmpty)
+                  SalvageSelectedButton(
+                    controller: c,
+                    selection: _selection,
+                    keys: salvage,
+                  ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
