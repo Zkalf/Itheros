@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -6,6 +8,7 @@ import 'bag_spaces.dart';
 import 'controller_scope.dart';
 import 'images.dart';
 import 'item_card.dart';
+import 'item_selection.dart';
 import 'kind_chips.dart';
 import 'labels.dart';
 import 'socket.dart';
@@ -25,11 +28,72 @@ class BankScreen extends StatelessWidget {
   const BankScreen({super.key});
 
   @override
+  Widget build(BuildContext context) =>
+      const DefaultTabController(length: 2, child: _BankTabs());
+}
+
+/// The screen under its tab controller. It holds the selection of the open
+/// tab (spec 0020 amendment 8): Take on Bank, Store on Bag.
+class _BankTabs extends StatefulWidget {
+  const _BankTabs();
+
+  @override
+  State<_BankTabs> createState() => _BankTabsState();
+}
+
+class _BankTabsState extends State<_BankTabs> {
+  final _selection = ItemSelection();
+  TabController? _tabs;
+  var _tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection.addListener(() => setState(() {}));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tabs = DefaultTabController.of(context);
+    if (tabs == _tabs) return;
+    _tabs?.removeListener(_onTab);
+    _tabs = tabs..addListener(_onTab);
+    _tab = tabs.index;
+  }
+
+  /// The other tab ends the selection (amendment 8, rule 19).
+  void _onTab() {
+    final tab = _tabs!.index;
+    if (tab == _tab) return;
+    setState(() => _tab = tab);
+    _selection.clear();
+  }
+
+  @override
+  void dispose() {
+    _tabs?.removeListener(_onTab);
+    _selection.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
     final here = c.game.hasBank(c.state.location);
-    return DefaultTabController(
-      length: 2,
+    final inBank = _tab == 0;
+    // The selection drops the items that left its list, and it ends away
+    // from a bank (amendment 8, rules 16 and 19).
+    _selection.keepOnly(
+      !here ? const [] : (inBank ? c.state.itemBank : c.state.inventory).keys,
+    );
+    final selecting = _selection.running;
+    return PopScope(
+      // Back ends the selection and stays on the screen (rule 19).
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _selection.clear();
+      },
       child: Scaffold(
         key: const ValueKey('bank-screen'),
         appBar: AppBar(
@@ -54,11 +118,29 @@ class BankScreen extends StatelessWidget {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _ItemList(controller: c, inBank: true),
-                    _ItemList(controller: c, inBank: false),
+                    for (final bank in [true, false])
+                      _ItemList(
+                        controller: c,
+                        inBank: bank,
+                        // Only the open tab selects, at a place with a bank
+                        // (amendment 8, rules 1 and 2).
+                        selection: here && bank == inBank ? _selection : null,
+                      ),
                   ],
                 ),
               ),
+              // The bar stays under the list (amendment 8, rule 8).
+              if (selecting)
+                SelectionBar(
+                  selection: _selection,
+                  actions: [
+                    MoveSelectedButton(
+                      controller: c,
+                      selection: _selection,
+                      take: inBank,
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -70,10 +152,17 @@ class BankScreen extends StatelessWidget {
 /// The items of the bag or the bank, in the bag's order, each with its
 /// picture and count, under the chips of the four kinds.
 class _ItemList extends StatelessWidget {
-  const _ItemList({required this.controller, required this.inBank});
+  const _ItemList({
+    required this.controller,
+    required this.inBank,
+    this.selection,
+  });
 
   final GameController controller;
   final bool inBank;
+
+  /// The selection of this list, where one can start; else null.
+  final ItemSelection? selection;
 
   /// Stores every material, then says how many kinds moved. A refusal shows
   /// as a note: the sync before the move can end a walk away from Camp.
@@ -147,12 +236,20 @@ class _ItemList extends StatelessWidget {
                     key: ValueKey('${inBank ? 'bank-item' : 'bank-bag'}-$key'),
                     // The picture in a 48 dp socket, with the ring of its
                     // quality for gear and tools (amendment 2, rules 12-13).
-                    leading: PictureSocket.item(
-                      data,
-                      key,
-                      picture: ImageScope.of(context)
-                          .pictureOf(data, ItemThing(key)),
-                      size: 48,
+                    // A selected row has the fill of a selected chip and
+                    // the check mark on its socket (amendment 8, rule 6).
+                    tileColor: (selection?.has(key) ?? false)
+                        ? Quiet.selected
+                        : null,
+                    leading: markSelected(
+                      PictureSocket.item(
+                        data,
+                        key,
+                        picture: ImageScope.of(context)
+                            .pictureOf(data, ItemThing(key)),
+                        size: 48,
+                      ),
+                      selected: selection?.has(key) ?? false,
                     ),
                     title: Text(
                       '${labels.item(key)} ×${items[key]}',
@@ -168,12 +265,25 @@ class _ItemList extends StatelessWidget {
                       null => null,
                     },
                     // The card, with Store or Take at Camp (rules 15-19).
-                    onTap: () => showItemCard(
-                      context,
-                      controller,
-                      key,
-                      bank: inBank ? BankSide.bank : BankSide.bag,
-                    ),
+                    // While a selection runs, a tap selects and opens no
+                    // card; a hold starts it (amendment 8, rules 3 and 4).
+                    onTap: () {
+                      if (selection case final picked? when picked.running) {
+                        picked.toggle(key);
+                        return;
+                      }
+                      unawaited(
+                        showItemCard(
+                          context,
+                          controller,
+                          key,
+                          bank: inBank ? BankSide.bank : BankSide.bag,
+                        ),
+                      );
+                    },
+                    // Where no selection can start, a hold does nothing:
+                    // it opens no card either (rule 2).
+                    onLongPress: () => selection?.select(key),
                   ),
               ],
             ),

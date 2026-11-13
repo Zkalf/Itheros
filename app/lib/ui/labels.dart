@@ -16,6 +16,11 @@ String fmt(int n) {
 /// (1, 'step') -> "1 step"; (1200, 'step') -> "1,200 steps".
 String plural(int n, String noun) => '${fmt(n)} $noun${n == 1 ? '' : 's'}';
 
+/// The note after the Store or the Take of a selection (spec 0020 amendment
+/// 8, rule 17): "Stored 12 items.", "Took 1 item."
+String movedNote(int n, {required bool take}) =>
+    '${take ? 'Took' : 'Stored'} ${plural(n, 'item')}.';
+
 /// Male, Female, Neither (spec 0012 §4.1).
 String genderName(Gender g) => switch (g) {
   Gender.male => 'Male',

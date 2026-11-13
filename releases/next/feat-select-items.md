@@ -1,0 +1,1 @@
+- Hold an item in your bag or in the bank to select it, then tap more items. Store, take or salvage them all in one go.

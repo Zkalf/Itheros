@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import 'images.dart';
+import 'item_selection.dart';
 import 'socket.dart';
 import 'theme.dart';
 
@@ -77,6 +78,8 @@ class ItemSquare extends StatelessWidget {
     this.count = 1,
     this.dimmed = false,
     this.onTap,
+    this.onLongPress,
+    this.selected = false,
     this.socket,
   });
 
@@ -90,6 +93,13 @@ class ItemSquare extends StatelessWidget {
   /// Greyed out with the link icon, as the off hand under a two-hander.
   final bool dimmed;
   final VoidCallback? onTap;
+
+  /// The hold that starts a selection (spec 0020 amendment 8, rule 3).
+  final VoidCallback? onLongPress;
+
+  /// In a selection: the fill of a selected chip behind the square and the
+  /// check mark on its socket (spec 0020 amendment 8, rule 6).
+  final bool selected;
 
   /// The size of the socket in the centre of the square (48 dp in the bag),
   /// or null for a socket that fills the square (the doll, plan 0017
@@ -107,6 +117,14 @@ class ItemSquare extends StatelessWidget {
           fit: StackFit.expand,
           clipBehavior: Clip.none,
           children: [
+            if (selected)
+              DecoratedBox(
+                key: const ValueKey('selected-fill'),
+                decoration: BoxDecoration(
+                  color: Quiet.selected,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             LayoutBuilder(
               builder: (context, box) {
                 final size = socket ?? box.maxWidth;
@@ -139,13 +157,16 @@ class ItemSquare extends StatelessWidget {
                             },
                           ),
                         )
-                      : PictureSocket.item(
-                          data,
-                          key,
-                          picture: ImageScope.of(context)
-                              .pictureOf(data, ItemThing(key)),
-                          size: size,
-                          count: count,
+                      : markSelected(
+                          PictureSocket.item(
+                            data,
+                            key,
+                            picture: ImageScope.of(context)
+                                .pictureOf(data, ItemThing(key)),
+                            size: size,
+                            count: count,
+                          ),
+                          selected: selected,
                         ),
                 );
               },
@@ -156,6 +177,7 @@ class ItemSquare extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: onTap,
+                onLongPress: onLongPress,
               ),
             ),
           ],

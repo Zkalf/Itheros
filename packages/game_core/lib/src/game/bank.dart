@@ -82,6 +82,41 @@ extension GameBank on Game {
       if (data.kindOf(key) == ItemKind.material) key,
   ];
 
+  /// Moves the whole count of each of [keys] from the bag to the bank: the
+  /// Store of a selection (spec 0020 amendment 8, rules 12, 15 and 16). A key
+  /// that the bag does not hold is skipped. No steps, no roll.
+  GameState storeItems(GameState s, Iterable<String> keys) {
+    if (!hasBank(s.location)) {
+      throw ActivityError('Items move only at a bank.');
+    }
+    final n = s.copy();
+    for (final key in keys.toSet()) {
+      final count = s.inventory[key] ?? 0;
+      if (count < 1) continue;
+      n.addItem(key, -count);
+      n.itemBank[key] = (n.itemBank[key] ?? 0) + count;
+    }
+    return n;
+  }
+
+  /// Moves the whole count of each of [keys] from the bank to the bag: the
+  /// Take of a selection (spec 0020 amendment 8, rules 13, 15 and 16). A key
+  /// that the bank does not hold is skipped. The bag can go over its spaces,
+  /// as with [take].
+  GameState takeItems(GameState s, Iterable<String> keys) {
+    if (!hasBank(s.location)) {
+      throw ActivityError('Items move only at a bank.');
+    }
+    final n = s.copy();
+    for (final key in keys.toSet()) {
+      final count = s.itemBank[key] ?? 0;
+      if (count < 1) continue;
+      n.addItem(key, count);
+      _takeFromBank(n, key, count);
+    }
+    return n;
+  }
+
   /// Moves [count] of [key] from the bank to the bag (spec 0020 rule 3).
   GameState take(GameState s, String key, int count) {
     _checkMove(s, s.itemBank[key] ?? 0, count, 'in the bank');

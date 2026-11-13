@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'item_card.dart';
+import 'item_selection.dart';
 import 'item_square.dart';
 import 'kind_chips.dart';
 
@@ -11,9 +14,13 @@ import 'kind_chips.dart';
 /// square for each stack, full stacks first (spec 0021 amendment 4). The
 /// chips above it show one kind at a time (spec 0020 amendment 2).
 class BagGrid extends StatelessWidget {
-  const BagGrid({super.key, required this.controller});
+  const BagGrid({super.key, required this.controller, this.selection});
 
   final GameController controller;
+
+  /// The selection of the bag, where one can start: at a place with a bank
+  /// or at a forge (spec 0020 amendment 8, rules 1 and 2). Null elsewhere.
+  final ItemSelection? selection;
 
   /// Squares to a row on the phone.
   static const columns = 5;
@@ -57,7 +64,20 @@ class BagGrid extends StatelessWidget {
                 // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
                 socket: 48,
                 // Each square opens the card of the whole item (rule 7).
-                onTap: () => showItemCard(context, c, key),
+                // While a selection runs, a tap selects the whole item, all
+                // of its squares, and opens no card (spec 0020 amendment 8,
+                // rules 4 and 5).
+                selected: selection?.has(key) ?? false,
+                onTap: () {
+                  if (selection case final picked? when picked.running) {
+                    picked.toggle(key);
+                  } else {
+                    unawaited(showItemCard(context, c, key));
+                  }
+                },
+                // Where no selection can start, a hold does nothing: it
+                // opens no card either (rule 2).
+                onLongPress: () => selection?.select(key),
               ),
         ],
       ),
