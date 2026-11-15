@@ -18,7 +18,7 @@ steps, character XP, chances, drops or monsters. Origins, their lines and the ge
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Head start size | **Profession level 5** (owner's choice): the profession XP for level 5 (148 today), about 7 tier 1 actions or 700 steps of work. No character XP. It opens no tier (tiers are at 10 and 20). |
+| 1 | Head start size | **Profession level 5** (owner's choice): the profession XP for level 5 (148 in `economy.json`), about 7 tier 1 actions or 700 steps of work. No character XP. It opens no tier (tiers are at 10 and 20). |
 | 2 | Is the origin's profession learned? | **Yes, with its starter tool worn.** "Starts with Fishing 5" can't mean "but go learn fishing first". The teacher still has a sheet: a kin line and tips. |
 | 3 | Defaults to tap through | Name left empty becomes **Wanderer**; gender starts on **Neither**. No origin is preselected: one tap on a card picks it, so every player chooses. |
 | 4 | Where gender shows | Only in data lines with a `{male\|female\|neither}` choice: the Woodcutter's title (son / daughter / child), the kin lines (lad / lass / friend and the like), and Bram's level 10 tip ("Point first, lad." follows gender). Everything else stays "you". |
@@ -67,7 +67,8 @@ origin's own teacher says their `kinLine`, which replaces the learn line (the pr
 | Sigrun | "Walk soft, {name}." | "You walk like one of mine, {name}. Soft. The old bow is yours." |
 | Marta | "Hungry, {name}?" | "Another tavern cook! Don't scorch my pot, {name}. Bring fish and meat and we'll feed this whole camp." |
 
-Before the profession is learned the sheet shows the greeting, then today's "teaches" text and **Learn** button.
+Before the profession is learned the sheet shows the greeting, then the "teaches" text and **Learn** button of spec
+0010 §6.1.
 
 ### 3.2 Tips
 Unchanged (spec 0010 §6.2, spec 0011 §2.2). Bram's level 10 tip reads "Point first, {lad|lass|friend}. Never the
@@ -75,7 +76,7 @@ edge."
 
 ## 4. Screens
 
-### 4.1 Your character (new)
+### 4.1 Your character
 One scrolling screen, title "Who are you?":
 1. **Name**: a text field, hint "Wanderer".
 2. **Gender**: three segments, Male · Female · Neither (Neither selected).
@@ -86,13 +87,14 @@ One scrolling screen, title "Who are you?":
    > **Starts with Fishing 5** · Wen, the fisherman, greets you as kin
 
    Titles and lines follow the gender as it's picked. Tapping a card selects it (outline in the theme colour).
-4. **Set out**, enabled once an origin is picked. It makes the character (§2.2) and opens Now.
+4. **Set out**, enabled once an origin is picked. It makes the character (§2.2) and opens Now. Since spec 0022 the
+   tour of the camp starts there.
 
 An old save's screen has one more line under the title: "Your progress stays. Your origin's profession rises to
 level 5 if it is lower."
 
 ### 4.2 Settings
-Three rows above today's switches:
+Three rows above the switches of the Settings page (spec 0008 decision 12):
 - **Name** · Zkalf: tap opens a dialog with the text field (same rules, decision 7).
 - **Gender** · Neither: tap opens the three choices.
 - **Origin** · Fisher from the coast: not tappable; subtitle "Chosen when you set out".
@@ -100,14 +102,16 @@ Three rows above today's switches:
 Changes apply at once everywhere the name or gendered words show.
 
 ### 4.3 Teacher sheet
-§3.1: greeting or kin line at the top, in italics, then today's content.
+§3.1: greeting or kin line at the top, in italics, then the content of spec 0010 §6.1.
 
 ### 4.4 Character
 The header gains the name above the rank, with the origin after the rank: "**Zkalf**", "Adventurer · Fisher from
-the coast". The rank keeps its seven-tap test walk switch.
+the coast". The rank keeps its seven-tap test walk switch. Since spec 0014 the player's portrait stands next to the
+name, and since spec 0008 amendment 7 the level stands at the right of the name (spec 0008 §3.5 "The header").
 
 ### 4.5 Journal
-Its title is "{name}'s journal". Entries are unchanged.
+Its title is "{name}'s journal". Entries are unchanged. Since spec 0009 §8.4 the journal is the Log tab of the
+Journal.
 
 ## 5. Balance
 
@@ -118,9 +122,20 @@ day 1 anyway and passes level 5 in each within its first days.
 
 ### 5.2 The walkers
 Simulated walkers are made as **Miner's child**, so the existing pacing test (part of `check.ps1`) keeps running and
-must stay green (spec 0011 §9.3 targets 1–5 and 7, as amended). If Mining starting at 5 shifts a seed past an edge,
-the plan says so before any tuning; monsters and meals stay as they are. Each origin's head start is covered by unit
-tests (criteria 4–5), not by the sim.
+must stay green (spec 0011 §9.3 targets 1–5 and 7; target 4 was dropped on 2026-11-09). If Mining starting at 5
+shifts a seed past an edge, the plan says so before any tuning; monsters and meals stay as they are. Each origin's
+head start is covered by unit tests (criteria 4–5), not by the sim.
+
+**The origin's profession reaches 10 sooner** (owner chose "lower the floor" during plan 0014 M1, 2026-10-22)
+- With Mining at level 5 from the start, the walker reached Mining 10 on day 6–7 (median 6), under the floor of day
+  8 of spec 0010 §9.3 target 2. The head start does what it was built to do, and nothing else moved past an edge, so
+  nothing is tuned.
+- Target 2 for **the origin's profession** (Mining, for the walkers): level 10 by day **5–22** (median). Level 20
+  keeps day 45–65. Crafting, which the walkers don't start with, keeps 8–22 and 45–65 (spec 0010 §9.3 holds the
+  days since then). Monsters, meals and XP tables stay as they are.
+- The numbers at the end of plan 0014 M1 (5,000 steps a day, seeds 1–8, Miner's child): level 10 on day 14–16,
+  level 30 on day 78–97 (median 90.5; 91.0 without meals); Mining 10 median day 6, Mining 20 57; Crafting 10 median
+  day 8, Crafting 20 49.
 
 ## 6. Save
 New save version (10):
@@ -130,7 +145,8 @@ New save version (10):
 - A new game also starts with no character until Set out.
 
 ## 7. Out of scope
-Portraits and appearance; origin quests (quests are a later system); changing the origin; origins that touch
+Portraits and appearance (since spec 0014 decision 9 the player's portrait follows origin and gender); origin
+quests (quests are a later system); changing the origin; origins that touch
 fighting or the character level; more gendered text than decision 4; the name in reports, fight logs or news; a
 second character or a new-game button; name filters (the name never leaves the phone).
 
@@ -165,3 +181,13 @@ second character or a new-game button; name filters (the name never leaves the p
 10. A save loads as version 10: an old save with no character and everything else unchanged; every fixture loads.
 11. The existing pacing test stays green with walkers made as Miner's child.
 12. `.\scripts\check.ps1 -Release` is green, with no INTERNET permission.
+
+## History
+- 2026-10-22: first version (intent 0012, plan 0014). Criteria 1-12.
+- 2026-10-22, amendment 1: the origin's profession reaches level 10 by day 5-22. §5.2.
+- 2026-10-22, spec 0014: the player's portrait follows origin and gender. §4.4; §7.
+- 2026-11-06, spec 0022: the tour of the camp starts after Set out. §4.1.
+- 2026-11-09, spec 0002 amendment 3 erratum 1 (#234): spec 0011 target 4 dropped. §5.2.
+- 2026-11-10, spec 0008 amendment 7 (#254): the level at the right of the name in the header. §4.4.
+- 2026-11-15 (plan 0068): the amendment folded into this file. "Today's" now names the spec of the rule: the word
+  would go stale in a living file. No rule, number or criterion changed. (draft)
