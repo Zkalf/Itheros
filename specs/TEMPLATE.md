@@ -3,12 +3,13 @@
 <!--
 A guide, not a form. Keep the header and the acceptance criteria. Use the other sections that fit, rename them,
 add your own, and leave out the rest. Follow WRITING.md. Copy this file to the next free number.
+Each file is the current version: a later change edits it and adds a History line (plan 0068).
+A section or criterion keeps its number for good; a new one takes the next free number.
 -->
 
 Status: draft
 Intent: [intent/NNNN-<name>.md](../intent/NNNN-<name>.md) (accepted, PR #N)
 Builds on: <specs and sections this one starts from>
-Overrides: <specs, sections or criteria this one replaces; "nothing" if none>
 Product owner: Zkalf
 Date: <YYYY-MM-DD>
 
@@ -45,3 +46,10 @@ its card (CLAUDE.md); say why if a screen does not. -->
 **Check and release**
 2. Rules, numbers and the save change only as this spec says. The pacing test passes.
 3. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
+
+## History
+<!--
+One line per change, newest last: the date, the issue, the change in a few words, and the sections and criteria that it touched.
+A new line ends with "(draft)" until the owner accepts it. `git log -p` on this file shows each change in full.
+-->
+- <YYYY-MM-DD>: first version (intent NNNN).
