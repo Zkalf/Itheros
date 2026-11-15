@@ -363,7 +363,7 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
   later went to spec 0011 amendment 2, which owns them.
 - 2026-11-01, amendment 4 (#170): test walks count; the screen syncs on open; gear that left the bag is grey in the
   chest sheet. §2.1 point 6; §3.2 point 46; §3.3 point 52; criteria 7, 47-48 and 64-68.
-- Later changes from other specs: the Bank button left of the supply chest button (spec 0020 amendment 5, §3.1
-  point 43); an unopened chest uses no bag space and opens into a full bag (spec 0021, §2.6 point 41).
+- 2026-11-02, spec 0021 (#173): an unopened chest uses no bag space and opens into a full bag. §2.6 point 41.
+- 2026-11-10, spec 0020 amendment 5 (#249): the Bank button stands left of the supply chest button. §3.1 point 43.
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
   criterion changed.
