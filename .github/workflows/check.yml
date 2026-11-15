@@ -69,7 +69,8 @@ jobs:
             echo "apk=true" >> "$GITHUB_OUTPUT"
           fi
       # A draft intent, spec or plan never reaches main (CONTRIBUTING.md): Zkalf accepts it on the pull request, and
-      # its Status line says accepted before the merge. Runs even when the build is skipped. A diff that can't be read
+      # its Status line says accepted before the merge. A change to an accepted file is a History line that ends with
+      # "(draft)" until Zkalf accepts it (plan 0068). Runs even when the build is skipped. A diff that can't be read
       # checks every file.
       - name: No drafts
         shell: bash
@@ -79,13 +80,36 @@ jobs:
           drafts=""
           for f in $files; do
             case "$f" in intent/[0-9][0-9][0-9][0-9]-*.md|specs/[0-9][0-9][0-9][0-9]-*.md|plans/[0-9][0-9][0-9][0-9]-*.md) ;; *) continue ;; esac
-            if [ -f "$f" ] && grep -qiE '^Status:[[:space:]]*draft' "$f"; then drafts="$drafts $f"; fi
+            [ -f "$f" ] || continue
+            if grep -qiE '^Status:[[:space:]]*draft' "$f"; then drafts="$drafts $f"; continue; fi
+            if awk '/^## History/{h=1; next} /^## /{h=0} h && /\(draft\)[[:space:]]*$/{found=1} END{exit !found}' "$f"; then drafts="$drafts $f"; fi
           done
           if [ -n "$drafts" ]; then
-            echo "::error::Still a draft:$drafts. Zkalf accepts it on the pull request, then its Status line says accepted."
+            echo "::error::Still a draft:$drafts. Zkalf accepts it on the pull request, then its Status line says accepted and no History line ends with (draft)."
             exit 1
           fi
           echo "No drafts."
+      # Each change to an intent, spec or plan adds a line to its History section (plan 0068), so the file tells what
+      # changed and git log -p tells how. Only files that existed before and still exist: a new file starts its History,
+      # a deleted amendment file has none. A diff that can't be read skips this step.
+      - name: History line
+        shell: bash
+        run: |
+          base=${{ steps.scope.outputs.base }}
+          files=$(git diff --name-only --diff-filter=M "$base" HEAD) || { echo "Diff can't be read; skipping."; exit 0; }
+          missing=""
+          history() { awk '/^## History/{h=1} /^## /&&!/^## History/{h=0} h'; }
+          for f in $files; do
+            echo "$f" | grep -qE '^(intent|specs|plans)/[0-9]{4}-[a-z0-9-]+\.md$' || continue
+            before=$(git show "$base:$f" | history)
+            after=$(history < "$f")
+            if [ -z "$after" ] || [ "$before" = "$after" ]; then missing="$missing $f"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Changed without a new History line:$missing. Add one line under ## History: date, issue, what changed."
+            exit 1
+          fi
+          echo "Every changed intent, spec and plan has a new History line."
       # Gradle's downloads stay between runs: a fresh machine took about 7 of the 11 minutes for the APK build. The key
       # is the hash of the Gradle files in app/android, so a change there starts a new cache.
       # Java and the Gradle cache serve only the APK build.
