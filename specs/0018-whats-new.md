@@ -4,7 +4,8 @@ Status: accepted
 Intent: [intent/0018-whats-new.md](../intent/0018-whats-new.md) (accepted, 2026-10-29, issue #118)
 Builds on: spec 0007 §5 (the release command) and §7 (the version in Settings), spec 0002 §9.1 (the level-up cards),
 spec 0004 (the away report), spec 0014 (Quiet Teal)
-Overrides: spec 0007 §5 step 5, only the moment of the rename of `releases/next.md` (§2.2 below)
+Overrides: spec 0007 §5 step 5, only the moment of the rename of `releases/next.md` (§2.2 below), and spec 0007 §5
+step 1, which also refuses while a small notes file is left (§2.5)
 Product owner: Zkalf
 Date: 2026-10-29
 
@@ -30,7 +31,8 @@ with the app: the game still has no internet access.
 
 ### 2.1 The notes in the app
 1. The app carries each file `releases/<version>.md` of the repo, for example `releases/0.5.0.md`.
-2. The app also carries `releases/next.md`, if the file exists.
+2. The app also carries `releases/next.md`, if the file exists. Since §2.5 rule 24 the owner's build carries one
+   copy, `next.md`, joined from `releases/next.md` and the small files of `releases/next/`.
 3. The app knows the version of each notes file from its file name.
 4. The game compares versions by their three numbers: first x, then y, then z. For example, 0.10.0 comes after
    0.9.0.
@@ -41,8 +43,8 @@ with the app: the game still has no internet access.
 7. `release.ps1` renames `releases/next.md` to `releases/<version>.md` together with the raise of the version
    (spec 0007 §5 step 2). Before this spec, the rename came in step 5.
 8. The check (step 3) and the friend build (step 4) thus see `releases/<version>.md` and no `releases/next.md`.
-9. A failure or a dry run puts `releases/next.md` back, as it puts the version back today.
-10. Step 5 commits the renamed file with the version change, as today.
+9. A failure or a dry run puts `releases/next.md` back, as it puts the version back.
+10. Step 5 commits the renamed file with the version change, as before.
 11. Step 6 still publishes `releases/<version>.md` as the notes of the GitHub release.
 
 ### 2.3 When the card shows
@@ -68,6 +70,37 @@ with the app: the game still has no internet access.
 | none (new player) | 0.6.0 | 0.2.0 to 0.6.0 | no card |
 | 0.6.0 | 0.5.0 (an older build) | 0.2.0 to 0.5.0 | no card |
 
+### 2.5 One notes file for each change
+Each pull request that players noticed added a line to `releases/next.md`. Two pull requests that were open at the
+same time edited the same lines of that file: the first line and the end of the list. The second one then had a merge
+conflict, several times. A release renamed `releases/next.md`, so the first change after a release had to create the
+file again (#189). The owner chose one small file for each change on 2026-11-03, with no git merge driver.
+
+20. A pull request or a fast-lane commit that players notice adds its own file in `releases/next/`.
+    - The file name is the branch name: `releases/next/feat-salvage-all.md`.
+    - The file holds only items: one or more lines that start with "- ", in the format of §3.3.
+    - A later change to the same lines edits that file, or adds a file of its own.
+    - A change never edits `releases/next.md` or another change's file.
+21. Two pull requests add two different files. So a merge never conflicts on the notes, whether the owner merges with
+    `merge.ps1`, with the button on GitHub or in the GitHub app on the phone.
+22. The pull request of the final notes before a release (spec 0007 §5) joins the small files into
+    `releases/next.md`.
+    - It writes a first line that sums up, and puts the biggest changes first.
+    - It deletes the small files.
+    - `releases/next.md` exists only from this pull request to the release.
+23. `release.ps1` renames `releases/next.md` to `releases/<version>.md`, as rules 7-11 say. It refuses:
+    - when `releases/next.md` does not exist or is empty, as before;
+    - when a file is left in `releases/next/`. The message says: join the small files into `releases/next.md` first.
+24. **The owner's build:** `scripts/copy-notes.ps1` joins `releases/next.md` (if it exists) and the files of
+    `releases/next/` (by name) into one copy, `next.md`, in the app. "Next release (test build)" in Settings shows it
+    (§3.4).
+25. **A friend's build:** the release refuses while small files are left (rule 23), and it renames
+    `releases/next.md`. So the friend APK holds no `next.md` (criterion 30).
+
+What stays: the format of the notes (§3.3); the card never shows the notes of the next release; a failure or a dry
+run of `release.ps1` puts everything back. The lines that stood in `releases/next.md` on 2026-11-03 stayed there, and
+the final notes of the next release joined them with the small files.
+
 ## 3. Screens
 
 ### 3.1 The order at open
@@ -77,6 +110,9 @@ The game shows the first screen of this list that applies:
 3. The level-up cards.
 4. The away report.
 5. The home screen.
+
+Since spec 0022 the tour of the camp shows on the home screen after "Who are you?". A screen of this list that opens
+during the tour stands over it, and the tour goes on after it (spec 0022 §3.1).
 
 ### 3.2 The "What's new" card
 1. The card is one screen, like the away report (spec 0004). Its title is "New in Itheros".
@@ -93,10 +129,21 @@ The game shows the first screen of this list that applies:
 The notes use a small part of Markdown (`WRITING.md`, `releases/*.md`). The card shows:
 1. A line of text as a paragraph. An empty line ends a paragraph.
 2. A line that starts with "- " as an item of a list, with a bullet.
-3. A line that starts with two spaces and follows an item, as more text of that item.
+3. A line that starts with two spaces and follows an item, as more text of that item. A line with two spaces and "- "
+   follows rule 6.
 4. Text between `**` and `**` in bold.
 5. Any other Markdown as plain text, with its marks. A test checks that each notes file in `releases/` uses only
    the format above.
+6. **A list inside a list item:** a line that starts with two spaces and "- " is an item of a second list. It
+   belongs to the item above it.
+7. The card shows such an item with its own bullet, indented one step more than the item above it.
+8. A line that starts with four spaces and follows an item of the second list is more text of that item.
+9. A second list inside an item of the second list is outside the format. It stays plain text (rule 5).
+
+Rules 6-9 came from `releases/0.4.0.md`. It has a list inside a list item ("  - **Milestones** …" and
+"  - **Feats** …" under "**30 achievements:**"), and GitHub showed the two lines as a list inside the item on the
+release page. Rule 3 alone joined them into the item above, and the test of criterion 3 failed on the file. The owner
+chose this rule over a change to the published notes (2026-10-29). The words of `releases/0.4.0.md` do not change.
 
 ### 3.4 Settings
 1. Settings gets a row "New in Itheros", on its own plate, above the row of the version number.
@@ -104,7 +151,8 @@ The notes use a small part of Markdown (`WRITING.md`, `releases/*.md`). The card
 3. The screen lists the notes of each version up to `appVersion`, newest first, in the format of §3.2 and §3.3.
 4. The screen has a back button, like Licences. It does not change `lastVersion`.
 5. In the owner's build (with the test walk, spec 0007 §4), the screen starts with the notes of
-   `releases/next.md`, if they exist. Their heading is "Next release (test build)".
+   `releases/next.md`, if they exist. Their heading is "Next release (test build)". Since §2.5 rule 24 they are the
+   joined copy, with the small files of `releases/next/`.
 6. A friend's build never shows the notes of `releases/next.md`.
 
 ## 4. Save
@@ -178,3 +226,32 @@ No game rule changes. The pacing test stays green.
 **Check and release**
 36. Rules, numbers and the save change only as this spec says. The pacing test passes.
 37. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
+
+**A list inside a list item**
+38. "  - " under an item shows as an item with a bullet, indented more than the item above it.
+39. The test of criterion 3 passes on `releases/0.4.0.md`.
+40. A line with two spaces and no "- " under an item still joins the text of that item.
+
+**One notes file for each change: the release command**
+41. `release.ps1` refuses when a `.md` file is in `releases/next/`.
+42. `release.ps1` still refuses when `releases/next.md` does not exist.
+43. The friend APK of `release.ps1 -DryRun` holds no `next.md`.
+44. After `release.ps1 -DryRun`, the working tree is clean.
+
+**One notes file for each change: the copy in the app**
+45. `copy-notes.ps1` joins `releases/next.md` and the files of `releases/next/` into one `next.md` in the app.
+46. The joined copy holds the lines of `releases/next.md` first, then the files of `releases/next/` by name.
+47. With only small files and no `releases/next.md`, the copy holds the small files.
+48. With no `releases/next.md` and no small file, the app holds no `next.md`.
+
+**One notes file for each change: docs**
+49. `RELEASING.md` and `CLAUDE.md` say that each change adds its own file in `releases/next/`.
+
+## History
+- 2026-10-29: first version (intent 0018, plan 0029, #118). Criteria 1-37.
+- 2026-10-29, amendment 1 (#118): a list inside a list item. §3.3 rules 3 and 6-9; criteria 38-40.
+- 2026-11-03, amendment 2 (#189, plan 0044): one notes file for each change; the release refuses while one is left;
+  the owner's build joins them. §2.1 rule 2; §2.5 rules 20-25; §3.4; criteria 41-49.
+- 2026-11-06, spec 0022: the tour of the camp waits under the card. §3.1.
+- 2026-11-15 (plan 0068): the amendments folded into this file. "As today" now reads "as before". No rule, number or
+  criterion changed. (draft)
