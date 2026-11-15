@@ -88,4 +88,4 @@ None.
 - 2026-11-01, amendment 3 (#57): gear in 1 chest in 10, not 1 in 5; Crafting materials in the common roll.
   Outcomes 2, 5 and 6; the pace constraint.
 - 2026-11-01, spec 0013 amendment 4 (#170): test walks count toward the chest. The real steps constraint.
-- 2026-11-15 (plan 0068): the three amendments folded into this file. Open questions closed by spec 0013. (draft)
+- 2026-11-15 (plan 0068): the three amendments folded into this file. Open questions closed by spec 0013.

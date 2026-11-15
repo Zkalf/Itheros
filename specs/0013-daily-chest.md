@@ -366,4 +366,4 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 - 2026-11-02, spec 0021 (#173): an unopened chest uses no bag space and opens into a full bag. §2.6 point 41.
 - 2026-11-10, spec 0020 amendment 5 (#249): the Bank button stands left of the supply chest button. §3.1 point 43.
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
-  criterion changed. (draft)
+  criterion changed.
