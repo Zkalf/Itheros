@@ -48,10 +48,11 @@ function Expect-AcceptedChangesDraft([string]$wt, [string]$base, [string[]]$chan
       Expect ($path -match '\.(amendment-\d+(\.erratum)?|erratum|clean-\d+)\.md$') "deleted accepted artifact $path"
       continue
     }
-    $draftLine = '(?m)^- .*\(draft\)\s*$'
+    # A History line can wrap, so "(draft)" may end its second line: any new line of the History section counts.
     $after = Read-Text $wt $path
-    $new = @([regex]::Matches($after, $draftLine) | ForEach-Object { $_.Value.Trim() }) |
-        Where-Object { -not $before.Contains($_) }
+    $history = if ($after -match '(?ms)^## History\s*$(.*)') { $Matches[1] } else { '' }
+    $new = @($history -split '\r?\n' | Where-Object { $_ -match '\(draft\)\s*$' } | ForEach-Object { $_.Trim() } |
+        Where-Object { -not $before.Contains($_) })
     Expect ($after -match '(?m)^## History' -and $new.Count -ge 1) "changed accepted artifact $path without a new (draft) History line"
   }
 }
