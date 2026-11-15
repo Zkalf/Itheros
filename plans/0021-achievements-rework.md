@@ -1,13 +1,14 @@
 # Plan 0021: Build "Achievements rework"
 
 Status: accepted
-Spec: `specs/0017-achievements-rework.md` · Intent: `intent/0017-achievements-rework.md` and amendment 1 ·
+Spec: `specs/0017-achievements-rework.md` · Intent: `intent/0017-achievements-rework.md` ·
 Product owner: Zkalf · Date: 2026-10-24
 
 Names of files, widgets and tests refer to `main` at `4b7f11d`.
 
 ## Overview
-This plan builds spec 0017 in three milestones. Each milestone is one pull request.
+This plan builds spec 0017 in three milestones. M1 and M2 are one pull request, and M3 is a pull request of its own
+(see "M1 and M2 in one pull request").
 
 | Milestone | What | Criteria | Size |
 |---|---|---|---|
@@ -17,13 +18,30 @@ This plan builds spec 0017 in three milestones. Each milestone is one pull reque
 
 Criterion 33 (the build) is the proof of each milestone.
 
+### M1 and M2 in one pull request
+The rewards of M1 trip two pacing targets of `check.ps1`:
+
+| Pacing target | Allowed | With the rewards |
+|---|---|---|
+| Crafting 20 (spec 0010 amendment 1) | day 45–65 | day 43 |
+| Meals bring level 30 sooner (spec 0011 §9.3) | 0–5 days sooner | 1 day later |
+
+With all rewards set to nothing, each pacing test passes. The sim walker earns three feats on the way: Bear Hunter,
+Master of a Trade and Legendary Find. The counts of M2 and spec 0017 amendment 1 change this. A pull request needs a
+green `check.ps1`, so M1 cannot ship before the counts of M2.
+1. M1 and M2 are one pull request, on the branch `plan21-m1`.
+2. The pull request also builds spec 0017 amendment 1 (Master of a Trade).
+3. The order of work stays: the tests of M1, the code of M1, then the sim and the counts of M2.
+4. If a pacing target still trips after the counts of M2, Claude stops and asks the owner.
+5. M3 (the screens) stays a pull request of its own.
+
 ## Choices this plan makes
 The owner may want to change one of these choices before the owner accepts the plan.
 1. **Rules first, screens last.** M1 and M2 change only `packages/game_core`, the data and the save. M3 changes the
    screens. Between M1 and M3, the Achievements screen shows the new achievements without the reward line.
 2. **No friend release between M1 and M3.** Old saves lose achievements in M1, and only M3 tells the player why.
 3. **The sim table lives in `docs/sim/0017-achievements.md`.** Spec 0017 §8 says "the plan records the table".
-   This plan is accepted before the sim runs, and an accepted plan does not change. So the M2 pull request writes
+   This plan is accepted before the sim runs, and an accepted plan did not change then (before plan 0068). So the M2 pull request writes
    the table into that file, and the plan links it.
 4. **The pacing test.** If the pacing test of `check.ps1` trips because of the rewards, Claude stops and asks the
    owner (`CLAUDE.md`).
@@ -37,7 +55,7 @@ The owner may want to change one of these choices before the owner accepts the p
 - `packages/game_core/lib/src/game.dart`:
   - The bank cap, the stats and `queueSlots(state)` add the rewards of the earned achievements.
   - A new counter keeps the best quality found (§3.2). Each source of §3.2 updates it.
-  - `checkAchievements(state)` earns and loses achievements (§4, §5). It runs after each change, as today, and on load.
+  - `checkAchievements(state)` earns and loses achievements (§4, §5). It runs after each change, as before, and on load.
   - A lost achievement takes its reward (§5). An event names each lost achievement and what the player lost.
 - `packages/game_core/lib/src/state.dart`: save version 12. An old save starts the quality counter from its bag and
   its doll (criterion 24).
@@ -68,4 +86,12 @@ The owner may want to change one of these choices before the owner accepts the p
   the Fairphone, with a screenshot of the Achievements screen.
 
 ## Branches
-- `plan21-m1`, `plan21-m2`, `plan21-m3`: one pull request each, with a review per `REVIEW.md`. The owner merges.
+- `plan21-m1` (M1 and M2) and `plan21-m3` (M3): one pull request each, with a review per `REVIEW.md`. The owner
+  merges. The branch `plan21-m2` of the first version went away with "M1 and M2 in one pull request".
+
+## History
+- 2026-10-24: first version (spec 0017).
+- 2026-10-24, amendment 1: M1 and M2 in one pull request, with spec 0017 amendment 1; the pacing targets that the
+  rewards tripped. Overview; "M1 and M2 in one pull request"; Branches.
+- 2026-11-15 (plan 0068): the amendment folded into this file. "As today" now reads "as before". No milestone or
+  criterion changed. (draft)
