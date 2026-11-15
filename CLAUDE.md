@@ -7,8 +7,7 @@ Built with the AI-native SDLC playbook: intent → spec → plan → code, each 
 - `intent/`, `specs/`, `plans/`: numbered markdown with a `Status:` line. **Each is one living file, always the
   current version** (plan 0068). A change edits the file on a branch (a hook blocks edits on `main`) and adds a line
   to its `## History` section; the line ends with "(draft)" until the owner accepts. Numbers of sections and criteria
-  never change; a new one takes the next free number. A file that still has amendment files moves over first, in its
-  own commit (plan 0068 "Moving the files over"). Git keeps the old texts.
+  never change; a new one takes the next free number. Git keeps the old texts.
 - No code before an accepted plan. Each plan milestone ends with its proof, then a commit.
 - Project texts (intents, specs, plans, PRs, reviews, commits, code comments, incidents, release notes) follow
   `WRITING.md`: read it before drafting one.

@@ -9,8 +9,8 @@ for git read commands, `.\scripts\check.ps1`, `.\scripts\device-smoke.ps1` and `
 as written here, never through `powershell -File`.
 
 1. **What changed:** `git status --short`, `git diff` and `git diff --staged`.
-2. **What governs it:** find the intent, spec and plan that cover the change (`intent/`, `specs/`, `plans/`), and
-   any amendment files of a spec not moved over yet (plan 0068). A changed spec says what changed in its History. List the acceptance criteria and `CLAUDE.md` rules that apply.
+2. **What governs it:** find the intent, spec and plan that cover the change (`intent/`, `specs/`, `plans/`). Each is
+   one living file (plan 0068). A changed spec says what changed in its History. List the acceptance criteria and `CLAUDE.md` rules that apply.
 3. **Run the checks:** `.\scripts\check.ps1`. Use `.\scripts\check.ps1 -Release` if the Android manifest,
    `pubspec.yaml` dependencies or anything permission-related changed, or before a device test.
 4. **On the phone:** if `adb devices -l` lists `model:FP5` and app code or data changed, run

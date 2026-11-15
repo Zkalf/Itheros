@@ -10,8 +10,7 @@ Small features stay small (`CLAUDE.md`): a short spec or spec change with a hand
 ## 1. Find what it changes
 1. Read the issue (`gh issue view <n>`) and its "Open questions".
 2. Find the spec sections that it touches: `grep -n -i "<word>" specs/*.md`. Read those sections. Each spec is one
-   living file (plan 0068). A spec that still has amendment files moves over first, in a commit of its own
-   (plan 0068 "Moving the files over").
+   living file (plan 0068).
 3. Read the code that runs it today, enough to know what the change costs. Read `docs/game-direction.md` for a design
    choice.
 4. **Pick the kind:**
