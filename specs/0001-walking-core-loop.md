@@ -268,4 +268,4 @@ monetisation · sound and music beyond placeholders.
 - 2026-11-09, spec 0002 amendment 3 and its erratum 1 (#234): tougher, longer fights; the Goblin gives 20 XP. §3; §6.
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. §6 gives the Goblin's and the
   Goblin brute's numbers of `enemies.json` (HP 29 and 80; XP 20 and 23; hide 90%, dagger 13.5%; 4 hides), with the
-  first numbers beside them. Decision 2 gives the bank cap of spec 0003. No rule or criterion changed. (draft)
+  first numbers beside them. Decision 2 gives the bank cap of spec 0003. No rule or criterion changed.

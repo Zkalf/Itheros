@@ -309,4 +309,4 @@ names this action a **walk**.
 - 2026-11-07, spec 0008 amendment 5 (#233, plan 0055): the closed road; its refusal and its skip. §3.3; §3.5.
 - 2026-11-15 (plan 0068): the amendments folded into this file. "As today" now reads "as before", and "(today)"
   names the spec of the rule: the words "today" would go stale in a living file. No rule, number or criterion
-  changed. (draft)
+  changed.

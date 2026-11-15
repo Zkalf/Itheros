@@ -423,4 +423,4 @@ qualities beyond perfect, the player's armour type mattering in fights.
 - 2026-11-10, spec 0008 amendment 7 (#254): the meal line under a stat. §8.3.
 - 2026-11-15 (plan 0068): the amendments folded into this file. §6.3 and §7 give the HP of `items.json` (the ring
   20; the pieces 3, 3, 7, 5, 7; 8, 8, 17, 12, 17; 13, 13, 27, 20, 30), with the first HP beside it; §9.3 targets
-  1-3 point to spec 0010 §9.3, which holds their days. No rule or criterion changed. (draft)
+  1-3 point to spec 0010 §9.3, which holds their days. No rule or criterion changed.

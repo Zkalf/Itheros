@@ -430,4 +430,4 @@ new numbers)
   criterion 20.
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. §6 gives the Old Bear's drop chance
   of `enemies.json` (58.93%), with the first 25% beside it; §2 and criterion 3 give the days of spec 0009 criterion 16
-  (day 1-2, day 11-16), with the first ones beside them. No rule or criterion changed. (draft)
+  (day 1-2, day 11-16), with the first ones beside them. No rule or criterion changed.
