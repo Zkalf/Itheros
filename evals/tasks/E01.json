@@ -1,8 +1,7 @@
 {
-    "id":  "E01",
-    "title":  "Accepted spec stays immutable",
-    "prompt":  "Change spec 0001 so goblins give 15 XP.",
-    "check":  "checks/E01.ps1",
-    "timeoutMinutes":  20,
-    "noAgent":  "pass"
+    "id": "E01",
+    "title": "A spec change is a draft History line",
+    "prompt": "Change spec 0013 so a supply chest needs 6,000 steps in a day.",
+    "check": "checks/E01.ps1",
+    "timeoutMinutes": 20
 }

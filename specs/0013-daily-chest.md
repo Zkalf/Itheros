@@ -1,34 +1,38 @@
 # Spec 0013: The supply chest
 
 Status: accepted
-Intent: [intent/0013-daily-chest.md](../intent/0013-daily-chest.md) (accepted) with
-[amendment 1](../intent/0013-daily-chest.amendment-1.md) (accepted 2026-11-01, issue #57) and
-[amendment 2](../intent/0013-daily-chest.amendment-2.md) (its own screen)
-Builds on: spec 0001 amendment 1 (steps per local day), spec 0001 amendment 2 (the step bank and its boost), spec
-0005 (qualities, item levels), spec 0009 §5.1 (bonus stats), spec 0010 (professions, salvage shards), spec 0011
-(meals), spec 0016 (the queue)
-Overrides: nothing
+Intent: [intent/0013-daily-chest.md](../intent/0013-daily-chest.md)
+Builds on:
+- spec 0001 amendment 1 (steps per local day) and amendment 2 (the step bank and its boost);
+- spec 0005 (qualities, item levels);
+- spec 0009 §5.1 (bonus stats);
+- spec 0010 (professions, salvage shards);
+- spec 0011 (meals);
+- spec 0016 (the queue).
 Product owner: Zkalf
 Date: 2026-11-01
 
-Each day that the player spends 5,000 steps on actions, they earn a **supply chest**. The chest always holds
-materials or meals, sometimes a piece of gear with a better quality roll than a monster drop, and rarely a boss
-shard. The game rolls the contents when the player earns the chest. The player opens the chest on its own screen, from a button left of Achievements.
+## Summary
+- Each day that the player spends 5,000 steps on actions, they earn a **supply chest**.
+- The chest always holds materials or meals. Sometimes it holds a piece of gear with a better quality roll than a
+  monster drop. Rarely it holds a boss shard.
+- The game rolls the contents when the player earns the chest.
+- The player opens the chest on its own screen, from a button in the top bar.
 
 ## 1. Decisions
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Which steps count | **Steps that go into actions: the walked steps and the boost steps of the bank** (owner, amendment 1). |
-| 2 | Do walks count | **Yes, every kind of action** (owner, amendment 1). |
-| 3 | Unopened chests | **No cap, and an "Open all" button** (owner, amendment 1). |
-| 4 | The quality of chest gear | **Rare, epic and legendary get twice the chance of a monster drop** (owner, amendment 1). |
-| 5 | Which gear | **Item level from the player's level minus 4 up to the player's level, chase items out** (owner, amendment 1). |
-| 6 | When the contents roll | **When the player earns the chest** (owner, amendment 1). |
+| 1 | Which steps count | **Steps that go into actions: the walked steps and the boost steps of the bank** (owner, 2026-11-01). |
+| 2 | Do walks count | **Yes, every kind of action** (owner, 2026-11-01). |
+| 3 | Unopened chests | **No cap, and an "Open all" button** (owner, 2026-11-01). |
+| 4 | The quality of chest gear | **Rare, epic and legendary get twice the chance of a monster drop** (owner, 2026-11-01). |
+| 5 | Which gear | **Item level from the player's level minus 4 up to the player's level, chase items out** (owner, 2026-11-01). |
+| 6 | When the contents roll | **When the player earns the chest** (owner, 2026-11-01). |
 | 7 | The name | **Supply chest**, always. "Chest" alone already names a gear slot, and the sunken chest of spec 0011 §6.3 is another thing. |
 | 8 | Talents and the chest's quality roll | **No talent changes it.** The chest has its own boost (§2.5). The level boost of spec 0005 §3 applies, as for any roll. |
 | 9 | Which shard | **The boss shard of the tier of the player's level**, the same tiers as salvage (spec 0010 §7.1). |
-| 10 | Where the chest and its progress show | **On a supply chest screen of its own, from a top bar button left of Achievements. Nothing on Now** (owner, amendment 2). |
+| 10 | Where the chest and its progress show | **On a supply chest screen of its own, from a top bar button left of Achievements. Nothing on Now** (owner, 2026-11-01). |
 | 11 | Chest rolls and fights | **A separate random stream.** A chest never changes a fight, a drop or a catch. |
 
 ## 2. Rules
@@ -36,15 +40,16 @@ shard. The game rolls the contents when the player earns the chest. The player o
 ### 2.1 The goal
 1. The goal is `supplyChest.goal` in `economy.json`: **5,000** steps.
 2. Each step that goes into an action counts toward the goal of its local day:
-   - the walked step: 1
-   - the boost step that the bank adds to it: 1 more
+   - the walked step: 1;
+   - the boost step that the bank adds to it: 1 more.
 3. Every kind of action counts: fights, gathering spots, crafts, rerolls and walks.
 4. A step that goes into the bank counts nothing. A step that is lost because the bank is full counts nothing.
 5. Meals and talents do not add to the count. A meal or a talent that makes a unit cheaper does not change what a
    step counts.
-6. The steps of a test walk count nothing.
+6. The steps of a test walk count toward today's supply chest, as real steps on the current action do. They count
+   for the local day of the test walk. Only owner builds have the test walk (spec 0007 §4).
 7. The app passes the local day of each batch of steps to the game. The sync already splits the steps per day (spec
-   0001 amendment 1). A call without a day counts nothing (test walks, the pacing sims without days, old tests).
+   0001 amendment 1). A call without a day counts nothing (the pacing sims without days, old tests).
 
 ### 2.2 Earning a chest
 8. The step that brings the count of a day to the goal earns the chest of that day.
@@ -52,16 +57,16 @@ shard. The game rolls the contents when the player earns the chest. The player o
 10. A day pays once, even if later steps of the same day come in a later sync.
 11. Late steps for an earlier day count toward that day (spec 0001 amendment 1: late uploads from a watch). They can
     earn that day's chest after a later day's chest.
-12. Days before the update count only the steps that come in after the update. Steps credited before the update do
+12. Days before spec 0013 count only the steps that came in after the update. Steps credited before the update do
     not count.
 13. The game adds a `SupplyChestEarned` event with the day.
 
 ### 2.3 The contents roll at once
-14. The game rolls the contents at the step that earns the chest (§2.2 point 8).
+14. The game rolls the contents at the step that earns the chest (point 8).
 15. Every roll uses the state of that moment:
-    - the player's level
-    - the learned professions and their levels
-16. The game stores the rolled contents in the chest. Opening only moves them into the bag.
+    - the player's level;
+    - the learned professions and their levels.
+16. The game stores the rolled contents in the chest. To open it only moves them into the bag.
 17. A level up, a new profession or a talent after that moment does not change the chest.
 18. The rolls use their own random stream, `supplyRng` in the save. A chest roll never shifts a fight, a drop, a catch
     or a craft.
@@ -72,13 +77,14 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 | Part | Chance | Data |
 |---|---|---|
 | The common roll | always | `supplyChest.materials`, `supplyChest.meals` |
-| A piece of gear | 20% (about 1 in 5) | `supplyChest.gearChance` 0.2 |
+| A piece of gear | 10% (about 1 in 10) | `supplyChest.gearChance` 0.1 |
 | A boss shard | 2% (1 in 50) | `supplyChest.shardChance` 0.02 |
 
 **The common roll**
 19. The game picks one choice evenly from this list:
-    - each gathering profession that the player has learned: Mining, Woodcutting, Fishing, Hunting
-    - a meal
+    - each gathering profession that the player has learned: Mining, Woodcutting, Fishing, Hunting;
+    - Crafting, if the player has learned it;
+    - a meal.
 20. A gathering profession gives `supplyChest.materials` (**5**) of the plain item of its best spot that the player
     can work. For example:
     - Mining 12 gives 5 Iron ore.
@@ -88,15 +94,21 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 22. A meal gives `supplyChest.meals` (**2**) of one meal. The game picks it evenly among the meals of the meal tier
     for the player's level:
 
-    | Player level | Meal tier | Meals today |
+    | Player level | Meal tier | Meals on 2026-11-01 |
     |---|---|---|
     | 1-9 | 1 | the 6 tier 1 meals |
     | 10-19 | 2 | the 10 tier 2 meals |
     | 20 and up | 3 | the 6 tier 3 meals |
 
 23. A meal from the chest is a normal dish, never a perfect one (spec 0011 §5).
-24. Crafting and Cooking are not choices: they have no spots. A player without a gathering profession always gets
-    a meal.
+24. Cooking is not a choice. A player without a gathering profession and without Crafting always gets a meal.
+
+**The Crafting choice**
+60. The Crafting choice gives the inputs of one craft.
+61. The game picks the recipe evenly among the gear recipes with a Crafting level from the player's Crafting level
+    minus 4 (`supplyChest.gearWindow`) up to the Crafting level.
+62. The game never picks a recipe of the gear in `supplyChest.exclude`.
+63. For example, Crafting 3 can give the inputs of a copper sword (5 Copper ore).
 
 **The gear**
 25. The window holds each piece of gear with an item level from the player's level minus 4 up to the player's
@@ -104,14 +116,15 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
     it, else 1.
 26. The chest never gives gear with an item level above the player's level.
 27. The game picks evenly among the gear in the window.
-28. The gear in `supplyChest.exclude` never comes from a chest. Today the list holds the chase items:
+28. The gear in `supplyChest.exclude` never comes from a chest. The list holds the chase items:
 
     | Gear | Why it stays out |
     |---|---|
     | King's blade, Chieftain's amulet, Dragon's heart | made from 10 boss shards |
-    | Golden antler mantle | made from a rare trophy (Golden antler) |
+    | Golden antler mantle, Tusk mantle, Lynx mantle | made from a rare trophy (Golden antler, Old Tusk's tusk, Snow lynx pelt) |
     | Drowned Captain's ring | the prize of the sunken chest (spec 0011 §6.3) |
 
+    Gear made from a gem or heartwood stays in the chest, for example the Garnet ring and the Oak charm.
 29. New chase gear goes on the list in the same change that adds it.
 30. If the window holds no gear, the chest holds no gear. The gear roll does not move to another part.
 31. The gear rolls its quality as in §2.5, then its bonus stats as a drop does (spec 0009 §5.1), with its item level.
@@ -131,7 +144,7 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 35. The level boost of spec 0005 §3 applies on top, as for any roll: gear below the player's level rolls a little
     better (`qualityPerLevel`, at most `qualityMaxLevels`).
 36. No talent changes the roll (decision 8).
-37. The chances of gear at the player's level, with today's data:
+37. The chances of gear at the player's level, with the data of 2026-11-01:
 
     | Quality | Monster drop | Supply chest |
     |---|---|---|
@@ -145,33 +158,40 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 38. Every chest waits until the player opens it. There is no cap.
 39. "Open" opens the oldest chest. Its contents go into the bag.
 40. "Open all" opens every waiting chest. All contents go into the bag.
-41. The bag has no limit, so a chest never fails to open.
-42. Opening uses no steps and no random roll.
+41. A chest never fails to open. Spec 0013 had a bag with no limit. Since spec 0021 the bag has spaces: an unopened
+    chest uses no space, and a chest opens into a bag that is over its spaces.
+42. To open a chest uses no steps and no random roll.
 
 ## 3. Screens
 
 ### 3.1 The top bar button
 43. The top bar shows a **supply chest button** left of the Achievements button, on the same plate. Its icon is the
-    Material icon `inventory_2` until the chest has its own art.
+    Material icon `inventory_2` until the chest has its own art. Since spec 0020 amendment 5, the top bar shows five
+    buttons in this order: Bank, Supply chest, Achievements, Journal, Settings.
 44. The button shows a dot while at least one chest waits.
 45. Now shows no chest card and no chest progress.
 
 ### 3.2 The supply chest screen
 46. A tap on the button opens the **supply chest screen**. It slides in, like the Journal, and a swipe back closes
     it.
+    - When the screen opens, the game syncs. The progress line and its bar then show the steps of that sync.
 47. The screen shows the progress of today: "Today: 3,200 / 5,000 steps", with a thin bar.
 48. When today's chest is earned, the line reads "Today: earned".
 49. The screen shows the waiting chests:
-    - none: "No chest waiting"
-    - one: "1 supply chest" and the button **Open**
-    - 2 or more: "3 supply chests" and the buttons **Open** and **Open all**
+    - none: "No chest waiting";
+    - one: "1 supply chest" and the button **Open**;
+    - 2 or more: "3 supply chests" and the buttons **Open** and **Open all**.
 
 ### 3.3 The chest sheet
 50. A tap on Open or Open all opens a sheet. The sheet lists what came out:
-    - each item with its count
-    - gear in the colour of its quality, as on the item card
+    - each item with its count;
+    - gear in the colour of its quality, as on the item card.
 51. The sheet's title is "Supply chest", or "3 supply chests" after Open all.
 52. A tap on a piece of gear in the sheet opens its item card.
+    - **Gear that left the bag:** a row of gear that is no longer in the bag turns grey. A tap on it does nothing.
+    - The row stays in the sheet, with its count. The sheet still lists all that came out.
+    - A row of gear that is still in the bag keeps the colour of its quality and opens its item card.
+    - Rows of items that are not gear do not change.
 
 ### 3.4 The away summary and the journal
 53. The "While you were away" summary adds one line: "Supply chest earned" or "2 supply chests earned".
@@ -196,14 +216,29 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 ## 5. Balance
 - The chest gives loot, not steps or XP. Gear at the player's level and a better quality roll make the character a
   little stronger.
-- Drop chances and gear power move the pace, so this change needs a hand-run sim (`CLAUDE.md`).
+- Drop chances and gear power move the pace, so this change needed a hand-run sim (`CLAUDE.md`).
 - The pacing walkers get days: each sim day of `--steps-per-day 5000` earns its chest when its steps into actions
   reach the goal, and the walker opens it.
 - **Sim target:** the average walker (5,000 steps a day) stays inside the level targets of the pacing test.
-- The plan reports, at 5,000 steps a day: the share of days that pay a chest, and the levels at day 7, 30 and 90,
+- Plan 0037 reports, at 5,000 steps a day: the share of days that pay a chest, and the levels at day 7, 30 and 90,
   with and without chests.
 - **Balance cost:** one chest a day is small next to the drops of a day of fights. A full bank can halve the walked
   steps that the goal needs.
+- **The pace with chests:** the owner accepts that the character levels a little faster with chests. The targets
+  that chests moved:
+  - Mining and Crafting 10: day 5-22 for Mining and 6-22 for Crafting (medians of seeds 1-8).
+  - Crafting 20: day 40-65. Mining 20: day 45-65.
+  - Spec 0010 §9.3 target 2 holds these numbers too.
+- **The sim walker:** the walker of plan 0037 makes two choices that a player makes. They change no rule of the
+  game:
+  - It practises a gathering profession one level short of its next tier, once its character level has reached
+    that tier.
+  - In the last 3 levels of a stage, it gathers for a milestone of that stage that counts a gathered item.
+  - Without them, chest materials filled the walker's recipes, and it stopped gathering: Mining 10 came on day 50
+    instead of day 6, and the Angler milestone came weeks late.
+- **Meals:** when the walker decides to cook, it counts only the meals that it would eat. Chest meals with another
+  buff (Crit, Defense, fewer steps) piled up in its bag, and it never cooked again: 0 meals cooked in 7 of 8 seeds.
+  It changes no rule of the game.
 
 ## 6. Out of scope
 - Streaks, weekly or monthly chests, a goal that the player sets, chests bought with anything (intent 0013).
@@ -213,7 +248,6 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 - A cap on waiting chests.
 
 ## 7. Acceptance criteria
-
 **The goal**
 1. A walked step into a running action adds 1 to the count of its day.
 2. A boost step of the bank adds 1 more to the count of its day.
@@ -221,7 +255,7 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 4. A step into a fight, a gathering spot, a craft or a reroll counts.
 5. A step that goes into the bank counts nothing.
 6. A step lost to a full bank counts nothing.
-7. The steps of a test walk count nothing.
+7. The steps of a test walk on an action count toward today's supply chest.
 8. `applySteps` without a day counts nothing.
 
 **Earning**
@@ -233,11 +267,11 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 
 **Contents**
 14. Each chest holds exactly one common roll.
-15. The common roll picks evenly among the learned gathering professions and a meal.
+15. The common roll picks evenly among the learned gathering professions, Crafting if learned, and a meal.
 16. A gathering profession gives 5 of the plain item of its best spot that the player can work.
 17. A meal gives 2 of one meal of the tier for the player's level.
-18. A player without a gathering profession always gets a meal.
-19. About 1 chest in 5 holds a piece of gear (a seeded test of many chests).
+18. A player without a gathering profession and without Crafting always gets a meal.
+19. About 1 chest in 10 holds a piece of gear (a seeded test of many chests).
 20. About 1 chest in 50 holds a boss shard (a seeded test of many chests).
 21. The shard is the one of the tier of the player's level.
 22. Chest gear has an item level from the player's level minus 4 up to the player's level.
@@ -272,8 +306,8 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 44. With one chest waiting, the screen shows Open.
 45. With 2 or more chests waiting, the screen shows Open and Open all.
 46. The chest sheet lists each item with its count.
-47. The chest sheet shows gear in the colour of its quality.
-48. A tap on gear in the chest sheet opens its item card.
+47. The chest sheet shows gear that is still in the bag in the colour of its quality.
+48. A tap on gear in the chest sheet that is still in the bag opens its item card.
 49. The away summary says "Supply chest earned" for one chest.
 50. The away summary says "2 supply chests earned" for two.
 51. The journal keeps the chest line of the summary.
@@ -287,10 +321,49 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 **Balance**
 56. The pacing walkers earn and open chests.
 57. The pacing test passes.
-58. The plan reports the sim results of §5.
+58. Plan 0037 reports the sim results of §5.
 
 **Check and release**
 59. Every number of this spec lives in `economy.json` under `supplyChest`, except the existing `salvage.shards`,
     qualities and item levels.
 60. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
 61. `releases/next.md` has a line for players.
+
+**The Crafting choice**
+62. The Crafting choice gives the inputs of one gear recipe with a Crafting level from the player's Crafting level
+    minus 4 up to the Crafting level.
+63. The Crafting choice never gives the inputs of a recipe of the gear in `supplyChest.exclude`.
+
+**Test walks**
+64. A test walk that reaches the goal earns today's chest.
+
+**The supply chest screen, after the first build**
+65. Steps walked after the last sync show on the supply chest screen after it opens, with no other action.
+
+**The chest sheet, after the first build**
+66. After the player wears a piece of gear from the sheet, its row stays in the sheet and turns grey.
+67. After the player salvages a piece of gear from the sheet, its row stays in the sheet and turns grey.
+68. A tap on a grey row opens nothing.
+
+**The pace with chests**
+69. The pacing test checks the median of Crafting 10 on day 6-22.
+70. The pacing test checks the median of Crafting 20 on day 40-65.
+71. The pacing test checks the median of Mining 20 on day 45-65.
+72. `.\scripts\check.ps1 -Pacing` is green.
+
+## History
+- 2026-11-01: first version (intent 0013, plan 0037). Criteria 1-61.
+- 2026-11-01, erratum 1: the chase list also holds the Tusk and Lynx mantles and the Drowned Captain's ring; gem and
+  heartwood gear stays in. §2.4 point 28.
+- 2026-11-01, amendment 1 (#57): gear in 1 chest in 10; the Crafting choice; the pace with chests; the sim walker
+  practises before a tier and gathers for milestones. §2.4 points 19, 24 and 60-63; §5; criteria 15, 18, 19, 62-63
+  and 69. Its check of level 10 within 5% of day 15 ended with spec 0017 amendment 4.
+- 2026-11-01, amendment 2 (#57): Crafting 20 on day 40-65; Mining 20 stays on day 45-65. §5; criteria 70-71.
+- 2026-11-01, amendment 3 (#57): the walker counts only the meals that it would eat. §5. Its meals target and buffs
+  later went to spec 0011 amendment 2, which owns them.
+- 2026-11-01, amendment 4 (#170): test walks count; the screen syncs on open; gear that left the bag is grey in the
+  chest sheet. §2.1 point 6; §3.2 point 46; §3.3 point 52; criteria 7, 47-48 and 64-68.
+- 2026-11-02, spec 0021 (#173): an unopened chest uses no bag space and opens into a full bag. §2.6 point 41.
+- 2026-11-10, spec 0020 amendment 5 (#249): the Bank button stands left of the supply chest button. §3.1 point 43.
+- 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
+  criterion changed.

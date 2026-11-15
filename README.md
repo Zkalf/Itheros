@@ -9,7 +9,7 @@ phone: the app has no internet permission at all.
 ## How it's built
 A solo hobby project, built with an AI-native development process: every change goes
 **intent → spec → plan → code**, and the product owner accepts each stage before the next begins.
-Accepted documents are never edited; changes come as numbered amendments. The AI assistant works on short
+Each document is one file that is always current; a change edits it and adds a line to its History. The AI assistant works on short
 branches and opens pull requests; an automatic check runs on each, and the owner's merge is the approval. Only the
 owner can release.
 

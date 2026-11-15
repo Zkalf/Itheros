@@ -3,7 +3,7 @@
 This file lists the words that the project texts of Itheros use: intents, specs, plans, designs, reviews and the
 docs. Each word has one meaning (`WRITING.md` rule 1). The code name is given where it is different.
 
-- A new spec, amendment, plan or design that brings a new word adds it here, in the same pull request.
+- A new intent, spec, plan or design that brings a new word adds it here, in the same pull request.
 - A word that players see in the game belongs to its spec (see `WRITING.md`). This file only explains it.
 - [Words with more than one meaning](#words-with-more-than-one-meaning) lists the old words that new texts replace.
 
@@ -179,13 +179,12 @@ Most of these words come from the Quiet Teal look (spec 0014).
 | **intent** | A text that tells what the player misses and why it matters (`intent/`). |
 | **spec** | A text with the decisions and the acceptance criteria of a change (`specs/`). |
 | **acceptance criterion** | One numbered check in a spec that the change must pass. |
-| **amendment** | A new file that changes an accepted intent, spec or plan. |
-| **erratum** | A new file that fixes a mistake in an accepted file. |
-| **clean edition** | A clearer copy of an accepted text, with every fact and number kept (`WRITING.md`). |
+| **History** | The last section of an intent, spec or plan: one line for each change (plan 0068). |
+| **amendment**, **erratum** | A file that changed or fixed an accepted intent, spec or plan before plan 0068. Old comments cite them. The History of the moved file names each one. |
 | **plan** | A text with the milestones of a change and their proof (`plans/`). |
 | **plan milestone** | One step of a plan. It ends with its proof and a commit. Not an achievement milestone. |
 | **proof** | What shows that a plan milestone works: a test, a check or a screenshot. |
-| **draft** / **accepted** | The two values of the `Status:` line. An accepted file never changes. |
+| **draft** / **accepted** | The two values of the `Status:` line. A change to an accepted file has a History line that ends with "(draft)" until the owner accepts it. |
 | **fast lane** | The path for a change of only config, docs or wording: a commit, no pull request (`CLAUDE.md`). |
 | **check** | `scripts\check.ps1`: format, analyze and tests. "Green" means that it passes. CI runs the same check. |
 | **production gate** | The hook that blocks Claude from a release, a merge and a push to `main` (plan 0009). |
@@ -203,7 +202,8 @@ Most of these words come from the Quiet Teal look (spec 0014).
 
 ## Words with more than one meaning
 
-Accepted texts keep their words. New texts use the names in the right-hand column, so each name has one meaning.
+Old texts keep their words until a change edits them. New texts use the names in the right-hand column, so each name
+has one meaning.
 
 | Old word | Meaning | New name |
 |---|---|---|

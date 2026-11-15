@@ -8,8 +8,8 @@ description: Use when fixing a bug or reported misbehaviour in this repo (wrong 
 A fix is only trusted when a test that failed before it passes after it, and the fix did not change that test.
 
 0. **Branch first.** On `main`, make a branch `fix/<name>` before any commit (the owner merges it later via a PR).
-1. **Find the rule.** Locate the spec section, amendment or acceptance criterion the bug breaks
-   (`specs/`). If no rule covers it, ask the product owner before fixing.
+1. **Find the rule.** Locate the spec section or acceptance criterion the bug breaks
+   (`specs/`; a spec not moved over yet still has amendment files). If no rule covers it, ask the product owner before fixing.
 2. **Reproduce.** Write the smallest test that fails because of the bug, in the package where the rule lives
    (`packages/game_core/test/` for game rules, `app/test/` for sync, saving and UI). Name it after the behaviour,
    not the bug. Widget tests use `MemorySaveStore`, never real file I/O.

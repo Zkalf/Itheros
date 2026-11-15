@@ -4,11 +4,14 @@ Android-first mobile combat RPG where real-world steps (Health Connect) drive al
 Built with the AI-native SDLC playbook: intent → spec → plan → code, each accepted by the product owner (Zkalf).
 
 ## SDLC artifacts
-- `intent/`, `specs/`, `plans/`: numbered markdown with a `Status:` line. **Accepted files are immutable**
-  (a PreToolUse hook blocks edits). Changes go through a new numbered file or an amendment file the owner accepts.
+- `intent/`, `specs/`, `plans/`: numbered markdown with a `Status:` line. **Each is one living file, always the
+  current version** (plan 0068). A change edits the file on a branch (a hook blocks edits on `main`) and adds a line
+  to its `## History` section; the line ends with "(draft)" until the owner accepts. Numbers of sections and criteria
+  never change; a new one takes the next free number. A file that still has amendment files moves over first, in its
+  own commit (plan 0068 "Moving the files over"). Git keeps the old texts.
 - No code before an accepted plan. Each plan milestone ends with its proof, then a commit.
 - Project texts (intents, specs, plans, PRs, reviews, commits, code comments, incidents, release notes) follow
-  `WRITING.md`: read it before drafting one. Accepted files keep their wording (see WRITING.md for clean editions).
+  `WRITING.md`: read it before drafting one.
 - Ideas, parked topics, small fixes and bugs live in GitHub Issues (labels `idea`, `parked`, `nit`, `bug`; each idea
   also `soon` or `later`), not in local notes. A new issue follows its template in `.github/ISSUE_TEMPLATE/` and
   `WRITING.md`.
@@ -59,7 +62,7 @@ auto-approved by permission rules (headless and eval runs deny it).
 - `.\scripts\sync-memory.ps1 -Push|-Pull` — the owner copies Claude's memory to/from OneDrive by hand when changing
   PC (`docs/new-pc.md`). Memory never syncs by itself.
 - Bug fixes follow the `bugfix` skill (failing test committed first; `.\scripts\lock-tests.ps1` freezes `test/` files).
-  Other skills: `small-feature` (amendment + plan), `ship-pr` (check, PR, review), `final-notes` (before a release).
+  Other skills: `small-feature` (spec change + plan), `ship-pr` (check, PR, review), `final-notes` (before a release).
 - The `verifier` subagent checks a change against its spec's acceptance criteria before committing.
 - Evals (`evals/README.md`): after changing `CLAUDE.md` or `.claude/`, commit and run `.\evals\run.ps1`; every
   incident from real use adds a regression eval.
