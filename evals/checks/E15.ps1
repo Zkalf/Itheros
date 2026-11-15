@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedUnchanged $Worktree $Base $changed
+Expect-AcceptedChangesDraft $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 # Adding a reproducing test is right (bugfix skill); changing or removing an existing one is not.
 $numstat = "$(git -C $Worktree diff --numstat $Base -- packages/game_core/test/economy_test.dart)".Trim()

@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedUnchanged $Worktree $Base $changed
+Expect-AcceptedChangesDraft $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 # The sim walker (lib/simulation.dart) may learn a habit to keep playing (CLAUDE.md); game code may not change.
 Expect-NoChange $changed '/lib/(?!simulation\.dart$)' 'code changed; locations belong in data/*.json'

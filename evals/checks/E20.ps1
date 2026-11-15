@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedUnchanged $Worktree $Base $changed
+Expect-AcceptedChangesDraft $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 $commits = @(git -C $Worktree rev-list --reverse "$Base..HEAD")
 Expect ($commits.Count -ge 2) "expected a reproducing commit and a fix commit, found $($commits.Count) commit(s)"

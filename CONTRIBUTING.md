@@ -30,25 +30,25 @@ data-only changes in `data/*.json`; the pacing tests in `check.ps1` must stay gr
 ## New features
 A new rule or system starts as an **intent**: copy `intent/TEMPLATE.md` to the next free number, describe what the
 player is missing and why it matters, and open a pull request with it (status `draft`). Once Zkalf accepts it, a
-spec and a plan follow, then the code. Accepted intent, spec and plan files are never edited.
+spec and a plan follow, then the code.
 
-Each kind of file has a template, and each folder has one for its amendments:
-
-| Folder | New file | Amendment |
-|---|---|---|
-| `intent/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
-| `specs/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
-| `plans/` | `TEMPLATE.md` | `AMENDMENT-TEMPLATE.md` |
-
-They are guides, not forms. Each says what to keep: in an intent the problem and the outcome, in a spec or a spec
-amendment the acceptance criteria, in a plan the milestones with their proof, in any amendment why and what changes.
+Each of `intent/`, `specs/` and `plans/` has a `TEMPLATE.md`. They are guides, not forms. Each says what to keep: in
+an intent the problem and the outcome, in a spec the acceptance criteria, in a plan the milestones with their proof.
 Leave out the sections that do not fit.
+
+Each intent, spec and plan is one file, always the current version (plan 0068):
+- A change edits the file in a pull request and adds one line to its `## History` section.
+- A section or criterion keeps its number for good. A new one takes the next free number.
+- `git log -p <file>` shows every change in full.
 
 How a draft becomes accepted in a pull request:
 1. The pull request holds the file with `Status: draft`. The discussion and the review happen on the pull request.
 2. Only Zkalf accepts. Zkalf says "accepted" on the pull request.
 3. The author or Zkalf then changes the line to `Status: accepted` in one last commit.
 4. Zkalf merges. A draft never reaches `main`: the `check` fails while a pull request holds a draft.
+
+A change to an accepted file works the same way. Its new History line ends with "(draft)" until Zkalf accepts it.
+The `check` also fails when a pull request changes an intent, spec or plan without a new History line.
 
 A file that Zkalf accepted before the pull request opened is already `Status: accepted`, and the pull request
 carries it as it is.

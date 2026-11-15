@@ -10,7 +10,7 @@ This principle comes before every rule below.
 - Precision beats brevity.
 
 ## What the rules cover
-- Intents, specs, amendments and plans.
+- Intents, specs and plans, and their History lines.
 - Pull request descriptions and reviews.
 - Commit messages. The owner squash-merges each pull request, so its title becomes the commit title on `main`.
 - Code comments.
@@ -18,9 +18,9 @@ This principle comes before every rule below.
 - Release notes. They are for players, so they get the light touch below, like the words in the game. They keep
   their voice.
 
-The rules apply to new texts. Accepted intents, specs and plans are never edited (see `CLAUDE.md`). A clearer
-version of one comes as a new clean edition that the owner accepts. The clean edition keeps every fact and every
-section and criterion number.
+The rules apply to new texts. Each intent, spec and plan is one living file (plan 0068). A part that a change
+edits takes these rules. A rewrite for clarity alone is a change too: it keeps every fact and every section and
+criterion number, and it adds a History line.
 
 **Words that players see in the game are out of scope.** Screen text and the lines in `data/*.json` are design
 decisions. The spec of each feature owns them. The owner accepts them with that spec. This file does not override
@@ -55,11 +55,15 @@ them. A light touch is fine:
 12. Readability comes before length, and [quality](#quality-comes-first) comes before both. A longer text with clear
     lists is better than a short, dense one.
 
-### Specs and amendments
+### Specs
 13. Each acceptance criterion checks one thing. If a criterion checks two things, make two criteria. Keep both checks
     (see [Quality comes first](#quality-comes-first)).
 14. Group the criteria under short headings, such as "Screens", "Save" and "Balance". Number the criteria in one
     series across the headings, so each number names one criterion.
+15. A criterion keeps its number for good. A new criterion takes the next free number. A removed criterion keeps
+    its number with one line: "Removed on <date> (#N)."
+16. A History line says what changed in a few words, with the date, the issue, and the sections and criteria. For
+    example: "2026-11-10, #255: XP numbers count within the level. §8.1; criteria 141-143."
 
 ## Example
 This example shows one criterion from a spec, before and after the rules.

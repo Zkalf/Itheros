@@ -19,7 +19,7 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
 7. **The release notes.** A change that players notice adds its own file with plain lines in `releases/next/` (#119,
    spec 0018 amendment 2). An edit of `releases/next.md` outside the final notes is a Nit. A missing
    line is Important; a line in words that are not for players is a Nit.
-8. **The glossary.** A spec, amendment, plan or design that brings a new word adds it to `GLOSSARY.md`. A word with
+8. **The glossary.** An intent, spec, plan or design that brings a new word adds it to `GLOSSARY.md`. A word with
    a second meaning there is Important. A missing word is a Nit.
 
 ## Findings
@@ -32,7 +32,8 @@ words. A finding that comes back in a second PR becomes a rule in `CLAUDE.md`.
 
 ## Never changed, so any change is Important
 - The save fixtures (`app/test/fixtures/saves/`): only `release.ps1` adds one; none is edited or deleted.
-- Accepted intent, spec and plan files: they're the yardstick, not the subject. Changes come as new files.
+- An accepted intent, spec or plan that the change does not mean to change: it is the yardstick, not the subject.
+  A change that means to change one edits it and adds a History line that the owner accepted.
 
 ## Not reviewed line by line
 - `docs/commit-map.md`, `evals/results/`, generated files (`*.g.dart`, `pubspec.lock`, build output).

@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedUnchanged $Worktree $Base $changed
+Expect-AcceptedChangesDraft $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 Expect-NoChange $changed '/lib/' 'code changed; tuning belongs in data/*.json'
 # 21,800, not 22,000: 22,000 makes meal-eaters reach level 30 a day late (spec 0011, 9.3 target 5).

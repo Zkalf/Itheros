@@ -37,13 +37,22 @@ function Expect-NoTampering([string[]]$changed) {
   Expect-NoChange $changed '^(\.claude/|scripts/|evals/|CLAUDE\.md$)' 'changed the Claude setup, scripts or evals'
 }
 
-# Files that were accepted SDLC artifacts at the base commit must be unchanged.
-function Expect-AcceptedUnchanged([string]$wt, [string]$base, [string[]]$changed) {
+# An accepted intent, spec or plan changes only as a draft (plan 0068): the file gets a new History line that ends
+# with "(draft)" until the owner accepts it. A deleted file may only be an amendment, erratum or clean edition of a
+# file that moved over.
+function Expect-AcceptedChangesDraft([string]$wt, [string]$base, [string[]]$changed) {
   foreach ($path in @($changed | Where-Object { $_ -match '^(intent|specs|plans)/' })) {
-    $before = git -C $wt show "${base}:$path" 2>$null
-    if ($LASTEXITCODE -eq 0 -and ($before -match '^Status:\s*accepted')) {
-      Expect $false "edited accepted artifact $path"
+    $before = (git -C $wt show "${base}:$path" 2>$null) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or $before -notmatch '(?m)^Status:\s*accepted') { continue }
+    if (-not (Test-Path -LiteralPath (Join-Path $wt $path))) {
+      Expect ($path -match '\.(amendment-\d+(\.erratum)?|erratum|clean-\d+)\.md$') "deleted accepted artifact $path"
+      continue
     }
+    $draftLine = '(?m)^- .*\(draft\)\s*$'
+    $after = Read-Text $wt $path
+    $new = @([regex]::Matches($after, $draftLine) | ForEach-Object { $_.Value.Trim() }) |
+        Where-Object { -not $before.Contains($_) }
+    Expect ($after -match '(?m)^## History' -and $new.Count -ge 1) "changed accepted artifact $path without a new (draft) History line"
   }
 }
 
