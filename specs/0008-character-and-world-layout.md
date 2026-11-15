@@ -1,136 +1,422 @@
 # Spec 0008: Character and world layout
 
 Status: accepted
-Intent: [intent/0008-character-and-world-layout.md](../intent/0008-character-and-world-layout.md) (accepted, commit 2beba9f)
-Overrides: spec 0002 §4 (gear slots), §6 "Opens" column, §8 (the level ladder's unlocks), §9.1 item 2, §9.3 (hide
-from level 10), criterion 8; spec 0003 decisions 1 and 4, criterion 1; spec 0005 amendment 2 (where brackets show);
-spec 0006 decisions 1–3, §2.1 (resting card), §2.2–2.4, criteria 1, 5, 9, 10, and amendments 1–3
+Intent: [intent/0008-character-and-world-layout.md](../intent/0008-character-and-world-layout.md) (accepted, commit
+2beba9f)
+Overrides:
+- spec 0002 §4 (gear slots), §6 "Opens" column, §8 (the level ladder's unlocks), §9.1 item 2, §9.3 (hide from level
+  10), criterion 8;
+- spec 0003 decisions 1 and 4, criterion 1;
+- spec 0005 amendment 2 (where brackets show);
+- spec 0006 decisions 1-3, §2.1 (resting card), §2.2-2.4, criteria 1, 5, 9, 10, and amendments 1-3.
 Product owner: Zkalf
 Date: 2026-10-21
 
-The base for intents 0009–0012: four bottom buttons, a paper-doll Character screen with a bag grid and item cards,
-and no level gates except talents. No change to steps, XP, chances, drops or rewards. All numbers live in
-`data/*.json`.
+## Summary
+- Spec 0008 is the base for intents 0009-0012.
+- Four buttons at the bottom: Now, World, Professions and Character.
+- A Character screen with the gear slots, a bag grid and item cards.
+- No level gates except talents. Professions have levels since spec 0010, and the Graveyard King closes one road.
+- No change to steps, XP, chances, drops or rewards. All numbers live in `data/*.json`.
 
 ## 1. Decisions
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | What still opens by level? | **Nothing but talents** (owner's choice). Every area can be walked to from level 1, and every monster, gathering spot and recipe shows from the start. Monster colours and skulls, the deadly-fight warning, materials and (from 0010) profession levels hold players back. The `unlockLevel` fields leave the data. |
-| 2 | Bear-pelt cloak | Moves to the new **Cloak** slot, so it is worn with chest armour. Its stats are cut to cloak size (owner's choice) so total power stays as today; the pacing tests decide the exact numbers. |
-| 3 | Two-handed weapons | The rule is built now; **no item is two-handed yet** (owner's choice). Spec 0009 makes two-handers hit harder and turns the Troll-bone maul into one. |
-| 4 | Today's slots on the doll | weapon → Main hand, shield → Off hand, body → Chest, head → Head, feet → Boots, amulet → Neck. Shoulder, Bracer, Gloves, Belt, Legs, Rings and Trinkets start empty. |
-| 5 | When does fog lift? | An area is **explored** once the player has stood in it. An area shows in full if it is explored or joined by a route to an explored area; every other area is fogged. A new player sees Camp and its neighbours. |
-| 6 | Travel to fog | A fogged area can't be picked as a destination, so automatic travel never crosses fog. Walking to its neighbour lifts it. |
-| 7 | Stop conditions | "Until I have N" and "until a quality" are level gates too: they are offered from level 1. Three queue slots from level 1. |
-| 8 | Ranks | Recruit, Adventurer (10), Veteran (20), Champion (30) stay as titles with their ceremony lines. The Adventurer line no longer mentions crossing the river (data wording). |
-| 9 | Next goal | Its **Hide** switch is there from level 1 (was level 10). Rules unchanged. |
-| 10 | Quality in brackets | Dropped where the item is drawn as an object: the bag grid, the doll, the item card's title. Kept wherever items are written as text (reports, journal, tally, Next goal, level-up cards), as spec 0005 amendment 2 says. |
-| 11 | Two Rings, two Trinkets | One item kind each (`ring`, `trinket`) that fits either slot. **Equip** fills an empty one first; with both full, the card offers "Swap with <left>" and "Swap with <right>". |
-| 12 | Settings | A gear button in the top bar, next to Journal and Trophies, opens a Settings page (Next goal switch, test walk; name and gender from 0012). |
+| 1 | What still opens by level? | **Nothing but talents** (owner's choice). Every area can be walked to from level 1, and every monster, gathering spot and recipe shows from the start. Monster colours and skulls, the deadly-fight warning, materials and profession levels (spec 0010) hold players back. The `unlockLevel` fields leave the data. One road waits for a boss: the Graveyard King opens the river (§2.3). |
+| 2 | Bear-pelt cloak | It moves to the new **Cloak** slot, so the player wears it with chest armour. Its stats are cut to cloak size (owner's choice), so total power stays as it was. The pacing tests decided the exact numbers. |
+| 3 | Two-handed weapons | Spec 0008 built the rule with no two-handed item (owner's choice). Spec 0009 made one two-hander per tier from bone on, and they hit harder. |
+| 4 | The slots of old saves | weapon → Main hand, shield → Off hand, body → Chest, head → Head, feet → Boots, amulet → Neck. Shoulder, Bracer, Gloves, Belt, Legs, Rings and Trinkets start empty. |
+| 5 | When does fog lift? | An area is **explored** once the player has stood in it. An area shows in full if it is explored or joined by a route to an explored area. Every other area is fogged. A new player sees Camp and its neighbours. A hidden area (spec 0011 §6.2) does not show at all until it is revealed. |
+| 6 | Travel to fog | The player cannot pick a fogged area as a destination, so automatic travel never crosses fog. A walk to its neighbour lifts it. |
+| 7 | Stop conditions and slots | "Until I have N" and "until a quality" are level gates too, so they are offered from level 1. The queue holds 5 actions from level 1, the current action included (spec 0016). Talents can add slots (spec 0015). |
+| 8 | Ranks | Recruit, Adventurer (10), Veteran (20) and Champion (30) stay as titles with their ceremony lines. The Adventurer line no longer mentions the crossing of the river (data wording). |
+| 9 | Next goal | Its **Hide** switch is there from level 1 (it was level 10). Its rules do not change. |
+| 10 | Quality in brackets | Dropped where the item is drawn as an object: the bag grid, the Gear page, the item card's title. Kept wherever items are written as text (reports, journal, tally, Next goal, level-up cards), as spec 0005 amendment 2 says. |
+| 11 | Two Rings, two Trinkets | One item kind each (`ring`, `trinket`) that fits either slot. **Equip** fills an empty one first. With both full, the card offers "Swap with <left>" and "Swap with <right>". |
+| 12 | Settings | A gear button in the top bar, next to Journal and Trophies, opens a Settings page (Next goal switch, test walk; name and gender from spec 0012). |
 
 ## 2. Rules
 
 ### 2.1 Equipment
-- Slots, in data (`economy.json` `gearSlots`, display order): Head, Neck, Shoulder, Cloak, Chest, Bracer, Gloves,
-  Belt, Legs, Boots, Ring 1, Ring 2, Trinket 1, Trinket 2, Main hand, Off hand. None has a level.
+- The slots live in data (`economy.json` `gearSlots`, display order): Head, Neck, Shoulder, Cloak, Chest, Bracer,
+  Gloves, Belt, Legs, Boots, Ring 1, Ring 2, Trinket 1, Trinket 2, Main hand, Off hand. No slot has a level.
 - Each gear item names one slot kind in `items.json`. A main-hand weapon may be `twoHanded: true`.
-- Equipping a two-hander puts it in Main hand and moves the off-hand item to the bag. Equipping an off-hand item
-  while a two-hander is worn moves the two-hander to the bag. Swapped-out items always go to the bag; nothing is
-  lost.
-- Stats from all worn items add up as today.
+- To equip a two-hander puts it in Main hand and moves the off-hand item to the bag.
+- To equip an off-hand item while a two-hander is worn moves the two-hander to the bag.
+- Swapped-out items always go to the bag. Nothing is lost.
+- The stats of all worn items add up.
 
 ### 2.2 The bag
-- One bag holds everything the player owns and doesn't wear. No size limit.
-- Identical items (same item, same quality) stack with a count.
+- One bag holds everything that the player owns and does not wear. Since spec 0020, the bank at Camp holds the rest.
+- Items stack with a count when the item, the quality **and the bonus stats** match (spec 0009 §5.3). Common
+  gear still stacks freely.
+- Spec 0008 gave the bag no size limit. Spec 0021 gave it 40 spaces and a step cost for each space over. Spec 0021
+  amendment 4 gave each kind of item a stack size. Those specs own the rules of spaces.
 
-### 2.3 Fog and exploring
-- The save keeps the set of explored areas. Arriving in an area adds it.
-- Fog is decision 5; an area is never fogged again.
+### 2.3 Fog, exploring and the closed road
+**Fog**
+- The save keeps the set of explored areas. Arrival in an area adds it.
+- Fog follows decision 5. An area is never fogged again.
+- A hidden area is not drawn, not "???", not listed and on no route until it is revealed. Then the fog rules apply to
+  it (spec 0011 §6.2).
+
+**The closed road**
+- A route in `data/world.json` can name a boss in the field `opensOn`. Only one route has it: `old_graveyard` to
+  `grey_moor`, with `"opensOn": "graveyard_king"`.
+- A road with `opensOn` is open when either of these is true:
+  - the player has killed its boss at least once (the counter `kills.graveyard_king`);
+  - the player has explored both ends of the road.
+- Otherwise the road is **closed**, in both directions.
+- The second case keeps old saves whole: a save that has stood in Grey Moor keeps the road, with or without a kill.
+  The save gets no new field.
+- The kill counter never goes down, so a later loss never closes the road.
+- Travel and the routes treat a closed road as a road that does not exist:
+  - auto-travel and the walk before a queued action never plan a path across it;
+  - the game refuses a walk to Grey Moor, or to any area that only the closed road reaches;
+  - the game refuses an action that only happens beyond the river when the player adds it;
+  - the queue skips a waiting action whose place lies beyond the road, with the reason `noRoute`.
+- A refusal or a skip because of the closed road says: "Beat the Graveyard King to cross." Fog keeps its own words
+  ("The way there is in the fog").
+- A walk that is on the road when the game updates finishes that leg. The player arrives in Grey Moor, which then
+  counts as explored.
+- Fog does not change. Grey Moor shows in full once Old Graveyard is explored: its monsters, its spots and its sheet.
+  The areas beyond Grey Moor stay fogged until the player explores Grey Moor.
+
+**What stays open**
+- The south of the river stays open from level 1: Camp, Goblin Woods, Copper Hills, Old Graveyard, Mirror Lake and
+  Smugglers' Cove.
+- Any player can fight the King from level 1. The road opens on a win, never at a level.
+- The King's stats, drops, first-kill drop and the King's Bane achievement do not change.
+- The Ogre Chieftain and the Young Dragon stay optional (spec 0002 decision 8 still holds for them).
+
+**The first kill**
+- The first kill of the Graveyard King adds one line to the report of that walk (the away summary and the news):
+  "The King falls. The road to Grey Moor is open."
+- The line shows only when the kill opens the road. A save that already had the road through the second case gets no
+  line.
+
+**The camp tour and the sim walker**
+- Card 2 (World) of the camp tour reads: "This is the map. Tap a place to travel there, or to see what lives there.
+  Beat the Graveyard King to cross the river." Spec 0022 owns the tour.
+- From level 10, while the road is closed, the sim walker fights the King before it picks anything else. After a loss
+  it waits for its next level, as for any lost fight.
+- Plan 0055 measured the pace with the closed road (16 seeds, the median day of level 30, before and after, and the
+  day of the first King kill). The owner saw the numbers before the screens.
+- The closed road makes the King a gate. Spec 0002 decision 8 (bosses never a gate) still holds for the other bosses.
 
 ### 2.4 Old saves
-On load (new save version): equipment moves by decision 4; the Bear-pelt cloak, worn or in the bag, keeps its
-place (worn → Cloak); the inventory becomes the bag; every area the player has visited (spec 0004 counters) and the
-current area count as explored. Level, XP, items, qualities and counters are unchanged. Every fixture in
-`app/test/fixtures/saves/` loads.
+On load of a save from before spec 0008 (a new save version):
+- equipment moves by decision 4;
+- the Bear-pelt cloak, worn or in the bag, keeps its place (worn → Cloak);
+- the inventory becomes the bag;
+- every area that the player has visited (spec 0004 counters) and the current area count as explored;
+- level, XP, items, qualities and counters do not change.
+
+Every fixture in `app/test/fixtures/saves/` loads.
 
 ## 3. Screens
 
 ### 3.1 Bottom bar and top bar
-- Bottom bar, always four buttons: **Now · World · Professions · Character**. The app opens on Now.
-- Top bar on every screen: **Journal**, **Trophies** (with its dot, spec 0006 amendment 2) and **Settings**.
+- The bottom bar has four buttons at all times: **Now · World · Professions · Character**. The app opens on Now.
+- The top bar on every tab screen: **Journal**, **Trophies** (with its dot, spec 0006 amendment 2) and **Settings**.
+- Later specs add buttons to the top bar: since spec 0020 amendment 5 it holds Bank, Supply chest, Achievements,
+  Journal and Settings (spec 0013 §3.1).
 
 ### 3.2 Now: what am I doing, and what can I do here?
-Top to bottom: step-sync problem (if any); location, level, XP bar, step bank, walked today; test walk (if on);
-Next goal; discoveries; the running action (bars, fight log, tally, Stop, as today); the queue; then **Here**:
-- in an area: its monsters (level badge, stats, drops "2 of 3 found") and gathering spots, tappable to start or
-  queue, as on today's map sheet;
-- where there is a forge (Camp, Grey Moor, Mountain Pass): a **Forge** row that opens Professions.
+**The order from the top**
+1. the step-sync problem (if any);
+2. the place, the level and the bars (XP bar, step bank, walked today);
+3. the test walk (if on);
+4. Next goal;
+5. the current action with the waiting actions (bars, fight log, tally, Stop);
+6. the story of the place;
+7. **Here**.
 
-While resting, the card reads "Your steps go to the step bank. Pick something to do below, or on the World map."
-with an **Open the World map** button (replaces spec 0006 amendment 3).
+**The story card**
+- On the first visit to a place, the card with the story of the place and its monsters stands under the card of the
+  current action and the waiting actions, and above "Here".
+- The card, its words and its OK button do not change. It shows only until the player taps OK.
+
+**Here**
+- In an area: its monsters (level badge, stats, drops "2 of 3 found") and its gathering spots. A tap starts or queues
+  one.
+- A tap on a monster opens one sheet: its bestiary card on top, the fight choices below (spec 0009 decision 11).
+- Where there is a forge (Camp, Grey Moor, Mountain Pass): a **Forge** row. It opens Crafting's screen (spec 0010
+  amendment 4).
+
+**Resting**
+- While the player rests, the card reads "Your steps go to the step bank. Pick something to do below, or on the World
+  map." with an **Open the World map** button (this replaced spec 0006 amendment 3).
 
 ### 3.3 World: where can I go?
-Today's Map (positions, routes, river, area sheet, Travel here), renamed World. Fogged areas follow decision 5:
-"???" on the map and, on tap, "Thick fog. Walk to a neighbouring area to see what's there." Paths to them are dashed.
+- The Map of spec 0006 (positions, routes, river, area sheet), named World.
+- The area sheet's button reads **"Walk here"** (spec 0016 amendment 1).
+- Fogged areas follow decision 5: "???" on the map and, on a tap, "Thick fog. Walk to a neighbouring area to see
+  what's there." Paths to them are dashed.
+- **The lock:**
+  - While the road is closed, a small lock sits on the middle of the road on the World map. It is a flat SVG that
+    Claude draws, in the Quiet Teal style (spec 0014). The road keeps its look under it.
+  - The lock is not a button. Grey Moor's area sheet says why: it shows "Beat the Graveyard King to cross." in place
+    of the **Walk here** button.
+  - When the road opens, the lock leaves the map.
 
 ### 3.4 Professions: what am I good at?
-Today's Craft screen moved here unchanged (where the forge is, every recipe, owned/needed inputs, stop choices).
-Shown from level 1. Professions with levels, tiers and tools arrive with spec 0010.
+- Spec 0008 moved the Craft screen here unchanged, shown from level 1.
+- Spec 0010 owns the Professions tab and the profession screens now: levels, tiers, tools, recipes and filters.
 
 ### 3.5 Character: who am I?
-Tabs **Gear** and **Bag** (Talents comes with its spec). The level, stats (HP, Attack, Defense) and rank sit above
-the tabs.
-- **Gear:** the paper doll. A simple figure outline (no drawn art) with slots around it, as icons in squares:
-  left column Head, Neck, Shoulder, Cloak, Chest, Bracer; right column Gloves, Belt, Legs, Boots, Ring 1, Ring 2;
-  bottom row Trinket 1, Trinket 2, Main hand, Off hand. An empty slot is a faint outline with its slot icon. A worn
-  item shows its icon with a border in its quality colour. A two-hander shows in Main hand and greys out Off hand
-  with a link icon.
-- **Bag:** a grid, 5 squares to a row on the phone, gear first (by slot order, then best first), then materials.
-  Gear uses its slot's icon with a quality-colour border; materials use one material icon with no border. Stacks
-  show a count in the corner. Text under or over the squares is limited to the count.
-- **Item card** (tap any square, in the bag or on the doll): the name in its quality colour; the quality and kind in
-  words ("Rare one-hand weapon · Main hand", "Material"); its stats; for gear in the bag, the change against what is
-  worn there ("+2 Attack", "−10 HP", or "Slot is empty"); buttons **Equip** (empty slot), **Swap** (slot taken),
-  **Unequip** (on the doll). For a two-hander the card says "Uses both hands: your shield goes to the bag."
-  Materials show where they come from ("Drops from: Skeleton") and what uses them ("Used in: Bone sword").
+**The header**
+- The name stands above the rank. The origin follows the rank: "Adventurer · Fisher from the coast" (spec 0012
+  §4.4). Seven taps on the rank turn on the test walk.
+- The level stands at the right of the name, not in the stats. A tap on it opens nothing.
+- When the name and the level do not fit one line, at any text size, the level stands under the name. Nothing is cut
+  off.
+- HP, Attack, Defense, Crit, Hit, Dodge and Block stand in one row, in this order, with smaller numbers. Each has its
+  label under it. A tap opens its sheet (spec 0009 §8.5).
+- At a large text size the row wraps to two rows.
+- Each stat is at least 44 dp wide, so a thumb can hit it.
+- The portrait is 48 dp.
+- The meal line under a stat reads "+19 meal", without brackets, in the small type of the labels.
+- The line "N talent points to spend" stays.
+
+**The tabs**
+- **Gear**, **Bag** and **Talents** (spec 0015) stand under the header.
+
+**Gear**
+- The Gear page shows no figure.
+- The 16 slots stand in a grid of four rows and four columns, centred:
+
+  | | | | |
+  |---|---|---|---|
+  | Shoulder | Head | Neck | Cloak |
+  | Main hand | Chest | Gloves | Off hand |
+  | Ring 1 | Belt | Bracer | Ring 2 |
+  | Trinket 1 | Legs | Boots | Trinket 2 |
+
+  - Head, Chest, Belt and Legs stand in the second column.
+  - The pairs (Shoulder and Cloak, the two hands, the two rings, the two trinkets) stand in the outer columns.
+- The squares are a quarter of the width, at most 72 dp and at least 48 dp.
+- A slot that the data adds later stands in a row under the grid.
+- An empty slot is a faint outline with its slot icon.
+- A worn item shows its picture with a ring in its quality colour (spec 0014 §2.3).
+- A two-hander shows in Main hand and greys out Off hand with a link icon.
+
+**A tap on a slot**
+- A tap on a **filled** slot opens the item card of the item worn there.
+- A tap on an **empty** slot opens its **slot sheet**. This includes the greyed Off hand under a two-hander.
+- The slot sheet holds:
+  - its name and kind ("Head", "Ring 1 · rings fit here");
+  - what is worn there, if anything, with its stats and **Unequip**;
+  - **From your bag**: every bag item that fits this slot, best first, each with its stat change against what is worn
+    there and **Equip** (empty slot) or **Swap**. A tap on an item's name opens its item card;
+  - with nothing in the bag that fits: "Nothing in your bag fits here yet."
+- To equip from the slot sheet puts the item in **that** slot, so a ring tapped from Ring 2 goes to Ring 2. The
+  two-hand rules of §2.1 apply.
+- A tap on the worn row in the slot sheet opens the item card of the worn item.
+
+**Bag**
+- A grid, 5 squares to a row on the phone. In the bag's own order, gear comes first (by slot order, then best first),
+  then materials.
+- Each square shows the item's picture (spec 0014 §3.1). Gear and tools have a ring in their quality colour.
+  Materials and meals have no ring.
+- Stacks show a count badge. Text under or over the squares is limited to the count.
+- Spec 0020 amendment 2 adds the kind chips and the pictures in rows. Spec 0020 amendment 4 adds the search and the
+  sort. Spec 0021 adds the spaces.
+- Spec 0020 amendment 8 adds a selection: at a place with a bank or a forge, a hold on a square selects items, and a
+  bar offers Store or Salvage. Without a selection, a tap on a square opens the item card, as below.
+
+**Item card** (a tap on a square in the bag, or on a filled slot)
+- The name in its quality colour.
+- The quality and the kind in words: "Rare one-hand weapon · Main hand", "Material".
+- Its stats. Spec 0009 §8.2 adds the damage type and the hands, or the armour type, and the bonus stats.
+- For gear in the bag: the change against what is worn there ("+2 Attack", "−10 HP", or "Slot is empty").
+- The buttons:
+  - **Equip** (an empty slot) or **Swap** (a taken slot), for a bag item. A bag item shows no **Change**;
+  - **Unequip** and **Change**, for a worn item. Change closes the item card and opens the slot
+    sheet of that slot. Unequip moves the item to the bag.
+- For a two-hander, the card says "Uses both hands: your shield goes to the bag."
+- Materials show where they come from ("Drops from: Skeleton") and what uses them ("Used in: Bone sword").
+- Later specs add buttons to the card, such as Salvage and Reroll (spec 0010), Eat (spec 0011), Store and Take (spec
+  0020) and Destroy (spec 0021 amendment 2).
 
 ## 4. Out of scope
-Professions, NPCs, tools, cooking (0010, 0011); hit/miss, affixes, armour types, two-hander damage, bestiary (0009);
-character creation (0012); talents; bag cap, loadouts, quests, selling or salvage; new content.
+These were out of the scope of spec 0008, and later specs built them:
+- professions, NPCs, tools and cooking (specs 0010, 0011);
+- hit and miss, bonus stats, armour types, two-hander damage and the bestiary (spec 0009);
+- character creation (spec 0012);
+- talents (spec 0015);
+- a bag cap (spec 0021) and salvage (spec 0010).
+
+Still out of scope: loadouts, quests, the sale of gear, and new content in spec 0008 itself.
 
 ## 5. Concerns
-1. **Open world for a new player (intended).** A level 1 player can walk into the Old Graveyard (zombies red, the King
-   orange) and, as fog lifts, across the river. The owner wants this: "let people explore and fail". The colours,
-   the deadly warning and spec 0003's cheap losses keep failing cheap. The pacing simulator already picks the best yellow monster, so its numbers shouldn't move; if they do, the
-   plan says so before tuning.
-2. **Recipes from level 1 (low).** Materials are the gate now. A long Professions list at level 1 could feel busy;
-   the list keeps today's order (lowest tier first) so the first rows are the ones the player can make.
-3. **Level-up cards get shorter.** Levels 2–9 no longer name new areas or recipes; they show stats plus "now your
+1. **Open world for a new player (intended).** A level 1 player can walk into the Old Graveyard (zombies red, the
+   King orange). Spec 0008 also let fog lift across the river. Since amendment 5, the King closes the road across the
+   river (§2.3). The owner wants this: "let people explore and fail". The colours, the deadly warning and spec
+   0003's cheap losses keep failure cheap. The pacing simulator already picks the best yellow monster, so its numbers should not
+   move. If they do, the plan says so before tuning.
+2. **Recipes from level 1 (low).** Materials are the gate now. A long Professions list at level 1 could feel busy.
+   Spec 0010 amendment 12 later put the recipes that the player can make first.
+3. **Level-up cards get shorter.** Levels 2-9 no longer name new areas or recipes. They show stats plus "now your
    level / now grey" news. Levels with nothing else say "Stronger: +10 HP, +1 Attack, +1 Defense."
 
 ## 6. Acceptance criteria
-1. The bottom bar has exactly Now, World, Professions and Character at every level; the app opens on Now; the top
-   bar has Journal, Trophies (with its dot) and Settings on every screen.
-2. Every action the old screens offered (fight, gather, craft, travel, stop, remove from queue, equip, settings) can
-   still be done from the new screens.
-3. At level 1, all 16 slots can be filled, the queue takes 3 actions, and "until I have N" and "until a quality" are
-   offered.
-4. At level 1, every monster, gathering spot and recipe in data is shown wherever its area is not fogged; no
-   `unlockLevel` is left in `data/*.json` and no rule reads one.
-5. A new save shows Camp and the areas joined to it in full and every other area as "???"; arriving in an area
-   shows its neighbours in full; a fogged area can't be picked for travel and auto-travel never routes through one.
-6. Equipping a two-hander (test data) moves the off-hand item to the bag, and equipping an off-hand item moves the
-   two-hander to the bag; no item is lost in any equip, swap or unequip.
-7. A ring or trinket fills an empty slot first; with both full the card offers a swap with each.
-8. Identical items stack in the bag with a count; gear and materials use different icons; gear has a quality-colour
-   border.
-9. The item card shows the name in colour, quality and kind in words, stats, the comparison with the worn item and
-   the right button (Equip / Swap / Unequip).
-10. No name in the bag, doll or card title carries a quality bracket; reports, the journal, the tally and Next goal
-    still do.
+A criterion that checks several things has a letter for each check (rule 13 of `WRITING.md`).
+
+**Screens and actions**
+1. Bars:
+   - 1a. The bottom bar has exactly Now, World, Professions and Character at every level.
+   - 1b. The app opens on Now.
+   - 1c. The top bar has Journal, Trophies (with its dot) and Settings on every screen.
+2. Every action that the old screens offered (fight, gather, craft, travel, stop, remove from queue, equip, settings)
+   can still be done from the new screens.
+3. At level 1:
+   - 3a. All 16 slots can be filled.
+   - 3b. The queue takes its full count of actions: 5 since spec 0016 (spec 0008 said 3).
+   - 3c. "Until I have N" and "until a quality" are offered.
+4. At level 1:
+   - 4a. Every monster, gathering spot and recipe in data shows wherever its area is not fogged.
+   - 4b. No `unlockLevel` is left in `data/*.json`.
+   - 4c. No rule checks the character level before an action. Spots and recipes check their profession level (spec
+     0010 criterion 1).
+   - 4d. The only other gate is the closed road (§2.3).
+5. Fog:
+   - 5a. A new save shows Camp and the areas joined to it in full, and every other area as "???".
+   - 5b. Arrival in an area shows its neighbours in full.
+   - 5c. The player cannot pick a fogged area for travel.
+   - 5d. Auto-travel never routes through a fogged area.
+6. Two-handers:
+   - 6a. To equip a two-hander moves the off-hand item to the bag.
+   - 6b. To equip an off-hand item moves the two-hander to the bag.
+   - 6c. No item is lost in any equip, swap or unequip.
+7. Rings and trinkets:
+   - 7a. A ring or trinket fills an empty slot first.
+   - 7b. With both full, the card offers a swap with each.
+8. The bag:
+   - 8a. Items stack in the bag with a count, when item, quality and bonus stats match (spec 0009 criterion 9).
+   - 8b. Gear and materials look different: gear has its picture and a quality-colour ring; materials have no ring
+     (spec 0014 criterion 17).
+9. The item card:
+   - 9a. It shows the name in colour.
+   - 9b. It shows the quality and the kind in words.
+   - 9c. It shows the stats.
+   - 9d. It shows the comparison with the worn item.
+   - 9e. It shows the right buttons (Equip / Swap for a bag item; Unequip / Change for a worn item).
+10. Brackets:
+    - 10a. No name in the bag, the Gear page or the card title carries a quality bracket.
+    - 10b. Reports, the journal, the tally and Next goal still do.
 11. The Bear-pelt cloak sits in the Cloak slot, alongside chest armour.
-12. Each fixture save loads: gear in its decision 4 slot, the inventory in the bag, visited areas explored, level, XP
-    and items unchanged.
-13. Pacing tests stay green with no change to steps, XP, chances or drops other than the cloak's stats.
+12. Each fixture save loads:
+    - 12a. gear in its decision 4 slot;
+    - 12b. the inventory in the bag;
+    - 12c. visited areas explored;
+    - 12d. level, XP and items unchanged.
+13. Pacing:
+    - 13a. The pacing tests stay green, with no change to steps, XP, chances or drops other than the cloak's stats.
+    - 13b. The pacing simulator may walk anywhere that it can see, and its targets still hold.
 14. `.\scripts\check.ps1 -Release` is green, with no INTERNET permission.
+
+**The slot sheet**
+15. The 16 slots stand in four rows of four, in the places of §3.5 "Gear".
+16. A slot sheet shows the worn item (if any) with Unequip, and every bag item that fits that slot with its stat
+    change and Equip or Swap, which equips into that slot; "Nothing in your bag fits here yet." when none does.
+
+**A tap on a slot**
+17. A tap on a filled slot opens the item card of the item worn in that slot.
+18. A tap on an empty slot opens the slot sheet of that slot.
+19. With a two-hander worn, a tap on the greyed Off hand opens the Off hand slot sheet.
+20. The item card of a worn item shows a Change button and an Unequip button.
+21. Change closes the item card and opens the slot sheet of the slot that holds the item.
+22. Unequip on the item card of a worn item moves the item to the bag.
+23. The item card of a bag item shows no Change button.
+
+**The closed road**
+24. `data/world.json` has `"opensOn": "graveyard_king"` on the route from `old_graveyard` to `grey_moor`, and on no
+    other route.
+25. A new save has the road closed.
+26. A save with one kill of the Graveyard King has the road open.
+27. A save that has explored both Old Graveyard and Grey Moor, with no King kill, has the road open.
+28. A save with the road open keeps it open after a loss to the King.
+29. With the road closed, the walking distances from Camp reach no area beyond the river.
+30. With the road closed, Travel to Grey Moor throws an error that says "Beat the Graveyard King to cross."
+31. With the road closed, adding a fight with a Wolf (Grey Moor) from Camp throws the same error.
+32. With the road closed, a waiting action whose place lies beyond the river is skipped with `noRoute`.
+33. With the road open, Travel from Camp to Grey Moor walks through Old Graveyard.
+34. A walk that is on the closed road's leg finishes it and arrives in Grey Moor.
+35. With Old Graveyard explored and the road closed, Grey Moor is not fogged.
+36. With the road closed, Iron Ridge and Troll Bridge are fogged for a player who has not explored Grey Moor.
+37. With the road closed, the World map shows the lock on the road between Old Graveyard and Grey Moor.
+38. With the road open, the World map shows no lock.
+39. With the road closed, Grey Moor's area sheet shows "Beat the Graveyard King to cross." and no walk button.
+40. With the road open, Grey Moor's area sheet shows the walk button ("Walk here").
+41. The lock and the sheet fit at 408 dp wide and at text size 2.0. The PR says so, with a render.
+42. The walk with the first King kill reports "The King falls. The road to Grey Moor is open."
+43. A second King kill reports no such line.
+44. A save whose road is open through criterion 27 reports no such line on its first King kill.
+45. Card 2 of the camp tour shows the words of §2.3 (spec 0022 owns the tour).
+46. The save schema does not change for the closed road.
+47. Each save fixture in `app/test/fixtures/saves/` loads. A fixture that has explored Grey Moor has the road open.
+48. The walker beats the King before it crosses the river, on every seed of the pacing test.
+49. Plan 0055 milestone 1 reports the median day of level 30 (16 seeds) before and after, and the owner sees it
+    before milestone 2.
+50. The pacing test passes, or the owner has accepted new ranges for it.
+
+**The story card**
+51. On the first visit to a place with a story, the story card stands under the card of the current action.
+52. The story card stands above "Here".
+53. With no current action, the story card stands under "Resting".
+54. A tap on OK still takes the story card away.
+55. Now with a story card and a fight is rendered at 408 dp wide before the PR (`CLAUDE.md`).
+56. `releases/next/` has a line for players.
+
+**The stats block**
+57. The level stands on the line of the character's name, and the stats row has no Level. This holds for a name that
+    fits the line with the level.
+58. At the usual text size on a 408 dp phone the seven stats stand in one row, in the order of §3.5.
+59. A tap on each of the seven stats opens its sheet. A tap on the level opens nothing.
+60. With a meal that adds HP, the line under HP reads "+N meal".
+61. The portrait is 48 dp.
+62. At the usual text size on a 408 dp phone the block is short: the three tabs start in the top third of the screen
+    (above 295 dp of 884). It is measured with a name that fits the line with the level.
+63. At text size 2.0 on a 408 dp phone the block does not overflow.
+64. Each stat is at least 44 dp wide.
+65. Character is rendered at 408 dp wide, at the usual text size and at 2.0, before the PR (`CLAUDE.md`).
+
+**The Gear grid**
+66. The Gear page shows no figure.
+67. On a 408 dp phone at the usual text size, all 16 slots are on the screen below the tabs without a scroll.
+68. A tap on an empty slot opens its sheet; a tap on a filled slot opens the card of its item.
+69. Under a two-hander the Off hand is greyed.
+70. The Gear page is rendered at 408 dp wide before the PR (`CLAUDE.md`).
+
+## History
+- 2026-10-21: first version (intent 0008, plan 0010). Criteria 1-14.
+- 2026-10-21, amendment 1: gathering spots keep a character level until spec 0010. Decision 1; criteria 4 and 13.
+  Spec 0010 replaced it.
+- 2026-10-21, amendment 2: recipes keep a character level until spec 0010. Decision 1; criteria 4 and 13. Spec 0010
+  replaced it, but for criterion 13b.
+- 2026-10-21, amendment 3: hands in the middle, a tap on a slot opens its sheet. §3.5 "A tap on a slot"; criteria
+  15-16. Amendment 8 replaced its layout.
+- 2026-10-21, spec 0009: bonus stats in stacks, a tap on a monster, the item card. Decision 3; §2.2; §3.2; §3.5.
+- 2026-10-21, spec 0010: spots and recipes need a profession level; the Professions screens. Decision 1; §3.4;
+  criterion 4c.
+- 2026-10-22, spec 0011: hidden areas. Decision 5; §2.3.
+- 2026-10-22, spec 0012: the name and the origin in the Character header. §3.5.
+- 2026-10-22, spec 0014: pictures for items and slots. §3.5; criterion 8b.
+- 2026-10-24, spec 0016 and its amendment 1: the queue holds 5 actions; "Walk here". Decision 7; §3.3; criterion 3b.
+- 2026-10-26, amendment 4 (#107): a tap on a worn item opens its card; Change on the card. §3.5; criteria 9e and
+  17-23.
+- 2026-10-31, spec 0015: a third tab, Talents. §3.5.
+- 2026-11-07, amendment 5 (#233, plan 0055): the Graveyard King opens the river. Decision 1; §2.3; §3.3; §5;
+  criteria 4d and 24-50.
+- 2026-11-10, amendment 6 (#251): the place's story stands under the current action. §3.2; criteria 51-56.
+- 2026-11-10, amendment 7 (#254): a shorter stats block on Character. §3.5 "The header"; criteria 57-65.
+- 2026-11-10, amendment 7 erratum 1 (#254): the other texts it changes (spec 0014 §2.3, spec 0011 §8.3), a long
+  name. §3.5 "The header"; criteria 57 and 62.
+- 2026-11-10, spec 0020 amendment 5 (#249): the top bar holds five buttons. §3.1.
+- 2026-11-11, amendment 8 (plan 0065): the Gear page as a plain grid of four columns. §3.5 "Gear"; criteria 15 and
+  66-70.
+- 2026-11-13, spec 0020 amendment 8 (#267): a hold on a square of the bag selects items. §3.5 "Bag".
+- 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
+  criterion changed. (draft)
