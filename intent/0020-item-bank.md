@@ -77,4 +77,4 @@ The owner chose on 2026-11-02.
 - 2026-11-02, spec 0020 amendment 1 (#181): a reroll at Camp takes its dust from the bank too. Decision 7.
 - 2026-11-06, spec 0021 amendment 2 (#180): the player can destroy items. "The bag gets a limit".
 - 2026-11-09, spec 0021 amendment 4 (#228): a bag space holds a stack. "The bag gets a limit"; decision 1.
-- 2026-11-15 (plan 0068): the amendment folded into this file. No outcome or decision changed. (draft)
+- 2026-11-15 (plan 0068): the amendment folded into this file. No outcome or decision changed.

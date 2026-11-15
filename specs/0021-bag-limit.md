@@ -377,4 +377,4 @@ Seed 1 has no pinned days (spec 0017 §8).
   16, 21, 22, 37-38 and 42-49; §5.4; criteria 71-87.
 - 2026-11-10, spec 0020 amendment 5 (#249): Store all materials left the out of scope list. §6.
 - 2026-11-15 (plan 0068): the amendments folded into this file. "Its steps of today" now reads "its steps without
-  the overload". No rule, number or criterion changed. (draft)
+  the overload". No rule, number or criterion changed.

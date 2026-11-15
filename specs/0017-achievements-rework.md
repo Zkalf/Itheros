@@ -268,4 +268,4 @@ on top of the way to level 30:
   Slayer I 1,200, Brute Force 1,000, Bone Collector 700, Chieftain's Bane 275, Bear Hunter 1,050, Wolf Pack 1,350,
   Ghost Hunter 1,700, Dragonslayer 1,150, Golem Breaker 2,150, Troll Slayer 3,100, Wyvern Hunter 2,200, Deep Waters
   500), with the first counts beside them. §2.4 gives the milestones' +7,500 bank cap and three items, and §6's
-  example reward is the Mithril helm, both since amendment 3. No rule or criterion changed. (draft)
+  example reward is the Mithril helm, both since amendment 3. No rule or criterion changed.

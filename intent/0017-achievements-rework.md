@@ -95,4 +95,4 @@ None: spec 0017 settled them.
 - 2026-10-24, amendment 1 (PR #83): milestones and feats; the bonus of a feat is as big as its grind; reward items
   never come from the monsters or spots of their criterion. Outcomes 7 and 14-20; the constraint on bonuses; the
   balance cost.
-- 2026-11-15 (plan 0068): the amendment folded into this file. Open questions closed by spec 0017. (draft)
+- 2026-11-15 (plan 0068): the amendment folded into this file. Open questions closed by spec 0017.

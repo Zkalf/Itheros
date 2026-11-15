@@ -521,4 +521,4 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
 - 2026-11-13, amendment 8 (#267, plan 0067): hold an item to select several. Decision 14; points 78-98; §3.7;
   criteria 134-168.
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. No rule, number or criterion
-  changed. (draft)
+  changed.
