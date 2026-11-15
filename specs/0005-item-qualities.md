@@ -100,4 +100,4 @@ and spec 0010 added salvage and the reroll, which changes a quality after it is 
 - 2026-10-31, spec 0015: talents on quality chances. §3.
 - 2026-11-01, spec 0013: the supply chest's own quality boost. §3.
 - 2026-11-15 (plan 0068): the amendments folded into this file. The report example of §6 now names common gear
-  "(Common)", as amendment 2 asked. No rule, number or criterion changed. (draft)
+  "(Common)", as amendment 2 asked. No rule, number or criterion changed.

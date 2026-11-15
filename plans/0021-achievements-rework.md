@@ -94,4 +94,4 @@ The owner may want to change one of these choices before the owner accepts the p
 - 2026-10-24, amendment 1: M1 and M2 in one pull request, with spec 0017 amendment 1; the pacing targets that the
   rewards tripped. Overview; "M1 and M2 in one pull request"; Branches.
 - 2026-11-15 (plan 0068): the amendment folded into this file. "As today" now reads "as before". No milestone or
-  criterion changed. (draft)
+  criterion changed.

@@ -110,4 +110,4 @@ pacing, zooming or panning the map sideways. Spec 0010 added salvage later.
 - 2026-11-01, spec 0019: the fight sheet; 50 rounds. Decision 8; criterion 3.
 - 2026-11-15 (plan 0068): the amendments folded into this file. Decision 8 gives the 50 rounds of the data, with the
   first 4 beside them. The tally example names common gear "(Common)", as spec 0005 amendment 2 asked. "As today"
-  now reads "as before". No rule or criterion changed. (draft)
+  now reads "as before". No rule or criterion changed.

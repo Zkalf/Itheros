@@ -190,4 +190,4 @@ second character or a new-game button; name filters (the name never leaves the p
 - 2026-11-09, spec 0002 amendment 3 erratum 1 (#234): spec 0011 target 4 dropped. §5.2.
 - 2026-11-10, spec 0008 amendment 7 (#254): the level at the right of the name in the header. §4.4.
 - 2026-11-15 (plan 0068): the amendment folded into this file. "Today's" now names the spec of the rule: the word
-  would go stale in a living file. No rule, number or criterion changed. (draft)
+  would go stale in a living file. No rule, number or criterion changed.

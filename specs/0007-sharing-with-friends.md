@@ -150,4 +150,4 @@ heads-up; revisit in 2027), the "World of Walkcraft" achievement (owner's idea, 
 - 2026-11-03, spec 0018 amendment 2 (#189): one notes file for each change; the release refuses while one is left.
   §5.
 - 2026-11-15 (plan 0068): the amendment folded into this file. "A quick-fix number" now reads "a release of only
-  fixes", the words of amendment 1. No rule, number or criterion changed. (draft)
+  fixes", the words of amendment 1. No rule, number or criterion changed.

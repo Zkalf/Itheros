@@ -254,4 +254,4 @@ No game rule changes. The pacing test stays green.
   the owner's build joins them. §2.1 rule 2; §2.5 rules 20-25; §3.4; criteria 41-49.
 - 2026-11-06, spec 0022: the tour of the camp waits under the card. §3.1.
 - 2026-11-15 (plan 0068): the amendments folded into this file. "As today" now reads "as before". No rule, number or
-  criterion changed. (draft)
+  criterion changed.

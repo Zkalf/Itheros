@@ -142,4 +142,4 @@ No change to the pace. The pacing test stays green. No hand-run sim.
 - 2026-11-07, spec 0008 amendment 5 (#233, plan 0055): step 2 says the Graveyard King opens the river. §3.3.
 - 2026-11-10, amendment 1 (#255): the last card names the Bank button. §3.3 step 6; criterion 27.
 - 2026-11-15 (plan 0068): the amendment and the erratum folded into this file. "As today" now reads "as before". No
-  rule, number or criterion changed. (draft)
+  rule, number or criterion changed.
