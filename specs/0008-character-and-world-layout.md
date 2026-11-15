@@ -419,4 +419,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
   66-70.
 - 2026-11-13, spec 0020 amendment 8 (#267): a hold on a square of the bag selects items. §3.5 "Bag".
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
-  criterion changed. (draft)
+  criterion changed.

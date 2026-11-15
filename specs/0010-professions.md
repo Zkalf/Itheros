@@ -971,4 +971,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-13, spec 0020 amendment 8 (#267): a batch salvage of the items selected in the bag. §7.1.
 - 2026-11-15 (plan 0068): the amendments, the errata and clean edition 1 folded into this file. §5.2 now gives the
   ring and trinket HP of the data (7, 10, 17, 20, 30, 33), with the first numbers beside them. No rule or criterion
-  changed. (draft)
+  changed.

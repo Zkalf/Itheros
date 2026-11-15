@@ -191,4 +191,4 @@ Date: 2026-10-19
 - 2026-11-10, amendment 6 (#255): one step bank line when a report both used and saved steps. §2 "The step bank
   lines"; criteria 21-26.
 - 2026-11-15 (plan 0068): the amendments and clean edition 1 folded into this file. No rule, number or criterion
-  changed. (draft)
+  changed.

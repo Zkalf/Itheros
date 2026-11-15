@@ -521,4 +521,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-11, erratum 1 (#59): the hit chance moves 5% per level, as the data always had. §2.1.
 - 2026-11-15 (plan 0068): the amendments, the errata and clean edition 1 folded into this file. §4.2 now gives the
   shield Block and two-hander Attack of the data (25%, 15%, 32%, 35%; 9, 15, 16, 24, 25), with the first numbers
-  beside them. No rule or criterion changed. (draft)
+  beside them. No rule or criterion changed.

@@ -673,4 +673,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-11, spec 0008 amendment 8: the Gear page is a grid of four columns with no figure. §4.2 "Character";
   criterion 9a.
 - 2026-11-15 (plan 0068): the amendments and clean edition 1 folded into this file. No rule, number, colour, size or
-  criterion changed. (draft)
+  criterion changed.

@@ -556,4 +556,4 @@ Spec 0021 has the criteria of Bigger bag (its criteria 27-29).
   §2.3; §2.4; §2.8; criterion 8.
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. Criteria 8, 14, 18,
   26, 50, 62 and 66 hold again the text that replaced them; 65, 68, 70-73 and 80 point there. No rule or number
-  changed. (draft)
+  changed.
