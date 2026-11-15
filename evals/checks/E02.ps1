@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedChangesDraft $Worktree $Base $changed
+Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 # One new intent file, under the next free number (the eval used to name 0002, long since taken).
 $taken = @(git -C $Worktree ls-tree --name-only "${Base}:intent" | Where-Object { $_ -match '^\d{4}-' } |

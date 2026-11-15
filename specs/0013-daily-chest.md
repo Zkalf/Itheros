@@ -188,8 +188,7 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
     - gear in the colour of its quality, as on the item card.
 51. The sheet's title is "Supply chest", or "3 supply chests" after Open all.
 52. A tap on a piece of gear in the sheet opens its item card.
-    - **Gear that left the bag:** a row of gear that is no longer in the bag turns grey. A tap on
-      it does nothing.
+    - **Gear that left the bag:** a row of gear that is no longer in the bag turns grey. A tap on it does nothing.
     - The row stays in the sheet, with its count. The sheet still lists all that came out.
     - A row of gear that is still in the bag keeps the colour of its quality and opens its item card.
     - Rows of items that are not gear do not change.
@@ -238,7 +237,8 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
   - Without them, chest materials filled the walker's recipes, and it stopped gathering: Mining 10 came on day 50
     instead of day 6, and the Angler milestone came weeks late.
 - **Meals:** when the walker decides to cook, it counts only the meals that it would eat. Chest meals with another
-  buff (Crit, Defense, fewer steps) piled up in its bag, and it never cooked again: 0 meals cooked in 7 of 8 seeds. It changes no rule of the game.
+  buff (Crit, Defense, fewer steps) piled up in its bag, and it never cooked again: 0 meals cooked in 7 of 8 seeds.
+  It changes no rule of the game.
 
 ## 6. Out of scope
 - Streaks, weekly or monthly chests, a goal that the player sets, chests bought with anything (intent 0013).
@@ -366,4 +366,4 @@ Each chest holds the common roll. Gear and a shard roll on their own, so a chest
 - 2026-11-02, spec 0021 (#173): an unopened chest uses no bag space and opens into a full bag. §2.6 point 41.
 - 2026-11-10, spec 0020 amendment 5 (#249): the Bank button stands left of the supply chest button. §3.1 point 43.
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
-  criterion changed.
+  criterion changed. (draft)

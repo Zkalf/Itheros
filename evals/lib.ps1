@@ -37,15 +37,28 @@ function Expect-NoTampering([string[]]$changed) {
   Expect-NoChange $changed '^(\.claude/|scripts/|evals/|CLAUDE\.md$)' 'changed the Claude setup, scripts or evals'
 }
 
-# An accepted intent, spec or plan changes only as a draft (plan 0068): the file gets a new History line that ends
-# with "(draft)" until the owner accepts it. A deleted file may only be an amendment, erratum or clean edition of a
-# file that moved over.
+# For a task that should change no intent, spec or plan: each file that was accepted at the base commit stays as it
+# was. A task that changes one on purpose uses Expect-AcceptedChangesDraft instead.
+function Expect-AcceptedUnchanged([string]$wt, [string]$base, [string[]]$changed) {
+  foreach ($path in @($changed | Where-Object { $_ -match '^(intent|specs|plans)/' })) {
+    $before = git -C $wt show "${base}:$path" 2>$null
+    if ($LASTEXITCODE -eq 0 -and ($before -match '^Status:\s*accepted')) {
+      Expect $false "edited accepted artifact $path"
+    }
+  }
+}
+
+# For a task that changes an intent, spec or plan on purpose (plan 0068): the file gets a new History line that ends
+# with "(draft)" until the owner accepts it. A deleted file may only be an amendment, erratum or clean edition, and
+# only when its own file moves over in the same change.
 function Expect-AcceptedChangesDraft([string]$wt, [string]$base, [string[]]$changed) {
   foreach ($path in @($changed | Where-Object { $_ -match '^(intent|specs|plans)/' })) {
     $before = (git -C $wt show "${base}:$path" 2>$null) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $before -notmatch '(?m)^Status:\s*accepted') { continue }
     if (-not (Test-Path -LiteralPath (Join-Path $wt $path))) {
-      Expect ($path -match '\.(amendment-\d+(\.erratum)?|erratum|clean-\d+)\.md$') "deleted accepted artifact $path"
+      $suffix = '\.(amendment-\d+(\.erratum)?|erratum|clean-\d+)\.md$'
+      $parent = $path -replace $suffix, '.md'
+      Expect ($path -match $suffix -and @($changed) -contains $parent) "deleted accepted artifact $path without moving $parent"
       continue
     }
     # A History line can wrap, so "(draft)" may end its second line: any new line of the History section counts.

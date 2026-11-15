@@ -90,23 +90,25 @@ jobs:
           fi
           echo "No drafts."
       # Each change to an intent, spec or plan adds a line to its History section (plan 0068), so the file tells what
-      # changed and git log -p tells how. Only files that existed before and still exist: a new file starts its History,
-      # a deleted amendment file has none. A diff that can't be read skips this step.
+      # changed and git log -p tells how. A History line starts with "- "; a changed file needs more of them than before.
+      # A new file needs a History section. Renames count as a delete and a new file. A deleted amendment file needs
+      # nothing. A diff that can't be read skips this step.
       - name: History line
         shell: bash
         run: |
           base=${{ steps.scope.outputs.base }}
-          files=$(git diff --name-only --diff-filter=M "$base" HEAD) || { echo "Diff can't be read; skipping."; exit 0; }
+          files=$(git diff --name-status --no-renames --diff-filter=AM "$base" HEAD) || { echo "Diff can't be read; skipping."; exit 0; }
           missing=""
-          history() { awk '/^## History/{h=1} /^## /&&!/^## History/{h=0} h'; }
-          for f in $files; do
+          lines() { awk '/^## History/{h=1; next} /^## /{h=0} h && /^- /{n++} END{print n+0}'; }
+          while read -r status f; do
+            [ -n "$f" ] || continue
             echo "$f" | grep -qE '^(intent|specs|plans)/[0-9]{4}-[a-z0-9-]+\.md$' || continue
-            before=$(git show "$base:$f" | history)
-            after=$(history < "$f")
-            if [ -z "$after" ] || [ "$before" = "$after" ]; then missing="$missing $f"; fi
-          done
+            after=$(lines < "$f")
+            if [ "$status" = A ]; then before=0; else before=$(git show "$base:$f" | lines); fi
+            if [ "$after" -le "$before" ] || [ "$after" -eq 0 ]; then missing="$missing $f"; fi
+          done <<< "$files"
           if [ -n "$missing" ]; then
-            echo "::error::Changed without a new History line:$missing. Add one line under ## History: date, issue, what changed."
+            echo "::error::No new History line:$missing. Add one line under ## History: date, issue, what changed."
             exit 1
           fi
           echo "Every changed intent, spec and plan has a new History line."

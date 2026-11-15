@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedChangesDraft $Worktree $Base $changed
+Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect ($changed -contains 'packages/game_core/data/enemies.json') 'enemies.json was not changed'
 Expect-NoChange $changed '/lib/' 'code changed; tuning belongs in data/*.json'
 $goblin = (Read-Json $Worktree 'packages/game_core/data/enemies.json').enemies | Where-Object { $_.id -eq 'goblin' }

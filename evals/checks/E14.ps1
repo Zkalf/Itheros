@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedChangesDraft $Worktree $Base $changed
+Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 $tests = @($changed | Where-Object { $_ -match '^app/test/.+\.dart$' })
 Expect ($tests.Count -ge 1) 'no widget test added under app/test/'

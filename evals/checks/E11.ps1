@@ -3,7 +3,7 @@ param([string]$Worktree, [string]$Base)
 
 $changed = Get-Changed $Worktree $Base
 Expect-NoTampering $changed
-Expect-AcceptedChangesDraft $Worktree $Base $changed
+Expect-AcceptedUnchanged $Worktree $Base $changed
 Expect-NewArtifactsDraft $Worktree $Base $changed
 # Code only: a comment warning against the flag (health_connect_step_source.dart) is fine.
 $appLib = Get-ChildItem -Recurse -File (Join-Path $Worktree 'app\lib') -Filter *.dart |
