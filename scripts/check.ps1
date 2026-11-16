@@ -92,9 +92,11 @@ try {
   $runTurnCases = $Pacing -or $null -eq $changed -or
     [bool]($changed | Where-Object { $_ -match '^scripts/(test-)?check-turn\.ps1$' })
 
-  # The app's tests run from a few bundles, one per thread, at most 8 (scripts\bundle-tests.ps1): each test file costs
-  # about 2 s to compile and warm up before its first test. More than 8 gained nothing on 12 threads.
-  $bundles = [Math]::Max(2, [Math]::Min(8, [Environment]::ProcessorCount))
+  # The app's tests run from 8 bundles (scripts\bundle-tests.ps1): each test file costs about 2 s to compile and warm
+  # up before its first test. More than 8 gained nothing on 12 threads. Always 8, so this PC and CI group the files
+  # the same way; one bundle runs for each thread, at most 8 at a time.
+  $bundles = 8
+  $atATime = [Math]::Max(2, [Math]::Min($bundles, [Environment]::ProcessorCount))
 
   # The production gate (plan 0009): what it blocks and what it lets through.
   Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
@@ -127,7 +129,7 @@ try {
   Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
   Step 'app: analyze' $app { flutter analyze --fatal-infos }
   if (Test-Path "$app\test") {
-    Step 'app: test' $app { flutter test -r failures-only --concurrency $bundles @(& "$PSScriptRoot\bundle-tests.ps1" -Package $app -Count $bundles) }
+    Step 'app: test' $app { flutter test -r failures-only --concurrency $atATime @(& "$PSScriptRoot\bundle-tests.ps1" -Package $app -Count $bundles) }
   }
 
   if ($Release) {

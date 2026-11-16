@@ -164,7 +164,8 @@ bool _better(FightEstimate a, FightEstimate b) {
 
 /// The main hand and off hand [s] would arm against [enemy] from what it
 /// owns, and the fight's estimate (spec 0009 §9.2): the weapon (and shield,
-/// or two-hander) that wins fastest and safely.
+/// or two-hander) that wins fastest and safely. It tries the arms on [s]
+/// itself and puts the worn gear back before it returns.
 (String?, String?, FightEstimate) bestArms(Game game, GameState s, EnemyDef e) {
   final data = game.data;
   final owned = {...s.inventory.keys, ...s.equipment.values};
