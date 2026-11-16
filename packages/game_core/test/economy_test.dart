@@ -97,6 +97,50 @@ void main() {
     expect(chunked.toJson(), once.toJson());
   });
 
+  // The engine reuses a unit's cost from step to step (run.dart). A walk in
+  // one call must still match the same walk step by step, where nothing is
+  // reused, when the cost changes on the way: here the meal ends inside a
+  // unit (a boar stew takes steps off a cast) and the bag fills over its
+  // spaces.
+  test('a walk whose unit cost changes on the way equals the same walk '
+      'step by step', () {
+    final data = game.data;
+    // A full bag of things the lake does not give: the first catch
+    // overloads it.
+    final lake = data.nodes['lake_shore']!;
+    final catches = {
+      lake.item,
+      lake.rareFind,
+      for (final c in lake.catches) c.item,
+    };
+    final materials = [
+      for (final i in data.items.values)
+        if (data.kindOf(i.id) == ItemKind.material && !catches.contains(i.id))
+          i.id,
+    ];
+    var start = stateAt(
+      game,
+      location: 'mirror_lake',
+      seed: 3,
+      inventory: {for (final id in materials.take(40)) id: 1},
+    )..inventory['boar_stew'] = 1;
+    start = game.eat(start, 'boar_stew')..meal!.left = 250;
+    start = game.startActivity(start, const Activity.gather('lake_shore'));
+    final costs = {game.unitCost(start)};
+
+    final once = game.applySteps(start, 1200).state;
+    var stepped = start;
+    for (var i = 0; i < 1200; i++) {
+      stepped = game.applySteps(stepped, 1).state;
+      costs.add(game.unitCost(stepped));
+    }
+
+    expect(stepped.toJson(), once.toJson());
+    expect(once.meal, isNull, reason: 'the meal ended on the way');
+    expect(game.overloaded(once), isTrue, reason: 'the bag filled');
+    expect(costs.length, greaterThan(2), reason: 'the cost changed twice');
+  });
+
   test('applySteps does not modify its input state', () {
     final s = stateAt(game, stepBank: 10);
     final before = s.toJson();

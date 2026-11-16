@@ -32,6 +32,29 @@ class _Run {
   /// The number of [events] at the last check of the achievements.
   var _eventsChecked = 0;
 
+  /// The cost of a unit of [_costFor], worked out when [events] had
+  /// [_costEvents] entries; null after a unit was paid.
+  int? _cost;
+  RunningActivity? _costFor;
+  var _costEvents = 0;
+
+  /// What a unit of [act] costs now. The cost follows the bag, the place,
+  /// the levels, the tool, the meal and the talents. None of them changes
+  /// inside a walk unless a unit is paid or an event is added (a meal that
+  /// ends, an achievement), so the steps between reuse the last answer: the
+  /// result is the same, and a long walk does not count the bag at each step.
+  int _costOf(RunningActivity act) {
+    final known = _cost;
+    if (known != null &&
+        identical(_costFor, act) &&
+        _costEvents == events.length) {
+      return known;
+    }
+    _costFor = act;
+    _costEvents = events.length;
+    return _cost = game._costOf(s, act);
+  }
+
   GameData get data => game.data;
 
   void step() {
@@ -94,10 +117,11 @@ class _Run {
   /// progress goes to the bank and the next action starts (spec 0003 §4).
   void _advance(RunningActivity act) {
     while (identical(s.activity, act)) {
-      final cost = game._costOf(s, act);
+      final cost = _costOf(act);
       if (act.progress < cost) return;
       act.progress -= cost;
       _unitPaid = true;
+      _cost = null;
       if (act.leg case final leg?) {
         _arrive(leg);
         act.leg = game._nextLeg(s, act.activity);
