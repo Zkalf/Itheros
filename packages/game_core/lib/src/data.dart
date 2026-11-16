@@ -443,10 +443,27 @@ class GameData {
   static const bonusMark = '+';
 
   /// A key without its bonus stats: `bone_sword@rare`.
-  String plainKey(String key) => key.split(bonusMark).first;
+  String plainKey(String key) {
+    final end = key.indexOf(bonusMark);
+    return end < 0 ? key : key.substring(0, end);
+  }
 
-  /// The item a key stands for.
-  ItemDef? itemOf(String key) => items[plainKey(key).split(qualityMark).first];
+  /// The item a key stands for. Each step of a walk asks this for each bag
+  /// item, so it makes no list: most keys are a plain id, and the others
+  /// are cut at their first mark.
+  ItemDef? itemOf(String key) {
+    if (items[key] case final item?) return item;
+    for (var i = 0; i < key.length; i++) {
+      final c = key.codeUnitAt(i);
+      if (c == _qualityCode || c == _bonusCode) {
+        return items[key.substring(0, i)];
+      }
+    }
+    return null;
+  }
+
+  static final _qualityCode = qualityMark.codeUnitAt(0);
+  static final _bonusCode = bonusMark.codeUnitAt(0);
 
   /// The quality of a key; common when it names none, or one the data no
   /// longer has (an old save must still load).

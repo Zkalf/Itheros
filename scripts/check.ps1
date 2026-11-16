@@ -16,6 +16,8 @@
   sim tools (tool\) or tests other than the pacing test and its support.dart does not count. The cases of
   check-turn.ps1 run only when the change touches that script or its test, or with -Pacing. release.ps1 passes
   -Pacing. When git cannot tell what changed, both run. Each step prints its time.
+  The app's tests run from a few bundles (scripts\bundle-tests.ps1), so a failure names its bundle, then its test
+  file. To run one file alone: .\scripts\test.ps1 <file>.
 
   In Claude Code run it directly (.\scripts\check.ps1): a nested
   `powershell -File` can't be auto-approved by permission rules.
@@ -90,6 +92,12 @@ try {
   $runTurnCases = $Pacing -or $null -eq $changed -or
     [bool]($changed | Where-Object { $_ -match '^scripts/(test-)?check-turn\.ps1$' })
 
+  # The app's tests run from 8 bundles (scripts\bundle-tests.ps1): each test file costs about 2 s to compile and warm
+  # up before its first test. More than 8 gained nothing on 12 threads. Always 8, so this PC and CI group the files
+  # the same way; one bundle runs for each thread, at most 8 at a time.
+  $bundles = 8
+  $atATime = [Math]::Max(2, [Math]::Min($bundles, [Environment]::ProcessorCount))
+
   # The production gate (plan 0009): what it blocks and what it lets through.
   Step 'gate: test cases' $root { & "$PSScriptRoot\test-gate.ps1" }
   if ($runTurnCases) { Step 'check turn: test cases' $root { & "$PSScriptRoot\test-check-turn.ps1" } }
@@ -106,6 +114,7 @@ try {
     Step "${n}: format"   $pkg { dart format --output=none --set-exit-if-changed . }
     Step "${n}: analyze"  $pkg { dart analyze --fatal-infos }
     # Failing tests only: the full list is long enough that a cut-off tool output hid the one failure (in an eval run).
+    # File by file: bundles (scripts\bundle-tests.ps1) gained nothing here, 26 s both ways.
     if (Test-Path "$pkg\test") {
       if ($runPacing) { Step "${n}: test" $pkg { dart test -r failures-only } }
       else { Step "${n}: test (no pacing sims)" $pkg { dart test -r failures-only -x pacing } }
@@ -119,7 +128,9 @@ try {
   Step 'app: pub get' $app { flutter pub get | Out-Null }
   Step 'app: format'  $app { dart format --output=none --set-exit-if-changed @('lib', 'test' | Where-Object { Test-Path $_ }) }
   Step 'app: analyze' $app { flutter analyze --fatal-infos }
-  if (Test-Path "$app\test") { Step 'app: test' $app { flutter test -r failures-only } }
+  if (Test-Path "$app\test") {
+    Step 'app: test' $app { flutter test -r failures-only --concurrency $atATime @(& "$PSScriptRoot\bundle-tests.ps1" -Package $app -Count $bundles) }
+  }
 
   if ($Release) {
     # The owner build (spec 0007 §4): test walk on. Friends' builds come from scripts\release.ps1.

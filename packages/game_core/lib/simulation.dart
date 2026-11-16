@@ -164,7 +164,8 @@ bool _better(FightEstimate a, FightEstimate b) {
 
 /// The main hand and off hand [s] would arm against [enemy] from what it
 /// owns, and the fight's estimate (spec 0009 §9.2): the weapon (and shield,
-/// or two-hander) that wins fastest and safely.
+/// or two-hander) that wins fastest and safely. It tries the arms on [s]
+/// itself and puts the worn gear back before it returns.
 (String?, String?, FightEstimate) bestArms(Game game, GameState s, EnemyDef e) {
   final data = game.data;
   final owned = {...s.inventory.keys, ...s.equipment.values};
@@ -181,15 +182,24 @@ bool _better(FightEstimate a, FightEstimate b) {
       mains[group] = key;
     }
   }
-  final armed = s.copy();
+  // The hands change on [s] itself and go back as they were, in the same
+  // order: a copy of the whole save for each monster took a quarter of a
+  // sim's time.
+  final worn = Map.of(s.equipment);
   (String?, String?, FightEstimate)? best;
-  for (final main in <String?>[null, ...mains.values]) {
-    final twoHanded = main != null && data.itemOf(main)!.twoHanded;
-    for (final off in twoHanded ? const <String?>[null] : offs) {
-      _wield(armed, main, off);
-      final f = estimateFight(game, armed, e);
-      if (best == null || _better(f, best.$3)) best = (main, off, f);
+  try {
+    for (final main in <String?>[null, ...mains.values]) {
+      final twoHanded = main != null && data.itemOf(main)!.twoHanded;
+      for (final off in twoHanded ? const <String?>[null] : offs) {
+        _wield(s, main, off);
+        final f = estimateFight(game, s, e);
+        if (best == null || _better(f, best.$3)) best = (main, off, f);
+      }
     }
+  } finally {
+    s.equipment
+      ..clear()
+      ..addAll(worn);
   }
   return best!;
 }
