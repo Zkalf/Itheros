@@ -78,7 +78,7 @@ The owner and Claude chose these words on 2026-10-24, after the playtest of the 
 | Word | Meaning |
 |---|---|
 | **person** | A named character of the world with a place, a portrait and lines, such as Pell (spec 0023). A row under Here opens their sheet. |
-| **line** | One thing that a person says. A line can wait for a condition or an origin (spec 0023 §2.2). |
+| **line** (of a person) | One thing that a person, a teacher or the trainer says, such as a greeting, a kin line or a King line. A person's line can wait for a condition or an origin (spec 0023 §2.2). Other texts use "line" in its plain sense too: a line in the report, a History line. |
 | **open line** | A line whose condition holds and whose origin fits. An open line that is not heard puts a dot on the row. |
 | **heard** | A line that the player saw on the sheet. The save keeps the heard lines. |
 | **King line** | The line of a teacher or the trainer after the first King kill (spec 0023 §2.5). |
