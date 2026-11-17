@@ -14,6 +14,7 @@ import 'labels.dart';
 import 'item_card.dart';
 import 'item_square.dart';
 import 'meals.dart';
+import 'person_sheet.dart';
 import 'socket.dart';
 import 'teacher_sheet.dart';
 import 'trainer_sheet.dart';
@@ -633,6 +634,9 @@ class _Here extends StatelessWidget {
     final game = c.game;
     final enemies = game.availableEnemies(c.state);
     final rest = _rows(context, enemies);
+    // Out in the world, the people of the place stand first (spec 0023
+    // §3.1). At Camp, Odda stands after the trainer, in [_rows].
+    final people = _atCamp ? const <Widget>[] : _people(context);
     // The status card names the place, so the heading is "Here" (spec 0014
     // §4.1). The rows stand on plates (§2.2): the monsters under their one
     // heading, then the rest.
@@ -641,6 +645,11 @@ class _Here extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Heading('Here'),
+        if (people.isNotEmpty)
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(children: people),
+          ),
         if (enemies.isNotEmpty)
           Card(
             clipBehavior: Clip.antiAlias,
@@ -660,6 +669,31 @@ class _Here extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// The place of the trainer and the teachers: Camp.
+  bool get _atCamp =>
+      controller.game.data.trainer.location == controller.state.location;
+
+  /// The people here, each with the dot of a line not heard (spec 0023
+  /// §3.1). A hidden place shows none until it is revealed.
+  List<Widget> _people(BuildContext context) {
+    final c = controller;
+    final s = c.state;
+    if (c.game.isHidden(s, s.location)) return const [];
+    return [
+      for (final p in c.game.peopleHere(s))
+        ListTile(
+          key: ValueKey('person-${p.id}'),
+          leading: PersonPicture(p),
+          title: Text(personName(p)),
+          titleTextStyle: nameStyle(context),
+          trailing: c.game.hasNewLine(s, p.id)
+              ? Badge(key: ValueKey('person-dot-${p.id}'))
+              : null,
+          onTap: () => showPerson(context, c, p.id),
+        ),
+    ];
   }
 
   /// The rows after the monsters.
@@ -725,7 +759,10 @@ class _Here extends StatelessWidget {
                   ? '${p.name} ${game.professionLevel(s, p.id)}'
                   : 'Teaches ${p.name}',
             ),
-            trailing: game.tipsWaiting(s, p.id).isEmpty
+            // A waiting tip, or a King line not heard (spec 0023 §2.5).
+            trailing:
+                game.tipsWaiting(s, p.id).isEmpty &&
+                    !game.campLineWaiting(s, p.id)
                 ? null
                 : Badge(key: ValueKey('teacher-dot-${p.id}')),
             onTap: () => showTeacher(context, c, p.id),
@@ -742,15 +779,20 @@ class _Here extends StatelessWidget {
           title: Text(trainerName(game.data.trainer)),
           titleTextStyle: nameStyle(context),
           subtitle: const Text('Talents'),
-          trailing: game.talentPointsLeft(s) > 0
+          trailing:
+              game.talentPointsLeft(s) > 0 ||
+                  game.campLineWaiting(s, GameData.trainerId)
               ? const Badge(key: ValueKey('trainer-dot'))
               : null,
           onTap: () => showTrainer(context, c),
         ),
+      // Odda, after the trainer (spec 0023 §3.1).
+      if (_atCamp) ..._people(context),
       if (enemies.isEmpty &&
           nodes.isEmpty &&
           !place.crafting &&
           !place.fire &&
+          game.peopleHere(s).isEmpty &&
           !game.data.professions.values.any(
             (p) => p.teacher.location == s.location,
           ))

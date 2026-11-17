@@ -14,6 +14,9 @@ Future<void> showTeacher(
   if (c.game.tipsWaiting(c.state, profession).isNotEmpty) {
     await c.talk(profession);
   }
+  // The King line is heard as the sheet opens (spec 0023 §2.5), after the
+  // sync that may bring the King kill.
+  await c.hear(profession);
   if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,

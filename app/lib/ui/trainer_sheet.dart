@@ -8,13 +8,18 @@ import 'theme.dart';
 /// "Ysolde, the Guild trainer".
 String trainerName(TrainerDef t) => '${t.name}, ${t.title}';
 
-/// Opens the Guild trainer (spec 0015 §2.7).
-Future<void> showTrainer(BuildContext context, GameController c) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => TrainerSheet(controller: c, host: context),
-    );
+/// Opens the Guild trainer (spec 0015 §2.7). Her King line is heard as the
+/// sheet opens (spec 0023 §2.5).
+Future<void> showTrainer(BuildContext context, GameController c) async {
+  // After the sync that may bring the King kill.
+  await c.hear(GameData.trainerId);
+  if (!context.mounted) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => TrainerSheet(controller: c, host: context),
+  );
+}
 
 /// The trainer's greeting, the points left and the reset, with its price
 /// (spec 0015 §2.6, §2.7).
@@ -89,8 +94,9 @@ class _TrainerSheetState extends State<TrainerSheet> {
             children: [
               Text(trainerName(trainer), style: text.titleLarge),
               const SizedBox(height: 8),
+              // The greeting, or her King line (spec 0023 §2.5).
               Text(
-                '"${labels.fill(_done ? trainer.done : trainer.greeting)}"',
+                '"${_done ? labels.fill(trainer.done) : game.trainerLine(s)}"',
                 style: italic,
               ),
               const SizedBox(height: 8),

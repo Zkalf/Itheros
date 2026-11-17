@@ -9,6 +9,7 @@ import 'package:walkingrpg/ui/images.dart';
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/socket.dart';
 
+import 'images_test.dart' show diskImages;
 import 'ui_test.dart'
     show closeSheet, game, openAchievements, option, pumpGame, settle;
 
@@ -90,6 +91,16 @@ void main() {
       );
     });
 
+    testWidgets("criterion 6: with the files on disk, the row shows Pell's "
+        'portrait, not the placeholder', (t) async {
+      await pumpGame(t, location: 'goblin_woods', level: 5, images: diskImages);
+      final socket = t.widget<PictureSocket>(
+        find.descendant(of: row('pell'), matching: find.byType(PictureSocket)),
+      );
+      expect(socket.picture.key, 'portraits/pell');
+      expect(socket.picture.placeholder, isFalse);
+    });
+
     testWidgets("criterion 7: a tap on a row opens the person's sheet", (
       t,
     ) async {
@@ -142,6 +153,22 @@ void main() {
       expect(older, findsOneWidget);
       expect(t.getTopLeft(newest).dy, lessThan(t.getTopLeft(older).dy));
       expect(c.state.lore, contains('page_pell'));
+    });
+
+    testWidgets('a tap on "New lore page" opens the Lore tab', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        location: 'goblin_woods',
+        level: 5,
+        counters: {'kills.goblin': 50},
+      );
+      await t.tap(row('pell'));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('person-new-page-page_pell')));
+      await t.pumpAndSettle();
+      expect(sheet, findsNothing);
+      expect(find.byKey(const ValueKey('lore-page_pell')), findsOneWidget);
     });
 
     testWidgets('no "New lore page" when the opening gave none', (t) async {

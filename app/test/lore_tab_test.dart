@@ -2,8 +2,10 @@
 // its lore by place. Criteria 34-39.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walkingrpg/ui/images.dart' show lorePageKey;
 import 'package:walkingrpg/ui/socket.dart';
 
+import 'images_test.dart' show diskImages;
 import 'ui_test.dart' show game, pumpGame;
 
 void main() {
@@ -19,8 +21,7 @@ void main() {
   }
 
   int total() =>
-      [for (final place in game.data.locations.keys) ...game.data.loreOf(place)]
-          .toSet()
+      {for (final place in game.data.locations.keys) ...game.data.loreOf(place)}
           .length;
 
   testWidgets('criterion 34: the groups follow the order of world.json', (
@@ -65,30 +66,35 @@ void main() {
   testWidgets('criterion 36: a found page shows its picture, title and text', (
     t,
   ) async {
-    await pumpGame(t);
+    await pumpGame(t, images: diskImages);
     await openLore(t);
     final page = game.data.pages['page_charter']!;
     final e = entry('page_charter');
-    expect(
+    final socket = t.widget<PictureSocket>(
       find.descendant(of: e, matching: find.byType(PictureSocket)),
-      findsOneWidget,
     );
+    expect(socket.picture.key, lorePageKey);
+    expect(socket.picture.placeholder, isFalse);
     expect(find.descendant(of: e, matching: find.text(page.title)), findsOne);
     expect(find.descendant(of: e, matching: find.text(page.text)), findsOne);
   });
 
   testWidgets('a found note shows the picture of its monster, its title and '
       'its text', (t) async {
-    await pumpGame(t, prepare: (s) => s.lore.add('lore_goblin_brute'));
+    await pumpGame(
+      t,
+      images: diskImages,
+      prepare: (s) => s.lore.add('lore_goblin_brute'),
+    );
     await openLore(t);
     final note = game.data.loreNotes.firstWhere(
       (n) => n.id == 'lore_goblin_brute',
     );
     final e = entry(note.id);
-    expect(
+    final socket = t.widget<PictureSocket>(
       find.descendant(of: e, matching: find.byType(PictureSocket)),
-      findsOneWidget,
     );
+    expect(socket.picture.key, 'monsters/goblin_brute');
     expect(find.descendant(of: e, matching: find.text(note.title)), findsOne);
     expect(find.descendant(of: e, matching: find.text(note.text)), findsOne);
   });

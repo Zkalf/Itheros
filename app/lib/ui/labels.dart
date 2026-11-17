@@ -224,9 +224,13 @@ class Labels {
     Trait.regenerates => 'Regenerates: heals every round',
   };
 
-  /// The bestiary and lore news of a report (spec 0009 §7).
-  String loreFound(String note) =>
-      'Found a lore note: ${data.loreNotes.where((n) => n.id == note).firstOrNull?.title ?? note}';
+  /// The bestiary and lore news of a report (spec 0009 §7): a lore note, or
+  /// a lore page (spec 0023 §3.4).
+  String loreFound(String id) => switch (data.pages[id]) {
+    final page? => 'Found a lore page: ${page.title}',
+    null =>
+      'Found a lore note: ${data.loreNotes.where((n) => n.id == id).firstOrNull?.title ?? id}',
+  };
   String weaknessLearned(String id) =>
       '${enemy(id)}: weakness learned, see the Bestiary in the Journal';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';

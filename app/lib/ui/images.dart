@@ -131,6 +131,9 @@ String? placeKind(GameData data, String id) {
   return l.enemies.isEmpty ? 'no_monsters' : 'monsters';
 }
 
+/// The picture of a found lore page (spec 0023 §3.3), drawn by Claude.
+const lorePageKey = 'pictures/lore_page';
+
 /// What a socket shows: an image file, a placeholder or an icon.
 class Picture {
   const Picture(String this.key, {this.placeholder = false}) : icon = null;
