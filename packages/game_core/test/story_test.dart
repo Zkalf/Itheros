@@ -464,6 +464,42 @@ void main() {
       expect(game.bankCap(r.state), game.bankCap(s) + 250);
     });
 
+    test('criterion 40: a page from a line that completes the lore earns the '
+        'achievement at once', () {
+      final s = stateAt(game, location: 'goblin_woods')
+        ..counters['kills.goblin'] = 50
+        ..lore.addAll(
+          data.loreOf('goblin_woods').where((id) => id != 'page_pell'),
+        );
+      final heard = game.hear(s, 'pell');
+      expect(heard.pages, ['page_pell']);
+      expect(heard.state.achievements, contains('lore_goblin_woods'));
+      expect(heard.events.whereType<AchievementUnlocked>().map((e) => e.id), [
+        'lore_goblin_woods',
+      ]);
+      expect(game.bankCap(heard.state), game.bankCap(s) + 250);
+    });
+
+    test('criterion 40: a find page that completes the lore earns the '
+        'achievement on the same walk', () {
+      final g = newTestGame(
+        overrides: {
+          'story': {...dataJson('story'), 'pageChance': 1},
+        },
+      );
+      var s = stateAt(g, location: 'goblin_woods', level: 8)
+        ..lore.addAll(
+          g.data.loreOf('goblin_woods').where((id) => id != 'page_hunter_1'),
+        );
+      s = g.startActivity(s, const Activity.fight('goblin'));
+      final r = g.applySteps(s, 2000);
+      expect(pagesIn(r), contains('page_hunter_1'));
+      expect(
+        r.events.whereType<AchievementUnlocked>().map((e) => e.id),
+        contains('lore_goblin_woods'),
+      );
+    });
+
     test('found N of M for a place', () {
       final s = stateAt(game)..lore.add('lore_goblin_brute');
       expect(game.loreCount(s, 'goblin_woods'), (found: 1, total: 5));

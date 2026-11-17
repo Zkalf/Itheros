@@ -59,10 +59,15 @@ extension GameStory on Game {
 
   /// Hears [who]: a person, who must be here, or a teacher or the trainer.
   /// Every open line becomes heard, and the lines' pages are found (§2.2).
-  /// The pages are those this hearing found.
-  ({GameState state, List<String> pages}) hear(GameState s, String who) {
+  /// The pages are those this hearing found; the events name the lore
+  /// achievements that they complete (§2.6).
+  ({GameState state, List<String> pages, List<GameEvent> events}) hear(
+    GameState s,
+    String who,
+  ) {
     final n = s.copy();
     final pages = <String>[];
+    final events = <GameEvent>[];
     if (data.people[who] case final person?) {
       if (s.location != person.location) {
         throw ActivityError('${person.name} is not here');
@@ -74,7 +79,16 @@ extension GameStory on Game {
     } else if (campLine(s, who) case final l?) {
       n.heard.add(l.id);
     }
-    return (state: n, pages: pages);
+    if (pages.isNotEmpty) {
+      for (final a in data.achievements.values) {
+        if (a.criterion is LoreCriterion &&
+            !n.achievements.contains(a.id) &&
+            achievementMet(n, a)) {
+          _earn(n, a, events);
+        }
+      }
+    }
+    return (state: n, pages: pages, events: events);
   }
 
   /// How much of [place]'s lore is found (§3.3).
