@@ -45,6 +45,11 @@ extension GameAchievements on Game {
               : 0,
           need: 1,
         ),
+        // A place with no lore is never done (spec 0023 §2.6).
+        LoreCriterion(:final place) => (
+          have: loreCount(s, place).found,
+          need: math.max(1, loreCount(s, place).total),
+        ),
       };
 
   /// Earns [a] and gives its reward. A reward item does not count for the

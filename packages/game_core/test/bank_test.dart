@@ -343,10 +343,11 @@ void main() {
   });
 
   group('save', () {
+    // The bank made it 16; spec 0023 raised it to 17 later.
     test('criterion 26: the save version is 16', () {
-      expect(GameState.schemaVersion, 16);
+      expect(GameState.schemaVersion, greaterThanOrEqualTo(16));
       final s = at('camp', itemBank: {'copper_ore': 3});
-      expect(s.toJson()['version'], 16);
+      expect(s.toJson()['version'], GameState.schemaVersion);
       expect(GameState.fromJson(s.toJson()).itemBank, {'copper_ore': 3});
     });
 

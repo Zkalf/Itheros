@@ -114,6 +114,8 @@ void main() {
 
       // Smuggler's Secret needs the bottle, and the walker may skip the
       // Graveyard King: both are luck or a choice (spec 0017 amendment 3).
+      // The walker never opens a person's sheet, so it may miss the lore
+      // milestones (spec 0023 §5).
       test(
         'spec 0017 criterion 32: each milestone by the end of its stage',
         () {
@@ -125,6 +127,7 @@ void main() {
           for (final a in game.data.achievements.values) {
             if (a.kind != AchievementKind.milestone) continue;
             if (a.id == 'smugglers_secret' || a.id == 'kings_bane') continue;
+            if (a.criterion is LoreCriterion) continue;
             final day = result().days
                 .where((d) => d.achievements.contains(a.id))
                 .firstOrNull

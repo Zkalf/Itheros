@@ -96,6 +96,11 @@ class _Run {
   }
 
   StepReport report(int walked) {
+    // The pages of first visits and deeds in these steps (spec 0023 §2.4),
+    // and the lore achievements they complete.
+    final before = events.length;
+    game._givePages(s, events);
+    if (events.length != before) _checkAchievements();
     s.rngState = rng.state;
     s.professionRng = stream.state;
     s.supplyRng = supply.state;
@@ -205,6 +210,7 @@ class _Run {
         }
         events.add(Gathered(node.item, xp));
         _gainXp(xp);
+        _rollFind(stream.state);
         return null;
       case ActivityKind.craft:
         final recipe = data.recipes[a.target]!;
@@ -470,6 +476,7 @@ class _Run {
         act.fights.removeAt(0);
       }
     }
+    if (outcome != null) _rollFind(rng.state);
     return switch (outcome) {
       FightOutcome.won => _win(act, enemy),
       FightOutcome.lost => _lose(act, enemy),
@@ -684,6 +691,18 @@ class _Run {
     game._refundProgress(s).activity = null;
     events.add(ActivityEnded(act.activity, reason));
     game._startNext(s, events);
+  }
+
+  /// The roll for the find page of the place, after a fight or a gathered
+  /// item, until found (spec 0023 §2.4). Its generator comes from [state],
+  /// so it draws from no stream and never shifts the rolls after it.
+  void _rollFind(int state) {
+    final page = data.findPageAt(s.location);
+    if (page == null || s.lore.contains(page.id)) return;
+    if (Rng.seeded(state ^ 0x6A09E667).nextDouble() < data.pageChance) {
+      s.lore.add(page.id);
+      events.add(LorePageFound(page.id));
+    }
   }
 
   /// Counters, levels and the quality found never go down in play, so only

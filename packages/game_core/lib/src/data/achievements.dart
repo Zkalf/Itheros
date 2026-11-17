@@ -32,8 +32,26 @@ sealed class Criterion {
     ),
     {'level': final int level} => LevelCriterion(level),
     {'quality': final String q} => QualityCriterion(q),
+    {'lore': final String place} => LoreCriterion(place),
     _ => throw FormatException('Invalid game data: unknown criterion $j'),
   };
+}
+
+/// All the lore of [place] found: its pages and the notes about its monsters
+/// (spec 0023 §2.6).
+final class LoreCriterion extends Criterion {
+  const LoreCriterion(this.place);
+  final String place;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LoreCriterion && other.place == place;
+
+  @override
+  int get hashCode => place.hashCode;
+
+  @override
+  String toString() => 'LoreCriterion($place)';
 }
 
 /// A [GameState.counters] entry, such as `kills.goblin`, at [atLeast].
