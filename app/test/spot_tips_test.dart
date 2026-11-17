@@ -62,7 +62,8 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Lore'));
     await t.pumpAndSettle();
-    expect(find.text('0 of 16 found'), findsOneWidget);
+    // Spec 0023 §3.3: the charter of a new game, of all pages and notes.
+    expect(find.text('1 of 32 found'), findsOneWidget);
     expect(find.text('Sigrun, the hunter'), findsOneWidget);
     expect(find.text('The deer trail'), findsOneWidget);
     expect(find.text('Wen, the fisherman'), findsOneWidget);
