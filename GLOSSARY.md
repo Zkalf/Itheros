@@ -73,6 +73,20 @@ The owner and Claude chose these words on 2026-10-24, after the playtest of the 
 | **path** | One talent in a talent tree, drawn as a plate with an image, a name and one line. |
 | **pip** | One rank of a talent, drawn as a small dot. A taken rank is filled. |
 
+## The story
+
+| Word | Meaning |
+|---|---|
+| **person** | A named character of the world with a place, a portrait and lines, such as Pell (spec 0023). A row under Here opens their sheet. |
+| **line** | One thing that a person says. A line can wait for a condition or an origin (spec 0023 §2.2). |
+| **open line** | A line whose condition holds and whose origin fits. An open line that is not heard puts a dot on the row. |
+| **heard** | A line that the player saw on the sheet. The save keeps the heard lines. |
+| **King line** | The line of a teacher or the trainer after the first King kill (spec 0023 §2.5). |
+| **lore page** | A piece of lore about a place or the story, found once (spec 0023 §2.4). Not a lore note. |
+| **lore note** | A note about a monster that reveals its armour and weakness (spec 0009 §7.2). |
+| **lore** | The lore pages and the lore notes together. The Lore tab groups them by place. |
+| **find page** | A lore page that the hero finds by chance in its place. |
+
 ## Items, the bag and the bank
 
 | Word | Meaning |
