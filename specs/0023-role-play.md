@@ -26,6 +26,7 @@ the Graveyard King falls and says that the dragon wakes.
 | 9 | What moves the story on | **Deeds that the save counts today:** the start, a first visit, a kill count, a first boss kill and the character level (§2.3). No new counter. |
 | 10 | The story card | **No change** (spec 0008 §3.2). The first-visit page goes to the report and the Lore tab instead. |
 | 11 | The old lore notes | **They stay as they are.** The Lore tab groups them by the place of the monster that they are about. |
+| 12 | Pictures at Camp | **The six teachers and Ysolde get portraits too** (owner, 2026-11-17), so every person at Camp shows a face (§3.6). |
 
 ## 2. Rules
 
@@ -42,7 +43,7 @@ the Graveyard King falls and says that the dragon wakes.
 
 - No other character in the data has these names. A data test checks that no two people, teachers or trainers share
   a name.
-- The six teachers and Ysolde stay as they are. They get one new line each (§2.5).
+- The six teachers and Ysolde stay as they are. They get one new line each (§2.5) and a portrait (§3.6).
 
 ### 2.2 Lines
 - Each person has a list of **lines** in data order.
@@ -236,9 +237,20 @@ and `{lad|lass|friend}` fill in as today (spec 0012).
 
 ### 3.5 Look
 - The portraits are flat SVG, in the style of the game's icons today (`art/README.md`).
-- Each portrait differs in its shape and colours, so the player can tell the four people apart at a glance.
+- Each portrait differs in its shape and colours, so the player can tell all eleven people apart at a glance: the
+  four people of §2.1, the six teachers and Ysolde.
 - Before the PR, the Now tab at Goblin Woods with Pell's row, Pell's sheet and the Lore tab are rendered at 408 dp
   wide (`CLAUDE.md`).
+
+### 3.6 The portraits at Camp
+- Each teacher's row under Here shows the teacher's portrait at 32 dp, in place of the picture of the profession.
+- Ysolde's row shows her portrait at 32 dp, in place of the trainer icon.
+- The subtitles stay: "Cooking 12" or "Teaches Cooking" on a teacher's row, "Talents" on Ysolde's.
+- The sheet of a teacher and Ysolde's sheet show the portrait at 72 dp and the name at the top, as a person's sheet
+  does (§3.2).
+- The Professions tab and the profession screens keep the pictures of the professions.
+- Before the PR, the Now tab at Camp with all eight rows of people and one teacher's sheet are rendered at 408 dp
+  wide.
 
 ## 4. Save
 - A new set `heard` keeps the heard lines, King lines included. An old save starts it empty.
@@ -340,5 +352,15 @@ and `{lad|lass|friend}` fill in as today (spec 0012).
 51. Rules, numbers and the save change only as this spec says. The pacing test passes.
 52. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
 
+**The portraits at Camp**
+53. Each teacher's row shows the teacher's portrait, not the picture of the profession.
+54. Ysolde's row shows her portrait, not the trainer icon.
+55. A teacher's sheet and Ysolde's sheet show the portrait and the name at the top.
+56. The Professions tab and the profession screens still show the pictures of the professions.
+57. The Now tab at Camp and one teacher's sheet are rendered at 408 dp wide before the PR.
+
 ## History
 - 2026-11-17: first version (intent 0023). Accepted.
+- 2026-11-17 (plan 0070): portraits for the six teachers and Ysolde. At Camp only Odda had a face, which made no
+  sense to the owner. Decision 12; §2.1; §3.5; new §3.6; criteria 53-57. Spec 0014 §4.2 "Now" and criterion 79
+  follow. Accepted.
