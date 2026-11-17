@@ -1,10 +1,10 @@
 # Intent: Role-play: the hero's story, the regions and their people
 
-Status: draft
+Status: accepted
 Product owner: Zkalf (chose on 2026-11-17: role-play first, quests after it; all four parts below; the player reads
 and listens, with no choices; the Young Dragon as the main threat; one new person for each region with monsters;
 flat SVG pictures by Claude until nabriis draws the real art; the south of the river first; an achievement for a
-region's full lore)
+region's full lore; a shady person at Smugglers' Cove; accepted on 2026-11-17)
 Date: 2026-11-17
 Issue: #274
 
@@ -68,10 +68,12 @@ like a map of spots, not a place with people. Quests (#274) also need people to 
 ### The first build
 23. The first build covers the south of the river: Camp, Goblin Woods, Copper Hills, Old Graveyard, Mirror Lake and
     Smugglers' Cove.
-24. Goblin Woods and Old Graveyard are the regions with monsters in the south, so the first build has two new people.
-25. The first chapter of the story ends with the first kill of the Graveyard King. That kill opens the road across the
+24. Goblin Woods and Old Graveyard are the regions with monsters in the south. Each gets one new person.
+25. Smugglers' Cove gets a third new person: a shady one, who fits the smugglers. So the first build has three new
+    people.
+26. The first chapter of the story ends with the first kill of the Graveyard King. That kill opens the road across the
     river (intent 0022).
-26. The regions north of the river follow later, mostly as data.
+27. The regions north of the river follow later, mostly as data.
 
 ## Affected users and systems
 - **Players:** every player, new saves and old saves.
@@ -95,7 +97,7 @@ like a map of spots, not a place with people. Quests (#274) also need people to 
 - **Read and listen only.** No choices, no branches and no dialogue trees.
 - **The words are a design decision.** The spec writes the lines, and the owner accepts them with the spec. The lines
   keep their own voice (`WRITING.md`).
-- **Small first build.** The south of the river first (outcomes 23-26). More regions follow as data.
+- **Small first build.** The south of the river first (outcomes 23-27). More regions follow as data.
 - **Art.** Flat SVG pictures that Claude draws, as the icons today (`CLAUDE.md`). So no art comes in under a new
   licence.
 - **Influences:**
@@ -111,12 +113,13 @@ like a map of spots, not a place with people. Quests (#274) also need people to 
 The owner answered the first questions on 2026-11-17 (see the Product owner line). These stay for the spec:
 1. **The story in words.** The spec writes the story of the first chapter, the lines of each person and the lore
    pages. The owner accepts the words with the spec.
-2. **The two new people.** Their names, their places and their parts in the story. The spec checks the names against
+2. **The three new people.** Their names and their parts in the story. The spec checks the names against
    `data/*.json`, so no two people share a name (spec 0022 decision 3).
-3. **A place with no monsters.** Copper Hills, Mirror Lake and Smugglers' Cove get lore but no new person. The spec
-   can add a person to one of them, if the south feels empty with only two.
+3. **A place with no monsters.** Answered: Smugglers' Cove gets a shady person (outcome 25). Copper Hills and Mirror
+   Lake get lore but no new person.
 4. **What a story part needs.** Which deeds move the story on: a first visit, a first boss kill, a kill count or a
    level. The spec picks the simplest set.
 
 ## History
-- 2026-11-17, #274: first version, with the owner's answers to the first open questions. (draft)
+- 2026-11-17, #274: first version, with the owner's answers to the first open questions. A shady person at
+  Smugglers' Cove (outcome 25). Accepted.
