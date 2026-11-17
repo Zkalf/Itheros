@@ -1,10 +1,10 @@
 # Spec 0023: Role-play, chapter 1: The King Who Would Not Rest
 
-Status: draft
+Status: accepted
 Intent: [intent/0023-role-play.md](../intent/0023-role-play.md) (accepted, 2026-11-17)
 Builds on: spec 0008 §3.2 (Here), spec 0009 §7.2 (lore notes), spec 0010 §6 (teachers), spec 0011 §6 (Smugglers'
 Cove), spec 0012 (origins), spec 0015 §2.7 (the trainer), spec 0017 (achievements), spec 0022 (Odda)
-Product owner: Zkalf
+Product owner: Zkalf (accepted on 2026-11-17)
 Date: 2026-11-17
 
 The south of the river gets a story. Four people out in the world and at Camp talk to the hero, and their words move
@@ -341,4 +341,4 @@ and `{lad|lass|friend}` fill in as today (spec 0012).
 52. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
 
 ## History
-- 2026-11-17: first version (intent 0023). (draft)
+- 2026-11-17: first version (intent 0023). Accepted.
