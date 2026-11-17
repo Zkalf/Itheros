@@ -351,6 +351,47 @@ class GameController extends ChangeNotifier {
   /// Talks to [profession]'s teacher here: every waiting tip is told.
   Future<void> talk(String profession) => _act((s) => game.talk(s, profession));
 
+  /// Hears [who]: a person here, a teacher or the trainer (spec 0023 §2.2).
+  /// Every open line becomes heard. Returns the lore pages that the hearing
+  /// found; each goes into the Journal at once, as a report of its own
+  /// (§3.4).
+  Future<List<String>> hear(String who) async {
+    var pages = const <String>[];
+    await _serial(() async {
+      await _syncNow(away: false);
+      // The sync may have walked the hero away from the person: then
+      // nothing is heard.
+      final ({GameState state, List<String> pages, List<GameEvent> events})
+      heard;
+      try {
+        heard = game.hear(state, who);
+      } on ActivityError {
+        return;
+      }
+      pages = heard.pages;
+      _save = _save!.withGame(heard.state);
+      if (pages.isNotEmpty) {
+        final achievements = [
+          for (final e in heard.events)
+            if (e is AchievementUnlocked) e.id,
+        ];
+        _save = _addEntry(
+          _save!,
+          JournalEntry(
+            started: _clock(),
+            summary: _from(
+              state.location,
+              AwaySummary(lore: pages, achievements: achievements),
+            ),
+          ),
+        );
+      }
+      await store.save(_save!);
+      notifyListeners();
+    });
+    return pages;
+  }
+
   /// Today's steps into actions and whether today paid its supply chest
   /// (spec 0013 §3.2).
   ({int steps, bool paid}) get supplyToday =>

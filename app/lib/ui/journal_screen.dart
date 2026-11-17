@@ -45,13 +45,16 @@ String journalTime(DateTime t, DateTime now) {
 }
 
 /// The Journal (spec 0009 §8.4): the newest reports (Log, spec 0004 §2),
-/// the Bestiary and found Lore notes.
+/// the Bestiary and the Lore (spec 0023 §3.3). [initialTab] 2 opens on Lore.
 class JournalScreen extends StatelessWidget {
-  const JournalScreen({super.key});
+  const JournalScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
     length: 3,
+    initialIndex: initialTab,
     child: Scaffold(
       appBar: AppBar(
         leading: const BackPlate(),
@@ -193,44 +196,97 @@ class _Bestiary extends StatelessWidget {
   }
 }
 
-/// Found lore notes, newest first, and how many there are (spec 0009 §8.4),
-/// then the tips each teacher told.
+/// The lore by place, in the order of `world.json`, with "N of M" for each
+/// place and for all (spec 0023 §3.3), then the tips each teacher told.
 class _Lore extends StatelessWidget {
   const _Lore();
 
   @override
   Widget build(BuildContext context) {
     final c = ControllerScope.of(context);
-    final data = c.game.data;
-    final labels = Labels(data, c.state.character);
+    final game = c.game;
+    final s = c.state;
+    final data = game.data;
+    final labels = Labels(data, s.character);
     final text = Theme.of(context).textTheme;
-    final byId = {for (final n in data.loreNotes) n.id: n};
-    final found = [for (final id in c.state.lore.toList().reversed) ?byId[id]];
+    final images = ImageScope.of(context);
+    final notes = {for (final n in data.loreNotes) n.id: n};
+    final all = {for (final p in data.locations.keys) ...data.loreOf(p)};
+    // A hidden place has no group until it is revealed (spec 0011 §6.2).
+    final places = [
+      for (final p in data.locations.keys)
+        if (data.loreOf(p).isNotEmpty && !game.isHidden(s, p)) p,
+    ];
+
+    Widget entry(String id) {
+      final found = s.lore.contains(id);
+      final page = data.pages[id];
+      final note = notes[id];
+      final picture = !found
+          ? Picture.placeholderOf('generic')
+          : page != null
+          ? (images.has(lorePageKey)
+                ? const Picture(lorePageKey)
+                : Picture.placeholderOf('generic'))
+          : images.pictureOf(data, MonsterThing(note!.about));
+      return Card(
+        key: ValueKey('lore-$id'),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PictureSocket(picture: picture, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: found
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            page?.title ?? note!.title,
+                            style: text.titleMedium,
+                          ),
+                          if (note != null)
+                            Text(
+                              'About the ${labels.enemy(note.about)}',
+                              style: text.bodySmall,
+                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            page != null ? labels.fill(page.text) : note!.text,
+                          ),
+                        ],
+                      )
+                    : Text('Not found yet', style: text.bodyMedium),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.all(gutter),
       children: [
         Text.rich(
-          numberSpan('${found.length} of ${data.loreNotes.length} found'),
+          numberSpan(
+            '${all.where(s.lore.contains).length} of ${all.length} found',
+          ),
           style: text.titleMedium,
         ),
         const SizedBox(height: 8),
-        for (final n in found)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(n.title, style: text.titleMedium),
-                  Text(
-                    'About the ${labels.enemy(n.about)}',
-                    style: text.bodySmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(n.text),
-                ],
+        for (final p in places)
+          Column(
+            key: ValueKey('lore-group-$p'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Heading(
+                '${data.locations[p]!.name} · '
+                '${game.loreCount(s, p).found} of ${game.loreCount(s, p).total}',
               ),
-            ),
+              for (final id in data.loreOf(p)) entry(id),
+            ],
           ),
         // Teachers' tips, under each teacher; they aren't counted above
         // (spec 0010 §6.2).

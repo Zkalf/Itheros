@@ -40,6 +40,10 @@ Microsoft Edge. The file name is the item id, so the game finds the picture by i
   the colour of their quality. `--preview <file.html>` shows them next to four of nabriis's patches.
 - The marker of the water places (Mirror Lake, Smugglers' Cove) comes from `art/places.py` and goes to
   `app/assets/images/places/water.webp`: a gold-ringed medallion like nabriis's markers, with a fish over the waves.
+- The portraits of the people of the story (Odda, Pell, Aldous, Jory Tarr) come from `art/people.py` and go to
+  `app/assets/images/portraits/`: a bust on a round backdrop, each in its own colour and silhouette, so they differ at
+  32 dp (spec 0023 §3.5). The same script draws the found lore page (`app/assets/images/pictures/lore_page.webp`).
+  nabriis's real portraits replace them.
 - Python is needed only to change the art. The game, its tests and the release do not use it.
 - The empty gear slots come from `art/slots.py` and go to `app/assets/images/slots/`: a flat white silhouette of what
   the slot holds (a helm, a boot, a ring), not the painted style above. The game tints it faint on the dark socket, so

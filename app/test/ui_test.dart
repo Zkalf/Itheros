@@ -2314,11 +2314,13 @@ void fightsWithDepth() {
       await closeSheet(t);
       await t.tap(find.text('Lore'));
       await t.pumpAndSettle();
-      expect(find.text('2 of 16 found'), findsOneWidget);
-      // Newest first.
+      // Spec 0023 §3.3: every page and note counts, a new game holds The
+      // Guild's charter, and the lore stands by place in the order of
+      // world.json (Goblin Woods before Grey Moor), no longer newest first.
+      expect(find.text('3 of 32 found'), findsOneWidget);
       expect(
-        t.getTopLeft(find.text(later.title)).dy,
-        lessThan(t.getTopLeft(find.text(note.title)).dy),
+        t.getTopLeft(find.text(note.title)).dy,
+        lessThan(t.getTopLeft(find.text(later.title)).dy),
       );
     });
 
@@ -2795,7 +2797,8 @@ void professionScreens() {
       await t.pumpAndSettle();
       await t.tap(find.text('Lore'));
       await t.pumpAndSettle();
-      expect(find.text('0 of 16 found'), findsOneWidget);
+      // Spec 0023 §3.3: the charter of a new game, of all pages and notes.
+      expect(find.text('1 of 32 found'), findsOneWidget);
       expect(find.text('Hilde, the miner'), findsOneWidget);
       expect(find.text('Bones under the hills'), findsOneWidget);
       expect(find.text('Garrow, the smith'), findsOneWidget);

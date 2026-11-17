@@ -243,9 +243,9 @@ class AwaySummary {
           lostAchievements.add(e);
         case LoreFound(:final note):
           lore.add(note);
-        // The report names lore pages in plan 0069 M2 (spec 0023 §3.4).
-        case LorePageFound():
-          break;
+        // A lore page joins the lore news (spec 0023 §3.4).
+        case LorePageFound(:final page):
+          lore.add(page);
         case WeaknessLearned(:final enemy):
           learned.add(enemy);
         case SlayerEarned(:final enemy):
