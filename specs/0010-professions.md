@@ -486,9 +486,8 @@ Sigrun's three monster tips are in spec 0011 §2.2. Marta, the cook, tells no ti
 - Dust, logs, gems, heartwood and shards are materials ("Used in: Garnet ring").
 
 ### 8.4 Next goal
-- Next goal and the queue checks use profession levels.
-- When the best upgrade is out of reach only because of a profession level, Next goal says so: "Reach Mining 10 to
-  dig iron (7 to go)".
+- The queue checks use profession levels.
+- Next goal went away with spec 0024, and its profession line ("Reach Mining 10 to dig iron") with it.
 
 ### 8.5 Why a locked action does not start
 - The line of a locked spot or recipe names the player's level in that profession.
@@ -972,3 +971,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-15 (plan 0068): the amendments, the errata and clean edition 1 folded into this file. §5.2 now gives the
   ring and trinket HP of the data (7, 10, 17, 20, 30, 33), with the first numbers beside them. No rule or criterion
   changed.
+- 2026-11-17, spec 0024: quests replace Next goal. §8.4. Accepted.

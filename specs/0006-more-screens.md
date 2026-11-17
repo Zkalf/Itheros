@@ -58,7 +58,7 @@ on); Next goal; discoveries; the running action; the queue. Spec 0008 §3.2 give
 
 ### 2.4 Character
 Equipment as before; the inventory under two headings, **Gear** then **Materials**, each in the order it had before; the
-settings (Show "Next goal", test walk) at the bottom. Since spec 0008 §3.5 the Character screen has the gear slots
+settings (Show "Next goal", since spec 0024 "Show the quest card"; test walk) at the bottom. Since spec 0008 §3.5 the Character screen has the gear slots
 and a bag grid, and since spec 0008 decision 12 the settings have a page of their own.
 
 ### 2.5 Achievements
@@ -111,3 +111,4 @@ pacing, zooming or panning the map sideways. Spec 0010 added salvage later.
 - 2026-11-15 (plan 0068): the amendments folded into this file. Decision 8 gives the 50 rounds of the data, with the
   first 4 beside them. The tally example names common gear "(Common)", as spec 0005 amendment 2 asked. "As today"
   now reads "as before". No rule or criterion changed.
+- 2026-11-17, spec 0024: quests replace Next goal. §2.4: the switch is "Show the quest card". Accepted.

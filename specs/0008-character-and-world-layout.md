@@ -31,10 +31,10 @@ Date: 2026-10-21
 | 6 | Travel to fog | The player cannot pick a fogged area as a destination, so automatic travel never crosses fog. A walk to its neighbour lifts it. |
 | 7 | Stop conditions and slots | "Until I have N" and "until a quality" are level gates too, so they are offered from level 1. The queue holds 5 actions from level 1, the current action included (spec 0016). Talents can add slots (spec 0015). |
 | 8 | Ranks | Recruit, Adventurer (10), Veteran (20) and Champion (30) stay as titles with their ceremony lines. The Adventurer line no longer mentions the crossing of the river (data wording). |
-| 9 | Next goal | Its **Hide** switch is there from level 1 (it was level 10). Its rules do not change. |
-| 10 | Quality in brackets | Dropped where the item is drawn as an object: the bag grid, the Gear page, the item card's title. Kept wherever items are written as text (reports, journal, tally, Next goal, level-up cards), as spec 0005 amendment 2 says. |
+| 9 | Next goal | Its **Hide** switch is there from level 1 (it was level 10). Its rules do not change. Since spec 0024 the switch hides the quest card, which replaces Next goal. |
+| 10 | Quality in brackets | Dropped where the item is drawn as an object: the bag grid, the Gear page, the item card's title. Kept wherever items are written as text (reports, journal, tally, level-up cards), as spec 0005 amendment 2 says. |
 | 11 | Two Rings, two Trinkets | One item kind each (`ring`, `trinket`) that fits either slot. **Equip** fills an empty one first. With both full, the card offers "Swap with <left>" and "Swap with <right>". |
-| 12 | Settings | A gear button in the top bar, next to Journal and Trophies, opens a Settings page (Next goal switch, test walk; name and gender from spec 0012). |
+| 12 | Settings | A gear button in the top bar, next to Journal and Trophies, opens a Settings page (the switch of the quest card since spec 0024, test walk; name and gender from spec 0012). |
 
 ## 2. Rules
 
@@ -128,7 +128,7 @@ Every fixture in `app/test/fixtures/saves/` loads.
 1. the step-sync problem (if any);
 2. the place, the level and the bars (XP bar, step bank, walked today);
 3. the test walk (if on);
-4. Next goal;
+4. the quest card (spec 0024; Next goal before it);
 5. the current action with the waiting actions (bars, fight log, tally, Stop);
 6. the story of the place;
 7. **Here**.
@@ -305,7 +305,7 @@ A criterion that checks several things has a letter for each check (rule 13 of `
    - 9e. It shows the right buttons (Equip / Swap for a bag item; Unequip / Change for a worn item).
 10. Brackets:
     - 10a. No name in the bag, the Gear page or the card title carries a quality bracket.
-    - 10b. Reports, the journal, the tally and Next goal still do.
+    - 10b. Reports, the journal and the tally still do.
 11. The Bear-pelt cloak sits in the Cloak slot, alongside chest armour.
 12. Each fixture save loads:
     - 12a. gear in its decision 4 slot;
@@ -420,3 +420,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-13, spec 0020 amendment 8 (#267): a hold on a square of the bag selects items. §3.5 "Bag".
 - 2026-11-15 (plan 0068): the amendments, the erratum and clean edition 1 folded into this file. No rule, number or
   criterion changed.
+- 2026-11-17, spec 0024: quests replace Next goal. Decisions 9, 10 and 12; §3.2 "The order from the top"; criterion 10b. Accepted.

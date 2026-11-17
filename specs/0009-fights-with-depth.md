@@ -164,9 +164,8 @@ the first heavy monster (Skeleton, level 6).
 ### 5.3 Stacks and comparing
 - Items stack only when item, quality **and bonus stats** match (overrides spec 0005 §5 and spec 0008 §2.2). Common
   gear still stacks freely.
-- "Better" (bag order, best first in the slot sheet, Next goal, the simulated player) weighs every stat.
-- Next goal compares a weapon only with weapons of the same damage type and hands, so it never tells a player to swap
-  the mace that they chose for a sword.
+- "Better" (bag order, best first in the slot sheet, the simulated player) weighs every stat.
+- Next goal compared a weapon only with weapons of the same damage type and hands. It went away with spec 0024.
 
 ### 5.4 Gear already owned
 - On the first load of the new version, every owned item above Common (bag and worn) rolls its bonus stats once,
@@ -522,3 +521,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-15 (plan 0068): the amendments, the errata and clean edition 1 folded into this file. §4.2 now gives the
   shield Block and two-hander Attack of the data (25%, 15%, 32%, 35%; 9, 15, 16, 24, 25), with the first numbers
   beside them. No rule or criterion changed.
+- 2026-11-17, spec 0024: quests replace Next goal. §5.3. Accepted.

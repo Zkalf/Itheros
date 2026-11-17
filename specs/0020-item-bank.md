@@ -19,7 +19,7 @@ bag limit and the overloaded rule, with the sims of how fast the bag fills.
 | 3 | Crafting and the bank | **Crafting and cooking at Camp use the bag and the bank. What they make goes into the bag** (owner, intent 0020 decision 7). |
 | 4 | Which items the bank takes | **Every item in the bag.** Worn gear and worn tools stay worn: the player takes them off first (Claude). |
 | 5 | What uses the bank's items | **Crafting, cooking and rerolls at a place with a bank.** Eat, wear, salvage and auto-eat use the bag only (Claude; the owner added rerolls on 2026-11-02). |
-| 6 | What counts the bank's items | **Whatever counts what the player owns:** "Until I have N", the next goal, the "found" lists and the item card's "You have" (Claude). |
+| 6 | What counts the bank's items | **Whatever counts what the player owns:** "Until I have N", the "found" lists and the item card's "You have" (Claude). |
 | 7 | Can the player look in the bank away from Camp | **Yes, but not move items** (Claude). The player can plan what to fetch. |
 | 8 | How the bag and the bank sort items by kind | **Filter buttons: All and four kinds, no counts. Each list remembers its own pick until the app closes** (owner, 2026-11-06). |
 | 9 | The tabs of the bank screen | **Buttons in boxes, as the Journal's. Bank first, and the screen opens on it** (owner, playtest of 2026-11-06). |
@@ -280,7 +280,7 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
 
 **Owning**
 13. "Until I have N" counts the bank.
-14. Gear in the bank counts as owned for the next goal.
+14. Removed on 2026-11-17 (spec 0024: Next goal went away).
 15. Eat, wear and salvage refuse an item that is only in the bank.
 
 **Screens**
@@ -522,3 +522,4 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
   criteria 134-168.
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. No rule, number or criterion
   changed.
+- 2026-11-17, spec 0024: quests replace Next goal. Decision 6; criterion 14. Accepted.

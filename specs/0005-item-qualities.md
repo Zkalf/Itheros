@@ -15,7 +15,7 @@ The intent settled the feel. These are the details it left open, decided for the
 | 2 | Item level for the over-level nudge | A recipe's unlock level; a drop's monster level. |
 | 3 | How is the quality shown in text? | Gear the player owns always shows its quality in brackets after the name, common included: "Hide vest (Common)", "Bone sword (Rare)" (owner, 2026-10-19, after trying it on the phone). This holds in the inventory, the equipment, report and journal lines and "Next goal" equip lines. Gear better than common is also drawn in its quality colour on the Character tab and in report and journal lines (§6). Materials keep their plain name. Names that stand for a kind of item rather than one owned piece (recipes, activities, stop conditions, achievements) stay plain: "Crafting Hide vest". Since spec 0008 decision 10 the brackets show only where items are written as text; where an item is drawn as an object, its picture's ring (spec 0014 §2.3) and the colour of its name show the quality. | With only the better qualities in brackets, common gear looked unfinished, and it was hard to tell apart from materials, which have no quality. |
 | 4 | Stop conditions | "Until I have N" counts every quality of an item. "Until N crafted" counts every craft. |
-| 5 | "Next goal" and the simulated player | Compare gear by its stats including quality, so a rare Bone sword beats a common one. "Next goal" asks to craft an item only while none of it is owned, as before; it never asks to re-roll. |
+| 5 | "Next goal" and the simulated player | Compare gear by its stats including quality, so a rare Bone sword beats a common one. "Next goal" asks to craft an item only while none of it is owned, as before; it never asks to re-roll. Since spec 0024 there is no Next goal; the simulated player keeps this rule. |
 | 6 | Boss uniques after the first kill | Each later kill drops the unique with `repeatChance` (data, per item: **0.01**; first 0.05). The first kill still drops it for sure. Both roll a quality. Since spec 0010 ten shards of a boss also make its unique at a forge. | At 5% the pacing simulator's average walker, which kills bosses about 200 times by day 90, collected several boss uniques with epic or legendary quality and reached level 30 on day 70-80, outside spec 0002's target (80-100). At 1% it reached level 30 on day 80-89, and a boss farmer still finds a repeat about once per 100 kills (owner chose this, 2026-10-19). |
 | 7 | Rounding | Each stat the item has becomes `max(round(stat × (1 + bonus)), stat + tier)`, where tier is 1 (uncommon) to 4 (legendary). Stats the item lacks stay 0. Since spec 0009 §5.2 quality raises only the base HP, Attack and Defense, not Block, Dodge or bonus stats. |
 
@@ -77,7 +77,8 @@ and spec 0010 added salvage and the reroll, which changes a quality after it is 
 5. Different qualities of one item are separate stacks; equipping and removing move one item between its stack and
    the slot without changing its quality.
 6. A boss's unique item drops for sure on the first kill and with `repeatChance` on later kills, rolling a quality.
-7. "Until I have N" counts every quality; "Next goal" and the simulated player rank gear by stats with quality.
+7. "Until I have N" counts every quality; the simulated player ranks gear by stats with quality (Next goal went away
+   with spec 0024).
 8. An existing save loads with its items common and nothing lost.
 9. Owned gear shows its quality in brackets in reports, the journal and the Character tab, common included, and
    better than common also in its colour; materials and recipe names stay plain. Since spec 0008 decision 10 the
@@ -101,3 +102,4 @@ and spec 0010 added salvage and the reroll, which changes a quality after it is 
 - 2026-11-01, spec 0013: the supply chest's own quality boost. §3.
 - 2026-11-15 (plan 0068): the amendments folded into this file. The report example of §6 now names common gear
   "(Common)", as amendment 2 asked. No rule, number or criterion changed.
+- 2026-11-17, spec 0024: quests replace Next goal. Decision 5; criterion 7. Accepted.

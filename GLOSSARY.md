@@ -86,6 +86,12 @@ The owner and Claude chose these words on 2026-10-24, after the playtest of the 
 | **lore note** | A note about a monster that reveals its armour and weakness (spec 0009 §7.2). |
 | **lore** | The lore pages and the lore notes together. The Lore tab groups them by place. |
 | **find page** | A lore page that the hero finds by chance in its place. |
+| **quest** | A request from a person or a teacher: one task, an ask, a thanks and a reward of XP and a supply chest (spec 0024). |
+| **giver** | The person or teacher who offers a quest and takes it back at hand-in. |
+| **offered**, **taken**, **ready**, **done** | The states of a quest (spec 0024 §2.2). A ready quest is taken and its task is met. |
+| **hand in** | Giving a ready quest back to its giver, on the giver's sheet, for the reward. |
+| **quest card** | The card on Now that lists the taken quests. It took the place of Next goal. |
+| **quest mark** | The gold "!" (a quest to take) or "?" (a quest to hand in) on a person's row. |
 
 ## Items, the bag and the bank
 

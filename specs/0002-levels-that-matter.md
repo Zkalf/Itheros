@@ -26,7 +26,7 @@ the Graveyard King opens the road across the river.
 | 6 | At the soft cap | **Nothing built for it** (owner's choice). The answer to the soft cap is more content. Grey monsters still drop their loot. |
 | 7 | Talent points | One point per level from 10. Spec 0015 spends them. |
 | 8 | *New:* bosses | A boss every 10 levels. Bosses are **optional**, never a gate. They check gear: at even level without crafted gear the player almost always loses. The reward is a guaranteed first-kill item, not extra XP (§5.3). Since spec 0008 amendment 5 the Graveyard King opens the road across the river, so he is a gate; the Ogre Chieftain and the Young Dragon stay optional. |
-| 9 | *New:* danger and guidance | The map opens at level 10, so far-too-strong monsters are visible and fightable (skulls, lurkers). The game guides the player with a warning before deadly fights, a hideable "Next goal" line and loss hints (§9). Since spec 0008 the south of the river is open from level 1. |
+| 9 | *New:* danger and guidance | The map opens at level 10, so far-too-strong monsters are visible and fightable (skulls, lurkers). The game guides the player with a warning before deadly fights, a hideable "Next goal" line and loss hints (§9). Since spec 0008 the south of the river is open from level 1. Since spec 0024 the quest card replaces "Next goal". |
 | 10 | *New:* role-play for the map opening | Ranks: the player starts as a *Recruit* who stays in the guarded lands. At level 10 they become an *Adventurer* and may cross the river. Then *Veteran* at 20 and *Champion* at 30. Names and lines are flavour in data and can change. Since spec 0008 decision 8 the ranks are titles: the Adventurer line no longer names the river. |
 
 ## 2. Character levels
@@ -323,6 +323,9 @@ One line on the main screen, worked out from the save, with the first rule that 
 Always shown during levels 1–9. From level 10, it has a **Hide** switch, and it can be turned back on in settings.
 Since spec 0008 decision 9 the switch is there from level 1.
 
+Since spec 0024 the quest card takes the place of Next goal on Now. The rules of this section no longer apply, and the
+switch hides the quest card.
+
 ### 9.4 Loss hints
 After a loss, the report adds the monster's hint from data, for example "The Graveyard King's armour is heavy: a
 stronger weapon helps." These are always shown.
@@ -365,7 +368,7 @@ bestiary and its Slayer mark (spec 0009 §7), achievement rewards (spec 0017) an
    with `repeatChance`.
 8. Removed on 2026-10-21: spec 0008 decision 1 opens every slot, area, monster, spot and recipe from level 1.
 9. The level-up cards appear on open, before the report, with the §9.1 contents, for a multi-level catch-up.
-10. A red or skull fight asks for confirmation. "Next goal" follows the §9.3 rules and can be hidden from level 10.
+10. A red or skull fight asks for confirmation. (Next goal went away with spec 0024.)
 11. An existing level 10 save loads at level 10, with its progress through the level kept as a fraction. A version
     1 save at level 10 with XP past 28,000 keeps that XP as progress, up to one XP short of level 11.
 12. `.\scripts\check.ps1 -Release` is green, and the release build still declares no INTERNET permission.
@@ -431,3 +434,4 @@ new numbers)
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. §6 gives the Old Bear's drop chance
   of `enemies.json` (58.93%), with the first 25% beside it; §2 and criterion 3 give the days of spec 0009 criterion 16
   (day 1-2, day 11-16), with the first ones beside them. No rule or criterion changed.
+- 2026-11-17, spec 0024: quests replace Next goal. Decision 9; §9.3; criterion 10. Accepted.
