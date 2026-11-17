@@ -24,10 +24,14 @@ or review an intent or a spec.
 - Warnings and cheap losses are enough.
 
 ## Influences
+Itheros has the grind of Diablo 2, the feel of World of Warcraft and the look of Heroes of Might and Magic 3.
+
 | Game | What Itheros takes from it |
 |---|---|
-| Diablo 2 | The grind for rare loot. |
-| World of Warcraft | The feel of the world (NPCs, flavour), the professions, the talents. |
-| Heroes of Might and Magic 3 | The owner loves it. No system from it is chosen yet. Lower priority. |
+| Diablo 2 | The grind: rare loot, low chances and a long hunt. |
+| World of Warcraft | The feel of the world (NPCs, flavour, quests), the professions, the talents. |
+| Heroes of Might and Magic 3 | The look: art, screens and style. It inspires the art, but Itheros copies no art (`art/README.md`). |
 
-When you propose a design, name the game that it comes from.
+- The three games borrow from each other, so an idea can come from more than one of them.
+- An original idea or design can win over all three.
+- When you propose a design, name the game that it comes from, or say that it is original.
