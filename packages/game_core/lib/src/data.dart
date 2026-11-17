@@ -9,6 +9,7 @@ part 'data/professions.dart';
 part 'data/achievements.dart';
 part 'data/talents.dart';
 part 'data/supply.dart';
+part 'data/story.dart';
 
 /// All tunable game content, loaded from `data/*.json`.
 class GameData {
@@ -21,7 +22,19 @@ class GameData {
     required Map<String, Object?> professions,
     required Map<String, Object?> origins,
     required Map<String, Object?> talents,
-  }) : bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
+    required Map<String, Object?> story,
+  }) : pageChance = _num(story, 'pageChance'),
+       people = _byId(_maps(story, 'people').map(PersonDef._), (d) => d.id),
+       campLines = _byId(
+         _maps(story, 'campLines').map(LineDef._),
+         (d) =>
+             d.who ??
+             (throw FormatException(
+               'Invalid game data: camp line ${d.id} needs a who',
+             )),
+       ),
+       pages = _byId(_maps(story, 'pages').map(PageDef._), (d) => d.id),
+       bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
        bankCapPerLevel = _int(_map(economy, 'bankCap'), 'perLevel'),
        combatRoundSteps = _int(economy, 'combatRoundSteps'),
        baseStats = Stats.fromJson(_map(economy, 'baseStats')),
@@ -182,8 +195,45 @@ class GameData {
       professions: file('professions'),
       origins: file('origins'),
       talents: file('talents'),
+      story: file('story'),
     );
   }
+
+  /// The chance a fight or a gathered item finds its place's find page
+  /// (spec 0023 §2.4).
+  final double pageChance;
+
+  /// The people of the story, in data order (spec 0023 §2.1).
+  final Map<String, PersonDef> people;
+
+  /// The King line of each teacher, by profession, and of the trainer, by
+  /// [trainerId] (spec 0023 §2.5).
+  final Map<String, LineDef> campLines;
+
+  /// Every lore page, in data order (spec 0023 §2.4).
+  final Map<String, PageDef> pages;
+
+  /// The `who` of the trainer's King line.
+  static const trainerId = 'trainer';
+
+  /// The lore of [place]: its pages, then the notes about its monsters
+  /// (spec 0023 §2.6).
+  List<String> loreOf(String place) => _loreOf[place] ??= [
+    for (final p in pages.values)
+      if (p.place == place) p.id,
+    for (final n in loreNotes)
+      if (locations[place]?.enemies.contains(n.about) ?? false) n.id,
+  ];
+
+  final _loreOf = <String, List<String>>{};
+
+  /// The find page of [place], or null (spec 0023 §2.4).
+  PageDef? findPageAt(String place) => _findPages[place];
+
+  late final Map<String, PageDef> _findPages = {
+    for (final p in pages.values)
+      if (p.source == PageSource.find) p.place: p,
+  };
 
   /// Each this many ranks in a tree open its next row (spec 0015 §2.1).
   final int talentRowEvery;
@@ -640,6 +690,94 @@ class GameData {
       .where((r) => r.from == from || r.to == from)
       .map((r) => r.from == from ? r.to : r.from);
 
+  /// The data checks of spec 0023 §2.
+  void _validateStory(void Function(bool, String) check) {
+    check(pageChance >= 0 && pageChance <= 1, 'story: pageChance within 0-1');
+    // Spec 0023 criterion 8: no two characters share a name.
+    final names = [
+      for (final p in people.values) p.name,
+      for (final p in professions.values) p.teacher.name,
+      trainer.name,
+    ];
+    check(
+      names.toSet().length == names.length,
+      'story: two characters share a name',
+    );
+    void checkCondition(Criterion? c, String what) => check(
+      c == null || c is CounterCriterion || c is LevelCriterion,
+      '$what: a condition is a counter or a level',
+    );
+    final linePages = <String>[];
+    final lineIds = <String>{};
+    for (final p in people.values) {
+      check(
+        locations.containsKey(p.location),
+        'person ${p.id}: unknown location',
+      );
+      for (final l in p.lines) {
+        check(lineIds.add(l.id), 'line ${l.id}: the id is taken');
+        checkCondition(l.after, 'line ${l.id}');
+        if (l.origin case final o?) {
+          check(origins.containsKey(o), 'line ${l.id}: unknown origin');
+        }
+        if (l.page case final page?) {
+          check(
+            pages[page]?.source == PageSource.line,
+            'line ${l.id}: its page must be a known page from a line',
+          );
+          linePages.add(page);
+        }
+      }
+    }
+    for (final MapEntry(key: who, value: l) in campLines.entries) {
+      check(
+        who == trainerId || professions.containsKey(who),
+        'camp line ${l.id}: unknown teacher $who',
+      );
+      check(lineIds.add(l.id), 'line ${l.id}: the id is taken');
+      checkCondition(l.after, 'camp line ${l.id}');
+      check(
+        l.page == null && l.origin == null,
+        'camp line ${l.id}: no page, no origin',
+      );
+    }
+    final finds = <String>{};
+    for (final p in pages.values) {
+      check(locations.containsKey(p.place), 'page ${p.id}: unknown place');
+      check(
+        (p.source == PageSource.deed) == (p.after != null),
+        'page ${p.id}: a deed page, and only one, has a condition',
+      );
+      checkCondition(p.after, 'page ${p.id}');
+      if (p.source == PageSource.line) {
+        check(
+          linePages.where((id) => id == p.id).length == 1,
+          'page ${p.id}: one line gives it',
+        );
+      }
+      if (p.source == PageSource.find) {
+        check(finds.add(p.place), 'page ${p.id}: one find page per place');
+      }
+    }
+    final ids = [...pages.keys, ...loreNotes.map((n) => n.id)];
+    check(ids.toSet().length == ids.length, 'story: a page id is a note id');
+    // Lines the game fills for the player (spec 0012 §2.3).
+    for (final text in [
+      for (final p in people.values)
+        for (final l in p.lines) l.text,
+      for (final l in campLines.values) l.text,
+      for (final p in pages.values) p.text,
+    ]) {
+      for (final m in RegExp(r'\{([^{}]*)\}').allMatches(text)) {
+        final t = m[1]!;
+        check(
+          t == 'name' || t.split('|').length == 3,
+          'line "$text": {$t} needs {name} or three choices',
+        );
+      }
+    }
+  }
+
   /// The data checks of spec 0015 §2.8.
   void _validateTalents(void Function(bool, String) check) {
     for (final t in talents.values) {
@@ -1072,6 +1210,7 @@ class GameData {
       );
     }
     _validateTalents(check);
+    _validateStory(check);
     for (final row in combat.typeFactors.values) {
       check(
         row.keys.toSet().containsAll(combat.damageTypes),

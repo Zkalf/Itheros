@@ -10,6 +10,7 @@ const _files = [
   'professions',
   'origins',
   'talents',
+  'story',
 ];
 
 /// Loads the game data bundled from `packages/game_core/data/`.

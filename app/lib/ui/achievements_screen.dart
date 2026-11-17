@@ -179,6 +179,9 @@ class _AchievementTile extends StatelessWidget {
         'Find an item of '
             '${data.qualities.firstWhere((q) => q.id == quality).name} '
             'quality or better',
+      // Spec 0023 §2.6.
+      LoreCriterion(:final place) =>
+        'Find all the lore of ${labels.location(place)}',
     };
   }
 

@@ -19,6 +19,7 @@ part 'game/run.dart';
 part 'game/talents.dart';
 part 'game/supply.dart';
 part 'game/bank.dart';
+part 'game/story.dart';
 
 /// The game rules. Stateless: every method takes a [GameState] and returns a
 /// new one, leaving its input untouched.
@@ -27,15 +28,21 @@ class Game {
 
   final GameData data;
 
-  GameState newGame({required int seed}) => _visit(
-    GameState(
-      location: data.startLocation,
-      rngState: Rng.seeded(seed).state,
-      professionRng: professionStream(seed),
-      supplyRng: GameSupply.supplyStream(seed),
-    ),
-    data.startLocation,
-  );
+  /// A new game at the start, with the pages of the start and the first
+  /// visit there (spec 0023 §2.4), without a report.
+  GameState newGame({required int seed}) {
+    final s = _visit(
+      GameState(
+        location: data.startLocation,
+        rngState: Rng.seeded(seed).state,
+        professionRng: professionStream(seed),
+        supplyRng: GameSupply.supplyStream(seed),
+      ),
+      data.startLocation,
+    );
+    _givePages(s);
+    return s;
+  }
 
   /// The profession stream's first state, a fixed hash of [from] (a game
   /// seed, or an old save's generator state): no draw from the shared

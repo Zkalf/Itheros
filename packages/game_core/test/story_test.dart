@@ -375,6 +375,19 @@ void main() {
       expect(on, off);
     });
 
+    test('criterion 29: the roll changes no gathering either', () {
+      Map<String, Object?> mine(Game g) {
+        var s = stateAt(g, location: 'copper_hills', level: 5)
+          ..lore.add('page_miners_carving');
+        s = g.startActivity(s, const Activity.gather('copper_vein'));
+        return g.applySteps(s, 20000).state.toJson()
+          ..remove('lore')
+          ..remove('achievements');
+      }
+
+      expect(mine(withChance(1)), mine(withChance(0)));
+    });
+
     test('criterion 33: a page gives no XP, no item and no gold', () {
       final s = stateAt(game, location: 'old_graveyard')
         ..counters[kingKill] = 1;

@@ -119,11 +119,15 @@ extension GameProgress on Game {
       s.character != null &&
       data.origins[s.character!.origin]?.profession == profession;
 
-  /// The line [profession]'s teacher opens with, filled: the kin line for
-  /// the origin's own teacher, else the greeting (spec 0012 §3.1).
+  /// The line [profession]'s teacher opens with, filled: the King line once
+  /// open (spec 0023 §2.5), else the kin line for the origin's own teacher,
+  /// else the greeting (spec 0012 §3.1).
   String teacherLine(GameState s, String profession) {
     final t = data.professions[profession]!.teacher;
-    return fill(isKin(s, profession) ? t.kinLine : t.greeting, s.character);
+    final line =
+        campLine(s, profession)?.text ??
+        (isKin(s, profession) ? t.kinLine : t.greeting);
+    return fill(line, s.character);
   }
 
   /// What reaching [level] in [profession] opens: its spots and recipes of
@@ -545,6 +549,11 @@ extension GameProgress on Game {
     if (s.loadedVersion < 14) {
       n = n.copy()..supplyRng = GameSupply.supplyStream(n.rngState);
     }
-    return _migrateTalents(_freeOffHand(n));
+    n = _migrateTalents(_freeOffHand(n));
+    // Any save gets the pages of the start, its first visits and its deeds,
+    // without a report (spec 0023 §4).
+    final pages = n.copy();
+    _givePages(pages);
+    return pages;
   }
 }

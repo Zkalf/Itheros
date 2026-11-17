@@ -247,7 +247,8 @@ void main() {
     }
   });
 
+  // The closed road needed no new version; spec 0023 raised it to 17 later.
   test('criterion 23: the save schema stays at 16', () {
-    expect(GameState.schemaVersion, 16);
+    expect(GameState.schemaVersion, greaterThanOrEqualTo(16));
   });
 }

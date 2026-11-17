@@ -175,6 +175,13 @@ class LoreFound extends GameEvent {
   final String note;
 }
 
+/// A lore page was found on a walk: from a first visit, a deed or a find
+/// (spec 0023 §2.4). A page from a line comes with [Game.hear] instead.
+class LorePageFound extends GameEvent {
+  const LorePageFound(this.page);
+  final String page;
+}
+
 /// Enough kills to know [enemy]'s weakness and stats (spec 0009 §7.1).
 class WeaknessLearned extends GameEvent {
   const WeaknessLearned(this.enemy);

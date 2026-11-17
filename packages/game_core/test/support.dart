@@ -12,6 +12,15 @@ GameData loadGameData({Map<String, Object> overrides = const {}}) {
         f.uri.pathSegments.last.replaceAll('.json', ''): f.readAsStringSync(),
   };
   overrides.forEach((name, json) => files[name] = jsonEncode(json));
+  // A test world of its own has none of the story's places (spec 0023): no
+  // people and no pages. The King lines stay with the teachers.
+  if (overrides.containsKey('world') && !overrides.containsKey('story')) {
+    files['story'] = jsonEncode({
+      ...dataJson('story'),
+      'people': <Object>[],
+      'pages': <Object>[],
+    });
+  }
   return GameData.fromJsonStrings(files);
 }
 

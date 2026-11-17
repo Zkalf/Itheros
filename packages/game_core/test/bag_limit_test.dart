@@ -318,8 +318,9 @@ void main() {
   });
 
   group('save', () {
+    // The bag limit needed no new version; spec 0023 raised it to 17 later.
     test('criterion 37: the save version stays 16', () {
-      expect(GameState.schemaVersion, 16);
+      expect(GameState.schemaVersion, greaterThanOrEqualTo(16));
     });
 
     test('criterion 38: a save with 45 kinds loads overloaded', () {

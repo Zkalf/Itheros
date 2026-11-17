@@ -124,7 +124,11 @@ void main() {
       final r = sure.applySteps(s, 1000);
       final note = sure.data.enemies['goblin']!.lore!.id;
       expect(r.events.whereType<LoreFound>().map((e) => e.note), [note]);
-      expect(r.state.lore, {note});
+      // Lore pages share the set since spec 0023 §4: only the notes here.
+      expect(
+        r.state.lore.where((id) => !sure.data.pages.containsKey(id)).toSet(),
+        {note},
+      );
       expect(r.events.whereType<FightWon>().length, greaterThan(5));
 
       s = sure.startActivity(
@@ -144,7 +148,10 @@ void main() {
     });
 
     test('notes keep the order they were found in', () {
-      final s = stateAt(game)..lore.addAll(['note_b', 'note_a']);
+      // A new game holds The Guild's charter first (spec 0023 §2.4).
+      final s = stateAt(game)
+        ..lore.clear()
+        ..lore.addAll(['note_b', 'note_a']);
       final back = GameState.fromJson(
         jsonDecode(jsonEncode(s.toJson())) as Map<String, Object?>,
       );

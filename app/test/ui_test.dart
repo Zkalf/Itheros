@@ -1417,8 +1417,12 @@ void playtest2() {
         t.getRect(find.byType(ListView)).bottom,
         lessThanOrEqualTo(1200 - 150),
       );
-      await t.drag(find.byType(ListView), const Offset(0, -5000));
-      await t.pumpAndSettle();
+      // The lazy list guesses its length from the rows it built: a second
+      // drag reaches the real end of a long list (36 rows since spec 0023).
+      for (var i = 0; i < 2; i++) {
+        await t.drag(find.byType(ListView), const Offset(0, -5000));
+        await t.pumpAndSettle();
+      }
       final last = game.data.achievements.values.last.name;
       expect(
         t.getBottomLeft(find.text(last)).dy,

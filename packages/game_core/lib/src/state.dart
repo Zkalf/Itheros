@@ -339,6 +339,7 @@ class GameState {
     Set<String>? learned,
     Map<String, String>? tools,
     Set<String>? tips,
+    Set<String>? heard,
     Map<String, int>? records,
     Set<String>? revealed,
     this.meal,
@@ -372,6 +373,7 @@ class GameState {
        learned = learned ?? {},
        tools = tools ?? {},
        tips = tips ?? {},
+       heard = heard ?? {},
        records = records ?? {},
        revealed = revealed ?? {};
 
@@ -421,6 +423,8 @@ class GameState {
         (k, v) => MapEntry(k, v as String),
       ),
       tips: _stringSet(json['tips']),
+      // Before version 17: no lines heard (spec 0023 §4).
+      heard: _stringSet(json['heard']),
       professionRng: json['professionRng'] as int? ?? 0,
       // Before version 9: no records, meal or bottles (spec 0011 §10).
       records: json['records'] == null ? null : _intMap(json['records']),
@@ -456,6 +460,9 @@ class GameState {
     );
   }
 
+  /// 17: the lines heard; lore pages join the lore notes in [lore] (spec
+  /// 0023 §4).
+  /// 16: the item bank (spec 0020 §4).
   /// 14: the supply chest: the steps into actions per day, the days paid,
   /// the waiting chests and their stream (spec 0013 §4).
   /// 13: talent ranks, resets, the reset price and the steps since the
@@ -476,7 +483,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 16;
+  static const schemaVersion = 17;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -509,7 +516,7 @@ class GameState {
   /// (spec 0009 §7.1).
   final Set<String> fought;
 
-  /// Lore notes found (spec 0009 §7.2).
+  /// Lore notes (spec 0009 §7.2) and lore pages (spec 0023 §2.4) found.
   final Set<String> lore;
 
   /// Profession XP by profession id (spec 0010 §2.2).
@@ -523,6 +530,9 @@ class GameState {
 
   /// Teachers' tips told (spec 0010 §6.2).
   final Set<String> tips;
+
+  /// Lines heard: people's lines and King lines (spec 0023 §2.2).
+  final Set<String> heard;
 
   /// Heaviest catch per fish, in tenths of a kg (spec 0011 §3.4).
   final Map<String, int> records;
@@ -603,6 +613,7 @@ class GameState {
     'learned': learned.toList()..sort(),
     'tools': Map.of(tools),
     'tips': tips.toList()..sort(),
+    'heard': heard.toList()..sort(),
     'professionRng': professionRng,
     'records': Map.of(records),
     'meal': meal?.toJson(),
