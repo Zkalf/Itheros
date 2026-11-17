@@ -3,6 +3,7 @@ import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'labels.dart';
+import 'person_sheet.dart' show PortraitHeader, portraitId;
 import 'theme.dart';
 
 /// "Ysolde, the Guild trainer".
@@ -92,8 +93,12 @@ class _TrainerSheetState extends State<TrainerSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(trainerName(trainer), style: text.titleLarge),
-              const SizedBox(height: 8),
+              // The portrait and the name (spec 0023 §3.6).
+              PortraitHeader(
+                id: portraitId(trainer.name),
+                name: trainerName(trainer),
+              ),
+              const SizedBox(height: 12),
               // The greeting, or her King line (spec 0023 §2.5).
               Text(
                 '"${_done ? labels.fill(trainer.done) : game.trainerLine(s)}"',

@@ -12,7 +12,6 @@ import 'fight_sheet.dart';
 import 'images.dart';
 import 'labels.dart';
 import 'item_card.dart';
-import 'item_square.dart';
 import 'meals.dart';
 import 'person_sheet.dart';
 import 'socket.dart';
@@ -685,7 +684,7 @@ class _Here extends StatelessWidget {
       for (final p in c.game.peopleHere(s))
         ListTile(
           key: ValueKey('person-${p.id}'),
-          leading: PersonPicture(p),
+          leading: Portrait(p.id),
           title: Text(personName(p)),
           titleTextStyle: nameStyle(context),
           trailing: c.game.hasNewLine(s, p.id)
@@ -747,11 +746,11 @@ class _Here extends StatelessWidget {
       // The teachers here (spec 0010 §6.1), a dot when a tip waits.
       for (final p in game.data.professions.values)
         if (p.teacher.location == s.location)
-          // The rows of Here share the 32 dp of the profession pictures, so
-          // their names line up (spec 0014 amendment 7).
+          // The teacher's portrait, at the 32 dp of the rows of Here, so
+          // their names line up (spec 0023 §3.6).
           ListTile(
             key: ValueKey('teacher-${p.id}'),
-            leading: ProfessionPicture(p),
+            leading: Portrait(portraitId(p.teacher.name)),
             title: Text(teacherName(p)),
             titleTextStyle: nameStyle(context),
             subtitle: Text(
@@ -772,10 +771,7 @@ class _Here extends StatelessWidget {
       if (game.data.trainer.location == s.location)
         ListTile(
           key: const ValueKey('trainer'),
-          leading: const SizedBox(
-            width: 32,
-            child: DrawnIcon('trainer', fallback: Icons.auto_awesome),
-          ),
+          leading: Portrait(portraitId(game.data.trainer.name)),
           title: Text(trainerName(game.data.trainer)),
           titleTextStyle: nameStyle(context),
           subtitle: const Text('Talents'),

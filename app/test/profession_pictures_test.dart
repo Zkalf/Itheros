@@ -1,5 +1,7 @@
 // A picture for each profession: spec 0014 amendment 7, criteria 1-6
-// (plan 0045).
+// (plan 0045). Since spec 0023 §3.6 the teacher rows show portraits, so
+// criteria 4-5 check that the row has no profession picture (spec 0014
+// criteria 79-80).
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -57,21 +59,19 @@ void main() {
     expect(t.getSize(head), const Size(32, 32));
   });
 
-  testWidgets('criterion 4: a teacher row on Now shows the picture of the '
+  // Criterion 4 left the teacher row: it shows the teacher's portrait since
+  // spec 0023 §3.6 (people_test.dart). The row keeps no profession picture.
+  testWidgets('criterion 4: a teacher row on Now shows no picture of the '
       "teacher's profession", (t) async {
     await pumpGame(t, images: diskImages);
     final row = find.byKey(const ValueKey('teacher-mining'));
     await t.ensureVisible(row);
-    final pic = within('teacher-mining', picture('mining'));
-    expect(pic, findsOneWidget);
-    expect(t.getSize(pic), const Size(32, 32));
+    expect(within('teacher-mining', picture('mining')), findsNothing);
   });
 
   testWidgets('criterion 5: without a picture file, the glyph shows in the '
-      'three places', (t) async {
+      'Professions tab and on the screen', (t) async {
     await pumpGame(t);
-    await t.ensureVisible(find.byKey(const ValueKey('teacher-mining')));
-    expect(within('teacher-mining', glyph('mining')), findsOneWidget);
     expect(picture('mining'), findsNothing);
     await openTab(t, 'professions');
     expect(glyph('mining'), findsWidgets);

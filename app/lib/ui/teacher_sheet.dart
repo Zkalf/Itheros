@@ -3,6 +3,7 @@ import 'package:game_core/game_core.dart';
 
 import '../game_controller.dart';
 import 'labels.dart';
+import 'person_sheet.dart' show PortraitHeader, portraitId;
 
 /// Opens [profession]'s teacher (spec 0010 §6). Talking to a teacher tells
 /// the tips waiting, so they are told as the sheet opens.
@@ -54,7 +55,6 @@ class TeacherSheet extends StatelessWidget {
       final s = c.state;
       final p = game.data.professions[profession]!;
       final labels = Labels(game.data, s.character);
-      final text = Theme.of(context).textTheme;
       final learned = s.learned.contains(profession);
       final level = game.professionLevel(s, profession);
       final next = game.nextTip(s, profession);
@@ -66,8 +66,12 @@ class TeacherSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(teacherName(p), style: text.titleLarge),
-              const SizedBox(height: 8),
+              // The portrait and the name (spec 0023 §3.6).
+              PortraitHeader(
+                id: portraitId(p.teacher.name),
+                name: teacherName(p),
+              ),
+              const SizedBox(height: 12),
               // The greeting, or the kin line in place of the learn line
               // (spec 0012 §3.1).
               Text(

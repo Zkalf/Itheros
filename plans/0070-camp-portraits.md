@@ -43,6 +43,8 @@ trainer icon. Each of them gets a portrait, so every person at Camp has a face.
   - `spot_pictures_test.dart`: the teacher-row test now expects the portrait, not `ProfessionPicture`. The tests of
     the Professions tab and the profession screens stay as they are (criterion 56).
   - `drawn_icons_test.dart`: the trainer row leaves the list of drawn icons.
+  - `profession_pictures_test.dart`: criteria 4-5 no longer look for the profession picture in the teacher row
+    (spec 0014 criteria 79-80).
   - A test that each teacher and Ysolde has a file `portraits/<id>` (criterion 53-54).
 - Then the art and the code.
 - **Proof:** `.\scripts\check.ps1 -Release` green. The verifier checks criteria 53-57 and spec 0014's criteria 79-80.

@@ -12,20 +12,44 @@ import 'theme.dart';
 /// "Pell, the charcoal burner".
 String personName(PersonDef p) => '${p.name}, ${p.title}';
 
-/// A person's portrait in a socket of [size] (spec 0023 §3.1, §3.5): Claude's
-/// flat drawing until nabriis draws the real art, else the placeholder.
-class PersonPicture extends StatelessWidget {
-  const PersonPicture(this.person, {super.key, this.size = 32});
+/// The portrait id of a teacher or of Ysolde: the name in lower case
+/// (spec 0023 §3.6).
+String portraitId(String name) => name.toLowerCase();
 
-  final PersonDef person;
+/// The portrait [id] in a socket of [size] (spec 0023 §3.1, §3.5, §3.6): a
+/// person, a teacher or Ysolde. Claude's flat drawing until nabriis draws the
+/// real art, else the placeholder.
+class Portrait extends StatelessWidget {
+  const Portrait(this.id, {super.key, this.size = 32});
+
+  final String id;
   final double size;
 
   @override
   Widget build(BuildContext context) => PictureSocket(
-    picture: ImageScope.of(
-      context,
-    ).pictureOf(ControllerScope.of(context).game.data, GuideThing(person.id)),
+    picture: ImageScope.of(context)
+        .pictureOf(ControllerScope.of(context).game.data, GuideThing(id)),
     size: size,
+  );
+}
+
+/// The top of a sheet of someone (spec 0023 §3.2, §3.6): the portrait at
+/// 72 dp and the name.
+class PortraitHeader extends StatelessWidget {
+  const PortraitHeader({super.key, required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Portrait(id, size: 72),
+      const SizedBox(width: 16),
+      Expanded(
+        child: Text(name, style: Theme.of(context).textTheme.titleLarge),
+      ),
+    ],
   );
 }
 
@@ -81,13 +105,7 @@ class PersonSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                PersonPicture(p, size: 72),
-                const SizedBox(width: 16),
-                Expanded(child: Text(personName(p), style: text.titleLarge)),
-              ],
-            ),
+            PortraitHeader(id: p.id, name: personName(p)),
             const SizedBox(height: 12),
             if (newest != null)
               Text(

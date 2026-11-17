@@ -1,0 +1,1 @@
+- The teachers at Camp and Ysolde now have portraits, in their rows and at the top of their sheets.

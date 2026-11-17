@@ -362,5 +362,5 @@ and `{lad|lass|friend}` fill in as today (spec 0012).
 ## History
 - 2026-11-17: first version (intent 0023). Accepted.
 - 2026-11-17 (plan 0070): portraits for the six teachers and Ysolde. At Camp only Odda had a face, which made no
-  sense to the owner. Decision 12; §2.1; §3.5; new §3.6; criteria 53-57. Spec 0014 §4.2 "Now" and criterion 79
-  follow. Accepted.
+  sense to the owner. Decision 12; §2.1; §3.5; new §3.6; criteria 53-57. Spec 0014 §4.2 "Now", §6 and criteria
+  79-80 follow. Accepted.
