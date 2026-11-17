@@ -140,10 +140,11 @@ void main() {
       expect(inside(walk, find.byType(PictureSocket)), findsNothing);
     });
 
-    // Spec 0014 amendment 7 gives each teacher row the picture of its
-    // profession, still without a socket.
-    testWidgets('the teacher rows on Now show their profession picture, '
-        'with no socket', (t) async {
+    // Spec 0023 §3.6: each teacher row shows the teacher's portrait in a
+    // socket, no longer the picture of the profession (spec 0014
+    // criterion 79).
+    testWidgets('the teacher rows on Now show the portrait, not the '
+        'profession picture', (t) async {
       await pumpGame(t, images: diskImages);
       final teachers = find.byWidgetPredicate(
         (w) => switch (w.key) {
@@ -155,8 +156,8 @@ void main() {
       expect(teachers, findsWidgets);
       for (final e in teachers.evaluate()) {
         final row = find.byWidget(e.widget);
-        expect(inside(row, find.byType(PictureSocket)), findsNothing);
-        expect(inside(row, find.byType(ProfessionPicture)), findsOneWidget);
+        expect(inside(row, find.byType(PictureSocket)), findsOneWidget);
+        expect(inside(row, find.byType(ProfessionPicture)), findsNothing);
       }
     });
 

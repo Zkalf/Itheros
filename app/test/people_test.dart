@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/sync/away_summary.dart';
 import 'package:walkingrpg/ui/images.dart';
+import 'package:walkingrpg/ui/item_square.dart' show ProfessionPicture;
 import 'package:walkingrpg/ui/labels.dart';
 import 'package:walkingrpg/ui/socket.dart';
 
@@ -294,6 +295,85 @@ void main() {
       );
       expect(find.text('Find all the lore of Goblin Woods'), findsOneWidget);
     });
+  });
+
+  group('the portraits at Camp (spec 0023 §3.6)', () {
+    // The teachers' ids and Ysolde's: the name in lower case.
+    final camp = {
+      for (final p in game.data.professions.values)
+        'teacher-${p.id}': p.teacher.name.toLowerCase(),
+      'trainer': game.data.trainer.name.toLowerCase(),
+    };
+    PictureSocket socketIn(WidgetTester t, Finder of) =>
+        t.widget<PictureSocket>(
+          find.descendant(of: of, matching: find.byType(PictureSocket)),
+        );
+
+    test('criteria 53-54: each teacher and Ysolde has a portrait file', () {
+      expect(camp, hasLength(7));
+      for (final id in camp.values) {
+        expect(diskImages.has('portraits/$id'), isTrue, reason: id);
+      }
+    });
+
+    testWidgets("criteria 53-54: each teacher's row and Ysolde's row show "
+        'their portrait, not the profession picture or the trainer icon', (
+      t,
+    ) async {
+      await pumpGame(t, images: diskImages);
+      for (final MapEntry(key: row, value: id) in camp.entries) {
+        final socket = socketIn(t, find.byKey(ValueKey(row)));
+        expect(socket.picture.key, 'portraits/$id', reason: row);
+        expect(socket.picture.placeholder, isFalse, reason: row);
+        expect(socket.size, 32, reason: row);
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey(row)),
+            matching: find.byType(ProfessionPicture),
+          ),
+          findsNothing,
+          reason: row,
+        );
+      }
+      expect(find.byKey(const ValueKey('drawn-icon-trainer')), findsNothing);
+    });
+
+    for (final (row, sheetKey, id, name) in [
+      ('teacher-cooking', 'teacher-sheet', 'marta', 'Marta, the cook'),
+      ('trainer', 'trainer-sheet', 'ysolde', 'Ysolde, the Guild trainer'),
+    ]) {
+      testWidgets('criterion 55: $sheetKey shows the portrait and the name at '
+          'the top', (t) async {
+        final (c, _) = await pumpGame(t, images: diskImages);
+        await t.tap(find.byKey(ValueKey(row)));
+        await settle(t, c);
+        await t.pumpAndSettle();
+        final sheetFinder = find.byKey(ValueKey(sheetKey));
+        final socket = socketIn(t, sheetFinder);
+        expect(socket.picture.key, 'portraits/$id');
+        expect(socket.size, 72);
+        final title = find.descendant(
+          of: sheetFinder,
+          matching: find.text(name),
+        );
+        expect(title, findsOneWidget);
+        final line = find.descendant(
+          of: sheetFinder,
+          matching: find.textContaining('"'),
+        );
+        expect(
+          t
+              .getTopLeft(
+                find.descendant(
+                  of: sheetFinder,
+                  matching: find.byType(PictureSocket),
+                ),
+              )
+              .dy,
+          lessThan(t.getTopLeft(line.first).dy),
+        );
+      });
+    }
   });
 
   test('a person shows the portrait of their id', () {
