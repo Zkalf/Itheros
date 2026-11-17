@@ -311,7 +311,7 @@ The style also has these pictures: the splash, the World map, the skull, the loc
   - the row starts with the picture of the spot in a 48 dp socket;
   - the level badge is on the name line, before the name;
   - the badge keeps its colour and its number.
-- The teacher rows under "Here" show the picture of the teacher's profession at 32 dp, with no socket.
+- The teacher rows and Ysolde's row under "Here" show the person's portrait at 32 dp (spec 0023 §3.6).
 - These rows keep their icons: the Forge row, the Camp fire row and the "Walk here" row.
 - **The step bank**: a tap on the step bank row (its label and its bar) opens a sheet:
   - the title "Step bank";
@@ -425,7 +425,8 @@ The style also has these pictures: the splash, the World map, the skull, the loc
 - A separate boss screen.
 - A light theme.
 - An appearance editor.
-- Images for teachers and areas. A gathering spot is not an area. Professions have pictures (§3.1).
+- Images for areas. A gathering spot is not an area. Professions have pictures (§3.1). Teachers have portraits since
+  spec 0023 §3.6.
 - Changes to rules or numbers.
 
 The missing images come later as content.
@@ -600,8 +601,8 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 76. Each of the six professions has a file `professions/<id>.webp`.
 77. Each profession card in the Professions tab shows the picture of its profession, at 32 dp.
 78. The header of each profession screen shows the picture of its profession, at 32 dp.
-79. A teacher row under "Here" on Now shows the picture of the teacher's profession, at 32 dp.
-80. A profession without a picture file shows its glyph in each of the three places.
+79. A teacher row under "Here" on Now shows the teacher's portrait, at 32 dp (spec 0023 §3.6).
+80. A profession without a picture file shows its glyph in the Professions tab and on its screen.
 81. The Professions tab button in the bottom bar shows its glyph.
 
 **Pictures in the queue**
@@ -674,3 +675,5 @@ A criterion that checks several things has a letter for each check (rule 13 of `
   criterion 9a.
 - 2026-11-15 (plan 0068): the amendments and clean edition 1 folded into this file. No rule, number, colour, size or
   criterion changed.
+- 2026-11-17, spec 0023 §3.6 (plan 0070): the teacher rows and Ysolde's row show portraits, not the pictures of the
+  professions. §4.2 "Now"; §6 out of scope; criteria 79 and 80. Accepted.

@@ -1,5 +1,6 @@
 # Draws the small icons of Camp and of the level-up card as flat silhouettes (art/icons/<name>.svg), #198: the Bank,
-# the Forge, the Camp fire and the trainer on Now; the level, a new gathering spot and a talent point on a level-up.
+# the Forge and the Camp fire on Now; the level, a new gathering spot and a talent point on a level-up. Ysolde, the
+# trainer, shows her portrait since spec 0023 §3.6 (art/people.py).
 # White on clear, like the empty gear slots (art/slots.py); the game tints them like the stock icons they replace.
 # Run: python art/icons.py [--preview <file.html>]. Then .\scripts\export-art.ps1 makes the webp files
 # (app/assets/images/icons/).
@@ -41,10 +42,6 @@ ICONS = {
             'C21 14 21 17 23 18 C24 13 23 8 24 4 Z M24 22 C22 25 20 26.5 20 29 C20 30.5 22 31.5 24 31.5 '
             'C26 31.5 28 30.5 28 29 C28 26.5 26 25 24 22 Z"/>'
             '<path d="M8 33 L11 31 L40 41 L37 43.5 Z M40 33 L37 31 L8 41 L11 43.5 Z"/>',
-    # The trainer: an open book of talents with a star over it.
-    'trainer': '<path d="M5 16 C11 14 18 15 23 18 L23 41 C18 38 11 37 5 39 Z '
-               'M43 16 C37 14 30 15 25 18 L25 41 C30 38 37 37 43 39 Z"/>'
-               f'<path d="{spark(24, 8, 6.5)}"/>',
     # A new level: a double arrow up in a ring.
     'level': f'<path d="{circle(24, 24, 19)}{circle(24, 24, 15.5)}"/>'
              '<path d="M24 11 L35 22 L31 22 L24 15 L17 22 L13 22 Z M24 21 L35 32 L31 32 L24 25 L17 32 L13 32 Z"/>'

@@ -9,7 +9,8 @@ import 'ui_test.dart';
 
 void main() {
   Finder key(String k) => find.byKey(ValueKey(k));
-  const icons = ['bank', 'forge', 'fire', 'trainer', 'level', 'spot', 'talent'];
+  // The trainer's icon left for Ysolde's portrait (spec 0023 §3.6).
+  const icons = ['bank', 'forge', 'fire', 'level', 'spot', 'talent'];
 
   test('each talent image and each drawn icon has its file', () {
     final images = {for (final t in game.data.talents.values) t.image};
@@ -52,14 +53,13 @@ void main() {
     }
   });
 
-  testWidgets('at Camp, the Bank, Forge, Camp fire and trainer rows show '
-      'their drawn icons', (t) async {
+  testWidgets('at Camp, the Bank, Forge and Camp fire rows show their drawn '
+      'icons', (t) async {
     await pumpGame(t, images: diskImages);
     for (final (row, icon) in [
       ('bank-card', 'bank'),
       ('here-forge', 'forge'),
       ('here-fire', 'fire'),
-      ('trainer', 'trainer'),
     ]) {
       expect(imagesIn(t, key(row)), [
         'assets/images/icons/$icon.webp',
