@@ -1,6 +1,6 @@
 # Plan 0069: Build "Role-play, chapter 1: The King Who Would Not Rest"
 
-Status: draft
+Status: accepted
 Spec: `specs/0023-role-play.md` · Product owner: Zkalf · Date: 2026-11-17
 
 Names of files, widgets and tests refer to `main` at `686dbb2`.
@@ -115,9 +115,10 @@ Names of files, widgets and tests refer to `main` at `686dbb2`.
 
 ## Risks
 - **The pacing test.** The walker can earn Carved in Stone and Still Waters (+250 bank cap each). If the pacing test
-  trips, I report the numbers once and the owner decides (`CLAUDE.md`).
+  trips, I report the numbers once and the owner decides (`CLAUDE.md`). The owner (2026-11-17): the risk is so small
+  that it should not matter.
 - **Speed.** `_givePages` runs after each unit, not after each step, so the sim run stays near its time of today
   (4.8 s, PR #270). The PR names the time.
 
 ## History
-- 2026-11-17: first version (spec 0023). (draft)
+- 2026-11-17: first version (spec 0023). Accepted.
