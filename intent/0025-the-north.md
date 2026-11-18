@@ -1,9 +1,10 @@
 # Intent: Role-play and quests, chapters 2 and 3: the north of the river
 
-Status: draft
+Status: accepted
 Product owner: Zkalf (chose on 2026-11-18: two chapters in one intent, the Chieftain ends chapter 2 and the Young
 Dragon ends chapter 3; the story of the cage, with a Guild man as the buyer; one new person for each region with
-monsters; about 17 quests for each chapter; Camp reacts to each boss; an end with a hook)
+monsters; about 17 quests for each chapter; Camp reacts to each boss; an end with a hook; accepted on
+2026-11-18)
 Date: 2026-11-18
 
 ## Problem
@@ -132,4 +133,4 @@ silent:
 5. **The names and the words.** The spec writes them. The owner accepts them with the spec.
 
 ## History
-- 2026-11-18: first version, with the owner's answers to the first questions. (draft)
+- 2026-11-18: first version, with the owner's answers to the first questions. Accepted.
