@@ -1,0 +1,5 @@
+- **Fixed:** a swipe to the right now ends a selection of items, as Back does, and the screen stays open.
+- **Fixed:** a hold on an item buzzes the phone only where it starts a selection.
+- **Fixed:** at a large text size, the details of a running action now use the whole row. The "Active" mark stands after its name.
+- The bullets of these notes are now clear round dots.
+- Two of Wen's tips have new titles: "Still water" and "Off the rocks".

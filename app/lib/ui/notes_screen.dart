@@ -97,7 +97,7 @@ class NotesPlate extends StatelessWidget {
             for (final block in parseNotes(text))
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: _block(block),
+                child: _block(context, block),
               ),
           ],
         ),
@@ -105,7 +105,7 @@ class NotesPlate extends StatelessWidget {
     );
   }
 
-  Widget _block(NoteBlock block) {
+  Widget _block(BuildContext context, NoteBlock block) {
     final words = Text.rich(
       TextSpan(
         children: [
@@ -126,10 +126,44 @@ class NotesPlate extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•'),
+          const NoteBullet(),
           const SizedBox(width: 8),
           Expanded(child: words),
         ],
+      ),
+    );
+  }
+}
+
+/// The bullet of a list item in the notes: a round dot in the colour of the
+/// body text, in the middle of the first line (#289). The "•" of the font
+/// was a small, faint dot on the phone.
+class NoteBullet extends StatelessWidget {
+  const NoteBullet({super.key});
+
+  /// The width of the dot at the usual text size, in dp.
+  static const size = 6.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style;
+    final scaler = MediaQuery.textScalerOf(context);
+    final font = style.fontSize ?? 14;
+    // One line of the text beside it, so the dot stands in its middle.
+    final line = scaler.scale(font) * (style.height ?? 1.2);
+    final dot = scaler.scale(size);
+    return SizedBox(
+      key: const ValueKey('note-bullet'),
+      width: dot,
+      height: line,
+      child: Center(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: style.color ?? Quiet.text,
+          ),
+          child: SizedBox.square(dimension: dot),
+        ),
       ),
     );
   }

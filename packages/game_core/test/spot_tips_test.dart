@@ -99,6 +99,22 @@ void main() {
       );
     });
 
+    // The card says "About <spot>" under the title, so the title names no
+    // other place: the words on a card name one thing (#291). "The deer
+    // trail" names its own spot.
+    test('no spot tip title is the name of another place', () {
+      String bare(String name) =>
+          name.toLowerCase().replaceFirst(RegExp('^the '), '');
+      for (final (_, t) in spotTips) {
+        final others = {
+          for (final l in data.locations.values) bare(l.name),
+          for (final n in data.nodes.values)
+            if (n.id != t.node) bare(n.name),
+        };
+        expect(others, isNot(contains(bare(t.title))), reason: t.id);
+      }
+    });
+
     // A catch is named by its animal (hunting) or its fish (fishing).
     String catchName(CatchDef c) =>
         (c.animal ?? data.items[c.item]!.name).toLowerCase();

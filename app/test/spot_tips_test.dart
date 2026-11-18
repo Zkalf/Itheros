@@ -73,6 +73,6 @@ void main() {
     expect(find.text('Sigrun, the hunter'), findsOneWidget);
     expect(find.text('The deer trail'), findsOneWidget);
     expect(find.text('Wen, the fisherman'), findsOneWidget);
-    expect(find.text('Mirror Lake'), findsOneWidget);
+    expect(find.text('Still water'), findsOneWidget);
   });
 }

@@ -217,7 +217,7 @@ void main() {
       await _open(t, MemorySaveStore(_save('0.5.0')));
       expect(find.text(_title), findsOneWidget);
       expect(find.text('Itheros 0.6.0'), findsOneWidget);
-      expect(find.text('•'), findsNWidgets(3));
+      expect(find.byKey(const ValueKey('note-bullet')), findsNWidgets(3));
       expect(find.textContaining('**', findRichText: true), findsNothing);
       final fixed = find.textContaining('Fixed:', findRichText: true);
       final spans = <TextSpan>[];
@@ -234,6 +234,26 @@ void main() {
         find.textContaining('the first line goes on.', findRichText: true),
         findsOneWidget,
       );
+    });
+
+    testWidgets('a bullet is a round dot in the colour of the words (#289)', (
+      t,
+    ) async {
+      _tall(t);
+      await _open(t, MemorySaveStore(_save('0.5.0')));
+      final fixed = find.textContaining('Fixed:', findRichText: true);
+      final words = t.widget<RichText>(fixed).text.style!.color;
+      final dots = find.descendant(
+        of: find.byKey(const ValueKey('note-bullet')),
+        matching: find.byType(DecoratedBox),
+      );
+      expect(dots, findsNWidgets(3));
+      for (final dot in dots.evaluate()) {
+        final box = (dot.widget as DecoratedBox).decoration as BoxDecoration;
+        expect(box.shape, BoxShape.circle);
+        expect(box.color, words);
+        expect(dot.size!.width, greaterThanOrEqualTo(6));
+      }
     });
 
     testWidgets('an item of the second list stands further in '
