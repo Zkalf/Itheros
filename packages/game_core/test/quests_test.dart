@@ -68,6 +68,21 @@ void main() {
       );
     });
 
+    test('a loop of after quests is refused', () {
+      final quests = dataJson('quests');
+      final list = [...(quests['quests']! as List<Object?>)];
+      // odda_goblins after hilde_ore, which is after odda_goblins.
+      list[0] = {...(list[0]! as Map<String, Object?>), 'after': 'hilde_ore'};
+      expect(
+        () => loadGameData(
+          overrides: {
+            'quests': {'quests': list},
+          },
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('a task with an unknown target is refused', () {
       final quests = dataJson('quests');
       final list = [...(quests['quests']! as List<Object?>)];
