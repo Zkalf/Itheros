@@ -32,7 +32,7 @@ void main() {
 
   testWidgets('the lit tab follows the finger past halfway', (t) async {
     await openJournal(t);
-    expect(fills(t), [Quiet.selected, Quiet.slate, Quiet.slate]);
+    expect(fills(t), [Quiet.selected, Quiet.slate, Quiet.slate, Quiet.slate]);
     final width = t.getSize(find.byType(TabBarView)).width;
     // A slow swipe to the left, held past halfway: the finger is still down.
     final g = await t.startGesture(middle(t));
@@ -40,10 +40,10 @@ void main() {
       await g.moveBy(Offset(-width * .6 / 12, 0));
       await t.pump(const Duration(milliseconds: 50));
     }
-    expect(fills(t), [Quiet.slate, Quiet.selected, Quiet.slate]);
+    expect(fills(t), [Quiet.slate, Quiet.selected, Quiet.slate, Quiet.slate]);
     await g.up();
     await t.pumpAndSettle();
-    expect(fills(t), [Quiet.slate, Quiet.selected, Quiet.slate]);
+    expect(fills(t), [Quiet.slate, Quiet.selected, Quiet.slate, Quiet.slate]);
   });
 
   testWidgets('a swipe right on Log stays in the Journal', (t) async {
@@ -60,6 +60,6 @@ void main() {
     await t.dragFrom(middle(t), const Offset(700, 0));
     await t.pumpAndSettle();
     expect(journal, findsOneWidget);
-    expect(fills(t), [Quiet.selected, Quiet.slate, Quiet.slate]);
+    expect(fills(t), [Quiet.selected, Quiet.slate, Quiet.slate, Quiet.slate]);
   });
 }

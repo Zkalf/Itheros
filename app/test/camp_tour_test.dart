@@ -294,17 +294,20 @@ void main() {
 
     testWidgets('criterion 19 (rule 13): a tap inside the tab during the tour '
         'does nothing', (t) async {
-      final c = await newGame(t);
-      final hide = find.widgetWithText(TextButton, 'Hide');
-      expect(hide, findsOneWidget);
-      await t.tap(hide, warnIfMissed: false);
+      await newGame(t);
+      // The quest card opens the Quests tab (spec 0024 §3.1); it stood in
+      // for Next goal's Hide button.
+      final card = key('quest-card');
+      final log = find.textContaining('No quests yet');
+      expect(card, findsOneWidget);
+      await t.tap(card, warnIfMissed: false);
       await t.pumpAndSettle();
-      expect(c.nextGoalHidden, isFalse, reason: 'Hide did not react');
+      expect(log, findsNothing, reason: 'the card did not react');
       await t.tap(key('tour-skip'));
       await t.pumpAndSettle();
-      await t.tap(hide);
+      await t.tap(card);
       await t.pumpAndSettle();
-      expect(c.nextGoalHidden, isTrue, reason: 'after the tour it works');
+      expect(log, findsOneWidget, reason: 'after the tour it works');
     });
 
     testWidgets('rule 7: a screen that opens during the tour comes first, and '

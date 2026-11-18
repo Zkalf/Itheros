@@ -1,0 +1,3 @@
+- Quests! Odda, the teachers, Pell, Aldous and Jory now ask for your help. Take a quest on their sheet, do the task, and hand it in for XP and a supply chest. A gold "!" marks someone with work for you, a gold "?" a quest ready to hand in.
+- The quest card on Now shows your quests and their counts, in the place of "Next goal". Settings can hide it.
+- The Journal has a Quests tab with your open and finished quests.

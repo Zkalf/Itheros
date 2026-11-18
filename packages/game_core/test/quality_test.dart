@@ -216,36 +216,6 @@ void main() {
       final worn = game.equip(s, 'bone_sword@epic');
       expect(game.owned(worn, 'bone_sword'), 4);
     });
-
-    test(
-      '"Next goal" suggests equipping a better quality of the same item',
-      () {
-        var s = stateAt(
-          game,
-          level: 6,
-          inventory: {'bone_sword': 1, 'bone_sword@legendary': 1},
-        );
-        s = game.equip(s, 'bone_sword');
-        final goal = game.nextGoal(s);
-        expect(goal, isA<EquipGoal>());
-        expect((goal! as EquipGoal).item, 'bone_sword@legendary');
-      },
-    );
-
-    test('"Next goal" never asks to craft another of an owned item', () {
-      var s = stateAt(
-        game,
-        level: 6,
-        inventory: {'bone_sword@rare': 1, 'bones': 60, 'copper_ore': 20},
-      );
-      s = game.equip(s, 'bone_sword@rare');
-      final goal = game.nextGoal(s);
-      expect(
-        goal is CraftGoal && goal.recipe == 'bone_sword',
-        isFalse,
-        reason: 'it is owned (rare)',
-      );
-    });
   });
 
   test('criterion 8: an existing save loads with its gear common', () {

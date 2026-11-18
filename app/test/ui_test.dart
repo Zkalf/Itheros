@@ -573,36 +573,6 @@ void main() {
       expect(find.text('Deadly'), findsNothing);
       expect(c.state.activity!.activity, const Activity.fight('goblin'));
     });
-
-    // With Crafting 1 the copper gear comes first (spec 0010 amendment 1),
-    // so this player wears it already.
-    testWidgets('"Next goal" shows at level 1', (t) async {
-      await pumpGame(
-        t,
-        location: 'goblin_woods',
-        equipment: {'mainHand': 'copper_sword', 'chest': 'hide_vest'},
-      );
-      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
-      expect(
-        find.text('The Goblin in Goblin Woods is your level.'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('from level 1 it can be hidden and turned back on', (t) async {
-      final (c, _) = await pumpGame(t, location: 'goblin_woods');
-      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
-      await t.tap(find.text('Hide'));
-      await settle(t, c);
-      expect(find.byKey(const ValueKey('next-goal')), findsNothing);
-
-      await openSettings(t);
-      await t.tap(find.byKey(const ValueKey('show-next-goal')));
-      await settle(t, c);
-      await t.pageBack();
-      await t.pumpAndSettle();
-      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
-    });
   });
 
   testWidgets('a loss in the report carries the monster\'s hint', (t) async {
@@ -1473,35 +1443,6 @@ void playtest2() {
       expect(find.byKey(const ValueKey('add-to-queue')), findsNothing);
       expect(find.byKey(const ValueKey('start-now')), findsOneWidget);
     });
-
-    testWidgets('"Next goal" only says "your level" when it is', (t) async {
-      // Level 9: with misses and types counted (spec 0009 §2–§3), the
-      // level 8 Zombie gives the most XP, one level below.
-      await pumpGame(
-        t,
-        level: 9,
-        location: 'old_graveyard',
-        equipment: {
-          'mainHand': 'kings_blade',
-          'chest': 'stitched_armour',
-          'offHand': 'bone_shield',
-          // Spec 0011 §7's first pieces, so Next goal is a fight.
-          'gloves': 'deer_hide_gloves',
-          'bracer': 'deer_hide_bracers',
-          'belt': 'deer_hide_belt',
-          'legs': 'lake_scale_greaves',
-        },
-      );
-      expect(find.byKey(const ValueKey('next-goal')), findsOneWidget);
-      expect(find.textContaining('Old Graveyard is your level'), findsNothing);
-      expect(
-        find.text(
-          'The Zombie in Old Graveyard gives the most XP for your steps.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.textContaining('is your level'), findsNothing);
-    });
   });
 }
 
@@ -1546,10 +1487,12 @@ void layoutScreens() {
       expect(find.byKey(const ValueKey('here-forge')), findsNothing);
     });
 
-    testWidgets('Settings: Next goal, the test walk, the version', (t) async {
+    testWidgets('Settings: the quest card, the test walk, the version', (
+      t,
+    ) async {
       final (c, _) = await pumpGame(t);
       await openSettings(t);
-      expect(find.byKey(const ValueKey('show-next-goal')), findsOneWidget);
+      expect(find.byKey(const ValueKey('show-quest-card')), findsOneWidget);
       expect(find.text('Version $appVersion'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('test-walk-switch')));
       await settle(t, c);
@@ -1565,7 +1508,7 @@ void layoutScreens() {
     testWidgets('Character no longer holds settings', (t) async {
       await pumpGame(t);
       await openGear(t);
-      expect(find.byKey(const ValueKey('show-next-goal')), findsNothing);
+      expect(find.byKey(const ValueKey('show-quest-card')), findsNothing);
       expect(find.byKey(const ValueKey('version')), findsNothing);
     });
   });
@@ -2803,21 +2746,6 @@ void professionScreens() {
       expect(find.text('Bones under the hills'), findsOneWidget);
       expect(find.text('Garrow, the smith'), findsOneWidget);
       expect(find.text('Bram, the woodcutter'), findsNothing);
-    });
-
-    testWidgets('§8.4: Next goal names a missing profession level', (t) async {
-      final (c, _) = await pumpGame(t, level: 30, professionLevel: 1);
-      // The load earns Champion at level 30 (spec 0017 §4): its ring to
-      // wear would be the next goal.
-      c.state.inventory.removeWhere(
-        (k, _) => k.startsWith('star_diamond_ring'),
-      );
-      await openTab(t, 'world');
-      await openTab(t, 'now');
-      expect(
-        within('next-goal', find.textContaining(RegExp('^Reach Crafting'))),
-        findsOneWidget,
-      );
     });
   });
 }

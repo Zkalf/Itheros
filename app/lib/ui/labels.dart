@@ -231,6 +231,44 @@ class Labels {
     null =>
       'Found a lore note: ${data.loreNotes.where((n) => n.id == id).firstOrNull?.title ?? id}',
   };
+
+  /// Where a giver stands, as the quest card says it: "at Camp" or "in
+  /// Goblin Woods" (spec 0024 §3.1).
+  String atPlace(String place) => place == data.startLocation
+      ? 'at ${location(place)}'
+      : 'in ${location(place)}';
+
+  /// "Pell": the name of a quest's giver, a person or a teacher.
+  String giver(String quest) {
+    final q = data.quests[quest];
+    if (q == null) return quest;
+    return data.giverName(q.giver) ?? q.giver;
+  }
+
+  /// The report and the Journal (spec 0024 §3.5). An old Journal entry of a
+  /// quest that the data no longer has shows its id.
+  String questReady(String quest) =>
+      'Quest ready: ${data.quests[quest]?.title ?? quest}. '
+      'Hand it in to ${giver(quest)}.';
+  String questDone(String quest) =>
+      'Quest done: ${data.quests[quest]?.title ?? quest}. '
+      '${questReward(quest, plus: true)}.';
+
+  /// "Ready: hand it in to Pell in Goblin Woods" (spec 0024 §3.1).
+  String questReadyLine(String quest, String place) =>
+      'Ready: hand it in to ${giver(quest)} ${atPlace(place)}';
+
+  /// "60 XP and a supply chest", or "+60 XP and a supply chest".
+  String questReward(String quest, {bool plus = false}) =>
+      '${plus ? '+' : ''}${fmt(data.quests[quest]?.xp ?? 0)} XP and a supply chest';
+
+  /// What a quest's task says with its count: "Kill 10 goblins in Goblin
+  /// Woods · 4 of 10".
+  String questTask(String quest, int count) {
+    final task = data.quests[quest]!.task;
+    return '${task.words} · $count of ${task.count}';
+  }
+
   String weaknessLearned(String id) =>
       '${enemy(id)}: weakness learned, see the Bestiary in the Journal';
   String slayerEarned(String id) => 'Slayer: ${enemy(id)}';
@@ -674,41 +712,6 @@ class Labels {
     NewsKind.yourLevel => 'The ${enemy(n.id)} is now your level',
     NewsKind.turnedGrey =>
       'The ${enemy(n.id)} turned grey: little XP, but it still drops its loot',
-  };
-
-  /// The "Next goal" line (spec 0002 §9.3). [grey] marks a grey source;
-  /// [yourLevel] a fight goal whose monster is exactly the player's level.
-  String goal(
-    Goal g, {
-    required bool canCraftHere,
-    bool grey = false,
-    bool yourLevel = false,
-  }) => switch (g) {
-    EquipGoal(:final item) => 'Equip the ${owned(item)} (Character tab).',
-    CraftGoal(:final recipe) when _cooks(recipe) =>
-      'Cook the ${this.recipe(recipe)} at the camp fire.',
-    CraftGoal(:final recipe) =>
-      'Craft the ${this.recipe(recipe)}'
-          '${canCraftHere ? ' here' : ' at Camp or an outpost'}.',
-    CollectGoal(:final item, :final count, :final source) =>
-      switch (source.kind) {
-            ActivityKind.gather =>
-              '${capital(_verbs(source.target).$3)} ${fmt(count)} more ${this.item(item)} at '
-                  '${homeOf(source.target)}.',
-            _ =>
-              'Get ${fmt(count)} more ${this.item(item)} from the '
-                  '${enemy(source.target)} in ${homeOf(source.target)}.',
-          } +
-          (grey ? ' Grey monsters still drop their loot.' : ''),
-    ProfessionGoal(:final profession, :final level, :final current) =>
-      'Reach ${this.profession(profession)} $level to '
-          '${switch (g.target) {
-            Activity(kind: ActivityKind.craft, :final target) => '${_cooks(target) ? 'cook' : 'craft'} the ${recipe(target)}',
-            Activity(:final target) => '${_verbs(target).$3} ${_spot(target)}',
-          }} (${level - current} to go).',
-    FightGoal(:final enemy) =>
-      'The ${this.enemy(enemy)} in ${homeOf(enemy)} '
-          '${yourLevel ? 'is your level' : 'gives the most XP for your steps'}.',
   };
 }
 

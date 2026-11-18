@@ -10,7 +10,17 @@ import 'ui_test.dart';
 void main() {
   Finder key(String k) => find.byKey(ValueKey(k));
   // The trainer's icon left for Ysolde's portrait (spec 0023 §3.6).
-  const icons = ['bank', 'forge', 'fire', 'level', 'spot', 'talent'];
+  const icons = [
+    'bank',
+    'forge',
+    'fire',
+    'level',
+    'spot',
+    'talent',
+    // The quest marks (spec 0024 §3.2).
+    'quest_offer',
+    'quest_ready',
+  ];
 
   test('each talent image and each drawn icon has its file', () {
     final images = {for (final t in game.data.talents.values) t.image};

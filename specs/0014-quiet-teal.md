@@ -68,6 +68,7 @@ The images show the look of 2026-10-22. If an image and this spec are different,
 | Steel, mist | `#B9C2C9`; `#8FA2AE` | steel for bars and the PH mark; mist for the step bank |
 | Text | `#E3EAEC`, muted `#A8B3B8`, faint `#7F8A90` | body text, secondary text, small labels |
 | Short, Risky | `#E08A7C`; `#FBB15A` | inputs that the player does not have; the word "Risky" |
+| Gold | `#F2C94C` | only the quest marks "!" and "?" (spec 0024 §3.2) |
 
 - The game's quality and band colours stay.
 - The interface uses no other warm colour.
@@ -677,3 +678,5 @@ A criterion that checks several things has a letter for each check (rule 13 of `
   criterion changed.
 - 2026-11-17, spec 0023 §3.6 (plan 0070): the teacher rows and Ysolde's row show portraits, not the pictures of the
   professions. §4.2 "Now"; §6 out of scope; criteria 79 and 80. Accepted.
+- 2026-11-18, spec 0024 decision 7 (plan 0071 M2): a Gold row, `#F2C94C`, for the quest marks "!" and "?" only, an
+  exception to "no other warm colour". §2.1. Accepted (owner, 2026-11-18).

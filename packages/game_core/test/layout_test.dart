@@ -320,7 +320,6 @@ void main() {
       var s = stateAt(g, inventory: {'big_axe': 1, 'bone_shield': 1});
       s = g.equip(s, 'big_axe');
       expect(g.gearGain(s, 'bone_shield'), lessThan(0));
-      expect(g.nextGoal(s), isNot(isA<EquipGoal>()));
     });
 
     test('twoHanded is only allowed on main-hand items', () {

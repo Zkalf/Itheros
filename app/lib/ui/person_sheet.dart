@@ -6,6 +6,7 @@ import 'controller_scope.dart';
 import 'images.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
+import 'quest_part.dart';
 import 'socket.dart';
 import 'theme.dart';
 
@@ -15,6 +16,13 @@ String personName(PersonDef p) => '${p.name}, ${p.title}';
 /// The portrait id of a teacher or of Ysolde: the name in lower case
 /// (spec 0023 §3.6).
 String portraitId(String name) => name.toLowerCase();
+
+/// The portrait id of a quest's giver: a person's id, or the teacher's name
+/// in lower case (spec 0024 §3.4).
+String giverPortrait(GameData data, String giver) =>
+    data.people.containsKey(giver)
+    ? giver
+    : portraitId(data.professions[giver]!.teacher.name);
 
 /// The portrait [id] in a socket of [size] (spec 0023 §3.1, §3.5, §3.6): a
 /// person, a teacher or Ysolde. Claude's flat drawing until nabriis draws the
@@ -113,6 +121,8 @@ class PersonSheet extends StatelessWidget {
                 key: const ValueKey('person-line'),
                 style: italic,
               ),
+            // The quests, under the newest line (spec 0024 §3.3).
+            QuestPart(controller: c, giver: person),
             for (final id in newPages)
               if (game.data.pages[id] case final page?)
                 Padding(

@@ -673,7 +673,12 @@ void criterion3() {
         'Alegreya Sans', (t) async {
       await pumpGame(t);
       await openSettings(t);
-      for (final label in ['Name', 'Gender', 'Show "Next goal"', 'Licences']) {
+      for (final label in [
+        'Name',
+        'Gender',
+        'Show the quest card',
+        'Licences',
+      ]) {
         expect(styleOf(t, label).fontFamily, alegreya, reason: label);
       }
     });
@@ -1301,19 +1306,13 @@ void criterion5() {
       expectSlate(t, buttonWith('Swap'), 'Swap on the tool card');
     });
 
-    testWidgets('slate: Hide, OK, Open the World map, the test walk buttons '
-        'and the top bar on Now', (t) async {
+    // Next goal's Hide left with spec 0024: the quest card has no button.
+    testWidgets('slate: OK, Open the World map, the test walk buttons and the '
+        'top bar on Now', (t) async {
       final (c, _) = await pumpGame(t);
       await c.setTestWalk(true);
       await t.pump();
-      for (final words in [
-        'Hide',
-        'OK',
-        'Open the World map',
-        '+100',
-        '+1k',
-        '+5k',
-      ]) {
+      for (final words in ['OK', 'Open the World map', '+100', '+1k', '+5k']) {
         expectSlate(t, buttonWith(words), words);
       }
       for (final key in _topBar) {

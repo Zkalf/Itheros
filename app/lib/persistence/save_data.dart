@@ -53,7 +53,8 @@ class SaveData {
   /// Steps already credited per local day (`yyyy-mm-dd`).
   final Map<String, int> credited;
 
-  /// The player hid the "Next goal" line (allowed from level 10).
+  /// The player hid the quest card (spec 0024 §3.1). The name is Next
+  /// goal's, whose switch the card took over.
   final bool nextGoalHidden;
 
   /// Areas and monsters whose flavour line was already shown.

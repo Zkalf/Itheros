@@ -114,6 +114,7 @@ void main() {
         find.descendant(
           of: key('quest-count-odda_goblins'),
           matching: find.text('0 of 10'),
+          matchRoot: true,
         ),
         findsOneWidget,
       );
@@ -146,12 +147,29 @@ void main() {
         find.descendant(
           of: key('quest-thanks-odda_goblins'),
           matching: find.text('"${fill(goblins.thanks)}"'),
+          matchRoot: true,
         ),
         findsOneWidget,
       );
       expect(find.text('+60 XP and a supply chest'), findsOneWidget);
       // The hand-in goes into the Journal (criterion 43).
       expect(c.journal.first.summary.questsDone, ['odda_goblins']);
+    });
+
+    testWidgets('a hand-in that reaches a level shows its level-up card '
+        '(spec 0024 §2.4, spec 0002 §9.1)', (t) async {
+      final c = await openOdda(
+        t,
+        counters: {'kills.goblin': 10},
+        prepare: (s) {
+          s.xp = 0;
+          s.quests['odda_goblins'] = const QuestProgress.taken(0);
+        },
+      );
+      expect(c.levelCards, isEmpty);
+      await t.tap(key('quest-hand-in-odda_goblins'));
+      await settle(t, c);
+      expect(c.levelCards, [2]);
     });
 
     testWidgets('a ready bring quest says what it gives', (t) async {

@@ -53,6 +53,9 @@ abstract final class Quiet {
   /// A need of a talent that the player meets (spec 0015 amendment 5).
   static const met = Color(0xFF8FC98A);
 
+  /// The quest marks "!" and "?" only (spec 0024 §3.6, spec 0014 §2.1).
+  static const gold = Color(0xFFF2C94C);
+
   /// The border of each control (spec 0014 §2.2).
   static const black = Colors.black;
   static const white = Colors.white;

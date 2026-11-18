@@ -4,6 +4,7 @@ import 'package:game_core/game_core.dart';
 import '../game_controller.dart';
 import 'labels.dart';
 import 'person_sheet.dart' show PortraitHeader, portraitId;
+import 'quest_part.dart';
 
 /// Opens [profession]'s teacher (spec 0010 §6). Talking to a teacher tells
 /// the tips waiting, so they are told as the sheet opens.
@@ -79,6 +80,8 @@ class TeacherSheet extends StatelessWidget {
                 key: const ValueKey('teacher-line'),
                 style: italic,
               ),
+              // The quests, under the line (spec 0024 §3.3).
+              QuestPart(controller: c, giver: profession),
               const SizedBox(height: 8),
               if (!learned) ...[
                 Text('${p.teacher.name} teaches ${p.name}.'),

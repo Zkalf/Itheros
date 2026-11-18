@@ -62,8 +62,10 @@ class SettingsScreen extends StatelessWidget {
               ]),
             plate([
               SwitchListTile(
-                key: const ValueKey('show-next-goal'),
-                title: const Text('Show "Next goal"'),
+                // The switch of Next goal now hides the quest card (spec
+                // 0024 §3.1).
+                key: const ValueKey('show-quest-card'),
+                title: const Text('Show the quest card'),
                 value: !c.nextGoalHidden,
                 onChanged: (show) => c.setNextGoalHidden(!show),
               ),

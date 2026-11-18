@@ -217,36 +217,6 @@ void main() {
     });
   });
 
-  // Advice never sends the player across a closed road (verifier, plan 0055
-  // M1): Grey Moor shows, but Next goal must not name its monsters.
-  test('Next goal names no Grey Moor monster while the road is closed', () {
-    final moor = game.data.locations['grey_moor']!;
-    bool there(Activity a) => switch (a.kind) {
-      ActivityKind.fight => moor.enemies.contains(a.target),
-      ActivityKind.gather => moor.nodes.contains(a.target),
-      _ => false,
-    };
-    bool acrossRiver(Goal? g) => switch (g) {
-      FightGoal(:final enemy) => moor.enemies.contains(enemy),
-      CollectGoal(:final source) => there(source),
-      ProfessionGoal(:final target) => there(target),
-      _ => false,
-    };
-    final levels = [for (var l = 8; l <= 14; l++) l];
-    // With the road open, some level is sent there: the check has teeth.
-    expect(
-      levels.any((l) => acrossRiver(game.nextGoal(killed(south(level: l))))),
-      isTrue,
-    );
-    for (final l in levels) {
-      expect(
-        acrossRiver(game.nextGoal(south(level: l))),
-        isFalse,
-        reason: '$l',
-      );
-    }
-  });
-
   // The closed road needed no new version; spec 0023 raised it to 17 later.
   test('criterion 23: the save schema stays at 16', () {
     expect(GameState.schemaVersion, greaterThanOrEqualTo(16));
