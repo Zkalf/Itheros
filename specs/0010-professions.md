@@ -973,4 +973,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
   changed.
 - 2026-11-17, spec 0024: quests replace Next goal. §8.4. Accepted.
 - 2026-11-18 (#278): back from a profession's screen that the Forge row or the Camp fire row opened returns to
-  Now, where the player came from. Criterion 24. (draft)
+  Now, where the player came from. Criterion 24. Accepted.

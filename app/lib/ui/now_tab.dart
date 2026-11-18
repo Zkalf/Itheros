@@ -24,14 +24,14 @@ import 'theme.dart';
 /// What am I doing, and what can I do here (spec 0008 §3.2): the running
 /// action, the queue, the step bank, then what the player's place offers.
 class NowTab extends StatelessWidget {
-  const NowTab({super.key, this.onOpenWorld, this.onOpenProfessions});
+  const NowTab({super.key, this.onOpenWorld, this.onOpenProfession});
 
   /// Shows the World map, from the resting card.
   final VoidCallback? onOpenWorld;
 
-  /// Shows Professions, from the Forge row, or on one profession's card
-  /// (the Camp fire row opens Cooking).
-  final void Function([String? profession])? onOpenProfessions;
+  /// Opens one profession's screen over Now: the Forge row opens Crafting,
+  /// the Camp fire row Cooking.
+  final void Function(String profession)? onOpenProfession;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +59,7 @@ class NowTab extends StatelessWidget {
           _Here(
             controller: c,
             labels: labels,
-            onOpenProfessions: onOpenProfessions,
+            onOpenProfession: onOpenProfession,
           ),
         ],
       ),
@@ -686,12 +686,12 @@ class _Here extends StatelessWidget {
   const _Here({
     required this.controller,
     required this.labels,
-    this.onOpenProfessions,
+    this.onOpenProfession,
   });
 
   final GameController controller;
   final Labels labels;
-  final void Function([String? profession])? onOpenProfessions;
+  final void Function(String profession)? onOpenProfession;
 
   @override
   Widget build(BuildContext context) {
@@ -789,7 +789,7 @@ class _Here extends StatelessWidget {
           subtitle: const Text('Store items and take them back'),
           onTap: () => openBank(context),
         ),
-      if (place.crafting && onOpenProfessions != null)
+      if (place.crafting && onOpenProfession != null)
         ListTile(
           key: const ValueKey('here-forge'),
           leading: const SizedBox(
@@ -798,10 +798,10 @@ class _Here extends StatelessWidget {
           ),
           title: const Text('Forge'),
           subtitle: const Text('Craft gear in Professions'),
-          onTap: () => onOpenProfessions!('crafting'),
+          onTap: () => onOpenProfession!('crafting'),
         ),
       // The camp fire opens Cooking (spec 0011 §5.1).
-      if (place.fire && onOpenProfessions != null)
+      if (place.fire && onOpenProfession != null)
         ListTile(
           key: const ValueKey('here-fire'),
           leading: const SizedBox(
@@ -810,7 +810,7 @@ class _Here extends StatelessWidget {
           ),
           title: const Text('Camp fire'),
           subtitle: const Text('Cook meals in Professions'),
-          onTap: () => onOpenProfessions!('cooking'),
+          onTap: () => onOpenProfession!('cooking'),
         ),
       // The teachers here (spec 0010 §6.1), a dot when a tip waits.
       for (final p in game.data.professions.values)

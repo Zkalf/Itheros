@@ -1,0 +1,1 @@
+- Back from the Forge or the Camp fire's screen, opened from Now, takes you back to Now.
