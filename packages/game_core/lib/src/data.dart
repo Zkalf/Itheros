@@ -799,7 +799,15 @@ class GameData {
       check(giverPlace(q.giver) != null, 'quest ${q.id}: unknown giver');
       if (q.after case final a?) {
         check(quests.containsKey(a), 'quest ${q.id}: after an unknown quest');
-        check(a != q.id, 'quest ${q.id}: after itself');
+      }
+      // The line back from each quest ends at a quest with no after: a
+      // loop would keep its quests closed for good.
+      final seen = {q.id};
+      for (var a = q.after; a != null; a = quests[a]?.after) {
+        if (!seen.add(a)) {
+          check(false, 'quest ${q.id}: its after quests make a loop');
+          break;
+        }
       }
       check(q.task.count >= 1, 'quest ${q.id}: a count of at least 1');
       check(q.xp >= 0, 'quest ${q.id}: XP of at least 0');
