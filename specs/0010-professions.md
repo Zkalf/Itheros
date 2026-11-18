@@ -806,7 +806,7 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 22. Crafting's and Cooking's screens show the three filter chips, which work as criteria 17-19 say, when the player
     has learned the profession (criteria 50-51). The other four screens show none.
 23. The button and the screen of a profession that the player has not learned name its teacher.
-24. The Forge row and the Camp fire row open the matching profession's screen.
+24. The Forge row and the Camp fire row open the matching profession's screen. Back returns to Now.
 25. When the player starts an action from a profession screen, the screen closes and Now shows.
 
 **Materials on the recipe row and in the action sheet**
@@ -972,3 +972,5 @@ A criterion that checks several things has a letter for each check (rule 13 of `
   ring and trinket HP of the data (7, 10, 17, 20, 30, 33), with the first numbers beside them. No rule or criterion
   changed.
 - 2026-11-17, spec 0024: quests replace Next goal. §8.4. Accepted.
+- 2026-11-18 (#278): back from a profession's screen that the Forge row or the Camp fire row opened returns to
+  Now, where the player came from. Criterion 24. (draft)

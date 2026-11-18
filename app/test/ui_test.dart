@@ -3642,7 +3642,7 @@ void professionFilters() {
     });
 
     testWidgets(
-      'criterion 5: the Forge and Camp fire rows open their screens',
+      'criterion 5: the Forge and Camp fire rows open their screens, and back shows Now',
       (t) async {
         await pumpGame(t, level: 5);
         for (final (row, p) in [
@@ -3660,7 +3660,11 @@ void professionFilters() {
           expect(cardOf(p), findsOneWidget, reason: row);
           expect(find.byKey(const ValueKey('filter-mats')), findsOneWidget);
           await back(t);
-          expect(button(p), findsOneWidget, reason: 'back lands on the list');
+          // Back returns to where the player came from (#278).
+          expect(cardOf(p), findsNothing, reason: row);
+          expect(button(p), findsNothing, reason: 'not on Professions');
+          final bar = t.widget<NavigationBar>(find.byType(NavigationBar));
+          expect(bar.selectedIndex, 0, reason: 'back lands on Now');
         }
       },
     );
