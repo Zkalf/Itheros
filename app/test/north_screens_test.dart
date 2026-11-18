@@ -108,6 +108,12 @@ void main() {
           find.text(quoted(c.state.character, '${kind}_ysolde')),
           findsOneWidget,
         );
+        if (kind == 'dragon') {
+          expect(
+            find.text(quoted(c.state.character, 'chief_ysolde')),
+            findsNothing,
+          );
+        }
       });
     }
 
@@ -123,6 +129,21 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('learn-cooking')), findsOneWidget);
       expect(find.text('Marta teaches Cooking.'), findsOneWidget);
+    });
+
+    testWidgets("criterion 18: a learned teacher's tip line does not change "
+        'after both bosses', (t) async {
+      final (c, _) = await pumpGame(
+        t,
+        counters: {kingKill: 1, chiefKill: 1, dragonKill: 1},
+      );
+      await t.tap(find.byKey(const ValueKey('teacher-cooking')));
+      await settle(t, c);
+      await t.pumpAndSettle();
+      expect(
+        find.textContaining("Cooking 1 · Simple. You've heard all my tips."),
+        findsOneWidget,
+      );
     });
   });
 

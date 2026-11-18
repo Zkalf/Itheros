@@ -14,6 +14,11 @@
 #   Garrow: bald, a short black beard, bare arms, a leather apron, a hammer, a forge-red backdrop;
 #   Marta:  a white headscarf, red cheeks, a wide smile, a wooden spoon, a rose backdrop;
 #   Ysolde: long silver hair, a gold circlet, a violet cloak with the Guild's clasp, a violet backdrop.
+# The four people of the north (spec 0025 §2.2):
+#   Maud:   cropped iron-grey hair, a scar on the cheek, a wolf-fur collar, a watch-fire flame, a moss backdrop;
+#   Tobin:  a floppy felt hat, worried brows, big ears, a yellow kerchief, a coil of rope, a night-indigo backdrop;
+#   Corvin: slicked black hair with silver temples, a curled moustache, a fur collar, a gold chain, a wine backdrop;
+#   Nessa:  wild red hair, soot on the cheek, a scarf of green dragon scale, a brass spyglass, a smoke-gold backdrop.
 # Run: python art/people.py. Then .\scripts\export-art.ps1 -Only <the ids that changed>.
 import os
 
@@ -398,6 +403,141 @@ def ysolde():
     return defs, body
 
 
+def maud():
+    defs = (backdrop('#B4B878', '#343A16') + grad('skin', '#E6B894', '#A0704C') + grad('hair', '#C4C4C0', '#5E5E5A')
+            + grad('cloak', '#4A5060', '#1A1E28') + grad('fur', '#CDB892', '#6E5A3A')
+            + grad('flame', '#FFE27A', '#E0501A', x2=0, y2=1))
+    body = (
+        # A watch-fire burns behind her, on the left.
+        f'<path d="M18 52 Q10 40 18 28 Q20 36 24 34 Q22 26 28 20 Q30 32 32 40 Q34 50 26 56 Q20 58 18 52 Z" '
+        f'fill="url(#flame)" stroke="{INK}" stroke-width="1.2"/>'
+        # A dark wool cloak with a collar of wolf fur.
+        f'<path d="M12 100 Q14 72 34 64 L66 64 Q86 72 88 100 Z" fill="url(#cloak)" stroke="{INK}" stroke-width="1.6"/>'
+        f'<path d="M44 60 Q50 66 56 60 V66 H44 Z" fill="url(#skin)" stroke="{INK}" stroke-width="1.2"/>'
+        f'<path d="M28 72 Q32 62 39 65 Q43 60 50 63 Q57 60 61 65 Q68 62 72 72 Q62 77 50 74 Q38 77 28 72 Z" '
+        f'fill="url(#fur)" stroke="{INK}" stroke-width="1.3"/>'
+        '<path d="M34 70 l2 -3 M42 68 l1 -3 M50 68 v-3 M58 68 l-1 -3 M66 70 l-2 -3" stroke="#6E5A3A" '
+        'stroke-width="1"/>'
+        + face(50, 46, 14, 17)
+        # Cropped iron-grey hair.
+        + f'<path d="M36 41 Q34 26 50 25 Q66 26 64 41 Q61 32 50 32 Q39 32 36 41 Z" fill="url(#hair)" stroke="{INK}" '
+        'stroke-width="1.2"/>'
+        '<path d="M40 30 l-1 -3 M46 28 l0 -3 M53 28 l1 -3 M59 30 l2 -3" stroke="#5E5E5A" stroke-width="1.1"/>'
+        # A scar across the left cheek, heavy straight brows and a straight mouth.
+        '<path d="M39 46 L45 54" stroke="#8A4A3A" stroke-width="1.4" stroke-linecap="round"/>'
+        '<path d="M41 40.5 L48 41.5 M52 41.5 L59 40.5" stroke="#6A6A66" stroke-width="2.4" stroke-linecap="round"/>'
+        + eyes(50, 44.5, 5.5)
+        + nose(50, 51)
+        + f'<path d="M45 56.5 H55" stroke="{INK}" stroke-width="1.4" stroke-linecap="round"/>'
+    )
+    return defs, body
+
+
+def tobin():
+    defs = (backdrop('#7080E0', '#161C50') + grad('skin', *SKIN) + grad('hat', '#8A6A44', '#3E2A14')
+            + grad('shirt', '#7C8A5A', '#3A4426') + grad('rope', '#E8C888', '#9A7A3A')
+            + grad('kerchief', '#F4D040', '#B08A10'))
+    body = (
+        # A rough shirt, a yellow kerchief and a coil of rope on the right shoulder.
+        f'<path d="M12 100 Q14 72 34 64 L66 64 Q86 72 88 100 Z" fill="url(#shirt)" stroke="{INK}" stroke-width="1.6"/>'
+        f'<path d="M44 60 Q50 66 56 60 V66 H44 Z" fill="url(#skin)" stroke="{INK}" stroke-width="1.2"/>'
+        f'<path d="M39 64 L50 77 L61 64 Z" fill="url(#kerchief)" stroke="{INK}" stroke-width="1.2"/>'
+        + ''.join(f'<ellipse cx="70" cy="{y}" rx="13" ry="7" fill="none" stroke="url(#rope)" stroke-width="3.2" '
+                  f'transform="rotate(-18 70 {y})"/>' for y in (76, 81, 86))
+        + f'<ellipse cx="70" cy="81" rx="13" ry="12" fill="none" stroke="{INK}" stroke-width="0.8" opacity="0.5" '
+        'transform="rotate(-18 70 81)"/>'
+        # Big ears, then the face with ginger stubble.
+        + ''.join(f'<ellipse cx="{x}" cy="48" rx="3.6" ry="5.2" fill="url(#skin)" stroke="{INK}" stroke-width="1.1"/>'
+                  for x in (35, 65))
+        + face(50, 47, 14, 17)
+        + '<ellipse cx="50" cy="57" rx="9" ry="5" fill="#C8784A" opacity="0.35"/>'
+        # Worried brows, eyes that look aside, a wavering mouth.
+        + '<path d="M41 41 Q44 38 48 37 M52 37 Q56 38 59 41" fill="none" stroke="#7A4A22" stroke-width="1.8" '
+        'stroke-linecap="round"/>'
+        + eyes(50, 45, 5.5, look=1)
+        + nose(50, 51)
+        + f'<path d="M45 56 Q47.5 54.6 50 56 Q52.5 57.4 55 55.6" fill="none" stroke="{INK}" stroke-width="1.2" '
+        'stroke-linecap="round"/>'
+        # A floppy felt hat with a wide, drooping brim.
+        + f'<path d="M36 32 Q36 16 50 15 Q64 16 64 32 Z" fill="url(#hat)" stroke="{INK}" stroke-width="1.4"/>'
+        '<path d="M36.5 29 H63.5" stroke="#2A1A0A" stroke-width="2.6"/>'
+        f'<path d="M20 38 Q22 29 50 30 Q78 29 80 38 Q70 41 50 37.5 Q30 41 20 38 Z" fill="url(#hat)" stroke="{INK}" '
+        'stroke-width="1.4"/>'
+        '<path d="M42 18 Q48 16 54 17" fill="none" stroke="#FFFFFF" stroke-width="1.2" opacity="0.3"/>'
+    )
+    return defs, body
+
+
+def corvin():
+    defs = (backdrop('#C8486A', '#3A0818') + grad('skin', *SKIN) + grad('hair', '#3E383C', '#0E0C0E')
+            + grad('doublet', '#2E7A50', '#0E3420') + grad('gold', '#FFE07A', '#B0801A')
+            + grad('furtrim', '#F6F0E6', '#B8AEA0'))
+    body = (
+        # A green velvet doublet, a white fur collar and the gold chain of his office.
+        f'<path d="M12 100 Q14 72 34 64 L66 64 Q86 72 88 100 Z" fill="url(#doublet)" stroke="{INK}" '
+        'stroke-width="1.6"/>'
+        f'<path d="M44 60 Q50 66 56 60 V66 H44 Z" fill="url(#skin)" stroke="{INK}" stroke-width="1.2"/>'
+        f'<path d="M26 72 Q34 60 50 66 Q66 60 74 72 Q63 78 50 75 Q37 78 26 72 Z" fill="url(#furtrim)" '
+        f'stroke="{INK}" stroke-width="1.3"/>'
+        '<path d="M34 76 Q50 94 66 76" fill="none" stroke="url(#gold)" stroke-width="2.6"/>'
+        f'<circle cx="50" cy="88" r="5.2" fill="url(#gold)" stroke="{INK}" stroke-width="1.2"/>'
+        '<path d="M50 85 L52.6 88 L50 91 L47.4 88 Z" fill="#C8486A"/>'
+        + face(50, 45, 14, 17)
+        # Slicked black hair with silver temples.
+        + f'<path d="M35 42 Q34 23 50 22 Q66 23 65 42 Q62 29 50 29.5 Q38 29 35 42 Z" fill="url(#hair)" '
+        f'stroke="{INK}" stroke-width="1.2"/>'
+        '<path d="M36.5 39 Q37 32 40.5 29.5 M63.5 39 Q63 32 59.5 29.5" fill="none" stroke="#DADAE2" '
+        'stroke-width="1.8" stroke-linecap="round"/>'
+        '<path d="M42 25 Q50 22 58 25" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.35"/>'
+        # One brow raised, a curled moustache, a broad smile and a small beard.
+        + f'<path d="M41 39 Q44 36.5 48 39 M52 37 Q56 33.5 59.5 36" fill="none" stroke="{INK}" stroke-width="1.6" '
+        'stroke-linecap="round"/>'
+        + eyes(50, 43.5, 5.5)
+        + nose(50, 50)
+        + f'<path d="M50 53.5 Q45 50.5 41 53.5 Q39 53.6 38.4 50.6 Q39.6 56.4 45 55.6 Q48 55.4 50 54.6 Q52 55.4 55 55.6 '
+        f'Q60.4 56.4 61.6 50.6 Q61 53.6 59 53.5 Q55 50.5 50 53.5 Z" fill="url(#hair)" stroke="{INK}" '
+        'stroke-width="0.8"/>'
+        + f'<path d="M45 57.5 Q50 61.5 55 57.5" fill="none" stroke="{INK}" stroke-width="1.3" stroke-linecap="round"/>'
+        f'<path d="M47.6 60.5 L50 67 L52.4 60.5 Z" fill="url(#hair)" stroke="{INK}" stroke-width="0.8"/>'
+    )
+    return defs, body
+
+
+def nessa():
+    defs = (backdrop('#F6E2A0', '#2A2420') + grad('skin', '#D8A47C', '#94603C') + grad('hair', '#B8442A', '#4A1206')
+            + grad('coat', '#5A6A4A', '#222A1A') + grad('scale', '#4AA08A', '#14483C')
+            + grad('brass', '#F4C868', '#8A6018'))
+    body = (
+        # Smoke drifting down from the Peak.
+        '<path d="M64 10 Q74 16 70 24 Q66 30 76 36 M74 6 Q84 12 82 20" fill="none" stroke="#FFFFFF" '
+        'stroke-width="3" stroke-linecap="round" opacity="0.22"/>'
+        # Wild red hair behind the head.
+        f'<path d="M28 52 Q22 32 36 22 Q50 13 64 22 Q79 31 72 54 Q77 62 70 66 Q69 52 66 45 Q50 35 34 45 Q32 54 30 66 '
+        f'Q23 60 28 52 Z" fill="url(#hair)" stroke="{INK}" stroke-width="1.4"/>'
+        # A weathered coat and a scarf of green dragon scale.
+        + f'<path d="M12 100 Q14 72 34 64 L66 64 Q86 72 88 100 Z" fill="url(#coat)" stroke="{INK}" stroke-width="1.6"/>'
+        f'<path d="M44 60 Q50 66 56 60 V66 H44 Z" fill="url(#skin)" stroke="{INK}" stroke-width="1.2"/>'
+        f'<path d="M29 67 Q50 77 71 67 L69 76 Q50 86 31 76 Z" fill="url(#scale)" stroke="{INK}" stroke-width="1.3"/>'
+        + ''.join(f'<path d="M{x} {y} q3 3.4 6 0" fill="none" stroke="#0E3028" stroke-width="1"/>'
+                  for x, y in ((34, 72), (40, 75), (46, 76.5), (52, 76.5), (58, 75), (63, 72)))
+        + face(50, 46, 13, 17)
+        # Soot on the cheek, a hard look, a tight mouth.
+        + '<ellipse cx="58" cy="51" rx="4" ry="1.6" fill="#2A2420" opacity="0.4"/>'
+        '<path d="M42 40 L48 39 M52 39 L58 40" stroke="#6A1A0A" stroke-width="2" stroke-linecap="round"/>'
+        + eyes(50, 44, 5.2, look=-0.6)
+        + nose(50, 50)
+        + f'<path d="M46 56 Q50 57 54 56" fill="none" stroke="{INK}" stroke-width="1.3" stroke-linecap="round"/>'
+        # Wild locks over the brow.
+        + f'<path d="M38 38 Q40 28 50 28 Q58 28 63 36 Q58 32 54 33 Q56 30 50 31 Q44 31 43 35 Q40 34 38 38 Z" '
+        f'fill="url(#hair)" stroke="{INK}" stroke-width="1"/>'
+        # A brass spyglass in her hand.
+        f'<g transform="rotate(38 74 82)"><rect x="70" y="66" width="8" height="30" rx="2" fill="url(#brass)" '
+        f'stroke="{INK}" stroke-width="1.3"/><rect x="69" y="64" width="10" height="5" rx="1.5" fill="#6A4A10" '
+        f'stroke="{INK}" stroke-width="1.1"/><path d="M70 80 H78" stroke="{INK}" stroke-width="1"/></g>'
+    )
+    return defs, body
+
+
 def lore_page():
     """A torn page of parchment with lines of ink and a red wax seal: the picture of a found lore page."""
     defs = grad('parchment', '#F8EBC8', '#C9A86A') + grad('wax', '#E04A3A', '#7A1210')
@@ -433,7 +573,8 @@ def write(folder, name, svg):
 def main():
     for name, draw in (('odda', odda), ('pell', pell), ('aldous', aldous), ('jory', jory), ('hilde', hilde),
                        ('bram', bram), ('wen', wen), ('sigrun', sigrun), ('garrow', garrow), ('marta', marta),
-                       ('ysolde', ysolde)):
+                       ('ysolde', ysolde), ('maud', maud), ('tobin', tobin), ('corvin', corvin),
+                       ('nessa', nessa)):
         write('portraits', name, portrait(draw))
     write('pictures', 'lore_page', lore_page())
     print('portraits and the lore page written to art/portraits and art/pictures')
