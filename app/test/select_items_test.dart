@@ -2,6 +2,7 @@
 // (plan 0067). The rules (criteria 1-6) are in game_core's
 // move_items_test.dart.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/game_controller.dart';
@@ -136,6 +137,60 @@ void main() {
       expect(bar, findsNothing);
       expect(key('selected-mark'), findsNothing);
       expect(card, findsNothing);
+    });
+
+    testWidgets('criterion 10: a hold buzzes only where it starts a '
+        'selection (#288)', (t) async {
+      final buzzes = <String>[];
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') buzzes.add('buzz');
+          return null;
+        },
+      );
+      addTearDown(
+        () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        inventory: bag,
+        prepare: (s) => s.itemBank.addAll(banked),
+      );
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      await t.tap(key('bank-tab-bag'));
+      await t.pumpAndSettle();
+      await hold(t, 'bank-bag-copper_ore');
+      expect(buzzes, isEmpty, reason: 'no selection can start here');
+    });
+
+    testWidgets('criterion 9: at Camp a hold that starts a selection buzzes '
+        '(#288)', (t) async {
+      final buzzes = <String>[];
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') buzzes.add('buzz');
+          return null;
+        },
+      );
+      addTearDown(
+        () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      expect(buzzes, hasLength(1));
     });
 
     testWidgets('criterion 11: without a selection a tap opens the card', (
@@ -449,6 +504,52 @@ void main() {
       expect(bar, findsNothing);
       expect(key('selected-mark'), findsNothing);
       expect(key('bag-copper_ore'), findsOneWidget);
+    });
+
+    testWidgets('criterion 29: a swipe to the right ends the selection of '
+        'the Bank tab, and the bank screen stays open (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      expect(bar, findsOneWidget);
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('selected-mark'), findsNothing);
+      expect(key('bank-screen'), findsOneWidget);
+      expect(t.getTopLeft(key('bank-screen')).dx, 0, reason: 'slid back in');
+      // With no selection, the swipe leaves the screen.
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(key('bank-screen'), findsNothing);
+    });
+
+    testWidgets('criterion 29: a swipe to the right ends the selection of '
+        'the bag on Character, and Character stays open (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await t.dragFrom(
+        t.getCenter(key('bag-copper_ore')),
+        const Offset(700, 0),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('selected-mark'), findsNothing);
+      expect(key('bag-copper_ore'), findsOneWidget);
+    });
+
+    testWidgets('a swipe to the left keeps the selection (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      await t.timedDragFrom(
+        t.getCenter(key('bank-screen')),
+        const Offset(-60, 0),
+        const Duration(milliseconds: 500),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
     });
 
     testWidgets('criterion 30: the selection ends with its last item', (
