@@ -236,7 +236,8 @@ Since spec 0021, the Bag tab shows the bag's spaces line above its list (spec 00
 96. The selection ends:
     - after an action, also when the player answers "Keep them";
     - on a tap on ×;
-    - on the back button or the back gesture, which then does not leave the screen;
+    - on the back button, the back gesture or a swipe to the right on the screen (as the swipe of spec 0014
+      amendment 5), which then does not leave the screen;
     - when the player removes the last selected item;
     - when the player opens the other tab of the bank screen, another pane of Character or another tab of the game;
     - when no action of point 78 is left, for example after a walk away from Camp.
@@ -523,3 +524,5 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. No rule, number or criterion
   changed.
 - 2026-11-17, spec 0024: quests replace Next goal. Decision 6; criterion 14. Accepted.
+- 2026-11-18 (#287): a swipe to the right on the screen also ends the selection, as the owner asked. Point 96.
+  Accepted.

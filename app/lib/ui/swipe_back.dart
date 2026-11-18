@@ -1,14 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
-import 'package:flutter/gestures.dart' show VelocityTracker, kTouchSlop;
 import 'package:flutter/material.dart';
 
 /// The slide of [CupertinoPageTransitionsBuilder] (#141), with a swipe to the
 /// right from anywhere on the screen that goes back (spec 0014 amendment 5).
-/// The edge swipe of Flutter stays. On a screen that Back does not leave,
-/// such as one with a selection of items, a swipe to the right does what
-/// Back does there, and the screen does not move (#287).
+/// The edge swipe of Flutter stays.
 class SwipeBackPageTransitionsBuilder extends PageTransitionsBuilder {
   const SwipeBackPageTransitionsBuilder();
 
@@ -55,16 +50,6 @@ class _SwipeBackState extends State<_SwipeBack> {
 
   /// The drag went left first: it does nothing until the finger lets go.
   var _ignored = false;
-
-  /// The finger that touched a screen that Back does not leave, such as one
-  /// with a selection of items (#287); null when no such finger is down.
-  int? _blockedPointer;
-
-  /// Where [_blockedPointer] touched the screen.
-  var _blockedStart = Offset.zero;
-
-  /// The speed of [_blockedPointer].
-  VelocityTracker? _blockedSpeed;
 
   // The route's own animation, as Flutter's edge swipe moves it. It is a
   // protected member of TransitionRoute.
@@ -132,69 +117,12 @@ class _SwipeBackState extends State<_SwipeBack> {
     widget.route.navigator?.didStopUserGesture();
   }
 
-  // A swipe on a screen that Back does not leave. The screen does not move
-  // and has nothing to drag, so the swipe watches the finger without a
-  // gesture of its own: a list or the tabs of the screen keep their drags,
-  // and the swipe still counts on the tabs of the bank screen (#287).
-  void _down(PointerDownEvent e) {
-    final route = widget.route;
-    if (_blockedPointer != null ||
-        !route.isCurrent ||
-        route.popDisposition != RoutePopDisposition.doNotPop) {
-      return;
-    }
-    _blockedPointer = e.pointer;
-    _blockedStart = e.position;
-    _blockedSpeed = VelocityTracker.withKind(e.kind)
-      ..addPosition(e.timeStamp, e.position);
-  }
-
-  void _move(PointerMoveEvent e) {
-    if (e.pointer == _blockedPointer) {
-      _blockedSpeed!.addPosition(e.timeStamp, e.position);
-    }
-  }
-
-  /// When the finger lets go after a swipe to the right, the swipe does what
-  /// Back does on this screen: it ends the selection, and the screen stays.
-  void _up(PointerUpEvent e) {
-    if (e.pointer != _blockedPointer) return;
-    final speed = _blockedSpeed!.getVelocity().pixelsPerSecond.dx;
-    _blockedPointer = null;
-    _blockedSpeed = null;
-    final width = context.size!.width;
-    final move = e.position - _blockedStart;
-    // Sideways, not a scroll: past the touch slop, and more to the side
-    // than up or down.
-    if (move.dx <= kTouchSlop || move.dx < 2 * move.dy.abs()) return;
-    // The rules of the swipe that goes back: a quick swipe decides by its
-    // direction, a slow one by how far the finger went.
-    final right = (speed / width).abs() >= _minFling
-        ? speed > 0
-        : move.dx / width > 0.5;
-    final route = widget.route;
-    if (right && route.isCurrent) unawaited(route.navigator?.maybePop());
-  }
-
-  void _lost(PointerCancelEvent e) {
-    if (e.pointer != _blockedPointer) return;
-    _blockedPointer = null;
-    _blockedSpeed = null;
-  }
-
   @override
-  Widget build(BuildContext context) => Listener(
+  Widget build(BuildContext context) => GestureDetector(
     behavior: HitTestBehavior.translucent,
-    onPointerDown: _down,
-    onPointerMove: _move,
-    onPointerUp: _up,
-    onPointerCancel: _lost,
-    child: GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onHorizontalDragUpdate: _update,
-      onHorizontalDragEnd: _end,
-      onHorizontalDragCancel: _cancel,
-      child: widget.child,
-    ),
+    onHorizontalDragUpdate: _update,
+    onHorizontalDragEnd: _end,
+    onHorizontalDragCancel: _cancel,
+    child: widget.child,
   );
 }

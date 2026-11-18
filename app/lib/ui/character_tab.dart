@@ -277,12 +277,10 @@ class _CharacterTabState extends State<CharacterTab> {
           ),
       ],
     );
-    return PopScope(
-      // Back ends the selection and stays on the screen (rule 19).
-      canPop: !selecting,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _selection.clear();
-      },
+    // Back and a swipe to the right end the selection and stay on the screen
+    // (rule 19).
+    return SelectionBack(
+      selection: _selection,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

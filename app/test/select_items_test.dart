@@ -554,6 +554,26 @@ void main() {
       expect(bar, findsOneWidget);
     });
 
+    testWidgets('a short slow swipe to the right and a scroll keep the '
+        'selection (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      // Less than half the screen, slowly: as the swipe that goes back,
+      // it does not count (spec 0014 amendment 5).
+      await t.timedDragFrom(
+        t.getCenter(key('bank-screen')),
+        const Offset(100, 0),
+        const Duration(seconds: 1),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
+      // Mostly up, a little to the right: a scroll of the list.
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(60, -300));
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
+    });
+
     testWidgets('criterion 30: the selection ends with its last item', (
       t,
     ) async {

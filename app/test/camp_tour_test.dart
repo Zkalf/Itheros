@@ -270,6 +270,20 @@ void main() {
       expect(c.tourStep, isNull);
     });
 
+    // Spec 0014 criterion 34: a swipe to the right on the Now tab changes
+    // nothing, during the tour as well (#287 ends only a selection).
+    testWidgets('a swipe to the right during the tour keeps it', (t) async {
+      final c = await newGame(t);
+      await t.dragFrom(
+        t.getCenter(find.byType(HomeShell)),
+        const Offset(700, 0),
+      );
+      await t.pumpAndSettle();
+      expect(card, findsOneWidget);
+      expect(step(t), '1 / 6');
+      expect(c.tourStep, 0);
+    });
+
     testWidgets('criterion 19: a tab tap during the tour changes nothing', (
       t,
     ) async {

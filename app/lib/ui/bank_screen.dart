@@ -88,12 +88,10 @@ class _BankTabsState extends State<_BankTabs> {
       !here ? const [] : (inBank ? c.state.itemBank : c.state.inventory).keys,
     );
     final selecting = _selection.running;
-    return PopScope(
-      // Back ends the selection and stays on the screen (rule 19).
-      canPop: !selecting,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _selection.clear();
-      },
+    // Back and a swipe to the right end the selection and stay on the screen
+    // (rule 19).
+    return SelectionBack(
+      selection: _selection,
       child: Scaffold(
         key: const ValueKey('bank-screen'),
         appBar: AppBar(

@@ -975,4 +975,4 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-18 (#278): back from a profession's screen that the Forge row or the Camp fire row opened returns to
   Now, where the player came from. Criterion 24. Accepted.
 - 2026-11-18 (#291): two of Wen's tip titles named a place, and the line under them named the spot. "Mirror
-  Lake" became "Still water", and "Smugglers' Cove" became "Off the rocks". §6.2 table. Accepted (owner's choice).
+  Lake" became "Still water", and "Smugglers' Cove" became "Off the rocks", as the owner chose. §6.2 table. Accepted.
