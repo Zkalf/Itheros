@@ -170,17 +170,14 @@ void main() {
     );
   });
 
-  testWidgets('criterion 30: "Show the quest card" hides and shows the card; '
-      'a save that hid Next goal keeps it hidden', (t) async {
-    final (c, _) = await pumpGame(t);
-    await c.setNextGoalHidden(true);
-    await t.pumpAndSettle();
-    expect(card, findsNothing);
+  testWidgets('criterion 30: the quest card shows for a save that hid Next '
+      'goal, and Settings has no switch for it', (t) async {
+    await pumpGame(t, hidNextGoal: true);
+    expect(card, findsOneWidget);
     await openSettings(t);
-    expect(find.text('Show the quest card'), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('show-quest-card')));
-    await t.pumpAndSettle();
-    expect(c.nextGoalHidden, isFalse);
+    expect(find.byKey(const ValueKey('show-quest-card')), findsNothing);
+    expect(find.text('Show the quest card'), findsNothing);
+    expect(find.textContaining('Next goal'), findsNothing);
   });
 
   testWidgets('criterion 31: nothing on Now shows a Next goal line', (t) async {
