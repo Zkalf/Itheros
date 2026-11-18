@@ -69,8 +69,8 @@ class NowTab extends StatelessWidget {
 
 /// The quest card (spec 0024 §3.1), where Next goal stood: up to three
 /// taken quests, ready ones first, then in the order taken; with none taken,
-/// who has work and where; with every quest done, the last line. Settings
-/// hides it ([GameController.nextGoalHidden] keeps its old name).
+/// who has work and where; with every quest done, the last line. It always
+/// shows: it has no switch (spec 0024 §3.1).
 class _QuestCard extends StatelessWidget {
   const _QuestCard({required this.controller, required this.labels});
 
@@ -81,7 +81,6 @@ class _QuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.nextGoalHidden) return const SizedBox.shrink();
     final game = controller.game;
     final s = controller.state;
     final data = game.data;

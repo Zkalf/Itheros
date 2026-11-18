@@ -174,13 +174,6 @@ class GameController extends ChangeNotifier {
   Future<void> dismissNewNotes() =>
       _update((s) => s.copyWith(lastVersion: version));
 
-  /// The player hid the quest card (spec 0024 §3.1); the name is Next
-  /// goal's, whose switch it took over.
-  bool get nextGoalHidden => _save!.nextGoalHidden;
-
-  Future<void> setNextGoalHidden(bool hidden) =>
-      _update((s) => s.copyWith(nextGoalHidden: hidden));
-
   /// The hidden test walk switch (spec 0004 §3).
   bool get testWalkOn => testWalkAllowed && _save!.testWalk;
 

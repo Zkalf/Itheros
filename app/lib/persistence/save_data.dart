@@ -10,7 +10,6 @@ class SaveData {
     required this.game,
     required this.firstDay,
     required Map<String, int> credited,
-    this.nextGoalHidden = false,
     Set<String> seen = const {},
     List<JournalEntry> journal = const [],
     this.testWalk = false,
@@ -30,7 +29,8 @@ class SaveData {
       credited: (json['credited'] as Map<String, Object?>).map(
         (k, v) => MapEntry(k, v as int),
       ),
-      nextGoalHidden: json['nextGoalHidden'] as bool? ?? false,
+      // Next goal's switch, gone since spec 0024 (§4): an old save's
+      // `nextGoalHidden` is not read.
       seen: (json['seen'] as List<Object?>? ?? const []).cast<String>().toSet(),
       journal: [
         for (final e in json['journal'] as List<Object?>? ?? const [])
@@ -42,7 +42,7 @@ class SaveData {
   }
 
   /// 4: adds [lastVersion]. 3: adds [journal] and [testWalk]. 2: adds
-  /// [nextGoalHidden] and [seen].
+  /// Next goal's switch (gone since spec 0024) and [seen].
   static const version = 4;
 
   final GameState game;
@@ -52,10 +52,6 @@ class SaveData {
 
   /// Steps already credited per local day (`yyyy-mm-dd`).
   final Map<String, int> credited;
-
-  /// The player hid the quest card (spec 0024 §3.1). The name is Next
-  /// goal's, whose switch the card took over.
-  final bool nextGoalHidden;
 
   /// Areas and monsters whose flavour line was already shown.
   final Set<String> seen;
@@ -75,7 +71,6 @@ class SaveData {
   SaveData copyWith({
     GameState? game,
     Map<String, int>? credited,
-    bool? nextGoalHidden,
     Set<String>? seen,
     List<JournalEntry>? journal,
     bool? testWalk,
@@ -84,7 +79,6 @@ class SaveData {
     game: game ?? this.game,
     firstDay: firstDay,
     credited: credited ?? this.credited,
-    nextGoalHidden: nextGoalHidden ?? this.nextGoalHidden,
     seen: seen ?? this.seen,
     journal: journal ?? this.journal,
     testWalk: testWalk ?? this.testWalk,
@@ -95,7 +89,6 @@ class SaveData {
     'version': version,
     'firstDay': firstDay,
     'credited': Map.of(credited),
-    'nextGoalHidden': nextGoalHidden,
     'seen': seen.toList()..sort(),
     'journal': [for (final e in journal) e.toJson()],
     'testWalk': testWalk,
