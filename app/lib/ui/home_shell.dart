@@ -192,20 +192,16 @@ class _HomeShellState extends State<HomeShell> {
           child: switch (screen) {
             _Screen.now => NowTab(
               onOpenWorld: () => setState(() => _screen = _Screen.world),
-              // Back from the profession's screen lands on Professions.
-              onOpenProfessions: ([profession]) {
-                setState(() => _screen = _Screen.professions);
-                if (profession != null) {
-                  openProfession(
-                    context,
-                    profession,
-                    _filter,
-                    showNow: () {
-                      if (mounted) setState(() => _screen = _Screen.now);
-                    },
-                  );
-                }
-              },
+              // Back from the profession's screen returns to Now, where
+              // the player came from (spec 0010 criterion 24).
+              onOpenProfession: (profession) => openProfession(
+                context,
+                profession,
+                _filter,
+                showNow: () {
+                  if (mounted) setState(() => _screen = _Screen.now);
+                },
+              ),
             ),
             _Screen.world => const WorldTab(),
             _Screen.professions => ProfessionsTab(filter: _filter),
