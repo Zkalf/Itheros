@@ -59,7 +59,11 @@ void main() {
       final list = [...(quests['quests']! as List<Object?>)];
       list[1] = {...(list[1]! as Map<String, Object?>), 'after': 'nope'};
       expect(
-        () => loadGameData(overrides: {'quests': {'quests': list}}),
+        () => loadGameData(
+          overrides: {
+            'quests': {'quests': list},
+          },
+        ),
         throwsFormatException,
       );
     });
@@ -73,7 +77,11 @@ void main() {
         'task': {...(first['task']! as Map<String, Object?>), 'target': 'nope'},
       };
       expect(
-        () => loadGameData(overrides: {'quests': {'quests': list}}),
+        () => loadGameData(
+          overrides: {
+            'quests': {'quests': list},
+          },
+        ),
         throwsFormatException,
       );
     });
@@ -224,10 +232,9 @@ void main() {
       final r = game.applySteps(s, 5000);
       expect(r.state.location, 'old_graveyard');
       expect(game.questReady(r.state, 'odda_graveyard'), isTrue);
-      expect(
-        r.events.whereType<QuestReady>().map((e) => e.quest),
-        ['odda_graveyard'],
-      );
+      expect(r.events.whereType<QuestReady>().map((e) => e.quest), [
+        'odda_graveyard',
+      ]);
     });
 
     test('criterion 13: a visit task is ready at once for a hero who stands '
@@ -380,6 +387,7 @@ void main() {
       final done = r.events.whereType<QuestDone>().single;
       expect(done.quest, 'odda_goblins');
       expect(done.xp, 60);
+      expect(done.chest, r.state.supplyChests.last.items);
     });
 
     test('criterion 22: a task that becomes ready during a walk adds one '
@@ -389,10 +397,32 @@ void main() {
       s = game.startActivity(s, const Activity.fight('goblin'));
       final r = game.applySteps(s, 20000);
       expect(game.questReady(r.state, 'odda_goblins'), isTrue);
-      expect(
-        r.events.whereType<QuestReady>().map((e) => e.quest),
-        ['odda_goblins'],
-      );
+      expect(r.events.whereType<QuestReady>().map((e) => e.quest), [
+        'odda_goblins',
+      ]);
+    });
+
+    test('the save keeps the order of hand-in, newest last (for the Quests '
+        'tab, criterion 40)', () {
+      var s = doneWith(stateAt(game, level: 3), ['odda_goblins']);
+      s = took(s, 'hilde_ore');
+      s = took(s, 'bram_logs');
+      s
+        ..counters['gathered.copper_ore'] = 25
+        ..counters['gathered.oak_log'] = 25;
+      s = game.handIn(s, 'bram_logs').state;
+      s = game.handIn(s, 'hilde_ore').state;
+      final back = GameState.fromJson(s.toJson());
+      expect(back.quests.keys, ['odda_goblins', 'bram_logs', 'hilde_ore']);
+    });
+
+    test('a quest that the data no longer has stays in the save and stops '
+        'no walk', () {
+      var s = stateAt(game, location: 'goblin_woods', level: 8)
+        ..quests['gone'] = const QuestProgress.taken(0);
+      s = game.startActivity(s, const Activity.fight('goblin'));
+      final r = game.applySteps(s, 2000);
+      expect(r.state.quests.containsKey('gone'), isTrue);
     });
 
     test('the next quest of the line is offered after hand-in', () {
@@ -418,7 +448,9 @@ void main() {
 
     test('criterion 44: an old save loads as version 18 with no quest taken '
         'and odda_goblins offered', () {
-      final old = saved(stateAt(game, level: 25)..counters['kills.goblin'] = 900);
+      final old = saved(
+        stateAt(game, level: 25)..counters['kills.goblin'] = 900,
+      );
       final loaded = game.load(old).state;
       final back = GameState.fromJson(loaded.toJson());
       expect(back.loadedVersion, 18);
@@ -426,16 +458,20 @@ void main() {
       expect(game.questState(back, 'odda_goblins'), QuestState.offered);
     });
 
-    test("criterion 45: an old save's kills before the update do not count",
-        () {
-      final old = saved(stateAt(game)..counters['kills.goblin'] = 900);
-      final s = took(game.load(old).state, 'odda_goblins');
-      expect(game.questCount(s, 'odda_goblins'), 0);
-    });
+    test(
+      "criterion 45: an old save's kills before the update do not count",
+      () {
+        final old = saved(stateAt(game)..counters['kills.goblin'] = 900);
+        final s = took(game.load(old).state, 'odda_goblins');
+        expect(game.questCount(s, 'odda_goblins'), 0);
+      },
+    );
 
     test('a taken quest keeps its count across a save', () {
-      final s = took(stateAt(game)..counters['kills.goblin'] = 5, 'odda_goblins')
-        ..counters['kills.goblin'] = 9;
+      final s = took(
+        stateAt(game)..counters['kills.goblin'] = 5,
+        'odda_goblins',
+      )..counters['kills.goblin'] = 9;
       final back = GameState.fromJson(s.toJson());
       expect(game.questState(back, 'odda_goblins'), QuestState.taken);
       expect(game.questCount(back, 'odda_goblins'), 4);

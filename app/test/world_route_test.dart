@@ -1483,7 +1483,7 @@ void criterion26() {
 
       test('$name loads, and its journal entries have no route if it is older '
           'than 0.4.0; with an entry with a route, the save keeps the route at '
-          'versions 17 and 4', () {
+          'versions 18 and 4', () {
         final save = SaveData.fromJson(
           jsonDecode(text) as Map<String, Object?>,
         );
@@ -1503,7 +1503,7 @@ void criterion26() {
           ),
         ) as Map<String, Object?>;
         expect(saved['version'], 4);
-        expect((saved['game']! as Map<String, Object?>)['version'], 17);
+        expect((saved['game']! as Map<String, Object?>)['version'], 18);
         final back = SaveData.fromJson(saved);
         expect(back.journal.first.summary.route, _route);
         expect([for (final e in back.journal.skip(1)) e.summary.route], routes);

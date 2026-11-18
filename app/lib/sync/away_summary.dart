@@ -291,6 +291,9 @@ class AwaySummary {
         // Spec 0013 §3.4: how many, not what is in them.
         case SupplyChestEarned():
           supplyChests++;
+        // Plan 0071 M2 shows the quests in the report (spec 0024 §3.5).
+        case QuestReady() || QuestDone():
+          break;
       }
     }
     final running = started ?? r.state.activity?.activity;

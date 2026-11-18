@@ -20,6 +20,7 @@ part 'game/talents.dart';
 part 'game/supply.dart';
 part 'game/bank.dart';
 part 'game/story.dart';
+part 'game/quests.dart';
 
 /// The game rules. Stateless: every method takes a [GameState] and returns a
 /// new one, leaving its input untouched.

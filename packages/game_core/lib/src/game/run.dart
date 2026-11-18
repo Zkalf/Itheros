@@ -5,7 +5,15 @@ class _Run {
   _Run(this.game, this.s, this.day)
     : rng = Rng.fromState(s.rngState),
       stream = Rng.fromState(s.professionRng),
-      supply = Rng.fromState(s.supplyRng);
+      supply = Rng.fromState(s.supplyRng),
+      _ready = {
+        for (final id in s.quests.keys)
+          if (game.data.quests.containsKey(id) && game.questReady(s, id)) id,
+      };
+
+  /// The taken quests that are ready: one that becomes ready in this walk
+  /// adds a [QuestReady] (spec 0024 §2.5).
+  final Set<String> _ready;
 
   final Game game;
   final GameState s;
@@ -76,7 +84,23 @@ class _Run {
     } else {
       lost++;
     }
+    // A count moves only when a unit is paid or an event is added.
+    final changed = _unitPaid || events.length != _eventsChecked;
     _checkAchievements();
+    if (changed && s.quests.isNotEmpty) _checkQuests();
+  }
+
+  /// Adds a [QuestReady] for each taken quest that just became ready.
+  void _checkQuests() {
+    for (final MapEntry(key: id, value: p) in s.quests.entries) {
+      // A quest the data no longer has stays in the save, untouched.
+      if (p.done || !data.quests.containsKey(id)) continue;
+      if (game.questReady(s, id)) {
+        if (_ready.add(id)) events.add(QuestReady(id));
+      } else {
+        _ready.remove(id);
+      }
+    }
   }
 
   /// Adds [n] steps into an action to the day's count; the step that
@@ -170,6 +194,7 @@ class _Run {
     );
     s.location = area;
     game._visit(s, area);
+    game._arriveForQuests(s, area);
     events.add(Arrived(area, steps: steps));
   }
 
@@ -554,6 +579,8 @@ class _Run {
         s.addItem(key);
         _gain(act, key);
         s.counters[Game.foundCounter(enemy.id, d.item)] = 1;
+        // What a bring quest counts (spec 0024 §2.3).
+        s.count('dropped.${d.item}');
       }
     }
 

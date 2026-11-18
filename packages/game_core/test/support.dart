@@ -21,6 +21,12 @@ GameData loadGameData({Map<String, Object> overrides = const {}}) {
       'pages': <Object>[],
     });
   }
+  // The quests name the real world's people, monsters, items and places
+  // (spec 0024): a test world or content of its own gets none.
+  const content = ['world', 'enemies', 'items', 'professions', 'story'];
+  if (content.any(overrides.containsKey) && !overrides.containsKey('quests')) {
+    files['quests'] = jsonEncode({'quests': <Object>[]});
+  }
   return GameData.fromJsonStrings(files);
 }
 
