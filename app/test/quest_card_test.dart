@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 
-import 'ui_test.dart' show openSettings, pumpGame;
+import 'ui_test.dart' show game, openSettings, pumpGame;
 
 void main() {
   final card = find.byKey(const ValueKey('quest-card'));
@@ -161,11 +161,23 @@ void main() {
     );
   });
 
-  testWidgets('criterion 29: with every quest done, "No more work for now. '
-      'The north will need you."', (t) async {
+  // Spec 0025 §2.9, criteria 34-36: the end words come from the data.
+  testWidgets('criterion 29: with every quest done, the end words', (t) async {
+    await pumpGame(t, prepare: with_(done: [...game.data.quests.keys]));
+    expect(
+      inCard(
+        find.text('The dragon is dead, and the lands are quiet. For now.'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('The north will need you'), findsNothing);
+  });
+
+  testWidgets('with chapter 1 done, Maud has work in Grey Moor (spec 0025 '
+      'criterion 32)', (t) async {
     await pumpGame(t, prepare: with_(done: [...allButJory, 'jory_bass']));
     expect(
-      inCard(find.text('No more work for now. The north will need you.')),
+      inCard(find.text('Maud has work for you in Grey Moor')),
       findsOneWidget,
     );
   });

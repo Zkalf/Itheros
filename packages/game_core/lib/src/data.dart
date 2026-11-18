@@ -28,7 +28,7 @@ class GameData {
   }) : quests = _byId(_maps(quests, 'quests').map(QuestDef._), (d) => d.id),
        pageChance = _num(story, 'pageChance'),
        people = _byId(_maps(story, 'people').map(PersonDef._), (d) => d.id),
-       campLines = _byId(
+       campLines = _listsBy(
          _maps(story, 'campLines').map(LineDef._),
          (d) =>
              d.who ??
@@ -36,6 +36,7 @@ class GameData {
                'Invalid game data: camp line ${d.id} needs a who',
              )),
        ),
+       questEndWords = quests['endWords'] as String? ?? '',
        pages = _byId(_maps(story, 'pages').map(PageDef._), (d) => d.id),
        bankCapBase = _int(_map(economy, 'bankCap'), 'base'),
        bankCapPerLevel = _int(_map(economy, 'bankCap'), 'perLevel'),
@@ -210,15 +211,19 @@ class GameData {
   /// The people of the story, in data order (spec 0023 §2.1).
   final Map<String, PersonDef> people;
 
-  /// The King line of each teacher, by profession, and of the trainer, by
-  /// [trainerId] (spec 0023 §2.5).
-  final Map<String, LineDef> campLines;
+  /// The Camp lines of each teacher, by profession, and of the trainer, by
+  /// [trainerId], in data order: the King line first (spec 0023 §2.5, spec
+  /// 0025 §2.4).
+  final Map<String, List<LineDef>> campLines;
 
   /// Every lore page, in data order (spec 0023 §2.4).
   final Map<String, PageDef> pages;
 
   /// The quests, in data order: the order of spec 0024 §2.8.
   final Map<String, QuestDef> quests;
+
+  /// What the quest card says when every quest is done (spec 0025 §2.9).
+  final String questEndWords;
 
   /// The place where [giver] stands: a person's place or a teacher's.
   String? giverPlace(String giver) =>
@@ -744,17 +749,19 @@ class GameData {
         }
       }
     }
-    for (final MapEntry(key: who, value: l) in campLines.entries) {
+    for (final MapEntry(key: who, value: lines) in campLines.entries) {
       check(
         who == trainerId || professions.containsKey(who),
-        'camp line ${l.id}: unknown teacher $who',
+        'camp line ${lines.first.id}: unknown teacher $who',
       );
-      check(lineIds.add(l.id), 'line ${l.id}: the id is taken');
-      checkCondition(l.after, 'camp line ${l.id}');
-      check(
-        l.page == null && l.origin == null,
-        'camp line ${l.id}: no page, no origin',
-      );
+      for (final l in lines) {
+        check(lineIds.add(l.id), 'line ${l.id}: the id is taken');
+        checkCondition(l.after, 'camp line ${l.id}');
+        check(
+          l.page == null && l.origin == null,
+          'camp line ${l.id}: no page, no origin',
+        );
+      }
     }
     final finds = <String>{};
     for (final p in pages.values) {
@@ -780,7 +787,8 @@ class GameData {
     for (final text in [
       for (final p in people.values)
         for (final l in p.lines) l.text,
-      for (final l in campLines.values) l.text,
+      for (final lines in campLines.values)
+        for (final l in lines) l.text,
       for (final p in pages.values) p.text,
     ]) {
       for (final m in RegExp(r'\{([^{}]*)\}').allMatches(text)) {
@@ -795,6 +803,10 @@ class GameData {
 
   /// The data checks of spec 0024 (criterion 6).
   void _validateQuests(void Function(bool, String) check) {
+    check(
+      quests.isEmpty || questEndWords.isNotEmpty,
+      'quests: the end words are empty',
+    );
     for (final q in quests.values) {
       check(giverPlace(q.giver) != null, 'quest ${q.id}: unknown giver');
       if (q.after case final a?) {
@@ -1304,6 +1316,18 @@ class GameData {
 
 Map<String, T> _byId<T>(Iterable<T> defs, String Function(T) id) =>
     Map.unmodifiable({for (final d in defs) id(d): d});
+
+/// [defs] grouped by [key], each list in data order.
+Map<String, List<T>> _listsBy<T>(Iterable<T> defs, String Function(T) key) {
+  final lists = <String, List<T>>{};
+  for (final d in defs) {
+    (lists[key(d)] ??= []).add(d);
+  }
+  return Map.unmodifiable({
+    for (final MapEntry(:key, :value) in lists.entries)
+      key: List<T>.unmodifiable(value),
+  });
+}
 
 Map<String, Object?> _map(Map<String, Object?> j, String key) =>
     j[key] as Map<String, Object?>;

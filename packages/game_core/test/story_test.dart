@@ -48,7 +48,8 @@ void main() {
       expect(data.people['jory']!.name, 'Jory Tarr');
     });
 
-    test('16 lore pages of the south, by place as §2.6 counts them', () {
+    test('34 lore pages: the 16 of the south, by place as §2.6 counts '
+        'them', () {
       // Spec 0025 adds 18 in the north (`north_test.dart`).
       expect(data.pages, hasLength(34));
       int pagesAt(String place) =>
@@ -215,7 +216,7 @@ void main() {
       for (final p in data.professions.keys) {
         expect(
           game.teacherLine(s, p),
-          game.fill(data.campLines[p]!.text, s.character),
+          game.fill(data.campLines[p]!.first.text, s.character),
           reason: p,
         );
       }
@@ -232,7 +233,10 @@ void main() {
         s.counters[kingKill] = 1;
         expect(
           game.trainerLine(s),
-          game.fill(data.campLines[GameData.trainerId]!.text, s.character),
+          game.fill(
+            data.campLines[GameData.trainerId]!.first.text,
+            s.character,
+          ),
         );
       },
     );

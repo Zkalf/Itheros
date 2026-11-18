@@ -23,7 +23,8 @@ void main() {
 
   group('the data (spec 0024 §2.8, criterion 6)', () {
     // Spec 0025 §2.8 adds 34 quests after these 17 (`north_test.dart`).
-    test('17 quests, in the order of §2.8, 3,490 XP in all', () {
+    test('the 17 quests of chapter 1 come first, in the order of §2.8, '
+        'with 3,490 XP in all', () {
       final chapter1 = data.quests.values.take(17);
       expect(data.quests, hasLength(51));
       expect(chapter1.first.id, 'odda_goblins');
@@ -261,6 +262,7 @@ void main() {
       final custom = newTestGame(
         overrides: {
           'quests': {
+            'endWords': 'The end.',
             'quests': [
               {
                 'id': 'here',
@@ -365,6 +367,7 @@ void main() {
       final custom = newTestGame(
         overrides: {
           'quests': {
+            'endWords': 'The end.',
             'quests': [
               {
                 'id': 'daggers',

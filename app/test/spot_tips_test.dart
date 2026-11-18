@@ -63,7 +63,13 @@ void main() {
     await t.tap(find.text('Lore'));
     await t.pumpAndSettle();
     // Spec 0023 §3.3: the charter of a new game, of all pages and notes.
-    expect(find.text('1 of 32 found'), findsOneWidget);
+    expect(find.text('1 of 50 found'), findsOneWidget);
+    // The tips stand below the groups of all twelve places (spec 0025).
+    await t.drag(
+      find.byKey(const ValueKey('lore-group-camp')),
+      const Offset(0, -20000),
+    );
+    await t.pumpAndSettle();
     expect(find.text('Sigrun, the hunter'), findsOneWidget);
     expect(find.text('The deer trail'), findsOneWidget);
     expect(find.text('Wen, the fisherman'), findsOneWidget);

@@ -37,21 +37,22 @@ extension GameStory on Game {
       if (p.location == s.location) p,
   ];
 
-  /// The open King line of [who], a teacher's profession or
-  /// [GameData.trainerId], or null (§2.5).
-  LineDef? campLine(GameState s, String who) => switch (data.campLines[who]) {
-    final l? when lineOpen(s, l) => l,
-    _ => null,
-  };
+  /// The open Camp lines of [who], a teacher's profession or
+  /// [GameData.trainerId], in data order (spec 0023 §2.5, spec 0025 §2.4).
+  Iterable<LineDef> openCampLines(GameState s, String who) =>
+      (data.campLines[who] ?? const <LineDef>[]).where((l) => lineOpen(s, l));
 
-  /// Whether [who]'s King line is open and not heard: the dot (§2.5).
-  bool campLineWaiting(GameState s, String who) {
-    final l = campLine(s, who);
-    return l != null && !s.heard.contains(l.id);
-  }
+  /// The newest open Camp line of [who], the last open one in data order, or
+  /// null (spec 0025 §2.4).
+  LineDef? campLine(GameState s, String who) =>
+      openCampLines(s, who).lastOrNull;
 
-  /// The trainer's opening line, filled: the King line once open, else the
-  /// greeting (§2.5).
+  /// Whether one of [who]'s open Camp lines is not heard: the dot (§2.5).
+  bool campLineWaiting(GameState s, String who) =>
+      openCampLines(s, who).any((l) => !s.heard.contains(l.id));
+
+  /// The trainer's opening line, filled: the newest Camp line once open,
+  /// else the greeting (§2.5).
   String trainerLine(GameState s) => fill(
     campLine(s, GameData.trainerId)?.text ?? data.trainer.greeting,
     s.character,
@@ -76,8 +77,8 @@ extension GameStory on Game {
         n.heard.add(l.id);
         if (l.page case final page? when n.lore.add(page)) pages.add(page);
       }
-    } else if (campLine(s, who) case final l?) {
-      n.heard.add(l.id);
+    } else {
+      n.heard.addAll(openCampLines(s, who).map((l) => l.id));
     }
     if (pages.isNotEmpty) {
       for (final a in data.achievements.values) {

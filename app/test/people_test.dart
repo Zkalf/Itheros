@@ -193,7 +193,7 @@ void main() {
       await t.pumpAndSettle();
       expect(
         find.text(
-          '"${game.fill(game.data.campLines[GameData.trainerId]!.text, c.state.character)}"',
+          '"${game.fill(game.data.campLines[GameData.trainerId]!.first.text, c.state.character)}"',
         ),
         findsOneWidget,
       );
@@ -211,7 +211,7 @@ void main() {
       await t.pumpAndSettle();
       expect(
         find.text(
-          '"${game.fill(game.data.campLines['cooking']!.text, c.state.character)}"',
+          '"${game.fill(game.data.campLines['cooking']!.first.text, c.state.character)}"',
         ),
         findsOneWidget,
       );

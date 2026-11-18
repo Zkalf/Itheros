@@ -2262,7 +2262,7 @@ void fightsWithDepth() {
       // Spec 0023 §3.3: every page and note counts, a new game holds The
       // Guild's charter, and the lore stands by place in the order of
       // world.json (Goblin Woods before Grey Moor), no longer newest first.
-      expect(find.text('3 of 32 found'), findsOneWidget);
+      expect(find.text('3 of 50 found'), findsOneWidget);
       expect(
         t.getTopLeft(find.text(note.title)).dy,
         lessThan(t.getTopLeft(find.text(later.title)).dy),
@@ -2743,7 +2743,13 @@ void professionScreens() {
       await t.tap(find.text('Lore'));
       await t.pumpAndSettle();
       // Spec 0023 §3.3: the charter of a new game, of all pages and notes.
-      expect(find.text('1 of 32 found'), findsOneWidget);
+      expect(find.text('1 of 50 found'), findsOneWidget);
+      // The tips stand below the groups of all twelve places (spec 0025).
+      await t.drag(
+        find.byKey(const ValueKey('lore-group-camp')),
+        const Offset(0, -20000),
+      );
+      await t.pumpAndSettle();
       expect(find.text('Hilde, the miner'), findsOneWidget);
       expect(find.text('Bones under the hills'), findsOneWidget);
       expect(find.text('Garrow, the smith'), findsOneWidget);
@@ -3322,6 +3328,12 @@ void yourCharacter() {
       await t.tap(key('journal-button'));
       await t.pumpAndSettle();
       await t.tap(find.text('Lore'));
+      await t.pumpAndSettle();
+      // The tips stand below the groups of all twelve places (spec 0025).
+      await t.drag(
+        find.byKey(const ValueKey('lore-group-camp')),
+        const Offset(0, -20000),
+      );
       await t.pumpAndSettle();
       expect(find.textContaining('Point first, lass.'), findsOneWidget);
     });
