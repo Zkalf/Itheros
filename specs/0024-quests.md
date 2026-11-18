@@ -23,7 +23,7 @@ Old Graveyard to the Graveyard King. A quest card on Now takes the place of "Nex
 | 6 | The quest card | **Up to three open quests, ready ones first, and "+N more"** (owner, 2026-11-17). |
 | 7 | The quest marks | **A gold "!" for a quest to take and a gold "?" for a quest to hand in**, as in World of Warcraft (Claude). |
 | 8 | The quest log | **A fourth tab of the Journal: Quests** (Claude). |
-| 9 | No quest left | **The card says "No more work for now. The north will need you."** (Claude). |
+| 9 | No quest left | **The card shows the end words from `data/quests.json`** (spec 0025 §2.9). In the first build the card said "No more work for now. The north will need you." (Claude). |
 | 10 | A stop condition "until the quest is done" | **None** (Claude). The stop conditions of today ("until I have N", a count of fights) cover it. |
 | 11 | Dropping a quest | **Not possible** (Claude). A quest never runs out and never blocks another quest, so there is nothing to drop. |
 | 12 | "Bring" and the rule of decision 3 | **A "bring" quest counts the items that came into the bag after the hero took it** (Claude): a new counter of items from fights (§2.3). |
@@ -169,7 +169,7 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 - With more than three taken quests, a last line says "+2 more". A tap on the card opens the Quests tab (§3.4).
 - With no quest taken, the card says who has a quest to give, the first in the order of §2.8: "Pell has work for you
   in Goblin Woods", or "Odda has work for you at Camp". A hidden place never shows.
-- With every quest of the build done, the card says "No more work for now. The north will need you."
+- With every quest of the build done, the card shows the end words from `data/quests.json` (spec 0025 §2.9).
 - The quest card always shows. It is not Next goal: Next goal's Settings switch went away with it, and Settings has
   no switch for the quest card (owner, 2026-11-18).
 
@@ -273,7 +273,7 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 26. With more than three taken quests, the card shows "+N more", and a tap opens the Quests tab.
 27. With no quest taken, the card names the first person with an offered quest and their place.
 28. A person at a hidden place is not named on the card.
-29. With every quest done, the card says "No more work for now. The north will need you."
+29. With every quest done, the card shows the end words from `data/quests.json` (spec 0025 §2.9).
 30. The quest card shows for every save, also one that hid Next goal. Settings has no switch for it.
 31. Nothing on Now shows a Next goal line.
 
@@ -314,3 +314,6 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 - 2026-11-18: the quest card always shows and has no switch. The owner meant that quests guide the player in place
   of Next goal, not that the card takes over Next goal's switch. A save that hid Next goal had no quest card on the
   owner's phone. §3.1; §4; decision 9; criterion 30. Accepted (owner, 2026-11-18).
+- 2026-11-18: the end words of the quest card come from the data (spec 0025 §2.9). Spec 0025 replaced "No more
+  work for now. The north will need you." when the north got its quests. Decision 9; §3.1; criterion 29. Accepted (owner,
+  2026-11-18).
