@@ -182,6 +182,21 @@ class LorePageFound extends GameEvent {
   final String page;
 }
 
+/// A taken quest's task became met on a walk (spec 0024 §2.5).
+class QuestReady extends GameEvent {
+  const QuestReady(this.quest);
+  final String quest;
+}
+
+/// A quest was handed in for [xp] and a supply chest holding [chest]
+/// (spec 0024 §2.4).
+class QuestDone extends GameEvent {
+  const QuestDone(this.quest, this.xp, this.chest);
+  final String quest;
+  final int xp;
+  final Map<String, int> chest;
+}
+
 /// Enough kills to know [enemy]'s weakness and stats (spec 0009 §7.1).
 class WeaknessLearned extends GameEvent {
   const WeaknessLearned(this.enemy);

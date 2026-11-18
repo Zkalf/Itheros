@@ -511,10 +511,10 @@ void main() {
       'criterion 43: an old save loads as version 17 with no lines heard',
       () {
         final old = saved(stateAt(game), version: 16);
-        expect(GameState.schemaVersion, 17);
+        expect(GameState.schemaVersion, greaterThanOrEqualTo(17));
         expect(old.heard, isEmpty);
         final back = GameState.fromJson(game.load(old).state.toJson());
-        expect(back.loadedVersion, 17);
+        expect(back.loadedVersion, GameState.schemaVersion);
       },
     );
 

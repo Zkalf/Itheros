@@ -278,16 +278,46 @@ class AutoEat {
 /// when it was earned (spec 0013 §2.3). Gear keys hold their quality and
 /// bonus stats.
 class SupplyChest {
-  SupplyChest(this.day, Map<String, int> items)
+  SupplyChest(this.day, Map<String, int> items, {this.quest})
     : items = Map.unmodifiable(items);
 
-  factory SupplyChest.fromJson(Map<String, Object?> json) =>
-      SupplyChest(json['day'] as String, _intMap(json['items']));
+  factory SupplyChest.fromJson(Map<String, Object?> json) => SupplyChest(
+    json['day'] as String,
+    _intMap(json['items']),
+    quest: json['quest'] as String?,
+  );
 
+  /// The day it was earned on; a quest's chest has the empty day.
   final String day;
   final Map<String, int> items;
 
-  Map<String, Object?> toJson() => {'day': day, 'items': Map.of(items)};
+  /// The quest that gave it at hand-in, or null for a day's chest (spec
+  /// 0024 §2.4).
+  final String? quest;
+
+  Map<String, Object?> toJson() => {
+    'day': day,
+    'items': Map.of(items),
+    if (quest != null) 'quest': quest,
+  };
+}
+
+/// A quest the hero took or handed in (spec 0024 §4). For a counter task,
+/// [base] is the counter's value at the moment of taking; for a visit task,
+/// 1 once the hero arrived (or stood there when taking it), else 0.
+class QuestProgress {
+  const QuestProgress.taken(this.base) : done = false;
+  const QuestProgress.done() : base = 0, done = true;
+
+  factory QuestProgress.fromJson(Map<String, Object?> json) =>
+      json['done'] == true
+      ? const QuestProgress.done()
+      : QuestProgress.taken(json['base'] as int? ?? 0);
+
+  final bool done;
+  final int base;
+
+  Map<String, Object?> toJson() => done ? {'done': true} : {'base': base};
 }
 
 /// Picks the word in gendered data lines (spec 0012 §2.3).
@@ -355,8 +385,10 @@ class GameState {
     Set<String>? supplyPaid,
     List<SupplyChest>? supplyChests,
     this.supplyRng = 0,
+    Map<String, QuestProgress>? quests,
     this.loadedVersion = schemaVersion,
-  }) : talents = talents ?? {},
+  }) : quests = quests ?? {},
+       talents = talents ?? {},
        supplySteps = supplySteps ?? {},
        supplyPaid = supplyPaid ?? {},
        supplyChests = supplyChests ?? [],
@@ -457,9 +489,16 @@ class GameState {
           SupplyChest.fromJson(c! as Map<String, Object?>),
       ],
       supplyRng: json['supplyRng'] as int? ?? 0,
+      // Before version 18: no quest taken (spec 0024 §4).
+      quests: (json['quests'] as Map<String, Object?>? ?? const {}).map(
+        (k, v) =>
+            MapEntry(k, QuestProgress.fromJson(v! as Map<String, Object?>)),
+      ),
     );
   }
 
+  /// 18: the quests taken and done, and the `dropped.<item>` counters
+  /// (spec 0024 §4).
   /// 17: the lines heard; lore pages join the lore notes in [lore] (spec
   /// 0023 §4).
   /// 16: the item bank (spec 0020 §4).
@@ -483,7 +522,7 @@ class GameState {
   /// 3: the queue (spec 0003). 2: spec 0002's XP table and fight rounds.
   /// Version 1 saves load, and `Game.migrate` moves their XP to the new
   /// table.
-  static const schemaVersion = 17;
+  static const schemaVersion = 18;
 
   /// The save version this state was read from; not saved.
   final int loadedVersion;
@@ -586,6 +625,10 @@ class GameState {
   /// [rngState] (spec 0013 §2.3).
   int supplyRng;
 
+  /// The quests taken or handed in, by id (spec 0024 §4). A quest that is
+  /// not here is closed or offered.
+  final Map<String, QuestProgress> quests;
+
   /// Lifetime counters such as `steps.walked` and `kills.goblin`.
   final Map<String, int> counters;
   final Set<String> achievements;
@@ -629,6 +672,9 @@ class GameState {
     'supplyPaid': supplyPaid.toList()..sort(),
     'supplyChests': [for (final c in supplyChests) c.toJson()],
     'supplyRng': supplyRng,
+    'quests': {
+      for (final MapEntry(:key, :value) in quests.entries) key: value.toJson(),
+    },
   };
 
   void addItem(String item, [int count = 1]) {

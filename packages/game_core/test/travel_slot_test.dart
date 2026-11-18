@@ -403,8 +403,8 @@ void main() {
       // Version 12 (spec 0017) keeps the format of 11; 13 (spec 0015)
       // adds the talents; 14 (spec 0013) the supply chest; 15 (spec 0019) the
       // fight summaries; 16 (spec 0020) the item bank; 17 (spec 0023) the
-      // lines heard.
-      expect(GameState.schemaVersion, 17);
+      // lines heard; 18 (spec 0024) the quests.
+      expect(GameState.schemaVersion, 18);
     });
   });
 }

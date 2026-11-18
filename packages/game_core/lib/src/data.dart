@@ -10,6 +10,7 @@ part 'data/achievements.dart';
 part 'data/talents.dart';
 part 'data/supply.dart';
 part 'data/story.dart';
+part 'data/quests.dart';
 
 /// All tunable game content, loaded from `data/*.json`.
 class GameData {
@@ -23,7 +24,9 @@ class GameData {
     required Map<String, Object?> origins,
     required Map<String, Object?> talents,
     required Map<String, Object?> story,
-  }) : pageChance = _num(story, 'pageChance'),
+    required Map<String, Object?> quests,
+  }) : quests = _byId(_maps(quests, 'quests').map(QuestDef._), (d) => d.id),
+       pageChance = _num(story, 'pageChance'),
        people = _byId(_maps(story, 'people').map(PersonDef._), (d) => d.id),
        campLines = _byId(
          _maps(story, 'campLines').map(LineDef._),
@@ -196,6 +199,7 @@ class GameData {
       origins: file('origins'),
       talents: file('talents'),
       story: file('story'),
+      quests: file('quests'),
     );
   }
 
@@ -212,6 +216,17 @@ class GameData {
 
   /// Every lore page, in data order (spec 0023 §2.4).
   final Map<String, PageDef> pages;
+
+  /// The quests, in data order: the order of spec 0024 §2.8.
+  final Map<String, QuestDef> quests;
+
+  /// The place where [giver] stands: a person's place or a teacher's.
+  String? giverPlace(String giver) =>
+      people[giver]?.location ?? professions[giver]?.teacher.location;
+
+  /// The name of [giver]: "Pell" or "Hilde".
+  String? giverName(String giver) =>
+      people[giver]?.name ?? professions[giver]?.teacher.name;
 
   /// The `who` of the trainer's King line.
   static const trainerId = 'trainer';
@@ -778,6 +793,45 @@ class GameData {
     }
   }
 
+  /// The data checks of spec 0024 (criterion 6).
+  void _validateQuests(void Function(bool, String) check) {
+    for (final q in quests.values) {
+      check(giverPlace(q.giver) != null, 'quest ${q.id}: unknown giver');
+      if (q.after case final a?) {
+        check(quests.containsKey(a), 'quest ${q.id}: after an unknown quest');
+      }
+      // The line back from each quest ends at a quest with no after: a
+      // loop would keep its quests closed for good.
+      final seen = {q.id};
+      for (var a = q.after; a != null; a = quests[a]?.after) {
+        if (!seen.add(a)) {
+          check(false, 'quest ${q.id}: its after quests make a loop');
+          break;
+        }
+      }
+      check(q.task.count >= 1, 'quest ${q.id}: a count of at least 1');
+      check(q.xp >= 0, 'quest ${q.id}: XP of at least 0');
+      final target = q.task.target;
+      final known = switch (q.task.kind) {
+        TaskKind.kill => enemies.containsKey(target),
+        TaskKind.gather || TaskKind.bring => items.containsKey(target),
+        TaskKind.craft => recipes.values.any((r) => r.output == target),
+        TaskKind.wear => items[target]?.slot != null,
+        TaskKind.visit => locations.containsKey(target),
+      };
+      check(known, 'quest ${q.id}: unknown target $target');
+      for (final text in [q.ask, q.thanks]) {
+        for (final m in RegExp(r'\{([^{}]*)\}').allMatches(text)) {
+          final t = m[1]!;
+          check(
+            t == 'name' || t.split('|').length == 3,
+            'quest ${q.id}: {$t} needs {name} or three choices',
+          );
+        }
+      }
+    }
+  }
+
   /// The data checks of spec 0015 §2.8.
   void _validateTalents(void Function(bool, String) check) {
     for (final t in talents.values) {
@@ -1211,6 +1265,7 @@ class GameData {
     }
     _validateTalents(check);
     _validateStory(check);
+    _validateQuests(check);
     for (final row in combat.typeFactors.values) {
       check(
         row.keys.toSet().containsAll(combat.damageTypes),

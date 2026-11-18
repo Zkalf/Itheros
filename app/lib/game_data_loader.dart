@@ -11,6 +11,7 @@ const _files = [
   'origins',
   'talents',
   'story',
+  'quests',
 ];
 
 /// Loads the game data bundled from `packages/game_core/data/`.
