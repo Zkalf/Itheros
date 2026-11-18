@@ -541,7 +541,7 @@ class _RecipeTile extends StatelessWidget {
           // the width of the row at a large text size (#290).
           if (active) ...[
             const SizedBox(width: 8),
-            statusChip('Active', Quiet.steel),
+            statusChip('Active', Quiet.steel, inline: true),
           ],
         ],
       ),

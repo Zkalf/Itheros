@@ -60,6 +60,28 @@ void main() {
     expectWideSubtitle(t, row, 'Copper sword');
   });
 
+  testWidgets('a row is as tall when its action runs as before', (t) async {
+    final fight = option('fight', 'goblin');
+    final (c, _) = await pumpGame(t, location: 'goblin_woods');
+
+    /// The height of the Goblin row at Goblin woods.
+    Future<double> height() async {
+      await openArea(t, 'goblin_woods');
+      await t.ensureVisible(fight);
+      await t.pumpAndSettle();
+      return t.getSize(fight).height;
+    }
+
+    final before = await height();
+    expect(find.descendant(of: fight, matching: chip), findsNothing);
+    await closeSheet(t);
+    await c.startActivity(const Activity.fight('goblin'));
+    await settle(t, c);
+    final running = await height();
+    expect(find.descendant(of: fight, matching: chip), findsOneWidget);
+    expect(running, before);
+  });
+
   testWidgets('at text size 2.0 a running monster shows Active after its '
       'name, and its subtitle wraps across the row', (t) async {
     await loadFonts();

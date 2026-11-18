@@ -388,15 +388,26 @@ class BackPlate extends StatelessWidget {
 
 /// A status chip, such as Active or New: an outline with the border of each
 /// chip, and the label in [colour] (spec 0014 §2.2).
-Widget statusChip(String label, Color colour, {Key? key, Widget? avatar}) =>
-    Chip(
-      key: key,
-      avatar: avatar,
-      label: Text(label),
-      // A status chip is not a button: no outline (spec 0014 amendment 4).
-      labelStyle: TextStyle(color: colour, shadows: const []),
-      color: const WidgetStatePropertyAll(Quiet.transparent),
-    );
+///
+/// An [inline] chip stands in a line of text, as "Active" after a name: it
+/// is no taller than it needs, so the line does not grow (#290).
+Widget statusChip(
+  String label,
+  Color colour, {
+  Key? key,
+  Widget? avatar,
+  bool inline = false,
+}) => Chip(
+  key: key,
+  avatar: avatar,
+  label: Text(label),
+  // A status chip is not a button: no outline (spec 0014 amendment 4).
+  labelStyle: TextStyle(color: colour, shadows: const []),
+  color: const WidgetStatePropertyAll(Quiet.transparent),
+  materialTapTargetSize: inline ? MaterialTapTargetSize.shrinkWrap : null,
+  visualDensity: inline ? const VisualDensity(vertical: -4) : null,
+  padding: inline ? EdgeInsets.zero : null,
+);
 
 TextStyle _display(double size) => TextStyle(
   fontFamily: Fonts.display,

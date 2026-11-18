@@ -97,7 +97,7 @@ class NotesPlate extends StatelessWidget {
             for (final block in parseNotes(text))
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: _block(context, block),
+                child: _block(block),
               ),
           ],
         ),
@@ -105,7 +105,7 @@ class NotesPlate extends StatelessWidget {
     );
   }
 
-  Widget _block(BuildContext context, NoteBlock block) {
+  Widget _block(NoteBlock block) {
     final words = Text.rich(
       TextSpan(
         children: [

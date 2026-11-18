@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart' show VelocityTracker, kTouchSlop;
+import 'package:flutter/gestures.dart'
+    show VelocityTracker, kLongPressTimeout, kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -14,10 +15,13 @@ import 'theme.dart';
 /// start, a hold on [child] does nothing: it opens no card (spec 0020
 /// amendment 8, rule 2), and the phone does not buzz (#288). Give [child]
 /// no hold of its own there, or Flutter buzzes.
-Widget holdToSelect(ItemSelection? selection, Widget child) => selection != null
-    ? child
-    // Takes the hold, so that it does not end as a tap on [child].
-    : GestureDetector(onLongPress: () {}, child: child);
+Widget holdToSelect(ItemSelection? selection, Widget child) => GestureDetector(
+  // Where no selection can start, takes the hold, so that it does not end as
+  // a tap on [child]. A screen reader offers no hold there.
+  onLongPress: selection == null ? () {} : null,
+  excludeFromSemantics: true,
+  child: child,
+);
 
 /// The screen of a list with [selection]: while the selection runs, Back and
 /// a swipe to the right end it, and the screen stays (spec 0020 amendment 8,
@@ -47,26 +51,43 @@ class _SelectionBackState extends State<SelectionBack> {
   var _start = Offset.zero;
   VelocityTracker? _speed;
 
+  /// Runs out when the finger has stayed still as long as a hold.
+  Timer? _hold;
+
+  void _forget() {
+    _pointer = null;
+    _speed = null;
+    _hold?.cancel();
+    _hold = null;
+  }
+
   void _down(PointerDownEvent e) {
     if (_pointer != null || !widget.selection.running) return;
     _pointer = e.pointer;
     _start = e.position;
     _speed = VelocityTracker.withKind(e.kind)
       ..addPosition(e.timeStamp, e.position);
+    // A finger that stays still as long as a hold is a hold: it adds an item
+    // (rule 3), and its slide after that is no swipe.
+    _hold = Timer(kLongPressTimeout, _forget);
   }
 
   void _move(PointerMoveEvent e) {
-    if (e.pointer == _pointer) _speed!.addPosition(e.timeStamp, e.position);
+    if (e.pointer != _pointer) return;
+    // A finger that moves at once is no hold.
+    if ((e.position - _start).distance > kTouchSlop) {
+      _hold?.cancel();
+      _hold = null;
+    }
+    _speed!.addPosition(e.timeStamp, e.position);
   }
 
   // The swipe watches the finger without a gesture of its own, so the list
-  // and the tabs of the screen keep their drags, and the swipe still counts
-  // on the tabs of the bank screen.
+  // and the tabs of the screen keep their drags.
   void _up(PointerUpEvent e) {
     if (e.pointer != _pointer) return;
     final speed = _speed!.getVelocity().pixelsPerSecond.dx;
-    _pointer = null;
-    _speed = null;
+    _forget();
     final width = context.size!.width;
     final move = e.position - _start;
     // Sideways, not a scroll: past the touch slop, and more to the side
@@ -81,9 +102,13 @@ class _SelectionBackState extends State<SelectionBack> {
   }
 
   void _lost(PointerCancelEvent e) {
-    if (e.pointer != _pointer) return;
-    _pointer = null;
-    _speed = null;
+    if (e.pointer == _pointer) _forget();
+  }
+
+  @override
+  void dispose() {
+    _hold?.cancel();
+    super.dispose();
   }
 
   @override

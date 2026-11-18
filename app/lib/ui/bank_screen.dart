@@ -115,6 +115,11 @@ class _BankTabsState extends State<_BankTabs> {
                 ),
               Expanded(
                 child: TabBarView(
+                  // While a selection runs, a swipe to the right ends it and
+                  // the tab stays (#287), so the tabs do not drag.
+                  physics: selecting
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
                   children: [
                     for (final bank in [true, false])
                       _ItemList(

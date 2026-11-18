@@ -498,6 +498,14 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
 168. The Bag tab of the bank screen and the bag on Character, each with a selection, are rendered at 408 dp wide
      before the PR (`CLAUDE.md`).
 
+**The swipe and the hold (#287, #288)**
+169. A swipe to the right ends the selection on each tab of the bank screen and in the bag on Character; the screen
+     and its tab stay.
+170. A swipe to the left, a short slow swipe to the right, a scroll, and a hold that adds an item and then slides to
+     the right keep the selection.
+171. A hold buzzes the phone only where it starts a selection: at Camp it buzzes, away from a bank and a forge it
+     does not.
+
 ## History
 - 2026-11-02: first version (intent 0020, plan 0040, #66). Criteria 1-32.
 - 2026-11-02, erratum 1 (#66): the names of the two banks, `itemBank` and `stepBank`; the controller's moves.
@@ -524,5 +532,5 @@ selection do not move the pace, so they have no sim targets. The pacing test sta
 - 2026-11-15 (plan 0068): the amendments and the erratum folded into this file. No rule, number or criterion
   changed.
 - 2026-11-17, spec 0024: quests replace Next goal. Decision 6; criterion 14. Accepted.
-- 2026-11-18 (#287): a swipe to the right on the screen also ends the selection, as the owner asked. Point 96.
-  Accepted.
+- 2026-11-18 (#287, #288): a swipe to the right on the screen also ends the selection, and a hold buzzes only where
+  it starts a selection, as the owner asked. Point 96; criteria 169-171. Accepted.

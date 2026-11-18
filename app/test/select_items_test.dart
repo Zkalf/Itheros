@@ -1,6 +1,7 @@
 // Hold an item to select several: spec 0020 amendment 8 criteria 7 to 34
 // (plan 0067). The rules (criteria 1-6) are in game_core's
 // move_items_test.dart.
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -552,6 +553,36 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(bar, findsOneWidget);
+    });
+
+    testWidgets('a swipe to the right ends the selection of the Bag tab, and '
+        'the Bag tab stays (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBankBag(t);
+      await hold(t, 'bank-bag-copper_ore');
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('bank-bag-copper_ore').hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('a hold that adds an item and then slides to the right keeps '
+        'the selection (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await t.ensureVisible(key('bag-hide_vest'));
+      final finger = await t.startGesture(t.getCenter(key('bag-hide_vest')));
+      await t.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      expect(find.text('2 selected'), findsOneWidget);
+      // Quick, and further than half the screen: as a swipe it would count.
+      for (var i = 0; i < 10; i++) {
+        await finger.moveBy(const Offset(60, 0));
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      await finger.up();
+      await t.pumpAndSettle();
+      expect(find.text('2 selected'), findsOneWidget);
     });
 
     testWidgets('a short slow swipe to the right and a scroll keep the '
