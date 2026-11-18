@@ -54,30 +54,37 @@ class BagGrid extends StatelessWidget {
               s.inventory[key]!,
               data.stackOf(key),
             ).indexed)
-              ItemSquare(
-                // The first square keeps the item's key; the next ones count
-                // on from 2.
-                key: ValueKey(i == 0 ? 'bag-$key' : 'bag-$key-${i + 1}'),
-                data: data,
-                item: key,
-                count: n,
-                // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
-                socket: 48,
-                // Each square opens the card of the whole item (rule 7).
-                // While a selection runs, a tap selects the whole item, all
-                // of its squares, and opens no card (spec 0020 amendment 8,
-                // rules 4 and 5).
-                selected: selection?.has(key) ?? false,
-                onTap: () {
-                  if (selection case final picked? when picked.running) {
-                    picked.toggle(key);
-                  } else {
-                    unawaited(showItemCard(context, c, key));
-                  }
-                },
-                // Where no selection can start, a hold does nothing: it
-                // opens no card either (rule 2).
-                onLongPress: () => selection?.select(key),
+              holdToSelect(
+                selection,
+                ItemSquare(
+                  // The first square keeps the item's key; the next ones count
+                  // on from 2.
+                  key: ValueKey(i == 0 ? 'bag-$key' : 'bag-$key-${i + 1}'),
+                  data: data,
+                  item: key,
+                  count: n,
+                  // A 48 dp socket in the centre of each cell (spec 0014 §2.3).
+                  socket: 48,
+                  // Each square opens the card of the whole item (rule 7).
+                  // While a selection runs, a tap selects the whole item, all
+                  // of its squares, and opens no card (spec 0020 amendment 8,
+                  // rules 4 and 5).
+                  selected: selection?.has(key) ?? false,
+                  onTap: () {
+                    if (selection case final picked? when picked.running) {
+                      picked.toggle(key);
+                    } else {
+                      unawaited(showItemCard(context, c, key));
+                    }
+                  },
+                  // Where no selection can start, a hold does nothing: it
+                  // opens no card either (rule 2), and the phone does not buzz
+                  // (#288).
+                  onLongPress: switch (selection) {
+                    final picked? => () => picked.select(key),
+                    null => null,
+                  },
+                ),
               ),
         ],
       ),

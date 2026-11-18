@@ -232,58 +232,67 @@ class _ItemList extends StatelessWidget {
             child: Column(
               children: [
                 for (final key in shown)
-                  ListTile(
-                    key: ValueKey('${inBank ? 'bank-item' : 'bank-bag'}-$key'),
-                    // The picture in a 48 dp socket, with the ring of its
-                    // quality for gear and tools (amendment 2, rules 12-13).
-                    // A selected row has the fill of a selected chip and
-                    // the check mark on its socket (amendment 8, rule 6).
-                    tileColor: (selection?.has(key) ?? false)
-                        ? Quiet.selected
-                        : null,
-                    leading: markSelected(
-                      PictureSocket.item(
-                        data,
-                        key,
-                        picture: ImageScope.of(context)
-                            .pictureOf(data, ItemThing(key)),
-                        size: 48,
+                  holdToSelect(
+                    selection,
+                    ListTile(
+                      key: ValueKey(
+                        '${inBank ? 'bank-item' : 'bank-bag'}-$key',
                       ),
-                      selected: selection?.has(key) ?? false,
-                    ),
-                    title: Text(
-                      '${labels.item(key)} ×${items[key]}',
-                      // As on the item card: Common in the normal text colour.
-                      style: TextStyle(color: itemColour(data, key)),
-                    ),
-                    // Its stats, so that alike rows differ (amendment 7).
-                    subtitle: switch (labels.rowLine(key)) {
-                      final line? => Text(
-                        line,
-                        key: ValueKey('bank-row-line-$key'),
-                      ),
-                      null => null,
-                    },
-                    // The card, with Store or Take at Camp (rules 15-19).
-                    // While a selection runs, a tap selects and opens no
-                    // card; a hold starts it (amendment 8, rules 3 and 4).
-                    onTap: () {
-                      if (selection case final picked? when picked.running) {
-                        picked.toggle(key);
-                        return;
-                      }
-                      unawaited(
-                        showItemCard(
-                          context,
-                          controller,
+                      // The picture in a 48 dp socket, with the ring of its
+                      // quality for gear and tools (amendment 2, rules 12-13).
+                      // A selected row has the fill of a selected chip and
+                      // the check mark on its socket (amendment 8, rule 6).
+                      tileColor: (selection?.has(key) ?? false)
+                          ? Quiet.selected
+                          : null,
+                      leading: markSelected(
+                        PictureSocket.item(
+                          data,
                           key,
-                          bank: inBank ? BankSide.bank : BankSide.bag,
+                          picture: ImageScope.of(context)
+                              .pictureOf(data, ItemThing(key)),
+                          size: 48,
                         ),
-                      );
-                    },
-                    // Where no selection can start, a hold does nothing:
-                    // it opens no card either (rule 2).
-                    onLongPress: () => selection?.select(key),
+                        selected: selection?.has(key) ?? false,
+                      ),
+                      title: Text(
+                        '${labels.item(key)} ×${items[key]}',
+                        // As on the item card: Common in the normal text colour.
+                        style: TextStyle(color: itemColour(data, key)),
+                      ),
+                      // Its stats, so that alike rows differ (amendment 7).
+                      subtitle: switch (labels.rowLine(key)) {
+                        final line? => Text(
+                          line,
+                          key: ValueKey('bank-row-line-$key'),
+                        ),
+                        null => null,
+                      },
+                      // The card, with Store or Take at Camp (rules 15-19).
+                      // While a selection runs, a tap selects and opens no
+                      // card; a hold starts it (amendment 8, rules 3 and 4).
+                      onTap: () {
+                        if (selection case final picked? when picked.running) {
+                          picked.toggle(key);
+                          return;
+                        }
+                        unawaited(
+                          showItemCard(
+                            context,
+                            controller,
+                            key,
+                            bank: inBank ? BankSide.bank : BankSide.bag,
+                          ),
+                        );
+                      },
+                      // Where no selection can start, a hold does nothing:
+                      // it opens no card either (rule 2), and the phone does
+                      // not buzz (#288).
+                      onLongPress: switch (selection) {
+                        final picked? => () => picked.select(key),
+                        null => null,
+                      },
+                    ),
                   ),
               ],
             ),

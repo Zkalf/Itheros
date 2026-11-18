@@ -8,6 +8,16 @@ import 'labels.dart';
 import 'salvage_all.dart';
 import 'theme.dart';
 
+/// [child], a row or square of an item in a list where a hold starts a
+/// selection only when [selection] is not null. Where no selection can
+/// start, a hold on [child] does nothing: it opens no card (spec 0020
+/// amendment 8, rule 2), and the phone does not buzz (#288). Give [child]
+/// no hold of its own there, or Flutter buzzes.
+Widget holdToSelect(ItemSelection? selection, Widget child) => selection != null
+    ? child
+    // Takes the hold, so that it does not end as a tap on [child].
+    : GestureDetector(onLongPress: () {}, child: child);
+
 /// The selected items of one list (spec 0020 amendment 8): a hold on an item
 /// starts the selection, and a tap then adds or removes an item (rules 3
 /// and 4). A selected item is the whole item, all of its count (rule 5).

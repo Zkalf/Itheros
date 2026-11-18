@@ -67,20 +67,24 @@ class ActionTile extends StatelessWidget {
     return ListTile(
       key: ValueKey('option-${activity.kind.name}-${activity.target}'),
       leading: leading,
-      title: switch (badge) {
-        final badge? => Row(
+      title: switch ((badge, active)) {
+        (null, false) => Text(title),
+        (final badge, _) => Row(
           children: [
-            badge,
-            const SizedBox(width: 10),
+            if (badge != null) ...[badge, const SizedBox(width: 10)],
             Flexible(child: Text(title)),
+            // After the name, not at the end of the row: the subtitle keeps
+            // the width of the row at a large text size (#290).
+            if (active) ...[
+              const SizedBox(width: 8),
+              statusChip('Active', Quiet.steel),
+            ],
           ],
         ),
-        null => Text(title),
       },
       titleTextStyle: titleIsName ? nameStyle(context) : null,
       subtitle: subtitle,
       enabled: enabled,
-      trailing: active ? statusChip('Active', Quiet.steel) : null,
       onTap: switch ((active, enabled)) {
         (true, _) when !canChangeStop(activity) => null,
         (true, _) => () {
