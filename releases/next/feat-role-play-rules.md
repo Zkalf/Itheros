@@ -1,2 +1,0 @@
-- Beat the Graveyard King, and the teachers and Ysolde at Camp have something new to say about it.
-- Six new trophies: find all the lore of a place south of the river.

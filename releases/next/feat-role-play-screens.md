@@ -1,2 +1,0 @@
-- Meet the people of the south: Odda at Camp, Pell the charcoal burner in Goblin Woods, Aldous the sexton at the Old Graveyard, and someone shady at a hidden cove. What they say changes as you go.
-- Find lore pages as you walk: on your first visit to a place, from what you do, from the people, and now and then while you fight or gather. The Lore tab in the Journal now groups the lore by place.
