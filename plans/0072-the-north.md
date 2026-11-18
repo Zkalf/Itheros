@@ -98,3 +98,5 @@ The code changes are the list of Camp lines (spec 0025 §2.4) and the end words 
 
 ## History
 - 2026-11-18: first version (spec 0025). Accepted.
+- 2026-11-18: the owner accepted the plan by pushing it to `main`; the status moves from draft to accepted.
+  Accepted.
