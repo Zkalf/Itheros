@@ -1,6 +1,6 @@
 # Plan 0072: Build "Role-play and quests, chapters 2 and 3: the north" (spec 0025)
 
-Status: draft
+Status: accepted
 Spec: `specs/0025-the-north.md` · Product owner: Zkalf · Date: 2026-11-18
 
 Names of files, widgets and tests refer to `main` at `7e5d986`.
@@ -97,4 +97,6 @@ The code changes are the list of Camp lines (spec 0025 §2.4) and the end words 
   card's order test reads the first offered quest, so it may change once chapter 1 is done in a test save.
 
 ## History
-- 2026-11-18: first version (spec 0025). (draft)
+- 2026-11-18: first version (spec 0025). Accepted.
+- 2026-11-18: the owner accepted the plan by pushing it to `main`; the status moves from draft to accepted.
+  Accepted.

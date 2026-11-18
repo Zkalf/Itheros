@@ -127,7 +127,7 @@ class _QuestCard extends StatelessWidget {
           .firstOrNull;
       body = [
         if (next == null)
-          const Text('No more work for now. The north will need you.')
+          Text(data.questEndWords)
         else
           ListTile(
             key: const ValueKey('quest-card-giver'),

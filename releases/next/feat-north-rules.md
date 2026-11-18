@@ -1,0 +1,3 @@
+- The story goes on north of the river. Maud at the Grey Moor outpost, Tobin the carter at Troll Bridge, Corvin at the Guild lodge in Mountain Pass and Nessa on Dragon's Peak have things to tell you, and 34 new quests lead you from the moor to the Ogre Chieftain and on to the Young Dragon.
+- The north has its own lore pages to find, and each north place has a lore achievement.
+- The teachers and Ysolde at Camp now have something to say after the Ogre Chieftain falls, and again after the Young Dragon.

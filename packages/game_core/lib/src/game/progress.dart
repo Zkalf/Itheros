@@ -119,9 +119,9 @@ extension GameProgress on Game {
       s.character != null &&
       data.origins[s.character!.origin]?.profession == profession;
 
-  /// The line [profession]'s teacher opens with, filled: the King line once
-  /// open (spec 0023 §2.5), else the kin line for the origin's own teacher,
-  /// else the greeting (spec 0012 §3.1).
+  /// The line [profession]'s teacher opens with, filled: the newest Camp line
+  /// once open (spec 0023 §2.5, spec 0025 §2.4), else the kin line for the
+  /// origin's own teacher, else the greeting (spec 0012 §3.1).
   String teacherLine(GameState s, String profession) {
     final t = data.professions[profession]!.teacher;
     final line =
