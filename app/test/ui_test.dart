@@ -64,6 +64,8 @@ Future<(GameController, FakeStepSource)> pumpGame(
   void Function(GameState)? prepare,
   // The sync of the open fails (Health Connect not ready).
   bool failFirstSync = false,
+  // The save of a player who hid Next goal (spec 0024 criterion 30).
+  bool hidNextGoal = false,
 }) async {
   final game = withGame ?? _game;
   tester.view.physicalSize = const Size(1080, 4000);
@@ -95,11 +97,14 @@ Future<(GameController, FakeStepSource)> pumpGame(
   prepare?.call(state);
   final store = MemorySaveStore(
     granted
-        ? SaveData(
-            game: state,
-            firstDay: dayKey(now),
-            credited: const {},
-          ).toJson()
+        ? {
+            ...SaveData(
+              game: state,
+              firstDay: dayKey(now),
+              credited: const {},
+            ).toJson(),
+            if (hidNextGoal) 'nextGoalHidden': true,
+          }
         : null,
   );
 
@@ -1487,12 +1492,9 @@ void layoutScreens() {
       expect(find.byKey(const ValueKey('here-forge')), findsNothing);
     });
 
-    testWidgets('Settings: the quest card, the test walk, the version', (
-      t,
-    ) async {
+    testWidgets('Settings: the test walk, the version', (t) async {
       final (c, _) = await pumpGame(t);
       await openSettings(t);
-      expect(find.byKey(const ValueKey('show-quest-card')), findsOneWidget);
       expect(find.text('Version $appVersion'), findsOneWidget);
       await t.tap(find.byKey(const ValueKey('test-walk-switch')));
       await settle(t, c);

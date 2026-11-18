@@ -23,7 +23,7 @@ Old Graveyard to the Graveyard King. A quest card on Now takes the place of "Nex
 | 6 | The quest card | **Up to three open quests, ready ones first, and "+N more"** (owner, 2026-11-17). |
 | 7 | The quest marks | **A gold "!" for a quest to take and a gold "?" for a quest to hand in**, as in World of Warcraft (Claude). |
 | 8 | The quest log | **A fourth tab of the Journal: Quests** (Claude). |
-| 9 | No quest left | **The card says "No more work for now. The north will need you."** (Claude). The Settings switch can hide it. |
+| 9 | No quest left | **The card says "No more work for now. The north will need you."** (Claude). |
 | 10 | A stop condition "until the quest is done" | **None** (Claude). The stop conditions of today ("until I have N", a count of fights) cover it. |
 | 11 | Dropping a quest | **Not possible** (Claude). A quest never runs out and never blocks another quest, so there is nothing to drop. |
 | 12 | "Bring" and the rule of decision 3 | **A "bring" quest counts the items that came into the bag after the hero took it** (Claude): a new counter of items from fights (§2.3). |
@@ -170,8 +170,8 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 - With no quest taken, the card says who has a quest to give, the first in the order of §2.8: "Pell has work for you
   in Goblin Woods", or "Odda has work for you at Camp". A hidden place never shows.
 - With every quest of the build done, the card says "No more work for now. The north will need you."
-- The Settings switch of Next goal becomes **Show the quest card**. A save keeps its choice: a player who hid Next
-  goal does not see the quest card until they turn it on.
+- The quest card always shows. It is not Next goal: Next goal's Settings switch went away with it, and Settings has
+  no switch for the quest card (owner, 2026-11-18).
 
 ### 3.2 The rows
 - A person's row and a teacher's row show the mark of §2.6 at the right, in the place of the dot: a gold "!" or a
@@ -213,7 +213,8 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 - The save version goes from 17 to 18.
 - An old save gets `odda_goblins` offered, as a new save does (decision 5). Its old kills and finds do not count
   toward any quest.
-- The app's setting `nextGoalHidden` keeps its name in the save and now hides the quest card.
+- The app's setting `nextGoalHidden` is no longer read or written. A save that has it loads, and the quest card
+  shows.
 - Each fixture in `app/test/fixtures/saves/` loads.
 
 ## 5. Balance
@@ -273,8 +274,7 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 27. With no quest taken, the card names the first person with an offered quest and their place.
 28. A person at a hidden place is not named on the card.
 29. With every quest done, the card says "No more work for now. The north will need you."
-30. The Settings switch "Show the quest card" hides and shows the card. A save that hid Next goal keeps the card
-    hidden.
+30. The quest card shows for every save, also one that hid Next goal. Settings has no switch for it.
 31. Nothing on Now shows a Next goal line.
 
 **Marks and sheets**
@@ -311,3 +311,6 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
 ## History
 - 2026-11-17: first version (intent 0024). The owner asked for higher task counts: each side quest is about a day of
   walking, and the main line spreads over the chapter. Accepted.
+- 2026-11-18: the quest card always shows and has no switch. The owner meant that quests guide the player in place
+  of Next goal, not that the card takes over Next goal's switch. A save that hid Next goal had no quest card on the
+  owner's phone. §3.1; §4; decision 9; criterion 30. Accepted (owner, 2026-11-18).

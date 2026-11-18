@@ -1,0 +1,1 @@
+- The quest card always shows on Now, and Settings no longer has a switch for it.

@@ -676,7 +676,9 @@ void criterion3() {
       for (final label in [
         'Name',
         'Gender',
-        'Show the quest card',
+        // Spec 0024: the quest card has no switch; the test walk's row
+        // stands in for a switch row.
+        'Test walk',
         'Licences',
       ]) {
         expect(styleOf(t, label).fontFamily, alegreya, reason: label);

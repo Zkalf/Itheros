@@ -60,17 +60,10 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ]),
-            plate([
-              SwitchListTile(
-                // The switch of Next goal now hides the quest card (spec
-                // 0024 §3.1).
-                key: const ValueKey('show-quest-card'),
-                title: const Text('Show the quest card'),
-                value: !c.nextGoalHidden,
-                onChanged: (show) => c.setNextGoalHidden(!show),
-              ),
-              // Only the owner's build has a test walk (spec 0007 §4).
-              if (c.testWalkAllowed)
+            // Only the owner's build has a test walk (spec 0007 §4). The
+            // quest card has no switch (spec 0024 §3.1).
+            if (c.testWalkAllowed)
+              plate([
                 SwitchListTile(
                   key: const ValueKey('test-walk-switch'),
                   title: const Text('Test walk'),
@@ -78,7 +71,7 @@ class SettingsScreen extends StatelessWidget {
                   value: c.testWalkOn,
                   onChanged: c.setTestWalk,
                 ),
-            ]),
+              ]),
             // The licences of the four fonts (spec 0014 §4.2).
             plate([
               ListTile(
