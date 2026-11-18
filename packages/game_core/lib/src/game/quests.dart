@@ -3,9 +3,28 @@ part of '../game.dart';
 /// Where a quest stands (spec 0024 §2.2).
 enum QuestState { closed, offered, taken, done }
 
+/// The mark on a giver's row (spec 0024 §2.6): a quest to take, or one to
+/// hand in.
+enum QuestMark { offer, ready }
+
 /// Quests (spec 0024): taking, the count from the moment of taking, hand-in
 /// and its reward.
 extension GameQuests on Game {
+  /// [giver]'s quests, in data order.
+  Iterable<QuestDef> questsOf(String giver) =>
+      data.quests.values.where((q) => q.giver == giver);
+
+  /// The mark on [giver]'s row: "?" wins over "!"; none for a taken quest
+  /// that is not ready (§2.6).
+  QuestMark? questMark(GameState s, String giver) {
+    var offer = false;
+    for (final q in questsOf(giver)) {
+      if (questReady(s, q.id)) return QuestMark.ready;
+      if (questState(s, q.id) == QuestState.offered) offer = true;
+    }
+    return offer ? QuestMark.offer : null;
+  }
+
   QuestState questState(GameState s, String id) {
     if (s.quests[id] case final p?) {
       return p.done ? QuestState.done : QuestState.taken;

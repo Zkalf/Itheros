@@ -80,6 +80,10 @@ const bandRgb = {0x9E9E9E, 0x43A047, 0xFBC02D, 0xFB8C00, 0xE53935, 0x8E0000};
 /// to the colours of spec 0014 §2.1, for the talent sheet only.
 const metRgb = 0x8FC98A;
 
+/// The gold of the quest marks: spec 0024 adds it to the colours of spec
+/// 0014 §2.1, for the "!" and the "?" only.
+const goldRgb = 0xF2C94C;
+
 /// Black and white, the neutrals of plan 0017. Transparent has the RGB of
 /// black.
 const neutralRgb = {0x000000, 0xFFFFFF};
@@ -93,6 +97,7 @@ Set<int> allowedRgb(Game game) => {
   ...bandRgb,
   ...neutralRgb,
   metRgb,
+  goldRgb,
 };
 
 /// The RGB of [c]. The alpha does not count: steel at 85% is steel.

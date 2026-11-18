@@ -654,7 +654,8 @@ class SensiblePlayer {
 
   /// The best upgrade it can work toward: craft it, gather or fight for a
   /// missing input, or practise the profession whose level it lacks (as
-  /// Next goal says, spec 0010 §8.4). It aims only at gear up to its own
+  /// Next goal said, spec 0010 §8.4, until spec 0024). It aims only at gear
+  /// up to its own
   /// character level, "the gear of its stretch".
   Activity _goal(GameState s) {
     if (_roadGoal(s) case final a?) return a;

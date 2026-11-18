@@ -10,7 +10,7 @@ typedef StatParts = ({
   Stats achievements,
 });
 
-/// Levels, XP, professions, the character, teachers, stats and the next goal.
+/// Levels, XP, professions, the character, teachers and stats.
 extension GameProgress on Game {
   /// Counts [area] as visited, once (spec 0004 §4), and explored (spec
   /// 0008 decision 5). Mutates and returns [s].
@@ -337,113 +337,6 @@ extension GameProgress on Game {
     ];
   }
 
-  /// What to do next, or null when nothing applies (spec 0002 §9.3).
-  Goal? nextGoal(GameState s) {
-    // A weapon only competes with the worn one of its damage type and hands
-    // (spec 0009 §5.3).
-    final worn = s.equipment['mainHand'];
-    final wornWeapon = worn == null ? null : data.itemOf(worn);
-    int gain(String key) {
-      final item = data.itemOf(key);
-      if (item?.damageType != null &&
-          wornWeapon != null &&
-          (item!.damageType != wornWeapon.damageType ||
-              item.twoHanded != wornWeapon.twoHanded)) {
-        return 0;
-      }
-      return gearGain(s, key);
-    }
-
-    final better = [
-      for (final key in s.inventory.keys)
-        if (data.itemOf(key)?.slot != null && gain(key) > 0) key,
-    ]..sort((a, b) => gain(b).compareTo(gain(a)));
-    if (better.isNotEmpty) return EquipGoal(better.first);
-    if (_professionGoal(s, gain) case final g?) return g;
-
-    final upgrades = [
-      for (final r in data.recipes.values)
-        if (data.items[r.output]!.slot != null &&
-            recipeLevelMet(s, r.id) &&
-            owned(s, r.output) == 0 &&
-            gain(r.output) > 0)
-          r,
-    ]..sort((a, b) => gain(b.output).compareTo(gain(a.output)));
-    for (final r in upgrades) {
-      if (hasMaterials(s, r.id)) return CraftGoal(r.id);
-    }
-    for (final r in upgrades) {
-      // The bank counts for a craft at a place with a bank (spec 0020).
-      final have = materialsFor(s, r.id);
-      for (final input in r.inputs.entries) {
-        final missing = input.value - (have[input.key] ?? 0);
-        if (missing <= 0) continue;
-        final source = _safeSource(s, input.key);
-        if (source != null) return CollectGoal(input.key, missing, source);
-        break;
-      }
-    }
-
-    EnemyDef? best;
-    var bestRate = 0.0;
-    final me = stats(s);
-    for (final e in data.enemies.values) {
-      if (enemyOutOfReach(s, e.id) ||
-          enemyBand(s, e.id).colour != LevelColour.yellow) {
-        continue;
-      }
-      // An average swing: the hit and dodge rolls and the type factor
-      // (spec 0009 §2–§3).
-      final hit =
-          math.max(1, me.attack - e.stats.defense / 2) *
-          data.combat.typeFactor(damageType(s), e.armour) *
-          playerHitChance(s, e.id) /
-          100 *
-          (1 - enemyDodge(e.id) / 100);
-      final rate = e.xp / (e.stats.hp / hit).ceil();
-      if (rate > bestRate) (best, bestRate) = (e, rate);
-    }
-    return best == null ? null : FightGoal(best.id);
-  }
-
-  /// The level to reach when the best upgrade up to the character's level
-  /// waits only on a profession level: its recipe's Crafting level, or the
-  /// level of the spot its missing input comes from (spec 0010 §8.4).
-  ProfessionGoal? _professionGoal(GameState s, int Function(String) gain) {
-    RecipeDef? best;
-    for (final r in data.recipes.values) {
-      if (data.items[r.output]!.slot == null ||
-          r.level > level(s) ||
-          owned(s, r.output) > 0 ||
-          gain(r.output) <= 0) {
-        continue;
-      }
-      if (best == null || gain(r.output) > gain(best.output)) best = r;
-    }
-    if (best == null) return null;
-    ProfessionGoal? need(String profession, int at, Activity target) =>
-        // Learning comes first: the screens point to the teacher.
-        _canPractise(s, profession, 1)
-        ? ProfessionGoal(profession, at, professionLevel(s, profession), target)
-        : null;
-    if (!recipeLevelMet(s, best.id)) {
-      return need(best.profession, best.craftingLevel, Activity.craft(best.id));
-    }
-    final have = materialsFor(s, best.id);
-    for (final MapEntry(key: input, value: count) in best.inputs.entries) {
-      if ((have[input] ?? 0) >= count || _safeSource(s, input) != null) {
-        continue;
-      }
-      for (final n in data.nodes.values) {
-        if (n.item == input && !nodeOutOfReach(s, n.id)) {
-          return need(n.profession, n.level, Activity.gather(n.id));
-        }
-      }
-      return null;
-    }
-    return null;
-  }
-
   /// How much better [key] is than what it takes off in its weakest slot
   /// (an empty slot counts 0; a two-hander also takes off the off hand, an
   /// off-hand item a two-hander).
@@ -488,30 +381,6 @@ extension GameProgress on Game {
     return data.locations.values
         .where((l) => l.nodes.contains(node))
         .every((l) => !reach.containsKey(l.id));
-  }
-
-  /// A gathering spot for [item], or the most generous monster dropping it
-  /// that is at most yellow; never one out of reach.
-  Activity? _safeSource(GameState s, String item) {
-    final lvl = level(s);
-    for (final n in data.nodes.values) {
-      if (n.yieldOf(item) > 0 &&
-          nodeLevelMet(s, n.id) &&
-          !nodeOutOfReach(s, n.id)) {
-        return Activity.gather(n.id);
-      }
-    }
-    EnemyDef? best;
-    var bestChance = 0.0;
-    for (final e in data.enemies.values) {
-      if (enemyOutOfReach(s, e.id) || e.level > lvl + 2) continue;
-      for (final d in e.drops) {
-        if (d.item == item && d.chance * d.count > bestChance) {
-          (best, bestChance) = (e, d.chance * d.count);
-        }
-      }
-    }
-    return best == null ? null : Activity.fight(best.id);
   }
 
   /// Brings a state read from an older save up to date. Version 1 saves

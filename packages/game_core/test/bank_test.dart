@@ -180,24 +180,6 @@ void main() {
       expect(done.inventory['copper_ore'], 1);
     });
 
-    test(
-      'criterion 14: gear in the bank counts as owned for the next goal',
-      () {
-        final s = at('camp', level: 3, bag: {'copper_ore': 5});
-        expect(game.nextGoal(s), isA<CraftGoal>());
-        expect((game.nextGoal(s)! as CraftGoal).recipe, sword);
-        final banked = at(
-          'camp',
-          level: 3,
-          bag: {'copper_ore': 5},
-          itemBank: {sword: 1},
-        );
-        expect(game.owned(banked, sword), 1);
-        final goal = game.nextGoal(banked);
-        expect(goal is CraftGoal && goal.recipe == sword, isFalse);
-      },
-    );
-
     test('criterion 15: eat, wear and salvage refuse an item only in the '
         'bank', () {
       final s = at('camp', itemBank: {sword: 1, 'grilled_perch': 1});
@@ -208,23 +190,6 @@ void main() {
   });
 
   group('review of PR #172', () {
-    test('the next goal counts the bank in what is left to collect', () {
-      // At level 3 the next goal is a Hide vest: 4 Goblin hides.
-      final none = at('camp', level: 3);
-      final first = game.nextGoal(none)! as CollectGoal;
-      expect((first.item, first.count), ('goblin_hide', 4));
-      final s = at(
-        'camp',
-        level: 3,
-        bag: {'goblin_hide': 1},
-        itemBank: {'goblin_hide': 2},
-      );
-      expect(game.nextGoal(s), isA<CollectGoal>());
-      final goal = game.nextGoal(s)! as CollectGoal;
-      expect(goal.item, 'goblin_hide');
-      expect(goal.count, 1, reason: '4 needed, 3 in the bag and the bank');
-    });
-
     test('the bag after the queue takes a waiting craft out of the bank', () {
       final s = at('camp', itemBank: {'copper_ore': 10})
         ..activity = RunningActivity(

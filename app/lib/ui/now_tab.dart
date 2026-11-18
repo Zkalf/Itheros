@@ -13,7 +13,9 @@ import 'images.dart';
 import 'labels.dart';
 import 'item_card.dart';
 import 'meals.dart';
+import 'journal_screen.dart';
 import 'person_sheet.dart';
+import 'quest_part.dart';
 import 'socket.dart';
 import 'teacher_sheet.dart';
 import 'trainer_sheet.dart';
@@ -50,7 +52,7 @@ class NowTab extends StatelessWidget {
             ),
           _StatusCard(controller: c, labels: labels),
           if (c.testWalkOn) _TestWalkCard(controller: c),
-          _NextGoal(controller: c, labels: labels),
+          _QuestCard(controller: c, labels: labels),
           _QueueCard(controller: c, labels: labels, onOpenWorld: onOpenWorld),
           // Under the current action (spec 0008 amendment 6).
           _Discoveries(controller: c, labels: labels),
@@ -65,52 +67,117 @@ class NowTab extends StatelessWidget {
   }
 }
 
-/// "Next goal" (spec 0002 §9.3). It can be hidden from level 1 (spec 0008
-/// decision 9), and turned back on in Settings.
-class _NextGoal extends StatelessWidget {
-  const _NextGoal({required this.controller, required this.labels});
+/// The quest card (spec 0024 §3.1), where Next goal stood: up to three
+/// taken quests, ready ones first, then in the order taken; with none taken,
+/// who has work and where; with every quest done, the last line. Settings
+/// hides it ([GameController.nextGoalHidden] keeps its old name).
+class _QuestCard extends StatelessWidget {
+  const _QuestCard({required this.controller, required this.labels});
 
   final GameController controller;
   final Labels labels;
 
+  static const _shown = 3;
+
   @override
   Widget build(BuildContext context) {
+    if (controller.nextGoalHidden) return const SizedBox.shrink();
     final game = controller.game;
     final s = controller.state;
-    // Hideable from level 1 (spec 0008 decision 9).
-    if (controller.nextGoalHidden) return const SizedBox.shrink();
-    final goal = game.nextGoal(s);
-    if (goal == null) return const SizedBox.shrink();
-    final grey = switch (goal) {
-      CollectGoal(:final source) when source.kind == ActivityKind.fight =>
-        game.enemyBand(s, source.target).colour == LevelColour.grey,
-      _ => false,
-    };
-    return Card(
-      key: const ValueKey('next-goal'),
-      child: ListTile(
-        leading: const Icon(Icons.flag),
-        title: const Text('Next goal'),
+    final data = game.data;
+    final taken = [
+      for (final id in s.quests.keys)
+        if (data.quests.containsKey(id) &&
+            game.questState(s, id) == QuestState.taken)
+          id,
+    ];
+    final ready = taken.where((id) => game.questReady(s, id)).toList();
+    final order = [...ready, ...taken.where((id) => !ready.contains(id))];
+    final text = Theme.of(context).textTheme;
+    Widget line(String id) {
+      final place = game.questPlace(id);
+      return ListTile(
+        key: ValueKey('quest-line-$id'),
+        contentPadding: EdgeInsets.zero,
+        // The giver's portrait, as in the quest log (spec 0024 §3.4).
+        leading: Portrait(giverPortrait(data, data.quests[id]!.giver)),
+        title: Text(data.quests[id]!.title),
         subtitle: Text(
-          labels.goal(
-            goal,
-            canCraftHere: game.data.locations[s.location]!.crafting,
-            grey: grey,
-            yourLevel: switch (goal) {
-              FightGoal(:final enemy) =>
-                game.data.enemies[enemy]!.level == game.level(s),
-              _ => false,
-            },
+          game.questReady(s, id)
+              ? labels.questReadyLine(id, place)
+              : labels.questTask(id, game.questCount(s, id)),
+        ),
+      );
+    }
+
+    final List<Widget> body;
+    if (order.isNotEmpty) {
+      body = [
+        for (final id in order.take(_shown)) line(id),
+        if (order.length > _shown) Text('+${order.length - _shown} more'),
+      ];
+    } else {
+      // The first person with an offered quest, in data order, at a place
+      // that is not hidden (§3.1).
+      final next = data.quests.values
+          .where(
+            (q) =>
+                game.questState(s, q.id) == QuestState.offered &&
+                !game.isHidden(s, game.questPlace(q.id)),
+          )
+          .firstOrNull;
+      body = [
+        if (next == null)
+          const Text('No more work for now. The north will need you.')
+        else
+          ListTile(
+            key: const ValueKey('quest-card-giver'),
+            contentPadding: EdgeInsets.zero,
+            leading: Portrait(giverPortrait(data, next.giver)),
+            title: Text(
+              '${labels.giver(next.id)} has work for you '
+              '${labels.atPlace(game.questPlace(next.id))}',
+            ),
+          ),
+      ];
+    }
+    return Card(
+      key: const ValueKey('quest-card'),
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const JournalScreen(initialTab: 3),
           ),
         ),
-        trailing: TextButton(
-          onPressed: () => controller.setNextGoalHidden(true),
-          child: const Text('Hide'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Quests', style: text.titleMedium),
+              const SizedBox(height: 4),
+              ...body,
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+/// The mark of a giver's quests on their row, or null (spec 0024 §2.6).
+Widget? questMarkOn(GameController c, String giver) =>
+    switch (c.game.questMark(c.state, giver)) {
+      QuestMark.offer => QuestMarkIcon(
+        QuestMark.offer,
+        key: ValueKey('quest-offer-$giver'),
+      ),
+      QuestMark.ready => QuestMarkIcon(
+        QuestMark.ready,
+        key: ValueKey('quest-ready-$giver'),
+      ),
+      null => null,
+    };
 
 /// Flavour lines for the area and monsters here, the first time they're
 /// seen (spec 0002 §9.5).
@@ -687,9 +754,12 @@ class _Here extends StatelessWidget {
           leading: Portrait(p.id),
           title: Text(personName(p)),
           titleTextStyle: nameStyle(context),
-          trailing: c.game.hasNewLine(s, p.id)
-              ? Badge(key: ValueKey('person-dot-${p.id}'))
-              : null,
+          // A quest mark takes the place of the dot (spec 0024 §2.6).
+          trailing:
+              questMarkOn(c, p.id) ??
+              (c.game.hasNewLine(s, p.id)
+                  ? Badge(key: ValueKey('person-dot-${p.id}'))
+                  : null),
           onTap: () => showPerson(context, c, p.id),
         ),
     ];
@@ -759,11 +829,13 @@ class _Here extends StatelessWidget {
                   : 'Teaches ${p.name}',
             ),
             // A waiting tip, or a King line not heard (spec 0023 §2.5).
+            // A quest mark takes the place of the dot (spec 0024 §2.6).
             trailing:
-                game.tipsWaiting(s, p.id).isEmpty &&
-                    !game.campLineWaiting(s, p.id)
-                ? null
-                : Badge(key: ValueKey('teacher-dot-${p.id}')),
+                questMarkOn(c, p.id) ??
+                (game.tipsWaiting(s, p.id).isEmpty &&
+                        !game.campLineWaiting(s, p.id)
+                    ? null
+                    : Badge(key: ValueKey('teacher-dot-${p.id}'))),
             onTap: () => showTeacher(context, c, p.id),
           ),
       // The Guild trainer resets the talents (spec 0015 §2.7), a dot when

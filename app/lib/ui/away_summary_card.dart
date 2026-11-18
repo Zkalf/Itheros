@@ -6,6 +6,7 @@ import 'controller_scope.dart';
 import 'images.dart';
 import 'journal_screen.dart';
 import 'labels.dart';
+import 'person_sheet.dart' show giverPortrait;
 import 'route_map.dart';
 import 'socket.dart';
 import 'theme.dart';
@@ -57,6 +58,9 @@ List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   for (final l in s.lostAchievements)
     (AchievementThing(l.id, earned: false), labels.achievementLost(l)),
   for (final n in s.lore) (null, labels.loreFound(n)),
+  // Spec 0024 §3.5, with the giver's portrait.
+  for (final q in s.questsReady) (_giverOf(q, labels), labels.questReady(q)),
+  for (final q in s.questsDone) (_giverOf(q, labels), labels.questDone(q)),
   for (final e in s.learned) (MonsterThing(e), labels.weaknessLearned(e)),
   for (final e in s.slayers) (MonsterThing(e), labels.slayerEarned(e)),
   for (final (boss, to) in s.roadsOpened)
@@ -78,6 +82,11 @@ List<(Thing?, String)> reportNews(AwaySummary s, Labels labels) => [
   else if (s.supplyChests > 1)
     (null, '${s.supplyChests} supply chests earned'),
 ];
+
+Thing? _giverOf(String quest, Labels labels) {
+  final q = labels.data.quests[quest];
+  return q == null ? null : GuideThing(giverPortrait(labels.data, q.giver));
+}
 
 List<Widget> reportBanners(AwaySummary s, Labels labels) => [
   for (final (thing, text) in reportNews(s, labels))

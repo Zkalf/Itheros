@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'activity.dart';
 import 'data.dart';
 import 'events.dart';
-import 'goal.dart';
 import 'news.dart';
 import 'rng.dart';
 import 'state.dart';

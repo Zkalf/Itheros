@@ -8,6 +8,7 @@ import 'controller_scope.dart';
 import 'images.dart';
 import 'labels.dart';
 import 'level_badge.dart';
+import 'person_sheet.dart' show Portrait, giverPortrait;
 import 'route_map.dart';
 import 'socket.dart';
 import 'tab_boxes.dart';
@@ -45,7 +46,8 @@ String journalTime(DateTime t, DateTime now) {
 }
 
 /// The Journal (spec 0009 §8.4): the newest reports (Log, spec 0004 §2),
-/// the Bestiary and the Lore (spec 0023 §3.3). [initialTab] 2 opens on Lore.
+/// the Bestiary, the Lore (spec 0023 §3.3) and the Quests (spec 0024 §3.4).
+/// [initialTab] 2 opens on Lore, 3 on Quests.
 class JournalScreen extends StatelessWidget {
   const JournalScreen({super.key, this.initialTab = 0});
 
@@ -53,7 +55,7 @@ class JournalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
-    length: 3,
+    length: 4,
     initialIndex: initialTab,
     child: Scaffold(
       appBar: AppBar(
@@ -63,10 +65,10 @@ class JournalScreen extends StatelessWidget {
           "${ControllerScope.of(context).state.character?.name ?? Game.defaultName}'s journal",
         ),
         // The tabs stand on a plate, each in its own box (spec 0014 §2.2).
-        bottom: const TabBoxes(labels: ['Log', 'Bestiary', 'Lore']),
+        bottom: const TabBoxes(labels: ['Log', 'Bestiary', 'Lore', 'Quests']),
       ),
       body: const SafeArea(
-        child: TabBarView(children: [_Log(), _Bestiary(), _Lore()]),
+        child: TabBarView(children: [_Log(), _Bestiary(), _Lore(), _Quests()]),
       ),
     ),
   );
@@ -192,6 +194,93 @@ class _Bestiary extends StatelessWidget {
             ),
           ],
       ],
+    );
+  }
+}
+
+/// The quest log (spec 0024 §3.4): the taken quests, ready ones first, then
+/// the done quests, newest first. Each shows its giver's portrait.
+class _Quests extends StatelessWidget {
+  const _Quests();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ControllerScope.of(context);
+    final game = c.game;
+    final s = c.state;
+    final data = game.data;
+    final labels = Labels(data, s.character);
+    final text = Theme.of(context).textTheme;
+    const italic = TextStyle(fontStyle: FontStyle.italic);
+    final ids = [
+      for (final id in s.quests.keys)
+        if (data.quests.containsKey(id)) id,
+    ];
+    final taken = ids.where((id) => game.questState(s, id) == QuestState.taken);
+    final ready = taken.where((id) => game.questReady(s, id));
+    // The save keeps the order of hand-in, newest last (spec 0024 §4).
+    final done = ids
+        .where((id) => game.questState(s, id) == QuestState.done)
+        .toList()
+        .reversed;
+    final order = [
+      ...ready,
+      ...taken.where((id) => !ready.contains(id)),
+      ...done,
+    ];
+    if (order.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(gutter),
+          child: Text('No quests yet. The people of the south have work.'),
+        ),
+      );
+    }
+
+    Widget entry(String id) {
+      final q = data.quests[id]!;
+      final isDone = game.questState(s, id) == QuestState.done;
+      final place = game.questPlace(id);
+      return Card(
+        key: ValueKey('quest-log-$id'),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Portrait(giverPortrait(data, q.giver), size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(q.title, style: text.titleMedium),
+                    Text(
+                      '${labels.giver(id)} · ${labels.location(place)}',
+                      style: text.bodySmall,
+                    ),
+                    const SizedBox(height: 6),
+                    if (isDone) ...[
+                      Text('"${labels.fill(q.ask)}"', style: italic),
+                      const SizedBox(height: 6),
+                      Text('"${labels.fill(q.thanks)}"', style: italic),
+                    ] else ...[
+                      Text(labels.questTask(id, game.questCount(s, id))),
+                      if (game.questReady(s, id))
+                        Text(labels.questReadyLine(id, place)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(gutter),
+      children: [for (final id in order) entry(id)],
     );
   }
 }

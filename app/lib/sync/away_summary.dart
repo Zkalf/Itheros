@@ -134,6 +134,8 @@ class AwaySummary {
     this.achievements = const [],
     this.lostAchievements = const [],
     this.lore = const [],
+    this.questsReady = const [],
+    this.questsDone = const [],
     this.learned = const [],
     this.slayers = const [],
     this.roadsOpened = const [],
@@ -162,6 +164,7 @@ class AwaySummary {
     final achievements = <String>[];
     final lostAchievements = <AchievementLost>[];
     final lore = <String>[], learned = <String>[], slayers = <String>[];
+    final questsReady = <String>[], questsDone = <String>[];
     final roadsOpened = <(String, String)>[];
     final professionLevels = <(String, int)>[];
     final finds = <String>[];
@@ -291,9 +294,11 @@ class AwaySummary {
         // Spec 0013 §3.4: how many, not what is in them.
         case SupplyChestEarned():
           supplyChests++;
-        // Plan 0071 M2 shows the quests in the report (spec 0024 §3.5).
-        case QuestReady() || QuestDone():
-          break;
+        // Spec 0024 §3.5: a quest ready on a walk; a hand-in.
+        case QuestReady(:final quest):
+          questsReady.add(quest);
+        case QuestDone(:final quest):
+          questsDone.add(quest);
       }
     }
     final running = started ?? r.state.activity?.activity;
@@ -309,6 +314,8 @@ class AwaySummary {
       achievements: achievements,
       lostAchievements: lostAchievements,
       lore: lore,
+      questsReady: questsReady,
+      questsDone: questsDone,
       learned: learned,
       slayers: slayers,
       roadsOpened: roadsOpened,
@@ -345,6 +352,10 @@ class AwaySummary {
   /// Lore notes found, monsters whose weakness was learned, Slayer marks
   /// earned (spec 0009 §7).
   final List<String> lore;
+
+  /// Quests that became ready, and quests handed in (spec 0024 §3.5).
+  final List<String> questsReady;
+  final List<String> questsDone;
   final List<String> learned;
   final List<String> slayers;
 
@@ -395,6 +406,8 @@ class AwaySummary {
       achievements.isNotEmpty ||
       lostAchievements.isNotEmpty ||
       lore.isNotEmpty ||
+      questsReady.isNotEmpty ||
+      questsDone.isNotEmpty ||
       learned.isNotEmpty ||
       slayers.isNotEmpty ||
       roadsOpened.isNotEmpty ||
@@ -440,6 +453,8 @@ class AwaySummary {
     ],
     // Entries from before spec 0009 have none.
     lore: _strings(j['lore']),
+    questsReady: _strings(j['questsReady']),
+    questsDone: _strings(j['questsDone']),
     learned: _strings(j['learned']),
     slayers: _strings(j['slayers']),
     // Entries from before spec 0008 amendment 5 have none.
@@ -500,6 +515,8 @@ class AwaySummary {
         },
     ],
     'lore': lore,
+    'questsReady': questsReady,
+    'questsDone': questsDone,
     'learned': learned,
     'slayers': slayers,
     'roadsOpened': [
@@ -551,6 +568,8 @@ class AwaySummary {
       achievements: [...achievements, ...o.achievements],
       lostAchievements: [...lostAchievements, ...o.lostAchievements],
       lore: [...lore, ...o.lore],
+      questsReady: [...questsReady, ...o.questsReady],
+      questsDone: [...questsDone, ...o.questsDone],
       learned: [...learned, ...o.learned],
       slayers: [...slayers, ...o.slayers],
       roadsOpened: [...roadsOpened, ...o.roadsOpened],

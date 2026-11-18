@@ -158,17 +158,4 @@ void main() {
       expect(back.lore.toList(), ['note_b', 'note_a']);
     });
   });
-
-  group('Next goal compares weapons within type and hands (§5.3)', () {
-    test('it never suggests a sword for the mace you hold', () {
-      final s = stateAt(game, level: 8, inventory: {'bone_sword': 1})
-        ..equipment['mainHand'] = 'copper_mace';
-      expect(game.nextGoal(s), isNot(isA<EquipGoal>()));
-      s.inventory['bone_club'] = 1;
-      expect(
-        game.nextGoal(s),
-        isA<EquipGoal>().having((g) => g.item, 'item', 'bone_club'),
-      );
-    });
-  });
 }

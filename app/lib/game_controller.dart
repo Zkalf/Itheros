@@ -174,7 +174,8 @@ class GameController extends ChangeNotifier {
   Future<void> dismissNewNotes() =>
       _update((s) => s.copyWith(lastVersion: version));
 
-  /// The player hid "Next goal" (spec 0002 §9.3).
+  /// The player hid the quest card (spec 0024 §3.1); the name is Next
+  /// goal's, whose switch it took over.
   bool get nextGoalHidden => _save!.nextGoalHidden;
 
   Future<void> setNextGoalHidden(bool hidden) =>
@@ -390,6 +391,69 @@ class GameController extends ChangeNotifier {
       notifyListeners();
     });
     return pages;
+  }
+
+  /// Takes [quest] at its giver (spec 0024 §2.2), after the sync, as every
+  /// action. False when the sync walked the hero away or the quest is no
+  /// longer offered.
+  Future<bool> takeQuest(String quest) async {
+    var taken = false;
+    await _serial(() async {
+      await _syncNow(away: false);
+      try {
+        _save = _save!.withGame(game.takeQuest(state, quest));
+      } on ActivityError {
+        return;
+      }
+      taken = true;
+      await store.save(_save!);
+      notifyListeners();
+    });
+    return taken;
+  }
+
+  /// Hands [quest] in at its giver (spec 0024 §2.4), after the sync. The
+  /// hand-in goes into the Journal (§3.5). False when it was not ready, or
+  /// the sync walked the hero away.
+  Future<bool> handIn(String quest) async {
+    var done = false;
+    await _serial(() async {
+      await _syncNow(away: false);
+      final ({GameState state, List<GameEvent> events}) r;
+      try {
+        r = game.handIn(state, quest);
+      } on ActivityError {
+        return;
+      }
+      done = true;
+      _save = _save!.withGame(r.state);
+      final levels = [
+        for (final e in r.events)
+          if (e is LevelUp) e.level,
+      ];
+      // One card per level, as a walk's levels get (spec 0002 §9.1).
+      _levelCards.addAll(levels);
+      _save = _addEntry(
+        _save!,
+        JournalEntry(
+          started: _clock(),
+          summary: _from(
+            state.location,
+            AwaySummary(
+              questsDone: [quest],
+              levelsReached: levels,
+              achievements: [
+                for (final e in r.events)
+                  if (e is AchievementUnlocked) e.id,
+              ],
+            ),
+          ),
+        ),
+      );
+      await store.save(_save!);
+      notifyListeners();
+    });
+    return done;
   }
 
   /// Today's steps into actions and whether today paid its supply chest

@@ -1,6 +1,6 @@
 # Draws the small icons of Camp and of the level-up card as flat silhouettes (art/icons/<name>.svg), #198: the Bank,
-# the Forge and the Camp fire on Now; the level, a new gathering spot and a talent point on a level-up. Ysolde, the
-# trainer, shows her portrait since spec 0023 §3.6 (art/people.py).
+# the Forge and the Camp fire on Now; the level, a new gathering spot and a talent point on a level-up; the quest marks
+# "!" and "?" (spec 0024). Ysolde, the trainer, shows her portrait since spec 0023 §3.6 (art/people.py).
 # White on clear, like the empty gear slots (art/slots.py); the game tints them like the stock icons they replace.
 # Run: python art/icons.py [--preview <file.html>]. Then .\scripts\export-art.ps1 makes the webp files
 # (app/assets/images/icons/).
@@ -51,6 +51,11 @@ ICONS = {
             '<path d="M30 3 C36 4 41 8 43 13 L41 14 C38 10 34 8 30 7.5 Z M36 9 L38.5 10.5 L31 23 L28.5 21.5 Z"/>',
     # A talent point: a big spark with two small ones.
     'talent': f'<path d="{spark(22, 26, 16)}{spark(38, 10, 6)}{spark(39, 37, 4.5)}"/>',
+    # The quest marks of spec 0024 §3.2, which the game tints gold: a quest to take, a quest to hand in.
+    'quest_offer': f'<path d="M19 5 L29 5 L27 31 L21 31 Z {circle(24, 39.5, 4.5)}"/>',
+    'quest_ready': '<path d="M15 16 C15 9 19.5 5.5 24.5 5.5 C30 5.5 34 9.5 34 14.5 C34 19.5 30.5 21.5 27.5 23.5 '
+                   'C25.5 25 24.5 26.5 24.5 30" fill="none" stroke="#FFF" stroke-width="6.5" stroke-linecap="round"/>'
+                   f'<path d="{circle(24.5, 39.5, 4.5)}"/>',
 }
 
 
