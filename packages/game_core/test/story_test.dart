@@ -28,7 +28,7 @@ void main() {
   }
 
   group('the data (spec 0023 §2.1, §2.7)', () {
-    test('four people at their places', () {
+    test('eight people at their places', () {
       expect(
         {for (final p in data.people.values) p.id: p.location},
         {
@@ -36,6 +36,11 @@ void main() {
           'pell': 'goblin_woods',
           'aldous': 'old_graveyard',
           'jory': 'smugglers_cove',
+          // Spec 0025 §2.2.
+          'maud': 'grey_moor',
+          'tobin': 'troll_bridge',
+          'corvin': 'mountain_pass',
+          'nessa': 'dragons_peak',
         },
       );
       expect(data.people['pell']!.name, 'Pell');
@@ -43,8 +48,9 @@ void main() {
       expect(data.people['jory']!.name, 'Jory Tarr');
     });
 
-    test('16 lore pages, by place as §2.6 counts them', () {
-      expect(data.pages, hasLength(16));
+    test('16 lore pages of the south, by place as §2.6 counts them', () {
+      // Spec 0025 adds 18 in the north (`north_test.dart`).
+      expect(data.pages, hasLength(34));
       int pagesAt(String place) =>
           data.pages.values.where((p) => p.place == place).length;
       expect(pagesAt('camp'), 2);

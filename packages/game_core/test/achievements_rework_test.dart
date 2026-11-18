@@ -56,6 +56,10 @@ void main() {
         ('wolf_pack', AchievementKind.feat),
         ('ghost_hunter', AchievementKind.feat),
         ('lore_smugglers_cove', AchievementKind.milestone),
+        // Spec 0025 §2.7: the lore of the north.
+        ('lore_grey_moor', AchievementKind.milestone),
+        ('lore_iron_ridge', AchievementKind.milestone),
+        ('lore_troll_bridge', AchievementKind.milestone),
       ],
       AchievementStage.late: [
         ('travelling_salesman', AchievementKind.milestone),
@@ -71,13 +75,16 @@ void main() {
         ('legendary_find', AchievementKind.feat),
         ('master_of_a_trade', AchievementKind.feat),
         ('deep_waters', AchievementKind.feat),
+        ('lore_mountain_pass', AchievementKind.milestone),
+        ('lore_mithril_deep', AchievementKind.milestone),
+        ('lore_dragons_peak', AchievementKind.milestone),
       ],
     };
 
-    test('36 achievements: 15 early, 9 mid and 12 late (amendment 3, spec '
-        '0023 §2.6), with their kinds', () {
-      expect(data.achievements, hasLength(36));
-      expect([for (final l in stages.values) l.length], [15, 9, 12]);
+    test('42 achievements: 15 early, 12 mid and 15 late (amendment 3, spec '
+        '0023 §2.6, spec 0025 §2.7), with their kinds', () {
+      expect(data.achievements, hasLength(42));
+      expect([for (final l in stages.values) l.length], [15, 12, 15]);
       stages.forEach((stage, list) {
         for (final (id, kind) in list) {
           expect(a(id).stage, stage, reason: id);

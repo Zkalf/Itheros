@@ -22,11 +22,13 @@ void main() {
   }
 
   group('the data (spec 0024 §2.8, criterion 6)', () {
+    // Spec 0025 §2.8 adds 34 quests after these 17 (`north_test.dart`).
     test('17 quests, in the order of §2.8, 3,490 XP in all', () {
-      expect(data.quests, hasLength(17));
-      expect(data.quests.keys.first, 'odda_goblins');
-      expect(data.quests.keys.last, 'jory_bass');
-      expect(data.quests.values.fold(0, (n, q) => n + q.xp), 3490);
+      final chapter1 = data.quests.values.take(17);
+      expect(data.quests, hasLength(51));
+      expect(chapter1.first.id, 'odda_goblins');
+      expect(chapter1.last.id, 'jory_bass');
+      expect(chapter1.fold(0, (n, q) => n + q.xp), 3490);
     });
 
     test('the counts that the owner raised', () {
