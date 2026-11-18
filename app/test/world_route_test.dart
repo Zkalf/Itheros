@@ -1454,9 +1454,9 @@ void criterion26() {
   // spec 0013 to 14, spec 0019 to 15, spec 0020 to 16 and spec 0023 to 17;
   // the route changes no version. Spec 0018 §4 raised SaveData to 4.
   group('spec 0014 criterion 26: old entries load with no route, the save '
-      'versions stay at 17 and 4, and each fixture loads', () {
-    test('GameState.schemaVersion is 17 and SaveData.version is 4', () {
-      expect(GameState.schemaVersion, 17);
+      'versions stay at 18 and 4, and each fixture loads', () {
+    test('GameState.schemaVersion is 18 and SaveData.version is 4', () {
+      expect(GameState.schemaVersion, 18);
       expect(SaveData.version, 4);
     });
 
