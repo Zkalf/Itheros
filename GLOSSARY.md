@@ -82,6 +82,7 @@ The owner and Claude chose these words on 2026-10-24, after the playtest of the 
 | **open line** | A line whose condition holds and whose origin fits. An open line that is not heard puts a dot on the row. |
 | **heard** | A line that the player saw on the sheet. The save keeps the heard lines. |
 | **King line** | The line of a teacher or the trainer after the first King kill (spec 0023 §2.5). |
+| **chapter** | One part of the hero's story. Each chapter ends at the first kill of a boss: chapter 1 at the Graveyard King (spec 0023), chapter 2 at the Ogre Chieftain and chapter 3 at the Young Dragon (intent 0025). |
 | **lore page** | A piece of lore about a place or the story, found once (spec 0023 §2.4). Not a lore note. |
 | **lore note** | A note about a monster that reveals its armour and weakness (spec 0009 §7.2). |
 | **lore** | The lore pages and the lore notes together. The Lore tab groups them by place. |
