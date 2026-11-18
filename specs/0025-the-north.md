@@ -1,10 +1,10 @@
 # Spec 0025: Role-play and quests, chapters 2 and 3: the north of the river
 
-Status: draft
+Status: accepted
 Intent: [intent/0025-the-north.md](../intent/0025-the-north.md) (accepted, 2026-11-18)
 Builds on: spec 0023 (people, lines, lore pages, lore achievements), spec 0024 (quests, the quest card), spec 0010 §6
 (the teachers), spec 0015 §2.7 (the trainer), spec 0017 (achievements)
-Product owner: Zkalf
+Product owner: Zkalf (accepted on 2026-11-18)
 Date: 2026-11-18
 
 The north of the river gets its story. Four new people live at Grey Moor, Troll Bridge, Mountain Pass and Dragon's
@@ -453,4 +453,4 @@ The words are a design decision (`WRITING.md`). The owner accepts them with this
 43. `.\scripts\check.ps1 -Release` is green, and the release build declares no INTERNET permission.
 
 ## History
-- 2026-11-18: first version (intent 0025). (draft)
+- 2026-11-18: first version (intent 0025). Accepted.
