@@ -315,5 +315,5 @@ Each quest's task words, ask and thanks. `{name}` is the hero's name.
   of Next goal, not that the card takes over Next goal's switch. A save that hid Next goal had no quest card on the
   owner's phone. §3.1; §4; decision 9; criterion 30. Accepted (owner, 2026-11-18).
 - 2026-11-18: the end words of the quest card come from the data (spec 0025 §2.9). Spec 0025 replaced "No more
-  work for now. The north will need you." when the north got its quests. Decision 9; §3.1; criterion 29. Accepted (owner,
-  2026-11-18).
+  work for now. The north will need you." when the north got its quests. Decision 9; §3.1; criterion 29.
+  Accepted (owner, 2026-11-18).
