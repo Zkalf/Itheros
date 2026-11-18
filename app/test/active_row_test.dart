@@ -24,11 +24,13 @@ void main() {
   /// takes the width of the row from its left edge.
   void expectWideSubtitle(WidgetTester t, Finder row, String name) {
     final title = find.descendant(of: row, matching: find.text(name));
-    final subtitle = find
-        .descendant(of: row, matching: find.byType(RichText))
-        .evaluate()
-        .map((e) => find.byWidget(e.widget))
-        .firstWhere((f) => t.getTopLeft(f).dy > t.getBottomLeft(title).dy - 1);
+    expect(title, findsOneWidget);
+    // The subtitle is the only text of the row with the XP.
+    final subtitle = find.descendant(
+      of: row,
+      matching: find.textContaining('XP'),
+    );
+    expect(subtitle, findsOneWidget);
     final inRow = find.descendant(of: row, matching: chip);
     expect(inRow, findsOneWidget);
     expect(

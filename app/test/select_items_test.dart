@@ -518,10 +518,12 @@ void main() {
       expect(key('selected-mark'), findsNothing);
       expect(key('bank-screen'), findsOneWidget);
       expect(t.getTopLeft(key('bank-screen')).dx, 0, reason: 'slid back in');
-      // With no selection, the swipe leaves the screen.
+      // With no selection, a swipe in the middle stays on the screen: its
+      // tabs drag to the side, so only the edge swipe goes back (spec 0014
+      // amendment 5).
       await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
       await t.pumpAndSettle();
-      expect(key('bank-screen'), findsNothing);
+      expect(key('bank-screen'), findsOneWidget);
     });
 
     testWidgets('criterion 29: a swipe to the right ends the selection of '
