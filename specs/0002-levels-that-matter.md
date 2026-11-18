@@ -323,8 +323,8 @@ One line on the main screen, worked out from the save, with the first rule that 
 Always shown during levels 1–9. From level 10, it has a **Hide** switch, and it can be turned back on in settings.
 Since spec 0008 decision 9 the switch is there from level 1.
 
-Since spec 0024 the quest card takes the place of Next goal on Now. The rules of this section no longer apply, and the
-switch hides the quest card.
+Since spec 0024 the quest card takes the place of Next goal on Now. The rules of this section and the switch no longer
+apply.
 
 ### 9.4 Loss hints
 After a loss, the report adds the monster's hint from data, for example "The Graveyard King's armour is heavy: a
@@ -435,3 +435,4 @@ new numbers)
   of `enemies.json` (58.93%), with the first 25% beside it; §2 and criterion 3 give the days of spec 0009 criterion 16
   (day 1-2, day 11-16), with the first ones beside them. No rule or criterion changed.
 - 2026-11-17, spec 0024: quests replace Next goal. Decision 9; §9.3; criterion 10. Accepted.
+- 2026-11-18, spec 0024 (owner): the quest card has no switch; Next goal's switch went away with it. §9.3. Accepted.
