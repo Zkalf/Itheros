@@ -45,11 +45,11 @@
         "greeting": "Fish biting, {name}?",
         "kinLine": "A coast {lad|lass|friend}! Salt in your hair, {name}. Take my old rod; you'll not need telling how.",
         "tips": [
-        { "id": "wen_lake_shore", "level": 1, "node": "lake_shore", "title": "Mirror Lake",
+        { "id": "wen_lake_shore", "level": 1, "node": "lake_shore", "title": "Still water",
           "text": "\"Perch bite all day at Mirror Lake. One in five is a pike, and now and then a golden carp. Something old and green rolls out there at dawn. We call him Old Mossback.\"" },
         { "id": "wen_under_the_bridge", "level": 10, "node": "under_the_bridge", "title": "Under the bridge",
           "text": "\"Brown trout hold under Troll Bridge, and eels, one in five. A silver salmon, if you're lucky. The trolls say a river king lives under the middle arch. Trolls lie, mostly.\"" },
-        { "id": "wen_cove_rocks", "level": 15, "node": "cove_rocks", "title": "Smugglers' Cove",
+        { "id": "wen_cove_rocks", "level": 15, "node": "cove_rocks", "title": "Off the rocks",
           "text": "\"So the chart was true. Sea bass off the rocks, mackerel one in five, a moonfish now and then. The old smugglers swore by a fish with one eye, big as a man. And by a chest they lost off the jetty.\"" },
         { "id": "wen_cold_tarn", "level": 20, "node": "cold_tarn", "title": "The cold tarn",
           "text": "\"Arctic char in the cold tarn, and frostfin, one in five. Glacier pike, if you're patient. Something pale moves deep under the ice. I don't fish there alone.\"" }

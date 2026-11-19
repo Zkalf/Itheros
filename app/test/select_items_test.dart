@@ -1,7 +1,9 @@
 // Hold an item to select several: spec 0020 amendment 8 criteria 7 to 34
 // (plan 0067). The rules (criteria 1-6) are in game_core's
 // move_items_test.dart.
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:walkingrpg/game_controller.dart';
@@ -136,6 +138,60 @@ void main() {
       expect(bar, findsNothing);
       expect(key('selected-mark'), findsNothing);
       expect(card, findsNothing);
+    });
+
+    testWidgets('criterion 10: a hold buzzes only where it starts a '
+        'selection (#288)', (t) async {
+      final buzzes = <String>[];
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') buzzes.add('buzz');
+          return null;
+        },
+      );
+      addTearDown(
+        () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpGame(
+        t,
+        location: 'goblin_woods',
+        inventory: bag,
+        prepare: (s) => s.itemBank.addAll(banked),
+      );
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      await t.tap(key('bank-tab-bag'));
+      await t.pumpAndSettle();
+      await hold(t, 'bank-bag-copper_ore');
+      expect(buzzes, isEmpty, reason: 'no selection can start here');
+    });
+
+    testWidgets('criterion 9: at Camp a hold that starts a selection buzzes '
+        '(#288)', (t) async {
+      final buzzes = <String>[];
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') buzzes.add('buzz');
+          return null;
+        },
+      );
+      addTearDown(
+        () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      expect(buzzes, hasLength(1));
     });
 
     testWidgets('criterion 11: without a selection a tap opens the card', (
@@ -449,6 +505,104 @@ void main() {
       expect(bar, findsNothing);
       expect(key('selected-mark'), findsNothing);
       expect(key('bag-copper_ore'), findsOneWidget);
+    });
+
+    testWidgets('criterion 29: a swipe to the right ends the selection of '
+        'the Bank tab, and the bank screen stays open (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      expect(bar, findsOneWidget);
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('selected-mark'), findsNothing);
+      expect(key('bank-screen'), findsOneWidget);
+      expect(t.getTopLeft(key('bank-screen')).dx, 0, reason: 'slid back in');
+      // With no selection, a swipe in the middle stays on the screen: its
+      // tabs drag to the side, so only the edge swipe goes back (spec 0014
+      // amendment 5).
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(key('bank-screen'), findsOneWidget);
+    });
+
+    testWidgets('criterion 29: a swipe to the right ends the selection of '
+        'the bag on Character, and Character stays open (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await t.dragFrom(
+        t.getCenter(key('bag-copper_ore')),
+        const Offset(700, 0),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('selected-mark'), findsNothing);
+      expect(key('bag-copper_ore'), findsOneWidget);
+    });
+
+    testWidgets('a swipe to the left keeps the selection (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      await t.timedDragFrom(
+        t.getCenter(key('bank-screen')),
+        const Offset(-60, 0),
+        const Duration(milliseconds: 500),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
+    });
+
+    testWidgets('a swipe to the right ends the selection of the Bag tab, and '
+        'the Bag tab stays (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBankBag(t);
+      await hold(t, 'bank-bag-copper_ore');
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(700, 0));
+      await t.pumpAndSettle();
+      expect(bar, findsNothing);
+      expect(key('bank-bag-copper_ore').hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('a hold that adds an item and then slides to the right keeps '
+        'the selection (#287)', (t) async {
+      await pumpGame(t, inventory: bag);
+      await openBag(t);
+      await hold(t, 'bag-copper_ore');
+      await t.ensureVisible(key('bag-hide_vest'));
+      final finger = await t.startGesture(t.getCenter(key('bag-hide_vest')));
+      await t.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      expect(find.text('2 selected'), findsOneWidget);
+      // Quick, and further than half the screen: as a swipe it would count.
+      for (var i = 0; i < 10; i++) {
+        await finger.moveBy(const Offset(60, 0));
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      await finger.up();
+      await t.pumpAndSettle();
+      expect(find.text('2 selected'), findsOneWidget);
+    });
+
+    testWidgets('a short slow swipe to the right and a scroll keep the '
+        'selection (#287)', (t) async {
+      await pumpGame(t, prepare: (s) => s.itemBank.addAll(banked));
+      await openBank(t);
+      await hold(t, 'bank-item-bones');
+      // Less than half the screen, slowly: as the swipe that goes back,
+      // it does not count (spec 0014 amendment 5).
+      await t.timedDragFrom(
+        t.getCenter(key('bank-screen')),
+        const Offset(100, 0),
+        const Duration(seconds: 1),
+      );
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
+      // Mostly up, a little to the right: a scroll of the list.
+      await t.dragFrom(t.getCenter(key('bank-screen')), const Offset(60, -300));
+      await t.pumpAndSettle();
+      expect(bar, findsOneWidget);
     });
 
     testWidgets('criterion 30: the selection ends with its last item', (

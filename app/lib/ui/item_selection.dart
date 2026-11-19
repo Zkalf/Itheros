@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart'
+    show VelocityTracker, kLongPressTimeout, kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:game_core/game_core.dart';
 
@@ -7,6 +9,124 @@ import '../game_controller.dart';
 import 'labels.dart';
 import 'salvage_all.dart';
 import 'theme.dart';
+
+/// [child], a row or square of an item in a list where a hold starts a
+/// selection only when [selection] is not null. Where no selection can
+/// start, a hold on [child] does nothing: it opens no card (spec 0020
+/// amendment 8, rule 2), and the phone does not buzz (#288). Give [child]
+/// no hold of its own there, or Flutter buzzes.
+Widget holdToSelect(ItemSelection? selection, Widget child) => GestureDetector(
+  // Where no selection can start, takes the hold, so that it does not end as
+  // a tap on [child]. A screen reader offers no hold there.
+  onLongPress: selection == null ? () {} : null,
+  excludeFromSemantics: true,
+  child: child,
+);
+
+/// The screen of a list with [selection]: while the selection runs, Back and
+/// a swipe to the right end it, and the screen stays (spec 0020 amendment 8,
+/// rule 19; #287). With no selection, Back and the swipe go back as before.
+class SelectionBack extends StatefulWidget {
+  const SelectionBack({
+    super.key,
+    required this.selection,
+    required this.child,
+  });
+
+  final ItemSelection selection;
+  final Widget child;
+
+  @override
+  State<SelectionBack> createState() => _SelectionBackState();
+}
+
+class _SelectionBackState extends State<SelectionBack> {
+  /// Screen widths per second: a quicker swipe counts from any distance, as
+  /// with the swipe that goes back (spec 0014 amendment 5).
+  static const _minFling = 1.0;
+
+  /// The finger that touched the screen while the selection ran; null when
+  /// no such finger is down.
+  int? _pointer;
+  var _start = Offset.zero;
+  VelocityTracker? _speed;
+
+  /// Runs out when the finger has stayed still as long as a hold.
+  Timer? _hold;
+
+  void _forget() {
+    _pointer = null;
+    _speed = null;
+    _hold?.cancel();
+    _hold = null;
+  }
+
+  void _down(PointerDownEvent e) {
+    if (_pointer != null || !widget.selection.running) return;
+    _pointer = e.pointer;
+    _start = e.position;
+    _speed = VelocityTracker.withKind(e.kind)
+      ..addPosition(e.timeStamp, e.position);
+    // A finger that stays still as long as a hold is a hold: it adds an item
+    // (rule 3), and its slide after that is no swipe.
+    _hold = Timer(kLongPressTimeout, _forget);
+  }
+
+  void _move(PointerMoveEvent e) {
+    if (e.pointer != _pointer) return;
+    // A finger that moves at once is no hold.
+    if ((e.position - _start).distance > kTouchSlop) {
+      _hold?.cancel();
+      _hold = null;
+    }
+    _speed!.addPosition(e.timeStamp, e.position);
+  }
+
+  // The swipe watches the finger without a gesture of its own, so the list
+  // and the tabs of the screen keep their drags.
+  void _up(PointerUpEvent e) {
+    if (e.pointer != _pointer) return;
+    final speed = _speed!.getVelocity().pixelsPerSecond.dx;
+    _forget();
+    final width = context.size!.width;
+    final move = e.position - _start;
+    // Sideways, not a scroll: past the touch slop, and more to the side
+    // than up or down.
+    if (move.dx <= kTouchSlop || move.dx < 2 * move.dy.abs()) return;
+    // The rules of the swipe that goes back: a quick swipe decides by its
+    // direction, a slow one by how far the finger went.
+    final right = (speed / width).abs() >= _minFling
+        ? speed > 0
+        : move.dx / width > 0.5;
+    if (right) widget.selection.clear();
+  }
+
+  void _lost(PointerCancelEvent e) {
+    if (e.pointer == _pointer) _forget();
+  }
+
+  @override
+  void dispose() {
+    _hold?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !widget.selection.running,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) widget.selection.clear();
+    },
+    child: Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _down,
+      onPointerMove: _move,
+      onPointerUp: _up,
+      onPointerCancel: _lost,
+      child: widget.child,
+    ),
+  );
+}
 
 /// The selected items of one list (spec 0020 amendment 8): a hold on an item
 /// starts the selection, and a tap then adds or removes an item (rules 3

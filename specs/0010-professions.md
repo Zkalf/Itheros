@@ -248,9 +248,9 @@ Sigrun's three monster tips are in spec 0011 §2.2. Marta, the cook, tells no ti
 | Sigrun | Hunting 1 | Deer trail | The deer trail | "Red deer feed along the deer trail. One track in four is a wild boar's. And they say a golden stag walks there at dusk. Few hunters ever see it, fewer bring home its antler." |
 | Sigrun | Hunting 10 | Moor tracks | Tracks on the moor | "Moor elk graze the Grey Moor, with black boar among them, one in four. The herders talk of Old Tusk, a boar as big as a cart. Nobody I know has brought back his tusk." |
 | Sigrun | Hunting 20 | High crags | Up in the crags | "Ibex climb the crags above the pass, and snow grouse nest there, one in four. Watch the snow for a lynx's print. I've seen one, once. Its pelt is worth a season." |
-| Wen | Fishing 1 | Lake shore | Mirror Lake | "Perch bite all day at Mirror Lake. One in five is a pike, and now and then a golden carp. Something old and green rolls out there at dawn. We call him Old Mossback." |
+| Wen | Fishing 1 | Lake shore | Still water | "Perch bite all day at Mirror Lake. One in five is a pike, and now and then a golden carp. Something old and green rolls out there at dawn. We call him Old Mossback." |
 | Wen | Fishing 10 | Under the bridge | Under the bridge | "Brown trout hold under Troll Bridge, and eels, one in five. A silver salmon, if you're lucky. The trolls say a river king lives under the middle arch. Trolls lie, mostly." |
-| Wen | Fishing 15 | Cove rocks | Smugglers' Cove | "So the chart was true. Sea bass off the rocks, mackerel one in five, a moonfish now and then. The old smugglers swore by a fish with one eye, big as a man. And by a chest they lost off the jetty." |
+| Wen | Fishing 15 | Cove rocks | Off the rocks | "So the chart was true. Sea bass off the rocks, mackerel one in five, a moonfish now and then. The old smugglers swore by a fish with one eye, big as a man. And by a chest they lost off the jetty." |
 | Wen | Fishing 20 | Cold tarn | The cold tarn | "Arctic char in the cold tarn, and frostfin, one in five. Glacier pike, if you're patient. Something pale moves deep under the ice. I don't fish there alone." |
 
 **When a tip is told**
@@ -974,3 +974,5 @@ A criterion that checks several things has a letter for each check (rule 13 of `
 - 2026-11-17, spec 0024: quests replace Next goal. §8.4. Accepted.
 - 2026-11-18 (#278): back from a profession's screen that the Forge row or the Camp fire row opened returns to
   Now, where the player came from. Criterion 24. Accepted.
+- 2026-11-18 (#291): two of Wen's tip titles named a place, and the line under them named the spot. "Mirror
+  Lake" became "Still water", and "Smugglers' Cove" became "Off the rocks", as the owner chose. §6.2 table. Accepted.

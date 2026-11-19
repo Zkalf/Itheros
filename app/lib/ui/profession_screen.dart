@@ -537,6 +537,12 @@ class _RecipeTile extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Flexible(child: Text(labels.recipe(recipe))),
+          // After the name, not at the end of the row: the subtitle keeps
+          // the width of the row at a large text size (#290).
+          if (active) ...[
+            const SizedBox(width: 8),
+            statusChip('Active', Quiet.steel, inline: true),
+          ],
         ],
       ),
       titleTextStyle: nameStyle(context),
@@ -570,7 +576,6 @@ class _RecipeTile extends StatelessWidget {
           ],
         ),
       ),
-      trailing: active ? statusChip('Active', Quiet.steel) : null,
       onTap: active || !levelMet
           ? null
           : () => startAction(context, c, Activity.craft(recipe)),
